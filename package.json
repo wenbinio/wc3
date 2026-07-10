@@ -1,0 +1,19 @@
+{
+  "name": "wc3-map-toolkit",
+  "version": "1.0.0",
+  "description": "Headless Warcraft 3 (.w3x) map toolkit: read, write, translate and build maps on Linux",
+  "license": "MIT",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test",
+    "setup": "bash scripts/setup.sh"
+  },
+  "dependencies": {
+    "wc3maptranslator": "5.0.0",
+    "war3-model": "^4.0.1"
+  },
+  "optionalDependencies": {
+    "stormlib-node": "^1.3.6"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "regular": [
+    {
+      "type": "LTlt",
+      "position": [
+        -512,
+        512,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 100,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        512,
+        -512,
+        0
+      ],
+      "angle": 90.01166961505233,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 101,
+      "variation": 3
+    }
+  ],
+  "special": []
+}

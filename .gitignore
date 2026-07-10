@@ -1,0 +1,15 @@
+# dependencies
+node_modules/
+
+# build outputs (map SOURCE folders under maps/ ARE tracked)
+_build/
+build/
+dist/
+*.w3x
+*.w3m
+*.mpq
+*.mpq.tmp
+
+# scratch
+*.log
+.tmp/
