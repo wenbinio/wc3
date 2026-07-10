@@ -76,8 +76,12 @@ maps/mymap/
 - `docs/PIPELINE.md` — end-to-end workflows (read, modify, create, import assets)
 - `docs/FORMATS.md` — format knowledge: HM3W header, MPQ notes, file inventory,
   versions, classic-vs-Reforged gotchas, external references
+- `docs/ASSETS.md` — **assets & models**: MDX/MDL versions, PNG→BLP1, the
+  glTF/OBJ→MDX conversion chain, and legal sourcing rules (Blizzard paths,
+  Hive Workshop credits, CC0 packs)
 - `CLAUDE.md` — operational notes for AI agent sessions
-- `.claude/skills/` — agent skills: `wc3-read-map`, `wc3-build-map`, `wc3-new-map`
+- `.claude/skills/` — agent skills: `wc3-read-map`, `wc3-build-map`,
+  `wc3-new-map`, `wc3-import-asset`
 
 ## Stack
 

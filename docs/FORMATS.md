@@ -112,6 +112,34 @@ Also note: **do not use unpinned `wc3maptranslator`** — npm resolves it to
 - HM3W name is null-terminated; keep it under ~495 bytes so flags/maxPlayers
   fit in the 512-byte block.
 
+## MPQ practical notes
+
+- WC3 reads **MPQ format v1 only** (this toolkit's `smpq -M 1`; v2–v4 are
+  later Blizzard games).
+- Compression: **zlib/DEFLATE is the safe choice** for every file; avoid
+  bzip2 for classic-compatible maps (later Storm feature, patchy support).
+- `(listfile)` is optional for the *game* (files are found by name hash) but
+  required by editors/tools to enumerate contents — protected maps delete it
+  on purpose. smpq maintains one automatically.
+- Storm requires the MPQ header to sit at a **512-byte-aligned offset** in
+  the file — the 512-byte HM3W pre-header satisfies this exactly; never pad
+  it to any other size.
+
+## Map scripting notes
+
+- **Lua** is supported since patch 1.31; select it with `info.json`
+  `scriptLanguage: 1` + `war3map.lua` (0 = JASS + `war3map.j`).
+- **JASS** tooling: syntax-check with pjass (https://github.com/lep/pjass);
+  https://github.com/lep/jassdoc is a machine-readable reference for the
+  native API (also useful for Lua, since natives are exposed 1:1).
+- **WurstScript** is the maintained compiler-toolchain option (`grill` build
+  tool; official Docker image `frotty/wurstscript`) if a higher-level
+  language than Lua/JASS is wanted.
+- Reforged also supports **folder-mode maps** (a loose `*.w3x/` directory
+  instead of an archive). Beware: World Editor **clobbers the whole folder on
+  save** — keep sources elsewhere (this toolkit's map-source layout already
+  does).
+
 ## stormlib-node (optional npm alternative to smpq)
 
 Works, but has sharp edges (why the toolkit shells out to smpq instead):

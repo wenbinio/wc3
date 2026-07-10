@@ -63,4 +63,7 @@ template — copy it to start a new map). Build outputs go to `_build/`
 - `lib/source.js` — map-source ⇄ extracted-dir conversion (the core logic)
 - `docs/FORMATS.md` — format knowledge + external references
 - `docs/PIPELINE.md` — step-by-step workflows incl. asset imports
-- `.claude/skills/` — wc3-read-map, wc3-build-map, wc3-new-map
+- `docs/ASSETS.md` — sourcing/converting models & textures (MDX/MDL, BLP1
+  encoding, glTF→MDX chain, legal rules)
+- `.claude/skills/` — wc3-read-map, wc3-build-map, wc3-new-map,
+  wc3-import-asset (asset inspect/convert/import recipe)
