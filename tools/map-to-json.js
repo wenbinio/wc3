@@ -8,6 +8,7 @@
 // translate (e.g. classic-format w3i/w3e) are also copied through, with the
 // error recorded in the manifest.
 
+const fs = require('fs');
 const { extractedToSource } = require('../lib/source');
 
 function main(argv) {
@@ -15,6 +16,10 @@ function main(argv) {
   if (!extractedDir || !jsonDir) {
     console.error('usage: node tools/map-to-json.js <extracted-dir> <json-dir>');
     process.exit(2);
+  }
+  if (!fs.existsSync(extractedDir)) {
+    console.error(`translate failed: extracted dir not found: ${extractedDir}`);
+    process.exit(1);
   }
   const manifest = extractedToSource(extractedDir, jsonDir);
   const nT = Object.keys(manifest.translated).length;

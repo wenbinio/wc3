@@ -17,26 +17,31 @@ function main(argv) {
     console.error('usage: node tools/w3x-extract.js <map.w3x> <outdir>');
     process.exit(2);
   }
-  const buf = fs.readFileSync(mapPath);
-  fs.mkdirSync(outDir, { recursive: true });
+  try {
+    const buf = fs.readFileSync(mapPath);
+    fs.mkdirSync(outDir, { recursive: true });
 
-  if (hasHM3W(buf)) {
-    const header = parseHeader(buf);
-    writeJson(path.join(outDir, '_header.json'), header);
-    console.log(`HM3W pre-header: name=${JSON.stringify(header.name)} flags=${header.flags} maxPlayers=${header.maxPlayers} -> _header.json`);
-  } else if (buf.toString('latin1', 0, 3) === 'MPQ') {
-    console.log('no HM3W pre-header (bare MPQ archive)');
-  } else {
-    console.error('warning: neither HM3W nor MPQ magic at offset 0; trying smpq anyway');
-  }
+    if (hasHM3W(buf)) {
+      const header = parseHeader(buf);
+      writeJson(path.join(outDir, '_header.json'), header);
+      console.log(`HM3W pre-header: name=${JSON.stringify(header.name)} flags=${header.flags} maxPlayers=${header.maxPlayers} -> _header.json`);
+    } else if (buf.toString('latin1', 0, 3) === 'MPQ') {
+      console.log('no HM3W pre-header (bare MPQ archive)');
+    } else {
+      console.error('warning: neither HM3W nor MPQ magic at offset 0; trying smpq anyway');
+    }
 
-  const extracted = extractAll(mapPath, outDir);
-  if (extracted.length === 0) {
-    console.error('error: nothing extracted (no listfile and no known file names matched)');
+    const extracted = extractAll(mapPath, outDir);
+    if (extracted.length === 0) {
+      console.error('error: nothing extracted (no listfile and no known file names matched)');
+      process.exit(1);
+    }
+    console.log(`extracted ${extracted.length} file(s) to ${outDir}:`);
+    for (const f of extracted) console.log('  ' + f);
+  } catch (e) {
+    console.error('extract failed: ' + (e.message || e));
     process.exit(1);
   }
-  console.log(`extracted ${extracted.length} file(s) to ${outDir}:`);
-  for (const f of extracted) console.log('  ' + f);
 }
 
 main(process.argv.slice(2));

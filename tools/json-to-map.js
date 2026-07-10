@@ -16,11 +16,16 @@ function main(argv) {
     console.error('usage: node tools/json-to-map.js <json-dir> <out-dir>');
     process.exit(2);
   }
-  const { written, header } = sourceToExtracted(jsonDir, outDir);
-  if (header) writeJson(path.join(outDir, '_header.json'), header);
-  console.log(`wrote ${written.length} archive member(s) to ${outDir}:`);
-  for (const f of written) console.log('  ' + f);
-  if (header) console.log('_header.json carried through for w3x-pack');
+  try {
+    const { written, header } = sourceToExtracted(jsonDir, outDir);
+    if (header) writeJson(path.join(outDir, '_header.json'), header);
+    console.log(`wrote ${written.length} archive member(s) to ${outDir}:`);
+    for (const f of written) console.log('  ' + f);
+    if (header) console.log('_header.json carried through for w3x-pack');
+  } catch (e) {
+    console.error('convert failed: ' + (e.message || e));
+    process.exit(1);
+  }
 }
 
 main(process.argv.slice(2));

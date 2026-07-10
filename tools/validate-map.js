@@ -87,14 +87,19 @@ function main(argv) {
     console.error('usage: node tools/validate-map.js <map.w3x>');
     process.exit(2);
   }
-  const results = validate(mapPath);
-  let failures = 0;
-  for (const r of results) {
-    console.log(`${r.pass ? 'PASS' : 'FAIL'}  ${r.name}${r.detail ? '  (' + r.detail + ')' : ''}`);
-    if (!r.pass) failures++;
+  try {
+    const results = validate(mapPath);
+    let failures = 0;
+    for (const r of results) {
+      console.log(`${r.pass ? 'PASS' : 'FAIL'}  ${r.name}${r.detail ? '  (' + r.detail + ')' : ''}`);
+      if (!r.pass) failures++;
+    }
+    console.log(`\n${results.length - failures}/${results.length} checks passed`);
+    process.exit(failures === 0 ? 0 : 1);
+  } catch (e) {
+    console.error('validate failed: ' + (e.message || e));
+    process.exit(1);
   }
-  console.log(`\n${results.length - failures}/${results.length} checks passed`);
-  process.exit(failures === 0 ? 0 : 1);
 }
 
 if (require.main === module) main(process.argv.slice(2));
