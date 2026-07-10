@@ -2,7 +2,7 @@
   {
     "variableName": "WaveReward",
     "internalName": "",
-    "path": "Abilities/Spells/Items/AIam/Tomes.flac",
+    "path": "Abilities\\Spells\\Items\\AIam\\Tomes.flac",
     "volume": 127,
     "pitch": 1,
     "pitchVariance": 0,
@@ -29,7 +29,7 @@
   {
     "variableName": "VictoryFanfare",
     "internalName": "",
-    "path": "Sound/Music/mp3Music/Comradeship.flac",
+    "path": "Sound\\Music\\mp3Music\\Comradeship.flac",
     "volume": 110,
     "pitch": 1,
     "pitchVariance": 0,

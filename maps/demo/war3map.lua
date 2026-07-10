@@ -56,7 +56,13 @@ function main()
     InitBlizzard()
     InitGlobals()
 
-    -- Demo payload: greet and spawn an extra footman at map center after 2s.
+    -- Preplaced units from units.json. build-map generates CreateAllUnits()
+    -- into the packed script (war3mapUnits.doo is editor-only data — the
+    -- game only spawns script-created units).
+    CreateAllUnits()
+
+    -- Demo payload: greet and spawn one EXTRA footman at map center after 2s
+    -- (on top of the units.json starting units created above).
     local t = CreateTimer()
     TimerStart(t, 2.00, false, function()
         print("Hello from the wc3-map-toolkit demo map!")

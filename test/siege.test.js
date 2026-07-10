@@ -122,13 +122,17 @@ test('w3x-extract + map-to-json reproduce the crossroads-siege source JSON', () 
   }
   // auto-generated import manifest lists the model
   assert.deepStrictEqual(readJson(path.join(jsonDir, 'imports.json')), ['war3mapImported\\SiegeCrystal.mdx']);
-  // script text unchanged
-  assert.strictEqual(
-    fs.readFileSync(path.join(jsonDir, 'war3map.lua'), 'utf8'),
-    fs.readFileSync(path.join(SIEGE_SRC, 'war3map.lua'), 'utf8')
-  );
+  // script came through: source text plus the generated CreateAllUnits block
+  const packedLua = fs.readFileSync(path.join(jsonDir, 'war3map.lua'), 'utf8');
+  const srcLua = fs.readFileSync(path.join(SIEGE_SRC, 'war3map.lua'), 'utf8');
+  assert.ok(packedLua.startsWith(srcLua), 'packed lua starts with the source script');
+  assert.match(packedLua, /BEGIN wc3-map-toolkit generated: CreateAllUnits/);
+  // generated minimap preview files appear under files/
+  for (const f of ['war3map.mmp', 'war3mapMap.tga']) {
+    assert.ok(fs.existsSync(path.join(jsonDir, 'files', f)), `generated ${f} present in archive`);
+  }
   // opaque files and the binary MDX asset come through verbatim
-  for (const f of ['war3map.shd', 'war3map.wpm', 'war3map.mmp']) {
+  for (const f of ['war3map.shd', 'war3map.wpm']) {
     assert.ok(
       fs.readFileSync(path.join(jsonDir, 'files', f)).equals(fs.readFileSync(path.join(SIEGE_SRC, 'files', f))),
       `${f} copied verbatim`

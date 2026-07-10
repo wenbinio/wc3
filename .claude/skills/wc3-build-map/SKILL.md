@@ -24,11 +24,21 @@ Common edits:
 - Gameplay logic: `war3map.lua` — game calls `config()` then `main()`;
   `scriptLanguage` in info.json must be 1 for Lua (0 for JASS + war3map.j)
 - Units: append to `units.json` (copy an existing entry; `type` is the
-  4-char rawcode, e.g. hfoo/hpea/ogru; player 0-23, neutral passive ~24+)
+  4-char rawcode, e.g. hfoo/hpea/ogru; player 0-23, 24 = neutral hostile,
+  27 = neutral passive). units.json is the single source of truth for
+  placements: war3mapUnits.doo is EDITOR-ONLY, so build-map compiles
+  units.json into a generated `CreateAllUnits()` block appended to the
+  packed war3map.lua. The map's `main()` should call `CreateAllUnits()`
+  (before any code that enumerates preplaced units); if the script never
+  mentions it, build-map wraps main() to call it after main() returns.
 - Custom assets: drop under `imports/war3mapImported/...` — war3map.imp is
-  auto-generated on build
+  auto-generated on build. Custom MDX must pass mdx-m3-viewer's sanityTest
+  with 0 errors/severes (CLAUDE.md gotcha 14) or the game crashes on load.
 - Object data tweaks: `objects-units.json` etc. — shape is
   `{original: {"hfoo": [{id:"umvs", type:"int", value:350, level:0, column:0}]}, custom: {"x000:hfoo": [...]}}`
+- Minimap preview: auto-generated (`war3mapMap.tga` from terrain.json +
+  `war3map.mmp` start-location icons); override via `files/war3mapMap.tga|blp`
+  / `files/war3map.mmp`
 
 To modify an EXISTING .w3x, first use the wc3-read-map skill to get a map
 source, edit it, then build as above (the extracted `_header.json` preserves

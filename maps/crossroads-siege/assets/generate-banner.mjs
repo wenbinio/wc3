@@ -2,15 +2,27 @@
 // generate-banner.mjs — reproducibly generates imports/war3mapImported/SiegeCrystal.mdx
 //
 // Authors a tiny MDL model (a floating 8-face crystal, additive/unshaded so
-// lighting and face winding don't matter) that references only the built-in
-// game texture Textures\white.blp — nothing Blizzard-authored is embedded.
-// The MDL text is parsed with war3-model's parseMDL and emitted as binary MDX
-// with generateMDX. Re-run after editing:
+// lighting and face winding don't matter) textured with ReplaceableId 1
+// (player team color) — nothing Blizzard-authored is embedded. The MDL text
+// is parsed with war3-model's parseMDL and emitted as binary MDX with
+// generateMDX. Re-run after editing:
 //
 //   node maps/crossroads-siege/assets/generate-banner.mjs
 //
 // The custom unit 'n000' in objects-units.json uses this model via
 // umdl = war3mapImported\SiegeCrystal.mdx.
+//
+// The model must stay CLEAN under mdx-m3-viewer's sanityTest (0 errors,
+// 0 severes) — a malformed custom MDX hard-crashes the game on map load.
+// That requires, at minimum (all learned the hard way):
+//   - a Bone whose GeosetAnimId actually resolves: either reference a real
+//     GeosetAnim or write "GeosetAnimId None" (war3-model defaults an
+//     UNSPECIFIED GeosetAnimId to 0, which is invalid without a GeosetAnim
+//     chunk -> game crash);
+//   - a "Death" sequence in addition to "Stand" (here the GeosetAnim fades
+//     alpha out over the Death interval);
+//   - an "Origin Ref" attachment point.
+// test/fixes.test.js enforces this with sanityTest on the committed binary.
 
 import { createRequire } from 'node:module';
 import fs from 'node:fs';
@@ -56,9 +68,16 @@ Model "SiegeCrystal" {
 \tMaximumExtent { 55, 55, 220 },
 \tBoundsRadius 220,
 }
-Sequences 1 {
+Sequences 2 {
 \tAnim "Stand" {
 \t\tInterval { 0, 1000 },
+\t\tMinimumExtent { -55, -55, 0 },
+\t\tMaximumExtent { 55, 55, 220 },
+\t\tBoundsRadius 220,
+\t}
+\tAnim "Death" {
+\t\tInterval { 1100, 2000 },
+\t\tNonLooping,
 \t\tMinimumExtent { -55, -55, 0 },
 \t\tMaximumExtent { 55, 55, 220 },
 \t\tBoundsRadius 220,
@@ -66,7 +85,8 @@ Sequences 1 {
 }
 Textures 1 {
 \tBitmap {
-\t\tImage "Textures\\white.blp",
+\t\tImage "",
+\t\tReplaceableId 1,
 \t}
 }
 Materials 1 {
@@ -109,13 +129,34 @@ ${verts.map(() => '\t\t0,').join('\n')}
 \t\tMaximumExtent { 55, 55, 220 },
 \t\tBoundsRadius 220,
 \t}
+\tAnim {
+\t\tMinimumExtent { -55, -55, 0 },
+\t\tMaximumExtent { 55, 55, 220 },
+\t\tBoundsRadius 220,
+\t}
 \tMaterialID 0,
 \tSelectionGroup 0,
 }
+GeosetAnim {
+\tAlpha 3 {
+\t\tLinear,
+\t\t0: 1,
+\t\t1100: 1,
+\t\t2000: 0,
+\t}
+\tGeosetId 0,
+}
 Bone "Root" {
 \tObjectId 0,
+\tGeosetId 0,
+\tGeosetAnimId 0,
 }
-PivotPoints 1 {
+Attachment "Origin Ref" {
+\tObjectId 1,
+\tAttachmentID 0,
+}
+PivotPoints 2 {
+\t{ 0, 0, 0 },
 \t{ 0, 0, 0 },
 }
 `;

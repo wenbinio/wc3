@@ -56,16 +56,20 @@ test('w3x-extract + map-to-json reproduce the demo source JSON', () => {
   for (const f of ['info.json', 'terrain.json', 'units.json', 'doodads.json', 'strings.json']) {
     assert.deepStrictEqual(readJson(path.join(jsonDir, f)), readJson(path.join(DEMO_SRC, f)), f);
   }
-  // Script and opaque files came through
-  assert.strictEqual(
-    fs.readFileSync(path.join(jsonDir, 'war3map.lua'), 'utf8'),
-    fs.readFileSync(path.join(DEMO_SRC, 'war3map.lua'), 'utf8')
-  );
-  for (const f of ['war3map.shd', 'war3map.wpm', 'war3map.mmp']) {
+  // Script came through: source text plus the generated CreateAllUnits block
+  const packedLua = fs.readFileSync(path.join(jsonDir, 'war3map.lua'), 'utf8');
+  const srcLua = fs.readFileSync(path.join(DEMO_SRC, 'war3map.lua'), 'utf8');
+  assert.ok(packedLua.startsWith(srcLua), 'packed lua starts with the source script');
+  assert.match(packedLua, /BEGIN wc3-map-toolkit generated: CreateAllUnits/);
+  // Opaque files came through; generated minimap files appear under files/
+  for (const f of ['war3map.shd', 'war3map.wpm']) {
     assert.ok(
       fs.readFileSync(path.join(jsonDir, 'files', f)).equals(fs.readFileSync(path.join(DEMO_SRC, 'files', f))),
       `${f} copied verbatim`
     );
+  }
+  for (const f of ['war3map.mmp', 'war3mapMap.tga']) {
+    assert.ok(fs.existsSync(path.join(jsonDir, 'files', f)), `generated ${f} present in archive`);
   }
 });
 

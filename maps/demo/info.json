@@ -106,7 +106,22 @@
       "enemyHighPriorityFlags": []
     }
   ],
-  "forces": [],
+  "forces": [
+    {
+      "name": "Force 1",
+      "flags": {
+        "allied": false,
+        "alliedVictory": false,
+        "shareVision": false,
+        "shareUnitControl": false,
+        "shareAdvUnitControl": false
+      },
+      "players": [
+        "red",
+        "blue"
+      ]
+    }
+  ],
   "upgrades": [],
   "techtree": [],
   "randomGroupTable": [],

@@ -8,6 +8,9 @@
 -- wave-10 boss (custom unit 'u000') and every Legion unit is destroyed.
 --
 -- Data this script deliberately reaches into (kept in sync with the JSON):
+--   units.json    — preplaced units; build-map appends a generated
+--                   CreateAllUnits() which main() calls before FindKeep()/
+--                   FindWardCrystals() enumerate those units
 --   regions.json  — the gg_rct_* rects below use identical coordinates
 --   cameras.json  — CAMERA_* tables mirror the three w3c cameras
 --   sounds.json   — gg_snd_* sounds use the same built-in paths
@@ -519,6 +522,12 @@ function main()
   SetMapMusic("Music", true, 0)
   InitBlizzard()
   InitGlobals()
+
+  -- Preplaced units from units.json. build-map generates CreateAllUnits()
+  -- into the packed script (war3mapUnits.doo is editor-only data — the game
+  -- only spawns script-created units). Everything below that enumerates
+  -- preplaced units (FindKeep, FindWardCrystals) MUST run after this call.
+  CreateAllUnits()
 
   InitRects()
   InitSounds()

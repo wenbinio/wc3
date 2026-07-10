@@ -76,12 +76,15 @@ MDX import and a complete Lua game mode):
 maps/mymap/
 ├── info.json           map settings, players, forces   (war3map.w3i)
 ├── terrain.json        heightmap + tiles               (war3map.w3e)
-├── units.json          preplaced units + start locs    (war3mapUnits.doo)
+├── units.json          preplaced units + start locs    (war3mapUnits.doo +
+│                       generated CreateAllUnits() in the packed war3map.lua)
 ├── doodads.json        doodads/destructables           (war3map.doo)
 ├── strings.json        TRIGSTR_* table                 (war3map.wts)
 ├── objects-*.json      object data edits               (war3map.w3u/w3t/...)
 ├── war3map.lua         map script (config() + main())
-├── files/              opaque binaries copied verbatim (shd, wpm, mmp, blp...)
+├── files/              opaque binaries copied verbatim (shd, wpm, ...); the
+│                       minimap (war3mapMap.tga + war3map.mmp) is generated
+│                       at build time unless provided here
 ├── imports/            custom assets (MDX/BLP/...); war3map.imp auto-generated
 └── _header.json        HM3W pre-header fields {name, flags, maxPlayers}
 ```

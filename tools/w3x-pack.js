@@ -10,7 +10,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { buildHeader } = require('../lib/header');
+const { buildHeader, readW3iFlags } = require('../lib/header');
 const { createArchive } = require('../lib/mpq');
 const { walk, readJson } = require('../lib/source');
 const { byWar, warToJson } = require('../lib/filemap');
@@ -34,6 +34,19 @@ function packDir(dir, outW3x) {
 
   const hdrPath = path.join(dir, '_header.json');
   const headerFields = fs.existsSync(hdrPath) ? readJson(hdrPath) : synthesizeHeader(dir);
+
+  // World Editor mirrors the w3i map-flags dword into the HM3W pre-header;
+  // flags=0 there diverges from every real map. When the header fields don't
+  // already carry flags (fresh sources, old _header.json), derive them from
+  // the war3map.w3i being packed. A nonzero _header.json value wins (it came
+  // from an extracted original).
+  if (!headerFields.flags) {
+    const w3iPath = path.join(dir, 'war3map.w3i');
+    if (fs.existsSync(w3iPath)) {
+      const flags = readW3iFlags(fs.readFileSync(w3iPath));
+      if (flags !== null) headerFields.flags = flags;
+    }
+  }
 
   const tmpMpq = path.resolve(outW3x) + '.mpq.tmp';
   createArchive(tmpMpq, dir, files);

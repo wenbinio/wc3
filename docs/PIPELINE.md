@@ -74,6 +74,43 @@ Things that must stay consistent with each other:
   defining `config()` and `main()` (see `maps/demo/war3map.lua`); for JASS
   ship `war3map.j` instead.
 - `info.json` `camera.bounds` should sit inside the terrain extent.
+- `info.json` `forces` must contain at least one force covering the players
+  (every WE map has ≥1) — `[]` is another pick-time divergence.
+
+### Preplaced units actually spawn via CreateAllUnits() (generated)
+
+`war3mapUnits.doo` is **editor-only**: the game spawns only script-created
+units (WE compiles placements into `CreateAllUnits()`; map protectors delete
+Units.doo freely). On every build, build-map appends a marker-delimited block
+to the **packed** `war3map.lua` (the source file is never modified):
+
+- `function CreateAllUnits()` — one `CreateUnit` per non-`sloc` entry of
+  `units.json` (position/facing/player), plus `SetResourceAmount` for gold
+  mines, `SetHeroLevel/Str/Agi/Int` where relevant, and
+  `SetUnitAcquireRange(u, 200)` for camp-acquisition creeps
+  (`targetAcquisition: -2`). `sloc` entries are skipped — start locations
+  belong in `config()`'s `DefineStartLocation` calls.
+- Your `main()` should call `CreateAllUnits()` (before any code that
+  enumerates preplaced units — see maps/crossroads-siege/war3map.lua). If the
+  script never mentions `CreateAllUnits`, the block additionally wraps
+  `main()` so the units are created right after your `main()` returns.
+- The block is stripped and regenerated each build, so extracted sources
+  repack cleanly. Edit units.json, not the generated Lua — units.json stays
+  the single source of truth. JASS sources (`war3map.j`) are copied
+  untouched; write your own `CreateAllUnits` there.
+
+### Minimap preview (generated)
+
+Every real map ships a minimap image + icons file; the map picker renders
+them. When the source provides neither, build-map generates:
+
+- `war3mapMap.tga` — a 256×256 preview rendered from terrain.json (tile
+  colors, water/blight tint, cliff/height shading);
+- `war3map.mmp` — one player-colored icon per `sloc`, plus gold-mine and
+  neutral-building icons (see lib/minimap.js; format in docs/FORMATS.md).
+
+Override by shipping your own `files/war3mapMap.blp` (or `.tga`) and/or
+`files/war3map.mmp`.
 
 JASS note: if you write `war3map.j`, you can optionally syntax-check it with
 pjass (https://github.com/lep/pjass, builds with `make`); it needs the

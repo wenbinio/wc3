@@ -45,8 +45,8 @@ Lua binary in this environment.
 | `objects-units.json` | original tweak (`hfoo` HP) + 4 custom units: `h000` militia, `h001` Keep, `u000` boss, `n000` crystal with the imported model |
 | `objects-items.json` | original tweak (`phea` cost) + 2 custom boss-drop items |
 | `objects-abilities.json` | original tweak (`Aslo`) + custom `A000:ACtc` boss slam |
-| `imports/war3mapImported/SiegeCrystal.mdx` | tiny generated model (uses the built-in `Textures\white.blp`); `war3map.imp` is auto-generated at build time |
-| `files/` | `war3map.wpm`/`shd`/`mmp` regenerated for the 64x64 size (docs/PIPELINE.md §3) |
+| `imports/war3mapImported/SiegeCrystal.mdx` | tiny generated model (team-color texture via ReplaceableId 1; sanity-clean per CLAUDE.md gotcha 14); `war3map.imp` is auto-generated at build time |
+| `files/` | `war3map.wpm`/`shd` regenerated for the 64x64 size (docs/PIPELINE.md §3); `war3map.mmp` + `war3mapMap.tga` are auto-generated at build time from the JSON |
 
 ## Regenerating the custom asset
 
@@ -54,9 +54,12 @@ Lua binary in this environment.
 node maps/crossroads-siege/assets/generate-banner.mjs
 ```
 
-authors a minimal MDL (crystal geoset, additive/unshaded layer), converts it
-via war3-model `parseMDL` → `generateMDX`, and writes the MDX into
-`imports/`. Deterministic — safe to re-run.
+authors a minimal MDL (crystal geoset, additive/unshaded team-color layer,
+Stand + Death sequences, GeosetAnim death fade, Origin attachment), converts
+it via war3-model `parseMDL` → `generateMDX`, and writes the MDX into
+`imports/`. Deterministic — safe to re-run. The result must stay clean under
+mdx-m3-viewer's sanityTest (enforced by test/fixes.test.js): a malformed MDX
+hard-crashes the game on map load.
 
 ## Invariants (do not break)
 

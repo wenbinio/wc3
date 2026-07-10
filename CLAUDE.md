@@ -59,13 +59,46 @@ third-party maps, see gotcha 9).
    (sizes depend on terrain dimensions — see docs/PIPELINE.md §3).
 9. **Copyright**: never commit Blizzard-authored or downloaded third-party
    maps. Fixtures here are MIT (see fixtures/ATTRIBUTION.md).
+10. **war3mapUnits.doo is EDITOR-ONLY** — the game never reads it; WE compiles
+    placements into `CreateAllUnits()` in the map script. build-map therefore
+    generates a marker-delimited `CreateAllUnits()` Lua block from units.json
+    and appends it to the packed war3map.lua (`lib/unitscript.js`). Map
+    scripts should call `CreateAllUnits()` from `main()` (before any code
+    that enumerates preplaced units); if they never mention it, main() is
+    auto-wrapped to call it last. units.json stays the single source of truth.
+11. **The `'0000'` FourCC dialect must NOT reach the binary**: jsonToWar
+    writes `globalWeather: '0000'` as the literal ASCII bytes `30303030`,
+    which the map picker rejects as an invalid weather id (WE writes four
+    ZERO bytes). `lib/source.js` normalizes `'0000'`/null → `''` before
+    translating (translator then emits int 0). Keep `'0000'` in source JSON
+    (gotcha 6); never bypass sourceToExtracted for info.json.
+12. **Maps need a minimap preview or the picker shows nothing** (and older
+    clients can crash): every real map ships `war3mapMap.blp/.tga` + a
+    populated `war3map.mmp`. build-map auto-generates a 256x256 TGA from
+    terrain.json and an mmp (one colored entry per `sloc`, entries for gold
+    mines/neutral buildings — `lib/minimap.js`); drop your own files under
+    `files/` to override. mmp entry: i32 type (0 mine, 1 neutral bldg,
+    2 start loc), i32 x, i32 y (0-255, y flipped), u8[4] BGRA.
+13. **HM3W header flags mirror the w3i flags dword** (WE writes the same
+    value in both places). w3x-pack derives flags from the packed
+    war3map.w3i when `_header.json` has flags 0 (`readW3iFlags` in
+    lib/header.js). Flags 0 is a pick-time divergence every tool notices.
+14. **Custom MDX must pass mdx-m3-viewer's sanityTest (0 errors/severes)** or
+    the game hard-crashes at load. Classic traps: a Bone with unspecified
+    GeosetAnimId defaults to 0 → "invalid geoset animation 0" when there is
+    no GeosetAnim chunk (write `GeosetAnimId None` or add a GeosetAnim);
+    missing "Death" sequence; missing "Origin Ref" attachment. Test with
+    `mdx-m3-viewer-th` (devDependency) — and pass it a fresh
+    `new Uint8Array(fs.readFileSync(p))`, NEVER a Node Buffer.
 
 ## Where things live
 
 - `lib/filemap.js` — the war3-file ⇄ translator ⇄ JSON-name table (add new
   formats here; tools pick them up automatically)
-- `lib/header.js` / `lib/mpq.js` — HM3W header, smpq wrapper
+- `lib/header.js` / `lib/mpq.js` — HM3W header (+ w3i flags reader), smpq wrapper
 - `lib/source.js` — map-source ⇄ extracted-dir conversion (the core logic)
+- `lib/minimap.js` — war3mapMap.tga + war3map.mmp generation (gotcha 12)
+- `lib/unitscript.js` — CreateAllUnits() Lua generation/injection (gotcha 10)
 - `docs/FORMATS.md` — format knowledge + external references
 - `docs/PIPELINE.md` — step-by-step workflows incl. asset imports
 - `docs/ASSETS.md` — sourcing/converting models & textures (MDX/MDL, BLP1
