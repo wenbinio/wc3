@@ -1,0 +1,138 @@
+[
+  {
+    "name": "SpawnNorth",
+    "id": 0,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      255,
+      64,
+      64
+    ],
+    "position": {
+      "left": -384,
+      "bottom": 3264,
+      "right": 384,
+      "top": 3552
+    }
+  },
+  {
+    "name": "SpawnEast",
+    "id": 1,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      255,
+      128,
+      64
+    ],
+    "position": {
+      "left": 3264,
+      "bottom": -384,
+      "right": 3552,
+      "top": 384
+    }
+  },
+  {
+    "name": "SpawnSouth",
+    "id": 2,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      255,
+      192,
+      64
+    ],
+    "position": {
+      "left": -384,
+      "bottom": -3552,
+      "right": 384,
+      "top": -3264
+    }
+  },
+  {
+    "name": "SpawnWest",
+    "id": 3,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      255,
+      255,
+      64
+    ],
+    "position": {
+      "left": -3552,
+      "bottom": -384,
+      "right": -3264,
+      "top": 384
+    }
+  },
+  {
+    "name": "CenterKeep",
+    "id": 4,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      64,
+      128,
+      255
+    ],
+    "position": {
+      "left": -320,
+      "bottom": -320,
+      "right": 320,
+      "top": 320
+    }
+  },
+  {
+    "name": "BossArena",
+    "id": 5,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      192,
+      64,
+      255
+    ],
+    "position": {
+      "left": -1024,
+      "bottom": -1024,
+      "right": 1024,
+      "top": 1024
+    }
+  },
+  {
+    "name": "ShortcutGrove",
+    "id": 6,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      64,
+      255,
+      128
+    ],
+    "position": {
+      "left": 1280,
+      "bottom": 1280,
+      "right": 1920,
+      "top": 1920
+    }
+  },
+  {
+    "name": "PondMist",
+    "id": 7,
+    "weatherEffect": "RLlr",
+    "ambientSound": "",
+    "color": [
+      128,
+      224,
+      255
+    ],
+    "position": {
+      "left": 1792,
+      "bottom": 768,
+      "right": 2560,
+      "top": 1536
+    }
+  }
+]

@@ -1,0 +1,56 @@
+[
+  {
+    "variableName": "WaveReward",
+    "internalName": "",
+    "path": "Abilities/Spells/Items/AIam/Tomes.flac",
+    "volume": 127,
+    "pitch": 1,
+    "pitchVariance": 0,
+    "priority": 10,
+    "flags": {
+      "looping": false,
+      "3dSound": false,
+      "stopOutOfRange": false,
+      "music": false,
+      "imported": false
+    },
+    "fadeRate": {
+      "in": 10,
+      "out": 10
+    },
+    "distance": {
+      "min": 600,
+      "max": 8000,
+      "cutoff": 3000
+    },
+    "effect": "SpellsEAX",
+    "channel": 8
+  },
+  {
+    "variableName": "VictoryFanfare",
+    "internalName": "",
+    "path": "Sound/Music/mp3Music/Comradeship.flac",
+    "volume": 110,
+    "pitch": 1,
+    "pitchVariance": 0,
+    "priority": 100,
+    "flags": {
+      "looping": false,
+      "3dSound": false,
+      "stopOutOfRange": false,
+      "music": true,
+      "imported": false
+    },
+    "fadeRate": {
+      "in": 10,
+      "out": 10
+    },
+    "distance": {
+      "min": 600,
+      "max": 10000,
+      "cutoff": 10000
+    },
+    "effect": "DefaultEAXON",
+    "channel": 7
+  }
+]

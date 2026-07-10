@@ -1,0 +1,47 @@
+{
+  "original": {
+    "phea": [
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 100
+      }
+    ]
+  },
+  "custom": {
+    "I000:ratf": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "TRIGSTR_019"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 750
+      }
+    ],
+    "I001:phea": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "TRIGSTR_020"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ]
+  }
+}

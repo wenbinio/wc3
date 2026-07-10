@@ -1,0 +1,170 @@
+{
+  "original": {
+    "hfoo": [
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 480
+      }
+    ]
+  },
+  "custom": {
+    "h000:hfoo": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "TRIGSTR_015"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 560
+      },
+      {
+        "id": "ua1b",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 16
+      },
+      {
+        "id": "umvs",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 290
+      }
+    ],
+    "h001:htow": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "TRIGSTR_016"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 6500
+      },
+      {
+        "id": "udef",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 8
+      }
+    ],
+    "u000:uabo": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "TRIGSTR_017"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 5200
+      },
+      {
+        "id": "ua1b",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 95
+      },
+      {
+        "id": "ulev",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 10
+      },
+      {
+        "id": "usca",
+        "type": "unreal",
+        "level": 0,
+        "column": 0,
+        "value": 2
+      },
+      {
+        "id": "ubba",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 400
+      },
+      {
+        "id": "ubdi",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 1
+      },
+      {
+        "id": "ubsi",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 50
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A000"
+      }
+    ],
+    "n000:nech": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "TRIGSTR_018"
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SiegeCrystal.mdx"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 400
+      },
+      {
+        "id": "usca",
+        "type": "unreal",
+        "level": 0,
+        "column": 0,
+        "value": 1.2
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ]
+  }
+}

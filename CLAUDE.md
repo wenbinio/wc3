@@ -7,7 +7,7 @@ No game install needed. Everything runs on Linux with node + smpq.
 
 ```bash
 bash scripts/setup.sh   # idempotent: apt-get smpq if missing + npm install
-npm test                # 21 tests; should all pass before you change anything
+npm test                # 26 tests; should all pass before you change anything
 ```
 
 ## Commands
@@ -22,8 +22,13 @@ node tools/validate-map.js <map.w3x>                  # pass/fail report, exit 0
 ```
 
 Map source layout (editable form): see README.md and `maps/demo/` (a working
-template — copy it to start a new map). Build outputs go to `_build/`
-(gitignored); never commit `.w3x` files.
+template — copy it to start a new map); `maps/crossroads-siege/` is the
+full-featured reference (terrain/regions/cameras/sounds/object data/imports).
+Scratch build outputs go to `_build/` (gitignored). Exception: `maps/builds/`
+holds the committed compiled `.w3x` artifacts of the bundled map sources —
+regenerate them with `node tools/build-map.js maps/<name> maps/builds/<name>.w3x`
+whenever a map source changes. Never commit any other `.w3x` (and never
+third-party maps, see gotcha 9).
 
 ## Gotchas (each of these cost real debugging time)
 

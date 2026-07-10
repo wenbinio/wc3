@@ -6,6 +6,9 @@ _build/
 build/
 dist/
 *.w3x
+# ...except the committed compiled maps in maps/builds/ (regenerated via
+# tools/build-map.js — see README.md "Committed builds")
+!maps/builds/*.w3x
 *.w3m
 *.mpq
 *.mpq.tmp

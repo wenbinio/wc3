@@ -39,4 +39,6 @@ node tools/build-map.js maps/<name> _build/<name>.w3x
 node tools/validate-map.js _build/<name>.w3x   # must exit 0
 ```
 
-Keep the map source committed; never commit the built .w3x (gitignored).
+Keep the map source committed. Scratch builds (`_build/`) stay gitignored;
+the bundled maps' compiled artifacts are the exception and live tracked in
+`maps/builds/*.w3x` — regenerate with build-map when their source changes.

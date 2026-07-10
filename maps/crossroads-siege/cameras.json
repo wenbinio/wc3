@@ -1,0 +1,56 @@
+[
+  {
+    "target": {
+      "x": 0,
+      "y": 3456
+    },
+    "offsetZ": 0,
+    "rotation": 270,
+    "aoa": 320,
+    "distance": 2600,
+    "roll": 0,
+    "fov": 70,
+    "farClipping": 10000,
+    "nearClipping": 16,
+    "name": "NorthGateWatch",
+    "localPitch": 0,
+    "localYaw": 0,
+    "localRoll": 0
+  },
+  {
+    "target": {
+      "x": 0,
+      "y": 0
+    },
+    "offsetZ": 0,
+    "rotation": 90,
+    "aoa": 335,
+    "distance": 4200,
+    "roll": 0,
+    "fov": 70,
+    "farClipping": 10000,
+    "nearClipping": 16,
+    "name": "IntroSweep",
+    "localPitch": 0,
+    "localYaw": 0,
+    "localRoll": 0
+  },
+  {
+    "target": {
+      "x": 0,
+      "y": -256
+    },
+    "offsetZ": 0,
+    "rotation": 90,
+    "aoa": 310,
+    "distance": 2200,
+    "roll": 0,
+    "fov": 70,
+    "farClipping": 10000,
+    "nearClipping": 16,
+    "name": "KeepOverlook",
+    "localPitch": 0,
+    "localYaw": 0,
+    "localRoll": 0
+  }
+]

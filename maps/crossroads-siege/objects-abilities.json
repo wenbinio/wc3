@@ -1,0 +1,45 @@
+{
+  "original": {
+    "Aslo": [
+      {
+        "id": "Slo1",
+        "type": "unreal",
+        "level": 1,
+        "column": 1,
+        "value": 0.75
+      }
+    ]
+  },
+  "custom": {
+    "A000:ACtc": [
+      {
+        "id": "anam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "TRIGSTR_021"
+      },
+      {
+        "id": "Ctc1",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 45
+      },
+      {
+        "id": "aare",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 300
+      },
+      {
+        "id": "acdn",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 12
+      }
+    ]
+  }
+}

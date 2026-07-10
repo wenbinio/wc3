@@ -25,6 +25,18 @@ node tools/build-map.js maps/demo _build/demo.w3x
 node tools/validate-map.js _build/demo.w3x
 ```
 
+## Committed builds
+
+`maps/builds/` holds the **committed compiled `.w3x` artifacts** of the
+bundled map sources (`.gitignore` re-includes `maps/builds/*.w3x`; every
+other build output, e.g. `_build/`, stays ignored). They are regenerated
+from source with build-map — rebuild them whenever a map source changes:
+
+```bash
+node tools/build-map.js maps/demo maps/builds/demo.w3x
+node tools/build-map.js maps/crossroads-siege maps/builds/crossroads-siege.w3x
+```
+
 ## Pipeline
 
 ```
@@ -55,7 +67,10 @@ All tools are plain Node scripts: `node tools/<name>.js ...`
 
 ## Map source layout
 
-A map source directory (see `maps/demo/` for a working example):
+A map source directory (see `maps/demo/` for a minimal working example and
+`maps/crossroads-siege/` for a full-featured one — non-flat 64x64 terrain,
+5 players/2 forces, regions/cameras/sounds, custom object data, a generated
+MDX import and a complete Lua game mode):
 
 ```
 maps/mymap/
