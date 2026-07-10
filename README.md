@@ -17,8 +17,9 @@ translated to JSON — see `docs/FORMATS.md`.
 ## Quickstart
 
 ```bash
-bash scripts/setup.sh        # installs smpq (apt) + npm deps, idempotent
+bash scripts/setup.sh        # npm deps (+ optional smpq fallback via apt), idempotent
 npm test                     # round-trip + build + validate test suite
+npm run test:smpq            # same suite forced onto the smpq CLI MPQ backend
 
 # Build the bundled demo map
 node tools/build-map.js maps/demo _build/demo.w3x
@@ -103,10 +104,13 @@ maps/mymap/
 
 ## Stack
 
-- [`smpq`](https://packages.debian.org/smpq) (StormLib CLI) — MPQ archive I/O
+- [`stormlib-node`](https://www.npmjs.com/package/stormlib-node) (native StormLib bindings) — primary MPQ backend
+- [`smpq`](https://packages.debian.org/smpq) (StormLib CLI) — fallback MPQ backend
+  (used when the native module can't build; force with `WC3_MPQ_BACKEND=smpq`)
 - [`wc3maptranslator@5.0.0`](https://github.com/ChiefOfGxBxL/WC3MapTranslator) — war3map.* ⇄ JSON (pinned; see CLAUDE.md)
+- [`mdx-m3-viewer-th`](https://www.npmjs.com/package/mdx-m3-viewer-th) — second-opinion parsers
+  (validate-map cross-validation incl. wpm/shd/mmp + MDX sanity; classic-format fallback reader)
 - [`war3-model`](https://www.npmjs.com/package/war3-model) — MDX/MDL model + BLP texture parsing
-- `stormlib-node` (optional) — programmatic StormLib bindings
 
 Fixtures in `fixtures/` are MIT-licensed WC3MapTranslator test data
 (see `fixtures/ATTRIBUTION.md`). Never commit Blizzard-authored or other

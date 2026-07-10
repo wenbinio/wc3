@@ -28,10 +28,21 @@ Gotchas:
   version error in wc3maptranslator@5. `map-to-json.js` handles this: the file
   is copied through raw under `files/` and the error is recorded in
   `manifest.json` → `errors`. You can still edit scripts/assets and repack.
+  Additionally, each version-rejected file gets a fallback parse via
+  mdx-m3-viewer-th written to `_viewer/<name>.json` (listed in
+  `manifest.json` → `viewerFallback`). **`_viewer/` is read-only
+  diagnostics** in the viewer's own object schema — it is *not* the
+  build-source dialect: json-to-map/build-map ignore it entirely (underscore
+  paths never enter an archive), so use it to inspect classic maps, never to
+  edit them.
 - **Protected maps**: the MPQ `(listfile)` is stripped. `w3x-extract.js`
   falls back to probing a built-in list of known `war3map.*` names, so you
   still get the standard files, but custom imports with unknown names cannot
   be recovered.
+- **MPQ backends**: archive I/O uses the stormlib-node native module when
+  loadable and the smpq CLI otherwise. Force the fallback with
+  `WC3_MPQ_BACKEND=smpq` (e.g. `npm run test:smpq` runs the whole test suite
+  that way — do that whenever you touch lib/mpq.js).
 
 ## 2. Modify a map and rebuild it
 
@@ -155,3 +166,31 @@ node tools/validate-map.js somemap.w3x
 Checks: HM3W pre-header, MPQ magic at offset 512, extraction, presence of
 `war3map.w3i`/`w3e` and a map script, and for every translatable file a
 parse **plus** a JSON→binary→JSON stability cycle. Exit code 0 = all pass.
+
+Then a **second-opinion cross-validation** via mdx-m3-viewer-th's independent
+parser stack (`viewer ...` lines in the report):
+
+- its MPQ reader must open the archive and see the members;
+- every inner file it has a parser for must parse — this covers
+  `war3map.wpm`/`shd`/`mmp`/`wct`, which wc3maptranslator has no translator
+  for (`war3map.w3c` and `war3map.wtg` are excluded — see docs/FORMATS.md);
+- every packed `.mdx`/`.mdl` must pass its MDX sanity test with **0 errors
+  and 0 severe issues** (a malformed model hard-crashes the game at map
+  load — e.g. a missing Death sequence or a Bone referencing a nonexistent
+  GeosetAnim).
+
+The viewer is read-only here: its MPQ *write* path is known-broken
+(locale/platform swap) and is never used, and it is always fed fresh
+`Uint8Array` copies, never Node Buffers (see docs/FORMATS.md).
+
+## 6. Optional third opinion: War3Net (.NET)
+
+For gnarly cases (classic formats, campaign files, disputed field layouts),
+[War3Net](https://github.com/Drake53/War3Net) (C#, MIT) is the most complete
+independent implementation. It is **not** a dependency of this toolkit —
+nothing here requires dotnet. `scripts/crossvalidate-war3net.sh` documents
+the recipe: it checks for `dotnet` (`apt-get install -y dotnet-sdk-8.0`),
+scaffolds a tiny console project referencing
+`War3Net.Build.Core`, and runs `MapInfo.Parse`/`MapEnvironment.Parse` over an
+extracted map directory, reporting per-file parse results. Use it when the
+two bundled parser stacks disagree and you need a tie-breaker.

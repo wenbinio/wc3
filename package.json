@@ -7,16 +7,15 @@
   "type": "commonjs",
   "scripts": {
     "test": "node --test",
+    "test:smpq": "WC3_MPQ_BACKEND=smpq node --test",
     "setup": "bash scripts/setup.sh"
   },
   "dependencies": {
+    "mdx-m3-viewer-th": "^5.13.4",
     "war3-model": "^4.0.1",
     "wc3maptranslator": "5.0.0"
   },
   "optionalDependencies": {
     "stormlib-node": "^1.3.6"
-  },
-  "devDependencies": {
-    "mdx-m3-viewer-th": "^5.13.4"
   }
 }

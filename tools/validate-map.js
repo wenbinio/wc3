@@ -3,8 +3,13 @@
 // validate-map.js <map.w3x>
 // Extracts the map, parses every translatable file back through
 // wc3maptranslator (plus a full JSON->binary->JSON stability cycle),
-// verifies a map script is present, and prints a pass/fail summary.
-// Exit code 0 = all checks passed.
+// verifies a map script is present, then cross-validates with a SECOND,
+// independent parser stack (mdx-m3-viewer-th): its MPQ reader must open the
+// archive, every inner file it has a parser for must parse (it also covers
+// wpm/shd/mmp/wct which wc3maptranslator can't), and every imported
+// .mdx/.mdl must pass its sanity test with 0 errors AND 0 severe issues
+// (a malformed MDX hard-crashes the game on map load — same bar as
+// test/fixes.test.js). Prints a pass/fail summary; exit code 0 = all passed.
 
 const fs = require('fs');
 const os = require('os');
@@ -14,6 +19,7 @@ const { hasHM3W, parseHeader, HEADER_SIZE } = require('../lib/header');
 const { extractAll } = require('../lib/mpq');
 const { byWar, CONSUMED_AS_SKIN, warToJson, jsonToWar } = require('../lib/filemap');
 const { walk } = require('../lib/source');
+const viewer = require('../lib/viewer');
 
 function validate(mapPath) {
   const results = [];
@@ -75,10 +81,68 @@ function validate(mapPath) {
         fail(`translate ${rel}`, String(e.message || e).split('\n')[0]);
       }
     }
+
+    // 5. Second opinion: mdx-m3-viewer-th (independent MPQ + format parsers).
+    crossValidate(buf, tmp, ok, fail);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
   return results;
+}
+
+// Cross-validate with mdx-m3-viewer-th. NB: its parsers must be fed fresh
+// Uint8Array copies, never Node Buffers (its MPQ code mutates the input in
+// place and would misparse); its MPQ save/write path is known-broken
+// (locale/platform swap) and is never used — everything here is read-only.
+function crossValidate(w3xBuf, extractedDir, ok, fail) {
+  // 5a. The viewer's own MPQ reader must open the archive.
+  let viewerMap = null;
+  try {
+    viewerMap = viewer.openMapReadonly(w3xBuf);
+    // filter MPQ-internal files and unresolved pseudo-names (e.g. an
+    // '(attributes)' entry missing from the listfile shows up as FileNNNNNNNN)
+    const names = viewerMap.getFileNames().filter((n) => !n.startsWith('(') && !/^File\d{8}/.test(n));
+    if (names.length > 0) ok('viewer opens archive', `${names.length} member(s) via mdx-m3-viewer-th MPQ reader`);
+    else fail('viewer opens archive', 'mdx-m3-viewer-th MPQ reader found no members');
+  } catch (e) {
+    fail('viewer opens archive', String(e.message || e).split('\n')[0]);
+  }
+
+  // 5b. Parse every inner file the viewer has a parser for (this covers
+  // wpm/shd/mmp/wct, which wc3maptranslator has no translator for).
+  const rels = walk(extractedDir).sort();
+  const readFile = (name) => {
+    const p = path.join(extractedDir, name);
+    return fs.existsSync(p) ? fs.readFileSync(p) : null;
+  };
+  const ctx = viewer.contextFor(readFile);
+  for (const rel of rels) {
+    const base = rel.includes('/') ? null : rel;
+    if (!base || !viewer.hasParser(base)) continue;
+    try {
+      viewer.parseMember(base, fs.readFileSync(path.join(extractedDir, rel)), ctx);
+      ok(`viewer parse ${rel}`, 'second opinion agrees');
+    } catch (e) {
+      fail(`viewer parse ${rel}`, String(e.message || e).split('\n')[0]);
+    }
+  }
+
+  // 5c. Sanity-test every imported model. Errors AND severe issues both fail
+  // (a model missing e.g. its Death sequence or referencing a nonexistent
+  // GeosetAnim hard-crashes the game — the bar set when SiegeCrystal.mdx
+  // was fixed, enforced in test/fixes.test.js).
+  for (const rel of rels) {
+    const isMdl = rel.toLowerCase().endsWith('.mdl');
+    if (!rel.toLowerCase().endsWith('.mdx') && !isMdl) continue;
+    try {
+      const r = viewer.sanityCheckModel(fs.readFileSync(path.join(extractedDir, rel)), isMdl);
+      const detail = `errors=${r.errors} severe=${r.severe} warnings=${r.warnings}`;
+      if (r.errors === 0 && r.severe === 0) ok(`viewer sanity ${rel}`, detail);
+      else fail(`viewer sanity ${rel}`, detail + ' — the game may hard-crash loading this model');
+    } catch (e) {
+      fail(`viewer sanity ${rel}`, String(e.message || e).split('\n')[0]);
+    }
+  }
 }
 
 function main(argv) {

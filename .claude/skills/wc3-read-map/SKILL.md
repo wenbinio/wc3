@@ -19,6 +19,8 @@ Then read `/tmp/work/src/`:
 - `terrain.json`, `units.json`, `doodads.json`, `strings.json`, `objects-*.json`
 - `war3map.lua` / `war3map.j` — the map script (plain text)
 - `files/` — opaque binaries (shd/wpm/mmp/blp/mdx/wtg...)
+- `_viewer/` — read-only mdx-m3-viewer-th parses of classic-format files the
+  translator rejected (diagnostics only, NOT build-source — never edit/repack)
 - `_header.json` — the .w3x HM3W pre-header (lobby name, maxPlayers)
 
 Quick summary one-liner:
@@ -30,9 +32,22 @@ node -e "const i=require('/tmp/work/src/info.json');console.log(i.map.name, i.pl
 Interpreting problems:
 
 - `manifest.json.errors` mentioning "cannot currently parse this version"
-  → classic-format map; those files are copied raw, everything else still works.
+  → classic-format map; those files are copied raw (everything else still
+  works) and, where possible, parsed read-only into `_viewer/<name>.json`
+  (`manifest.json` → `viewerFallback`) for inspection.
 - Extraction found only standard files on a map known to have imports
   → protected map (no listfile); see docs/FORMATS.md.
 - `TRIGSTR_123` values in info.json resolve via `strings.json` key `123`.
 
 Validate any map: `node tools/validate-map.js <map.w3x>` (exit 0 = healthy).
+Besides the wc3maptranslator round-trip checks, this cross-validates with
+mdx-m3-viewer-th (`viewer ...` lines): its independent MPQ reader, parsers
+for wpm/shd/mmp that the translator lacks, and an MDX sanity test on every
+imported model (0 errors + 0 severes required — crash bar).
+
+If you script against mdx-m3-viewer-th yourself, go through `lib/viewer.js`
+and always pass `new Uint8Array(fs.readFileSync(p))`, never a Node Buffer —
+its MPQ code mutates the input in place and misparses (and never use its MPQ
+save path; it is read-only here for a reason). MPQ extraction uses
+stormlib-node when available, else the smpq CLI (`WC3_MPQ_BACKEND=smpq`
+forces the fallback).

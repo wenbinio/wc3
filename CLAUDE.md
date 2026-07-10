@@ -1,13 +1,22 @@
 # wc3-map-toolkit — agent instructions
 
 Headless Warcraft III `.w3x` map toolkit (read / translate / edit / build).
-No game install needed. Everything runs on Linux with node + smpq.
+No game install needed. Everything runs on Linux with node; MPQ I/O uses the
+stormlib-node native module (primary) or the smpq CLI (fallback).
 
 ## First step in any session
 
 ```bash
-bash scripts/setup.sh   # idempotent: apt-get smpq if missing + npm install
-npm test                # 26 tests; should all pass before you change anything
+bash scripts/setup.sh   # idempotent: npm install + optional apt-get smpq fallback
+npm test                # 37 tests; should all pass before you change anything
+```
+
+If you touch `lib/mpq.js` or anything archive-related, run the suite under
+BOTH MPQ backends — both must be green:
+
+```bash
+npm test                # default backend (stormlib-node when loadable)
+npm run test:smpq       # WC3_MPQ_BACKEND=smpq forces the smpq CLI fallback
 ```
 
 ## Commands
@@ -36,18 +45,32 @@ third-party maps, see gotcha 9).
    different, broken API. v5 API is static methods:
    `InfoTranslator.warToJson(buffer)` → `{json}`,
    `InfoTranslator.jsonToWar(json)` → `{buffer}`.
-2. **Reforged formats only**: classic maps' w3i/w3e/object files throw
-   `VersionError`-style messages. The tools catch this and copy such files
-   raw (check `manifest.json` → `errors`). Don't "fix" it — it's upstream.
-3. **512-byte HM3W pre-header**: smpq reads `.w3x` directly but creates bare
-   MPQs. w3x-pack prepends the header from `_header.json` (or synthesizes
-   one). MPQ must be **v1** (`smpq -M 1`) for the game.
+2. **Reforged formats only** in wc3maptranslator: classic maps' w3i/w3e/object
+   files throw `VersionError`-style messages. The tools catch this, copy such
+   files raw (check `manifest.json` → `errors`), and additionally emit a
+   READ-ONLY mdx-m3-viewer-th parse under `_viewer/` (diagnostics schema,
+   never repacked — not build-source). Don't "fix" the throw — it's upstream.
+3. **512-byte HM3W pre-header**: StormLib reads `.w3x` directly but creates
+   bare MPQs. w3x-pack builds the header from `_header.json` (or synthesizes
+   one); with stormlib-node the header file is pre-written and
+   `SFileCreateArchive` converts it (the MPQ lands at offset 512 — no concat
+   step), with smpq the header is prepended to the bare MPQ. MPQ must be
+   **v1** (`MPQ_CREATE.ARCHIVE_V1` / `smpq -M 1`) for the game.
 4. **Protected maps have no `(listfile)`** — extraction falls back to probing
    known names (`lib/mpq.js` KNOWN_FILES). Unknown custom imports are lost.
-5. **stormlib-node / war3-model want ArrayBuffer, not Buffer.**
-   Passing a Node Buffer to `SFileReadFile` SIGABRTs the whole process.
-   `SFileGetFileSize` returns BigInt. Convert:
+   Always verify extraction ON DISK: smpq exits 0 even when a name misses,
+   and stormlib reports unresolved members as `FileNNNNNNNN` pseudo-names
+   (lib/mpq.js handles both).
+5. **stormlib-node sharp edges** (it's the primary MPQ backend — lib/mpq.js
+   encapsulates all of this; don't call it directly elsewhere):
+   `SFileReadFile` wants an **ArrayBuffer** — a Node Buffer SIGABRTs the
+   whole process; `SFileGetFileSize` returns **BigInt** (wrap in `Number()`);
+   **NEVER pass `MPQ_FILE.REPLACEEXISTING`** to `SFileAddFileEx` — a
+   signed-int coercion bug silently disables compression (files stored raw);
+   `SFileRemoveFile` on `(listfile)`/`(attributes)` fails ERR:10003 — don't
+   try. war3-model also wants ArrayBuffer:
    `buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength)`.
+   Force the smpq fallback with `WC3_MPQ_BACKEND=smpq`.
 6. **JSON round-trips are stable, not byte-identical**: rotations go through
    float32 radians (270° → 269.977…°), null FourCCs read as `'0000'`.
    Always compare warToJson(jsonToWar(x)) against x, not bytes. The demo
@@ -87,15 +110,26 @@ third-party maps, see gotcha 9).
     the game hard-crashes at load. Classic traps: a Bone with unspecified
     GeosetAnimId defaults to 0 → "invalid geoset animation 0" when there is
     no GeosetAnim chunk (write `GeosetAnimId None` or add a GeosetAnim);
-    missing "Death" sequence; missing "Origin Ref" attachment. Test with
-    `mdx-m3-viewer-th` (devDependency) — and pass it a fresh
-    `new Uint8Array(fs.readFileSync(p))`, NEVER a Node Buffer.
+    missing "Death" sequence; missing "Origin Ref" attachment.
+    validate-map enforces this bar on every packed .mdx/.mdl.
+15. **mdx-m3-viewer-th must be fed `new Uint8Array(fs.readFileSync(p))`,
+    NEVER a Node Buffer** — its MPQ code mutates the input in place and
+    misparses (and the MDX parser slices `.buffer`). Also NEVER use its MPQ
+    save/write path (known locale/platform field swap → broken archives):
+    open maps readonly, treat all output as diagnostics (`lib/viewer.js`
+    enforces both rules). Its w3c parser disagrees with wc3maptranslator /
+    War3Net on the 1.32 camera layout (name before vs after localPitch/Yaw/
+    Roll) — w3c is excluded from the second opinion.
 
 ## Where things live
 
 - `lib/filemap.js` — the war3-file ⇄ translator ⇄ JSON-name table (add new
   formats here; tools pick them up automatically)
-- `lib/header.js` / `lib/mpq.js` — HM3W header (+ w3i flags reader), smpq wrapper
+- `lib/header.js` / `lib/mpq.js` — HM3W header (+ w3i flags reader); MPQ I/O
+  with two backends: stormlib-node (primary) / smpq CLI (fallback,
+  `WC3_MPQ_BACKEND=smpq` forces it)
+- `lib/viewer.js` — mdx-m3-viewer-th second-opinion parsers (read-only:
+  cross-validation in validate-map, classic-format fallback in map-to-json)
 - `lib/source.js` — map-source ⇄ extracted-dir conversion (the core logic)
 - `lib/minimap.js` — war3mapMap.tga + war3map.mmp generation (gotcha 12)
 - `lib/unitscript.js` — CreateAllUnits() Lua generation/injection (gotcha 10)

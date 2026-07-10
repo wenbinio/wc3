@@ -6,7 +6,10 @@
 // Unknown/opaque files (shd, wpm, mmp, blp, mdx, wtg, ...) are copied through
 // untouched under files/ and recorded in manifest.json. Files that fail to
 // translate (e.g. classic-format w3i/w3e) are also copied through, with the
-// error recorded in the manifest.
+// error recorded in the manifest — and when the failure is a version
+// rejection (classic/pre-Reforged formats), a fallback parse via
+// mdx-m3-viewer-th is written under _viewer/<name>.json (READ-ONLY
+// diagnostics in the viewer's schema; not build-source, never repacked).
 
 const fs = require('fs');
 const { extractedToSource } = require('../lib/source');
@@ -32,6 +35,9 @@ function main(argv) {
   }
   for (const e of manifest.errors) {
     console.error(`  WARN could not translate ${e.file} (copied through raw): ${e.error}`);
+  }
+  for (const [war, out] of Object.entries(manifest.viewerFallback || {})) {
+    console.log(`  viewer fallback: ${war} -> ${out} (read-only diagnostics, mdx-m3-viewer-th schema — not build-source)`);
   }
   console.log(`manifest written to ${jsonDir}/manifest.json`);
 }

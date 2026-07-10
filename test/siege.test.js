@@ -103,6 +103,13 @@ test('validate-map passes on the built crossroads-siege map', () => {
   }
   assert.match(out, /PASS {2}translate war3mapUnits\.doo/);
   assert.match(out, /PASS {2}translate war3map\.doo /);
+  // cross-validation: mdx-m3-viewer-th second opinion, incl. the formats
+  // wc3maptranslator can't parse (wpm/shd/mmp) and the imported model
+  assert.match(out, /PASS {2}viewer opens archive/);
+  for (const f of ['war3map.wpm', 'war3map.shd', 'war3map.mmp', 'war3map.w3e', 'war3mapUnits.doo']) {
+    assert.match(out, new RegExp(`PASS {2}viewer parse ${f.replace('.', '\\.')}`), `${f} second opinion`);
+  }
+  assert.match(out, /PASS {2}viewer sanity war3mapImported\/SiegeCrystal\.mdx {2}\(errors=0 severe=0/);
 });
 
 test('w3x-extract + map-to-json reproduce the crossroads-siege source JSON', () => {

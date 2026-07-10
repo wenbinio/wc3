@@ -37,6 +37,11 @@ test('validate-map passes on the built demo map', () => {
   assert.doesNotMatch(out, /^FAIL/m);
   assert.match(out, /map script present/);
   assert.match(out, /translate war3map\.w3i/);
+  // cross-validation section: the independent mdx-m3-viewer-th parser stack
+  assert.match(out, /PASS {2}viewer opens archive/);
+  for (const f of ['war3map.w3i', 'war3map.w3e', 'war3map.wpm', 'war3map.shd', 'war3map.mmp']) {
+    assert.match(out, new RegExp(`PASS {2}viewer parse ${f.replace('.', '\\.')}`), `${f} second opinion`);
+  }
 });
 
 test('w3x-extract + map-to-json reproduce the demo source JSON', () => {

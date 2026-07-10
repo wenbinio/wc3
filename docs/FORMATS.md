@@ -26,16 +26,24 @@ pickers/parsers. tools/w3x-pack.js therefore derives the header flags from
 the packed `war3map.w3i` (`readW3iFlags` in lib/header.js) whenever
 `_header.json` carries flags 0.
 
-- StormLib/smpq **read** `.w3x` directly (they scan for the MPQ magic), but
-  **create** bare MPQs — when repacking you must prepend the 512 bytes
-  yourself (tools/w3x-pack.js does this; `_header.json` holds the fields).
-- Warcraft III expects **MPQ format version 1**. smpq defaults to v4, so this
-  toolkit always creates archives with `smpq -M 1`.
+- StormLib (stormlib-node and smpq alike) **reads** `.w3x` directly (it scans
+  for the MPQ magic at 512-byte offsets). For **creation**, this toolkit's
+  primary path pre-writes the 512-byte header to the output file and lets
+  `SFileCreateArchive` *convert* it — StormLib appends the MPQ at the next
+  512-byte boundary, i.e. exactly offset 512, no concat step. The smpq CLI
+  fallback can only create bare MPQs, so there the header is prepended
+  afterwards (both paths live in `lib/mpq.js createArchive`; `_header.json`
+  holds the fields).
+- Warcraft III expects **MPQ format version 1**: `MPQ_CREATE.ARCHIVE_V1`
+  (stormlib-node) / `smpq -M 1` (smpq defaults to v4).
 - MPQ member paths use `\` separators, but StormLib's name hashing treats
   `/` and `\` identically, so adding/extracting with `/` works fine.
-- smpq automatically maintains a `(listfile)`. **Protected maps** strip it;
-  files can then only be extracted by exact name (hash lookup still works) —
-  `lib/mpq.js` probes a built-in KNOWN_FILES list as a fallback.
+- Both backends automatically maintain a `(listfile)`. **Protected maps**
+  strip it; files can then only be extracted by exact name (hash lookup still
+  works) — `lib/mpq.js` probes a built-in KNOWN_FILES list as a fallback.
+  Enumeration without a listfile yields nothing (smpq) or `FileNNNNNNNN`
+  pseudo-names (stormlib); extraction success is always verified on disk
+  because smpq exits 0 even on a miss.
 - Reforged also reads loose directories named `*.w3x/` (an "extracted map
   folder", e.g. wc3-ts-template's `maps/map.w3x/`) — handy for reference.
 
@@ -93,12 +101,16 @@ Consequences:
 
 - Classic maps (most Hive Workshop archives, all original Blizzard maps) can
   be **extracted and repacked** but not fully JSON-translated. map-to-json
-  copies untranslatable files raw and records errors in `manifest.json`.
+  copies untranslatable files raw and records errors in `manifest.json` —
+  and for version rejections it additionally writes a **read-only
+  mdx-m3-viewer-th parse under `_viewer/<name>.json`** (viewer object schema,
+  `manifest.json` → `viewerFallback`). That output is diagnostics only:
+  json-to-map/build-map ignore `_viewer/` and cannot compile it back.
 - The wc3-ts-template repo's `maps/map.w3x/` folder is classic-format:
   its `.doo`, `w3r`, `w3c`, `wts`, `Units.doo` parse fine, but `w3i`/`w3e`
   do not. This repo's `maps/demo/` was therefore built in current formats
   from scratch (derived from WC3MapTranslator's MIT test fixtures).
-- For classic parsing, fall back to mdx-m3-viewer's parsers or War3Net (C#).
+- For deeper classic parsing, use War3Net (C#) — see scripts/crossvalidate-war3net.sh.
 
 Also note: **do not use unpinned `wc3maptranslator`** — npm resolves it to
 4.0.4, which has a different (instance-method) API and broken behavior.
@@ -145,8 +157,8 @@ Also note: **do not use unpinned `wc3maptranslator`** — npm resolves it to
 
 ## MPQ practical notes
 
-- WC3 reads **MPQ format v1 only** (this toolkit's `smpq -M 1`; v2–v4 are
-  later Blizzard games).
+- WC3 reads **MPQ format v1 only** (this toolkit's `MPQ_CREATE.ARCHIVE_V1` /
+  `smpq -M 1`; v2–v4 are later Blizzard games).
 - Compression: **zlib/DEFLATE is the safe choice** for every file; avoid
   bzip2 for classic-compatible maps (later Storm feature, patchy support).
 - `(listfile)` is optional for the *game* (files are found by name hash) but
@@ -171,15 +183,48 @@ Also note: **do not use unpinned `wc3maptranslator`** — npm resolves it to
   save** — keep sources elsewhere (this toolkit's map-source layout already
   does).
 
-## stormlib-node (optional npm alternative to smpq)
+## stormlib-node (the primary MPQ backend)
 
-Works, but has sharp edges (why the toolkit shells out to smpq instead):
+`lib/mpq.js` uses stormlib-node whenever the native module is loadable and
+falls back to the smpq CLI otherwise (`WC3_MPQ_BACKEND=smpq` forces the
+fallback; `WC3_MPQ_BACKEND=stormlib` requires the native module). Sharp edges
+— all encapsulated in lib/mpq.js, never call the bindings elsewhere:
 
 - `SFileGetFileSize` returns a **BigInt** — `Number(size)` before use.
 - `SFileReadFile` requires an **ArrayBuffer**; passing a Node Buffer causes a
   **native SIGABRT** (process death, not an exception).
+- **NEVER pass `MPQ_FILE.REPLACEEXISTING` to `SFileAddFileEx`** — a
+  signed-int coercion bug (the flag is 0x80000000) silently disables
+  compression and files get stored raw. Create archives fresh instead.
+- `SFileRemoveFile` on `(listfile)`/`(attributes)` fails with ERR:10003 —
+  they cannot be stripped this way; don't try.
+- `SFileCreateArchive` on an existing non-MPQ file **converts** it: the MPQ
+  is appended at the next 512-byte boundary. Pre-writing the HM3W header
+  therefore yields a finished `.w3x` in one pass.
+- Members with no listfile entry enumerate as `File%08u.xxx` pseudo-names;
+  exact-name lookups (`SFileHasFile`/`SFileOpenFileEx`) still work.
 - Same ArrayBuffer rule applies to war3-model's `parseMDX`:
   `buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength)`.
+
+## mdx-m3-viewer-th (second-opinion parser stack)
+
+Used read-only by validate-map (cross-validation incl. wpm/shd/mmp and MDX
+sanity) and map-to-json (classic-format fallback reader). Rules
+(`lib/viewer.js` enforces them):
+
+- **Feed it `new Uint8Array(fs.readFileSync(p))`, never a Node Buffer** —
+  its MPQ code decrypts/mutates the input in place; a Buffer (a view over
+  Node's shared allocation pool) gets corrupted and misparses. The MDX
+  parser slices `.buffer`, with the same failure mode.
+- **Never use its MPQ save/write path** (`War3Map.save`, `archive.set`):
+  a known locale/platform field swap emits broken archives. Always load with
+  `readonly = true`.
+- Its **w3c parser disagrees** with wc3maptranslator *and* War3Net on the
+  1.32+ camera layout (it reads the camera name *before*
+  localPitch/localYaw/localRoll; the others write it *after*), so
+  war3map.w3c is excluded from the second opinion.
+- `war3map.wtg` parsing needs the game's TriggerData.txt (not shipped) —
+  also excluded.
 
 ## References
 

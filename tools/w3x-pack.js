@@ -48,13 +48,11 @@ function packDir(dir, outW3x) {
     }
   }
 
-  const tmpMpq = path.resolve(outW3x) + '.mpq.tmp';
-  createArchive(tmpMpq, dir, files);
-  const w3x = Buffer.concat([buildHeader(headerFields), fs.readFileSync(tmpMpq)]);
-  fs.rmSync(tmpMpq, { force: true });
-  fs.mkdirSync(path.dirname(path.resolve(outW3x)), { recursive: true });
-  fs.writeFileSync(outW3x, w3x);
-  return { files, headerFields, bytes: w3x.length };
+  // One-pass .w3x creation: the 512-byte HM3W pre-header is written first and
+  // the MPQ v1 archive follows at offset 512 (lib/mpq.js handles both
+  // backends; with stormlib-node no concat step is needed at all).
+  const outAbs = createArchive(outW3x, dir, files, buildHeader(headerFields));
+  return { files, headerFields, bytes: fs.statSync(outAbs).size };
 }
 
 function main(argv) {
