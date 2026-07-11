@@ -283,9 +283,17 @@ local function RegisterBossDeath(boss)
   end)
 end
 
--- escalate: +1 extra unit of the first listed type per two elapsed waves
+-- escalate: +1 extra unit of the first listed type per two elapsed waves.
+-- On a boss wave the bonus shifts to the SECOND listed type: the first entry
+-- is the boss itself, and applying the bonus there spawned FIVE Dreadflesh
+-- Colossi on wave 10 (1 + WaveCountBonus(10)), each with its own loot drop —
+-- a bug caught by the headless logic sim (test/maplogic.test.js).
 local function WaveCountBonus(waveIndex)
   return math.floor((waveIndex - 1) // 2)
+end
+
+local function WaveBonusEntryIndex(wave)
+  return wave.boss and 2 or 1
 end
 
 local function SpawnWave(waveIndex)
@@ -301,7 +309,7 @@ local function SpawnWave(waveIndex)
     local cx, cy = RectCenter(rectG)
     for ui, entry in ipairs(wave.units) do
       local rawcode, count = entry[1], entry[2]
-      if ui == 1 then count = count + WaveCountBonus(waveIndex) end
+      if ui == WaveBonusEntryIndex(wave) then count = count + WaveCountBonus(waveIndex) end
       for n = 1, count do
         local ox = cx + 96.0 * math.cos(n * 0.9 + ui)
         local oy = cy + 96.0 * math.sin(n * 0.9 + gi)

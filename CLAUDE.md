@@ -26,11 +26,13 @@ node tools/json-to-map.js  <json-dir> <out-dir>        # map source -> binaries
 node tools/w3x-pack.js     [--bare] <dir> <out.w3x>    # binaries -> MPQ v1 + HM3W header (--bare: no pre-header)
 node tools/build-map.js    [--bare] <map-source-dir> <out.w3x>  # one-step: source -> .w3x (--bare: no HM3W pre-header, 1.31+ container); also injects the generated named-constants + CreateAllUnits Lua blocks and rewrites <map-source>/constants.json (gotchas 10, 27)
 node tools/validate-map.js <map.w3x>                   # layered pass/fail report, exit 0 = good
+node tools/test-map-logic.js [--coverage] [<map-source-dir> ...]  # EXECUTE the packed war3map.lua headlessly (lib/sim: fengari Lua 5.3 + mocked natives) and run maps/<name>/tests/*.test.js; no args = every map with tests/
 
 bash scripts/crossvalidate-war3net.sh <extracted-dir>  # optional War3Net (C#) third opinion; needs dotnet
 ```
 
-npm scripts: `npm test`, `npm run test:smpq`, `npm run setup`. Env vars:
+npm scripts: `npm test`, `npm run test:smpq`, `npm run test:logic`,
+`npm run setup`. Env vars:
 `WC3_MPQ_BACKEND=smpq|stormlib` (force a backend; stormlib errors if the
 native module won't load), `WC3_EXTRACT_UNKNOWN=1` (= `--dump-unknown`).
 
@@ -82,6 +84,10 @@ never third-party maps, gotcha 9).
   Pillow, sanityTest bar (gotchas 14, 19) — PIPELINE §4, docs/ASSETS.md,
   skill wc3-import-asset.
 - **Validate**: validate-map layers + War3Net third opinion — PIPELINE §5–6.
+- **Logic-test map mechanics** (BEFORE any human playtest): execute the
+  packed script in the headless sim, assert on alliances/gold/units/
+  verdicts; write maps/<name>/tests/*.test.js for every scripted mechanic —
+  PIPELINE §8, lib/sim/, tools/test-map-logic.js.
 - **In-game A/B diagnostics**: variants need distinct INTERNAL names
   (gotcha 17) — PIPELINE §7.
 - **Decomposition-driven design**: before cloning/adapting a real map,
@@ -347,13 +353,34 @@ never third-party maps, gotcha 9).
 
 ## Testing & validation doctrine
 
-- `npm test` = 201 tests, 19 files: source⇄binary fixed points for all four
+- `npm test` = 241 tests, 22 files: source⇄binary fixed points for all four
   bundled maps, build+validate end-to-end, MPQ backends, version codecs
   (synthetic v11/v25/v31 + object-data v1/v2 fixtures cross-checked against
   mdx-m3-viewer-th + guarded real-sample fixpoints), classic/protected
   fallbacks (`_viewer/`, `_unknown/`, classicw3i, truncated w3i), wts
-  dialects, luacheck, gotcha regressions. Both backends when touching
-  archive code (`npm run test:smpq`).
+  dialects, luacheck, gotcha regressions, PLUS the logic-sim tier below
+  (test/sim.test.js harness semantics, test/maplogic.test.js bundled-map
+  acceptance, maps/*/tests/*.test.js — node --test discovers map suites
+  automatically). Both backends when touching archive code
+  (`npm run test:smpq`).
+- **Logic tests EXECUTE the map** (the layer everything above can't reach:
+  semantic bugs in a script that parses fine). lib/sim runs the PACKED
+  war3map.lua — assembled via the real pipeline, generated constants +
+  CreateAllUnits blocks included — in fengari (Lua 5.3, same as the game)
+  against mocked natives with real semantics for timers/virtual clock,
+  players (alliances, resources, slots), units/groups/items, triggers +
+  events (chat, deaths, regions, construct/upgrade/pawn); everything else
+  auto-stubs to inert recorded calls, and unknown NON-API globals stay nil
+  (normal Lua truthiness). Drive with `sim.advance/chat/kill/moveUnit/...`,
+  assert via `sim.player(i).gold`, `sim.alliance`, `sim.results`,
+  `sim.messages`, `sim.calls`. Proof it earns its keep: the sim caught wave
+  10 of crossroads-siege spawning FIVE bosses (escalation bonus applied to
+  the boss entry) — structural validation could never see that. Write
+  maps/<name>/tests/*.test.js for every mechanic you script (PIPELINE §8).
+- **Sim honesty rules**: the sim is NOT the game — no pathing, combat AI,
+  ability engine or object-data stat effects (a stubbed native is inert:
+  check `--coverage` when a mechanic mysteriously "passes"); logic tests
+  complement, never replace, the in-game protocol below.
 - `validate-map` layers: HM3W header + MPQ magic at 512 → extraction →
   required files (w3i/w3e) + script presence → luaparse gate → per-file
   translator parse PLUS JSON→binary→JSON stability → object-data semantic
@@ -416,8 +443,14 @@ or CC0-converted content. Details: docs/ASSETS.md.
   (UTF-8 reads, bounded readString, doodad life:0 — gotchas 16, 26);
   `lib/traps.js` — protection-trap heuristic (gotcha 26);
   `lib/recover.js` — protected-map name recovery (gotcha 4)
-- `docs/PIPELINE.md` — workflows §1–7 (read/edit/new/import/validate/War3Net/
-  A-B naming); `docs/FORMATS.md` — format knowledge, tileset FourCC tables,
+- `lib/sim/` — headless logic-test harness: index.js (loadMap + harness
+  API), vm.js (fengari Lua 5.3 wrapper), natives.js (mocked WC3 natives:
+  real-semantics tier + recording auto-stub tier), data/jass-constants.json
+  (875 API constants + 2533 native/BJ names, regenerate with
+  scripts/gen-jass-constants.js); tools/test-map-logic.js — map logic-test
+  runner + `--coverage` report
+- `docs/PIPELINE.md` — workflows §1–8 (read/edit/new/import/validate/War3Net/
+  A-B naming/logic tests); `docs/FORMATS.md` — format knowledge, tileset FourCC tables,
   references; `docs/ASSETS.md` — asset sourcing/conversion + legal;
   `docs/reference/` — worked decompositions: fotn-analysis.md (protected
   2011 classic), modern-maps-analysis.md (four 2023–2026 production maps +

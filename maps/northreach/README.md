@@ -149,7 +149,18 @@ drove; `-found` now plants a hall at the Founder instead of claiming a site.)
 ```bash
 node tools/build-map.js maps/northreach maps/builds/northreach.w3x
 node tools/validate-map.js maps/builds/northreach.w3x
+node tools/test-map-logic.js maps/northreach   # headless logic tests
 ```
+
+`tests/founders.test.js` executes the PACKED script in the logic sim
+(lib/sim, docs/PIPELINE.md §8) and asserts every mechanic above: the grace
+truce is real alliance state and tears down at 300s, the corruption tax
+bites `gold // 20` every 40s only while a Town Hall stands, `-test` gates
+the debug commands, `-endgame` purges hall-less dead charters and crowns
+the last one standing, hunting drops/respawns (shoal catch lands ashore),
+the Market pays FULL value via the currency-return top-up, Founders revive
+after 30s, and leavers concede. Keep it green — and extend it — whenever
+`war3map.lua` changes. `npm test` runs it too.
 
 The committed JSON is a **translator fixed point** (CLAUDE.md gotcha 6):
 `assets/generate-map-data.mjs` authored the original terrain/doodads and the

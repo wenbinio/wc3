@@ -32,6 +32,20 @@ melee-ish Lua map — it builds as-is):
    Run build-map once after editing JSON to refresh the index.
 5. Optional: `doodads.json` (trees `LTlt`), `strings.json`,
    `objects-*.json` (custom units), `imports/` (custom MDX/BLP assets)
+6. `tests/` — STANDARD PRACTICE for every scripted mechanic: add a headless
+   logic test `maps/<name>/tests/<name>.test.js` that loads the map in the
+   sim and asserts the mechanic actually behaves (docs/PIPELINE.md §8;
+   worked example: maps/northreach/tests/founders.test.js):
+
+   ```js
+   const { loadMap } = require('../../../lib/sim');
+   const sim = loadMap(path.join(__dirname, '..'));
+   sim.advance(60); sim.chat(0, '-mycmd');
+   assert.strictEqual(sim.player(0).gold, 500);
+   ```
+
+   `npm test` discovers the suite automatically; run it alone with
+   `node tools/test-map-logic.js maps/<name>`.
 
 Terrain: the template is 32x32 tiles of flat grass. To resize, change
 `terrain.json` `map.width/height` and make ALL per-vertex arrays
@@ -53,6 +67,7 @@ Build and check:
 ```bash
 node tools/build-map.js maps/<name> _build/<name>.w3x
 node tools/validate-map.js _build/<name>.w3x   # must exit 0
+node tools/test-map-logic.js maps/<name>       # logic tests (step 6) must pass
 ```
 
 Keep the map source committed. Scratch builds (`_build/`) stay gitignored;

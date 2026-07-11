@@ -322,3 +322,81 @@ exact object-data field IDs and art paths. The decomposed FoTN
 (docs/reference/fotn-analysis.md) is the worked example — its live w3u/w3t
 entries exposed the `.mdl` model-field rule, the item identity field set
 and the AHbu+Ahrp builder pair (CLAUDE.md gotchas 22, 23, 25).
+
+## 8. Logic-test map mechanics headlessly (before any human playtest)
+
+Everything in §5 is STRUCTURAL — a script can pass every parse gate and
+still be semantically broken (a grace period that never sets alliances, a
+victory check that never fires, tax math off by a divisor, a spawn table
+wired to the wrong slot). The logic-sim tier actually EXECUTES the map:
+
+```bash
+node tools/test-map-logic.js maps/<name>          # run maps/<name>/tests/*.test.js
+node tools/test-map-logic.js                      # every map with a tests/ dir
+node tools/test-map-logic.js --coverage maps/<name>  # real vs auto-stubbed natives
+npm run test:logic                                # same as the no-args form
+```
+
+`lib/sim` loads the **packed** `war3map.lua` — assembled through the real
+build pipeline (`sourceToExtracted`), so the generated named-constants and
+`CreateAllUnits()` blocks are exactly what ships — into fengari (a pure-JS
+Lua 5.3 VM, the same Lua the game runs) with mocked natives, runs
+`config()` then `main()`, and hands back a deterministic harness
+(virtual clock at t=0/08:00, seeded RNG, timers fire in due order):
+
+```js
+const { loadMap } = require('../../../lib/sim');   // from maps/<name>/tests/
+const sim = loadMap(path.join(__dirname, '..'));
+
+sim.advance(301);                 // fire every timer due in 301 virtual seconds
+sim.chat(0, '-test');             // deliver a chat event to player 0's triggers
+sim.kill(sim.findUnit('nder'), sim.findUnit('H000', 0));  // death event + killer
+sim.moveUnit(u, x, y);            // position + enter/leave-region events
+sim.constructFinish(u); sim.upgradeFinish(u, 'h003'); sim.pawn(hero, item);
+sim.leave(1);                     // player-leave event
+
+sim.player(0).gold                // PLAYER_STATE_RESOURCE_GOLD readback
+sim.alliance(0, 1, 'ALLIANCE_PASSIVE')   // per-direction alliance state
+sim.unitsOf(pid, 'h003')          // live unit records {typeStr, x, y, alive...}
+sim.itemsByType('I000')           // dropped/created items
+sim.results                       // pid -> 'victory' | 'defeat' (Custom*BJ)
+sim.messages / sim.messagesTo(0)  // DisplayText* transcript
+sim.calls / sim.callsOf(name)     // every native call, with virtual timestamps
+sim.global('someGlobal'); sim.run('lua...')      // reach into the VM
+```
+
+Test files are plain `node:test` JS under `maps/<name>/tests/*.test.js`
+(the ONE convention — they run standalone via the tool above AND are
+auto-discovered by the repo-wide `npm test`). Write one for every mechanic
+you script; maps/northreach/tests/founders.test.js is the worked example
+(grace truce, corruption tax, debug gating, endgame purge, hunting drops,
+market currency return, revives, leavers).
+
+Mock tiers and their honesty rules (details in lib/sim/natives.js):
+
+- **Real semantics**: timers/virtual clock (default day = 480s, starts
+  08:00), players (alliances per direction+type, resources, slots,
+  controllers), units/heroes, groups, items, rects/regions, triggers +
+  events (chat substring/exact, deaths with killer, enter/leave region,
+  construct/upgrade/pawn/leave, timer-expire), FourCC, seeded RNG.
+- **Auto-stub**: any OTHER name in the real JASS API surface (native + BJ
+  list extracted from the community jassdoc into
+  lib/sim/data/jass-constants.json) resolves to an inert recording
+  function returning a unique handle string. Stubs never simulate — if a
+  mechanic depends on one (check `--coverage`), the sim is silently not
+  testing it. A stub result reaching arithmetic fails LOUDLY with the
+  native's name: implement the native in lib/sim/natives.js rather than
+  papering over it. Names OUTSIDE the API surface stay nil, so map-author
+  globals keep normal Lua truthiness.
+- **Not modeled** (drive outcomes explicitly instead): pathing/movement,
+  combat and AI (units never fight — use `sim.kill`), abilities,
+  object-data stat effects (only igol/uhpm/unam are read, for pawn values,
+  max life and names), destructables, `TriggerSleepAction`/`PolledWait`
+  (recorded no-ops). The sim complements the in-game protocol (§7); it
+  never replaces it.
+
+Proof of value: the sim's first full playthrough caught crossroads-siege
+wave 10 spawning FIVE Dreadflesh Colossi — the per-wave escalation bonus
+applied to the first-listed unit type, which on the boss wave was the boss
+itself (five loot drops included). Every parse-level gate passed that map
+for months (test/maplogic.test.js keeps the regression).

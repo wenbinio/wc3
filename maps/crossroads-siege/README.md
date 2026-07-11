@@ -14,7 +14,10 @@ node tools/validate-map.js maps/builds/crossroads-siege.w3x
 
 - Ten escalating waves spawn at the four gate regions and attack-move to the
   Keep; wave composition, gate rotation and a per-wave count bonus escalate
-  difficulty. Announcements via `DisplayTextToPlayer`.
+  difficulty. Announcements via `DisplayTextToPlayer`. The count bonus
+  applies to the first listed type — except on a boss wave, where it shifts
+  to the second: the headless logic sim (test/maplogic.test.js full
+  playthrough) caught the original code spawning FIVE Colossi on wave 10.
 - Wave 5: the Legion burns the **Shortcut Grove** — the script kills the
   preplaced destructible trees inside the `ShortcutGrove` region.
 - Wave 10: boss wave — the **Dreadflesh Colossus** (custom unit `u000`,

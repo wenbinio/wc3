@@ -13,6 +13,7 @@ working example: `maps/demo/`). Edit it, then:
 ```bash
 node tools/build-map.js <map-source-dir> _build/out.w3x
 node tools/validate-map.js _build/out.w3x        # must exit 0
+node tools/test-map-logic.js <map-source-dir>    # headless logic tests (if tests/ exists)
 ```
 
 validate-map may also print `WARN lint ...` lines (object-data semantic
@@ -32,6 +33,14 @@ Common edits:
   (CLAUDE.md gotcha 18; WE-exact pattern: maps/tidewatch-arena)
 - Gameplay logic: `war3map.lua` — game calls `config()` then `main()`;
   `scriptLanguage` in info.json must be 1 for Lua (0 for JASS + war3map.j).
+  STANDARD PRACTICE when you add or change a scripted mechanic: write/update
+  a headless logic test in `maps/<name>/tests/*.test.js` that executes the
+  packed script in the sim (lib/sim) and asserts on real state — alliances,
+  gold, spawned units, victory/defeat, announcements. `npm test` discovers
+  the suite automatically; docs/PIPELINE.md §8 has the harness API, and
+  maps/northreach/tests/founders.test.js is the worked example. Validation
+  is structural only — the sim is what catches a mechanic that parses fine
+  but plays wrong (it caught a 5-bosses-on-wave-10 bug validate-map passed).
   Reference object types via the GENERATED named constants, not hand-typed
   `FourCC("xxxx")` literals: build-map prepends a constants block to the
   packed script (UNIT_/ITEM_/DEST_/DOOD_/ABIL_/BUFF_/UPGR_ FourCC globals

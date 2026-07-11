@@ -1,0 +1,5793 @@
+{
+ "constants": {
+  "FALSE": {
+   "value": false
+  },
+  "TRUE": {
+   "value": true
+  },
+  "JASS_MAX_ARRAY_SIZE": {
+   "value": 32768
+  },
+  "PLAYER_NEUTRAL_PASSIVE": {
+   "call": "GetPlayerNeutralPassive"
+  },
+  "PLAYER_NEUTRAL_AGGRESSIVE": {
+   "call": "GetPlayerNeutralAggressive"
+  },
+  "PLAYER_COLOR_RED": {
+   "conv": "ConvertPlayerColor",
+   "arg": 0
+  },
+  "PLAYER_COLOR_BLUE": {
+   "conv": "ConvertPlayerColor",
+   "arg": 1
+  },
+  "PLAYER_COLOR_CYAN": {
+   "conv": "ConvertPlayerColor",
+   "arg": 2
+  },
+  "PLAYER_COLOR_PURPLE": {
+   "conv": "ConvertPlayerColor",
+   "arg": 3
+  },
+  "PLAYER_COLOR_YELLOW": {
+   "conv": "ConvertPlayerColor",
+   "arg": 4
+  },
+  "PLAYER_COLOR_ORANGE": {
+   "conv": "ConvertPlayerColor",
+   "arg": 5
+  },
+  "PLAYER_COLOR_GREEN": {
+   "conv": "ConvertPlayerColor",
+   "arg": 6
+  },
+  "PLAYER_COLOR_PINK": {
+   "conv": "ConvertPlayerColor",
+   "arg": 7
+  },
+  "PLAYER_COLOR_LIGHT_GRAY": {
+   "conv": "ConvertPlayerColor",
+   "arg": 8
+  },
+  "PLAYER_COLOR_LIGHT_BLUE": {
+   "conv": "ConvertPlayerColor",
+   "arg": 9
+  },
+  "PLAYER_COLOR_AQUA": {
+   "conv": "ConvertPlayerColor",
+   "arg": 10
+  },
+  "PLAYER_COLOR_BROWN": {
+   "conv": "ConvertPlayerColor",
+   "arg": 11
+  },
+  "PLAYER_COLOR_MAROON": {
+   "conv": "ConvertPlayerColor",
+   "arg": 12
+  },
+  "PLAYER_COLOR_NAVY": {
+   "conv": "ConvertPlayerColor",
+   "arg": 13
+  },
+  "PLAYER_COLOR_TURQUOISE": {
+   "conv": "ConvertPlayerColor",
+   "arg": 14
+  },
+  "PLAYER_COLOR_VIOLET": {
+   "conv": "ConvertPlayerColor",
+   "arg": 15
+  },
+  "PLAYER_COLOR_WHEAT": {
+   "conv": "ConvertPlayerColor",
+   "arg": 16
+  },
+  "PLAYER_COLOR_PEACH": {
+   "conv": "ConvertPlayerColor",
+   "arg": 17
+  },
+  "PLAYER_COLOR_MINT": {
+   "conv": "ConvertPlayerColor",
+   "arg": 18
+  },
+  "PLAYER_COLOR_LAVENDER": {
+   "conv": "ConvertPlayerColor",
+   "arg": 19
+  },
+  "PLAYER_COLOR_COAL": {
+   "conv": "ConvertPlayerColor",
+   "arg": 20
+  },
+  "PLAYER_COLOR_SNOW": {
+   "conv": "ConvertPlayerColor",
+   "arg": 21
+  },
+  "PLAYER_COLOR_EMERALD": {
+   "conv": "ConvertPlayerColor",
+   "arg": 22
+  },
+  "PLAYER_COLOR_PEANUT": {
+   "conv": "ConvertPlayerColor",
+   "arg": 23
+  },
+  "RACE_HUMAN": {
+   "conv": "ConvertRace",
+   "arg": 1
+  },
+  "RACE_ORC": {
+   "conv": "ConvertRace",
+   "arg": 2
+  },
+  "RACE_UNDEAD": {
+   "conv": "ConvertRace",
+   "arg": 3
+  },
+  "RACE_NIGHTELF": {
+   "conv": "ConvertRace",
+   "arg": 4
+  },
+  "RACE_DEMON": {
+   "conv": "ConvertRace",
+   "arg": 5
+  },
+  "RACE_OTHER": {
+   "conv": "ConvertRace",
+   "arg": 7
+  },
+  "PLAYER_GAME_RESULT_VICTORY": {
+   "conv": "ConvertPlayerGameResult",
+   "arg": 0
+  },
+  "PLAYER_GAME_RESULT_DEFEAT": {
+   "conv": "ConvertPlayerGameResult",
+   "arg": 1
+  },
+  "PLAYER_GAME_RESULT_TIE": {
+   "conv": "ConvertPlayerGameResult",
+   "arg": 2
+  },
+  "PLAYER_GAME_RESULT_NEUTRAL": {
+   "conv": "ConvertPlayerGameResult",
+   "arg": 3
+  },
+  "ALLIANCE_PASSIVE": {
+   "conv": "ConvertAllianceType",
+   "arg": 0
+  },
+  "ALLIANCE_HELP_REQUEST": {
+   "conv": "ConvertAllianceType",
+   "arg": 1
+  },
+  "ALLIANCE_HELP_RESPONSE": {
+   "conv": "ConvertAllianceType",
+   "arg": 2
+  },
+  "ALLIANCE_SHARED_XP": {
+   "conv": "ConvertAllianceType",
+   "arg": 3
+  },
+  "ALLIANCE_SHARED_SPELLS": {
+   "conv": "ConvertAllianceType",
+   "arg": 4
+  },
+  "ALLIANCE_SHARED_VISION": {
+   "conv": "ConvertAllianceType",
+   "arg": 5
+  },
+  "ALLIANCE_SHARED_CONTROL": {
+   "conv": "ConvertAllianceType",
+   "arg": 6
+  },
+  "ALLIANCE_SHARED_ADVANCED_CONTROL": {
+   "conv": "ConvertAllianceType",
+   "arg": 7
+  },
+  "ALLIANCE_RESCUABLE": {
+   "conv": "ConvertAllianceType",
+   "arg": 8
+  },
+  "ALLIANCE_SHARED_VISION_FORCED": {
+   "conv": "ConvertAllianceType",
+   "arg": 9
+  },
+  "VERSION_REIGN_OF_CHAOS": {
+   "conv": "ConvertVersion",
+   "arg": 0
+  },
+  "VERSION_FROZEN_THRONE": {
+   "conv": "ConvertVersion",
+   "arg": 1
+  },
+  "ATTACK_TYPE_NORMAL": {
+   "conv": "ConvertAttackType",
+   "arg": 0
+  },
+  "ATTACK_TYPE_MELEE": {
+   "conv": "ConvertAttackType",
+   "arg": 1
+  },
+  "ATTACK_TYPE_PIERCE": {
+   "conv": "ConvertAttackType",
+   "arg": 2
+  },
+  "ATTACK_TYPE_SIEGE": {
+   "conv": "ConvertAttackType",
+   "arg": 3
+  },
+  "ATTACK_TYPE_MAGIC": {
+   "conv": "ConvertAttackType",
+   "arg": 4
+  },
+  "ATTACK_TYPE_CHAOS": {
+   "conv": "ConvertAttackType",
+   "arg": 5
+  },
+  "ATTACK_TYPE_HERO": {
+   "conv": "ConvertAttackType",
+   "arg": 6
+  },
+  "DAMAGE_TYPE_UNKNOWN": {
+   "conv": "ConvertDamageType",
+   "arg": 0
+  },
+  "DAMAGE_TYPE_NORMAL": {
+   "conv": "ConvertDamageType",
+   "arg": 4
+  },
+  "DAMAGE_TYPE_ENHANCED": {
+   "conv": "ConvertDamageType",
+   "arg": 5
+  },
+  "DAMAGE_TYPE_FIRE": {
+   "conv": "ConvertDamageType",
+   "arg": 8
+  },
+  "DAMAGE_TYPE_COLD": {
+   "conv": "ConvertDamageType",
+   "arg": 9
+  },
+  "DAMAGE_TYPE_LIGHTNING": {
+   "conv": "ConvertDamageType",
+   "arg": 10
+  },
+  "DAMAGE_TYPE_POISON": {
+   "conv": "ConvertDamageType",
+   "arg": 11
+  },
+  "DAMAGE_TYPE_DISEASE": {
+   "conv": "ConvertDamageType",
+   "arg": 12
+  },
+  "DAMAGE_TYPE_DIVINE": {
+   "conv": "ConvertDamageType",
+   "arg": 13
+  },
+  "DAMAGE_TYPE_MAGIC": {
+   "conv": "ConvertDamageType",
+   "arg": 14
+  },
+  "DAMAGE_TYPE_SONIC": {
+   "conv": "ConvertDamageType",
+   "arg": 15
+  },
+  "DAMAGE_TYPE_ACID": {
+   "conv": "ConvertDamageType",
+   "arg": 16
+  },
+  "DAMAGE_TYPE_FORCE": {
+   "conv": "ConvertDamageType",
+   "arg": 17
+  },
+  "DAMAGE_TYPE_DEATH": {
+   "conv": "ConvertDamageType",
+   "arg": 18
+  },
+  "DAMAGE_TYPE_MIND": {
+   "conv": "ConvertDamageType",
+   "arg": 19
+  },
+  "DAMAGE_TYPE_PLANT": {
+   "conv": "ConvertDamageType",
+   "arg": 20
+  },
+  "DAMAGE_TYPE_DEFENSIVE": {
+   "conv": "ConvertDamageType",
+   "arg": 21
+  },
+  "DAMAGE_TYPE_DEMOLITION": {
+   "conv": "ConvertDamageType",
+   "arg": 22
+  },
+  "DAMAGE_TYPE_SLOW_POISON": {
+   "conv": "ConvertDamageType",
+   "arg": 23
+  },
+  "DAMAGE_TYPE_SPIRIT_LINK": {
+   "conv": "ConvertDamageType",
+   "arg": 24
+  },
+  "DAMAGE_TYPE_SHADOW_STRIKE": {
+   "conv": "ConvertDamageType",
+   "arg": 25
+  },
+  "DAMAGE_TYPE_UNIVERSAL": {
+   "conv": "ConvertDamageType",
+   "arg": 26
+  },
+  "WEAPON_TYPE_WHOKNOWS": {
+   "conv": "ConvertWeaponType",
+   "arg": 0
+  },
+  "WEAPON_TYPE_METAL_LIGHT_CHOP": {
+   "conv": "ConvertWeaponType",
+   "arg": 1
+  },
+  "WEAPON_TYPE_METAL_MEDIUM_CHOP": {
+   "conv": "ConvertWeaponType",
+   "arg": 2
+  },
+  "WEAPON_TYPE_METAL_HEAVY_CHOP": {
+   "conv": "ConvertWeaponType",
+   "arg": 3
+  },
+  "WEAPON_TYPE_METAL_LIGHT_SLICE": {
+   "conv": "ConvertWeaponType",
+   "arg": 4
+  },
+  "WEAPON_TYPE_METAL_MEDIUM_SLICE": {
+   "conv": "ConvertWeaponType",
+   "arg": 5
+  },
+  "WEAPON_TYPE_METAL_HEAVY_SLICE": {
+   "conv": "ConvertWeaponType",
+   "arg": 6
+  },
+  "WEAPON_TYPE_METAL_MEDIUM_BASH": {
+   "conv": "ConvertWeaponType",
+   "arg": 7
+  },
+  "WEAPON_TYPE_METAL_HEAVY_BASH": {
+   "conv": "ConvertWeaponType",
+   "arg": 8
+  },
+  "WEAPON_TYPE_METAL_MEDIUM_STAB": {
+   "conv": "ConvertWeaponType",
+   "arg": 9
+  },
+  "WEAPON_TYPE_METAL_HEAVY_STAB": {
+   "conv": "ConvertWeaponType",
+   "arg": 10
+  },
+  "WEAPON_TYPE_WOOD_LIGHT_SLICE": {
+   "conv": "ConvertWeaponType",
+   "arg": 11
+  },
+  "WEAPON_TYPE_WOOD_MEDIUM_SLICE": {
+   "conv": "ConvertWeaponType",
+   "arg": 12
+  },
+  "WEAPON_TYPE_WOOD_HEAVY_SLICE": {
+   "conv": "ConvertWeaponType",
+   "arg": 13
+  },
+  "WEAPON_TYPE_WOOD_LIGHT_BASH": {
+   "conv": "ConvertWeaponType",
+   "arg": 14
+  },
+  "WEAPON_TYPE_WOOD_MEDIUM_BASH": {
+   "conv": "ConvertWeaponType",
+   "arg": 15
+  },
+  "WEAPON_TYPE_WOOD_HEAVY_BASH": {
+   "conv": "ConvertWeaponType",
+   "arg": 16
+  },
+  "WEAPON_TYPE_WOOD_LIGHT_STAB": {
+   "conv": "ConvertWeaponType",
+   "arg": 17
+  },
+  "WEAPON_TYPE_WOOD_MEDIUM_STAB": {
+   "conv": "ConvertWeaponType",
+   "arg": 18
+  },
+  "WEAPON_TYPE_CLAW_LIGHT_SLICE": {
+   "conv": "ConvertWeaponType",
+   "arg": 19
+  },
+  "WEAPON_TYPE_CLAW_MEDIUM_SLICE": {
+   "conv": "ConvertWeaponType",
+   "arg": 20
+  },
+  "WEAPON_TYPE_CLAW_HEAVY_SLICE": {
+   "conv": "ConvertWeaponType",
+   "arg": 21
+  },
+  "WEAPON_TYPE_AXE_MEDIUM_CHOP": {
+   "conv": "ConvertWeaponType",
+   "arg": 22
+  },
+  "WEAPON_TYPE_ROCK_HEAVY_BASH": {
+   "conv": "ConvertWeaponType",
+   "arg": 23
+  },
+  "PATHING_TYPE_ANY": {
+   "conv": "ConvertPathingType",
+   "arg": 0
+  },
+  "PATHING_TYPE_WALKABILITY": {
+   "conv": "ConvertPathingType",
+   "arg": 1
+  },
+  "PATHING_TYPE_FLYABILITY": {
+   "conv": "ConvertPathingType",
+   "arg": 2
+  },
+  "PATHING_TYPE_BUILDABILITY": {
+   "conv": "ConvertPathingType",
+   "arg": 3
+  },
+  "PATHING_TYPE_PEONHARVESTPATHING": {
+   "conv": "ConvertPathingType",
+   "arg": 4
+  },
+  "PATHING_TYPE_BLIGHTPATHING": {
+   "conv": "ConvertPathingType",
+   "arg": 5
+  },
+  "PATHING_TYPE_FLOATABILITY": {
+   "conv": "ConvertPathingType",
+   "arg": 6
+  },
+  "PATHING_TYPE_AMPHIBIOUSPATHING": {
+   "conv": "ConvertPathingType",
+   "arg": 7
+  },
+  "MOUSE_BUTTON_TYPE_LEFT": {
+   "conv": "ConvertMouseButtonType",
+   "arg": 1
+  },
+  "MOUSE_BUTTON_TYPE_MIDDLE": {
+   "conv": "ConvertMouseButtonType",
+   "arg": 2
+  },
+  "MOUSE_BUTTON_TYPE_RIGHT": {
+   "conv": "ConvertMouseButtonType",
+   "arg": 3
+  },
+  "ANIM_TYPE_BIRTH": {
+   "conv": "ConvertAnimType",
+   "arg": 0
+  },
+  "ANIM_TYPE_DEATH": {
+   "conv": "ConvertAnimType",
+   "arg": 1
+  },
+  "ANIM_TYPE_DECAY": {
+   "conv": "ConvertAnimType",
+   "arg": 2
+  },
+  "ANIM_TYPE_DISSIPATE": {
+   "conv": "ConvertAnimType",
+   "arg": 3
+  },
+  "ANIM_TYPE_STAND": {
+   "conv": "ConvertAnimType",
+   "arg": 4
+  },
+  "ANIM_TYPE_WALK": {
+   "conv": "ConvertAnimType",
+   "arg": 5
+  },
+  "ANIM_TYPE_ATTACK": {
+   "conv": "ConvertAnimType",
+   "arg": 6
+  },
+  "ANIM_TYPE_MORPH": {
+   "conv": "ConvertAnimType",
+   "arg": 7
+  },
+  "ANIM_TYPE_SLEEP": {
+   "conv": "ConvertAnimType",
+   "arg": 8
+  },
+  "ANIM_TYPE_SPELL": {
+   "conv": "ConvertAnimType",
+   "arg": 9
+  },
+  "ANIM_TYPE_PORTRAIT": {
+   "conv": "ConvertAnimType",
+   "arg": 10
+  },
+  "SUBANIM_TYPE_ROOTED": {
+   "conv": "ConvertSubAnimType",
+   "arg": 11
+  },
+  "SUBANIM_TYPE_ALTERNATE_EX": {
+   "conv": "ConvertSubAnimType",
+   "arg": 12
+  },
+  "SUBANIM_TYPE_LOOPING": {
+   "conv": "ConvertSubAnimType",
+   "arg": 13
+  },
+  "SUBANIM_TYPE_SLAM": {
+   "conv": "ConvertSubAnimType",
+   "arg": 14
+  },
+  "SUBANIM_TYPE_THROW": {
+   "conv": "ConvertSubAnimType",
+   "arg": 15
+  },
+  "SUBANIM_TYPE_SPIKED": {
+   "conv": "ConvertSubAnimType",
+   "arg": 16
+  },
+  "SUBANIM_TYPE_FAST": {
+   "conv": "ConvertSubAnimType",
+   "arg": 17
+  },
+  "SUBANIM_TYPE_SPIN": {
+   "conv": "ConvertSubAnimType",
+   "arg": 18
+  },
+  "SUBANIM_TYPE_READY": {
+   "conv": "ConvertSubAnimType",
+   "arg": 19
+  },
+  "SUBANIM_TYPE_CHANNEL": {
+   "conv": "ConvertSubAnimType",
+   "arg": 20
+  },
+  "SUBANIM_TYPE_DEFEND": {
+   "conv": "ConvertSubAnimType",
+   "arg": 21
+  },
+  "SUBANIM_TYPE_VICTORY": {
+   "conv": "ConvertSubAnimType",
+   "arg": 22
+  },
+  "SUBANIM_TYPE_TURN": {
+   "conv": "ConvertSubAnimType",
+   "arg": 23
+  },
+  "SUBANIM_TYPE_LEFT": {
+   "conv": "ConvertSubAnimType",
+   "arg": 24
+  },
+  "SUBANIM_TYPE_RIGHT": {
+   "conv": "ConvertSubAnimType",
+   "arg": 25
+  },
+  "SUBANIM_TYPE_FIRE": {
+   "conv": "ConvertSubAnimType",
+   "arg": 26
+  },
+  "SUBANIM_TYPE_FLESH": {
+   "conv": "ConvertSubAnimType",
+   "arg": 27
+  },
+  "SUBANIM_TYPE_HIT": {
+   "conv": "ConvertSubAnimType",
+   "arg": 28
+  },
+  "SUBANIM_TYPE_WOUNDED": {
+   "conv": "ConvertSubAnimType",
+   "arg": 29
+  },
+  "SUBANIM_TYPE_LIGHT": {
+   "conv": "ConvertSubAnimType",
+   "arg": 30
+  },
+  "SUBANIM_TYPE_MODERATE": {
+   "conv": "ConvertSubAnimType",
+   "arg": 31
+  },
+  "SUBANIM_TYPE_SEVERE": {
+   "conv": "ConvertSubAnimType",
+   "arg": 32
+  },
+  "SUBANIM_TYPE_CRITICAL": {
+   "conv": "ConvertSubAnimType",
+   "arg": 33
+  },
+  "SUBANIM_TYPE_COMPLETE": {
+   "conv": "ConvertSubAnimType",
+   "arg": 34
+  },
+  "SUBANIM_TYPE_GOLD": {
+   "conv": "ConvertSubAnimType",
+   "arg": 35
+  },
+  "SUBANIM_TYPE_LUMBER": {
+   "conv": "ConvertSubAnimType",
+   "arg": 36
+  },
+  "SUBANIM_TYPE_WORK": {
+   "conv": "ConvertSubAnimType",
+   "arg": 37
+  },
+  "SUBANIM_TYPE_TALK": {
+   "conv": "ConvertSubAnimType",
+   "arg": 38
+  },
+  "SUBANIM_TYPE_FIRST": {
+   "conv": "ConvertSubAnimType",
+   "arg": 39
+  },
+  "SUBANIM_TYPE_SECOND": {
+   "conv": "ConvertSubAnimType",
+   "arg": 40
+  },
+  "SUBANIM_TYPE_THIRD": {
+   "conv": "ConvertSubAnimType",
+   "arg": 41
+  },
+  "SUBANIM_TYPE_FOURTH": {
+   "conv": "ConvertSubAnimType",
+   "arg": 42
+  },
+  "SUBANIM_TYPE_FIFTH": {
+   "conv": "ConvertSubAnimType",
+   "arg": 43
+  },
+  "SUBANIM_TYPE_ONE": {
+   "conv": "ConvertSubAnimType",
+   "arg": 44
+  },
+  "SUBANIM_TYPE_TWO": {
+   "conv": "ConvertSubAnimType",
+   "arg": 45
+  },
+  "SUBANIM_TYPE_THREE": {
+   "conv": "ConvertSubAnimType",
+   "arg": 46
+  },
+  "SUBANIM_TYPE_FOUR": {
+   "conv": "ConvertSubAnimType",
+   "arg": 47
+  },
+  "SUBANIM_TYPE_FIVE": {
+   "conv": "ConvertSubAnimType",
+   "arg": 48
+  },
+  "SUBANIM_TYPE_SMALL": {
+   "conv": "ConvertSubAnimType",
+   "arg": 49
+  },
+  "SUBANIM_TYPE_MEDIUM": {
+   "conv": "ConvertSubAnimType",
+   "arg": 50
+  },
+  "SUBANIM_TYPE_LARGE": {
+   "conv": "ConvertSubAnimType",
+   "arg": 51
+  },
+  "SUBANIM_TYPE_UPGRADE": {
+   "conv": "ConvertSubAnimType",
+   "arg": 52
+  },
+  "SUBANIM_TYPE_DRAIN": {
+   "conv": "ConvertSubAnimType",
+   "arg": 53
+  },
+  "SUBANIM_TYPE_FILL": {
+   "conv": "ConvertSubAnimType",
+   "arg": 54
+  },
+  "SUBANIM_TYPE_CHAINLIGHTNING": {
+   "conv": "ConvertSubAnimType",
+   "arg": 55
+  },
+  "SUBANIM_TYPE_EATTREE": {
+   "conv": "ConvertSubAnimType",
+   "arg": 56
+  },
+  "SUBANIM_TYPE_PUKE": {
+   "conv": "ConvertSubAnimType",
+   "arg": 57
+  },
+  "SUBANIM_TYPE_FLAIL": {
+   "conv": "ConvertSubAnimType",
+   "arg": 58
+  },
+  "SUBANIM_TYPE_OFF": {
+   "conv": "ConvertSubAnimType",
+   "arg": 59
+  },
+  "SUBANIM_TYPE_SWIM": {
+   "conv": "ConvertSubAnimType",
+   "arg": 60
+  },
+  "SUBANIM_TYPE_ENTANGLE": {
+   "conv": "ConvertSubAnimType",
+   "arg": 61
+  },
+  "SUBANIM_TYPE_BERSERK": {
+   "conv": "ConvertSubAnimType",
+   "arg": 62
+  },
+  "RACE_PREF_HUMAN": {
+   "conv": "ConvertRacePref",
+   "arg": 1
+  },
+  "RACE_PREF_ORC": {
+   "conv": "ConvertRacePref",
+   "arg": 2
+  },
+  "RACE_PREF_NIGHTELF": {
+   "conv": "ConvertRacePref",
+   "arg": 4
+  },
+  "RACE_PREF_UNDEAD": {
+   "conv": "ConvertRacePref",
+   "arg": 8
+  },
+  "RACE_PREF_DEMON": {
+   "conv": "ConvertRacePref",
+   "arg": 16
+  },
+  "RACE_PREF_RANDOM": {
+   "conv": "ConvertRacePref",
+   "arg": 32
+  },
+  "RACE_PREF_USER_SELECTABLE": {
+   "conv": "ConvertRacePref",
+   "arg": 64
+  },
+  "MAP_CONTROL_USER": {
+   "conv": "ConvertMapControl",
+   "arg": 0
+  },
+  "MAP_CONTROL_COMPUTER": {
+   "conv": "ConvertMapControl",
+   "arg": 1
+  },
+  "MAP_CONTROL_RESCUABLE": {
+   "conv": "ConvertMapControl",
+   "arg": 2
+  },
+  "MAP_CONTROL_NEUTRAL": {
+   "conv": "ConvertMapControl",
+   "arg": 3
+  },
+  "MAP_CONTROL_CREEP": {
+   "conv": "ConvertMapControl",
+   "arg": 4
+  },
+  "MAP_CONTROL_NONE": {
+   "conv": "ConvertMapControl",
+   "arg": 5
+  },
+  "GAME_TYPE_MELEE": {
+   "conv": "ConvertGameType",
+   "arg": 1
+  },
+  "GAME_TYPE_FFA": {
+   "conv": "ConvertGameType",
+   "arg": 2
+  },
+  "GAME_TYPE_USE_MAP_SETTINGS": {
+   "conv": "ConvertGameType",
+   "arg": 4
+  },
+  "GAME_TYPE_BLIZ": {
+   "conv": "ConvertGameType",
+   "arg": 8
+  },
+  "GAME_TYPE_ONE_ON_ONE": {
+   "conv": "ConvertGameType",
+   "arg": 16
+  },
+  "GAME_TYPE_TWO_TEAM_PLAY": {
+   "conv": "ConvertGameType",
+   "arg": 32
+  },
+  "GAME_TYPE_THREE_TEAM_PLAY": {
+   "conv": "ConvertGameType",
+   "arg": 64
+  },
+  "GAME_TYPE_FOUR_TEAM_PLAY": {
+   "conv": "ConvertGameType",
+   "arg": 128
+  },
+  "MAP_FOG_HIDE_TERRAIN": {
+   "conv": "ConvertMapFlag",
+   "arg": 1
+  },
+  "MAP_FOG_MAP_EXPLORED": {
+   "conv": "ConvertMapFlag",
+   "arg": 2
+  },
+  "MAP_FOG_ALWAYS_VISIBLE": {
+   "conv": "ConvertMapFlag",
+   "arg": 4
+  },
+  "MAP_USE_HANDICAPS": {
+   "conv": "ConvertMapFlag",
+   "arg": 8
+  },
+  "MAP_OBSERVERS": {
+   "conv": "ConvertMapFlag",
+   "arg": 16
+  },
+  "MAP_OBSERVERS_ON_DEATH": {
+   "conv": "ConvertMapFlag",
+   "arg": 32
+  },
+  "MAP_FIXED_COLORS": {
+   "conv": "ConvertMapFlag",
+   "arg": 128
+  },
+  "MAP_LOCK_RESOURCE_TRADING": {
+   "conv": "ConvertMapFlag",
+   "arg": 256
+  },
+  "MAP_RESOURCE_TRADING_ALLIES_ONLY": {
+   "conv": "ConvertMapFlag",
+   "arg": 512
+  },
+  "MAP_LOCK_ALLIANCE_CHANGES": {
+   "conv": "ConvertMapFlag",
+   "arg": 1024
+  },
+  "MAP_ALLIANCE_CHANGES_HIDDEN": {
+   "conv": "ConvertMapFlag",
+   "arg": 2048
+  },
+  "MAP_CHEATS": {
+   "conv": "ConvertMapFlag",
+   "arg": 4096
+  },
+  "MAP_CHEATS_HIDDEN": {
+   "conv": "ConvertMapFlag",
+   "arg": 8192
+  },
+  "MAP_PLACEMENT_RANDOM": {
+   "conv": "ConvertPlacement",
+   "arg": 0
+  },
+  "MAP_PLACEMENT_FIXED": {
+   "conv": "ConvertPlacement",
+   "arg": 1
+  },
+  "MAP_PLACEMENT_USE_MAP_SETTINGS": {
+   "conv": "ConvertPlacement",
+   "arg": 2
+  },
+  "MAP_PLACEMENT_TEAMS_TOGETHER": {
+   "conv": "ConvertPlacement",
+   "arg": 3
+  },
+  "MAP_LOC_PRIO_LOW": {
+   "conv": "ConvertStartLocPrio",
+   "arg": 0
+  },
+  "MAP_LOC_PRIO_HIGH": {
+   "conv": "ConvertStartLocPrio",
+   "arg": 1
+  },
+  "MAP_LOC_PRIO_NOT": {
+   "conv": "ConvertStartLocPrio",
+   "arg": 2
+  },
+  "MAP_DENSITY_NONE": {
+   "conv": "ConvertMapDensity",
+   "arg": 0
+  },
+  "MAP_DENSITY_LIGHT": {
+   "conv": "ConvertMapDensity",
+   "arg": 1
+  },
+  "MAP_DENSITY_MEDIUM": {
+   "conv": "ConvertMapDensity",
+   "arg": 2
+  },
+  "MAP_DENSITY_HEAVY": {
+   "conv": "ConvertMapDensity",
+   "arg": 3
+  },
+  "MAP_DIFFICULTY_EASY": {
+   "conv": "ConvertGameDifficulty",
+   "arg": 0
+  },
+  "MAP_DIFFICULTY_NORMAL": {
+   "conv": "ConvertGameDifficulty",
+   "arg": 1
+  },
+  "MAP_DIFFICULTY_HARD": {
+   "conv": "ConvertGameDifficulty",
+   "arg": 2
+  },
+  "MAP_DIFFICULTY_INSANE": {
+   "conv": "ConvertGameDifficulty",
+   "arg": 3
+  },
+  "MAP_SPEED_SLOWEST": {
+   "conv": "ConvertGameSpeed",
+   "arg": 0
+  },
+  "MAP_SPEED_SLOW": {
+   "conv": "ConvertGameSpeed",
+   "arg": 1
+  },
+  "MAP_SPEED_NORMAL": {
+   "conv": "ConvertGameSpeed",
+   "arg": 2
+  },
+  "MAP_SPEED_FAST": {
+   "conv": "ConvertGameSpeed",
+   "arg": 3
+  },
+  "MAP_SPEED_FASTEST": {
+   "conv": "ConvertGameSpeed",
+   "arg": 4
+  },
+  "PLAYER_SLOT_STATE_EMPTY": {
+   "conv": "ConvertPlayerSlotState",
+   "arg": 0
+  },
+  "PLAYER_SLOT_STATE_PLAYING": {
+   "conv": "ConvertPlayerSlotState",
+   "arg": 1
+  },
+  "PLAYER_SLOT_STATE_LEFT": {
+   "conv": "ConvertPlayerSlotState",
+   "arg": 2
+  },
+  "SOUND_VOLUMEGROUP_UNITMOVEMENT": {
+   "conv": "ConvertVolumeGroup",
+   "arg": 0
+  },
+  "SOUND_VOLUMEGROUP_UNITSOUNDS": {
+   "conv": "ConvertVolumeGroup",
+   "arg": 1
+  },
+  "SOUND_VOLUMEGROUP_COMBAT": {
+   "conv": "ConvertVolumeGroup",
+   "arg": 2
+  },
+  "SOUND_VOLUMEGROUP_SPELLS": {
+   "conv": "ConvertVolumeGroup",
+   "arg": 3
+  },
+  "SOUND_VOLUMEGROUP_UI": {
+   "conv": "ConvertVolumeGroup",
+   "arg": 4
+  },
+  "SOUND_VOLUMEGROUP_MUSIC": {
+   "conv": "ConvertVolumeGroup",
+   "arg": 5
+  },
+  "SOUND_VOLUMEGROUP_AMBIENTSOUNDS": {
+   "conv": "ConvertVolumeGroup",
+   "arg": 6
+  },
+  "SOUND_VOLUMEGROUP_FIRE": {
+   "conv": "ConvertVolumeGroup",
+   "arg": 7
+  },
+  "SOUND_VOLUMEGROUP_CINEMATIC_GENERAL": {
+   "conv": "ConvertVolumeGroup",
+   "arg": 8
+  },
+  "SOUND_VOLUMEGROUP_CINEMATIC_AMBIENT": {
+   "conv": "ConvertVolumeGroup",
+   "arg": 9
+  },
+  "SOUND_VOLUMEGROUP_CINEMATIC_MUSIC": {
+   "conv": "ConvertVolumeGroup",
+   "arg": 10
+  },
+  "SOUND_VOLUMEGROUP_CINEMATIC_DIALOGUE": {
+   "conv": "ConvertVolumeGroup",
+   "arg": 11
+  },
+  "SOUND_VOLUMEGROUP_CINEMATIC_SOUND_EFFECTS_1": {
+   "conv": "ConvertVolumeGroup",
+   "arg": 12
+  },
+  "SOUND_VOLUMEGROUP_CINEMATIC_SOUND_EFFECTS_2": {
+   "conv": "ConvertVolumeGroup",
+   "arg": 13
+  },
+  "SOUND_VOLUMEGROUP_CINEMATIC_SOUND_EFFECTS_3": {
+   "conv": "ConvertVolumeGroup",
+   "arg": 14
+  },
+  "GAME_STATE_DIVINE_INTERVENTION": {
+   "conv": "ConvertIGameState",
+   "arg": 0
+  },
+  "GAME_STATE_DISCONNECTED": {
+   "conv": "ConvertIGameState",
+   "arg": 1
+  },
+  "GAME_STATE_TIME_OF_DAY": {
+   "conv": "ConvertFGameState",
+   "arg": 2
+  },
+  "PLAYER_STATE_GAME_RESULT": {
+   "conv": "ConvertPlayerState",
+   "arg": 0
+  },
+  "PLAYER_STATE_RESOURCE_GOLD": {
+   "conv": "ConvertPlayerState",
+   "arg": 1
+  },
+  "PLAYER_STATE_RESOURCE_LUMBER": {
+   "conv": "ConvertPlayerState",
+   "arg": 2
+  },
+  "PLAYER_STATE_RESOURCE_HERO_TOKENS": {
+   "conv": "ConvertPlayerState",
+   "arg": 3
+  },
+  "PLAYER_STATE_RESOURCE_FOOD_CAP": {
+   "conv": "ConvertPlayerState",
+   "arg": 4
+  },
+  "PLAYER_STATE_RESOURCE_FOOD_USED": {
+   "conv": "ConvertPlayerState",
+   "arg": 5
+  },
+  "PLAYER_STATE_FOOD_CAP_CEILING": {
+   "conv": "ConvertPlayerState",
+   "arg": 6
+  },
+  "PLAYER_STATE_GIVES_BOUNTY": {
+   "conv": "ConvertPlayerState",
+   "arg": 7
+  },
+  "PLAYER_STATE_ALLIED_VICTORY": {
+   "conv": "ConvertPlayerState",
+   "arg": 8
+  },
+  "PLAYER_STATE_PLACED": {
+   "conv": "ConvertPlayerState",
+   "arg": 9
+  },
+  "PLAYER_STATE_OBSERVER_ON_DEATH": {
+   "conv": "ConvertPlayerState",
+   "arg": 10
+  },
+  "PLAYER_STATE_OBSERVER": {
+   "conv": "ConvertPlayerState",
+   "arg": 11
+  },
+  "PLAYER_STATE_UNFOLLOWABLE": {
+   "conv": "ConvertPlayerState",
+   "arg": 12
+  },
+  "PLAYER_STATE_GOLD_UPKEEP_RATE": {
+   "conv": "ConvertPlayerState",
+   "arg": 13
+  },
+  "PLAYER_STATE_LUMBER_UPKEEP_RATE": {
+   "conv": "ConvertPlayerState",
+   "arg": 14
+  },
+  "PLAYER_STATE_GOLD_GATHERED": {
+   "conv": "ConvertPlayerState",
+   "arg": 15
+  },
+  "PLAYER_STATE_LUMBER_GATHERED": {
+   "conv": "ConvertPlayerState",
+   "arg": 16
+  },
+  "PLAYER_STATE_NO_CREEP_SLEEP": {
+   "conv": "ConvertPlayerState",
+   "arg": 25
+  },
+  "UNIT_STATE_LIFE": {
+   "conv": "ConvertUnitState",
+   "arg": 0
+  },
+  "UNIT_STATE_MAX_LIFE": {
+   "conv": "ConvertUnitState",
+   "arg": 1
+  },
+  "UNIT_STATE_MANA": {
+   "conv": "ConvertUnitState",
+   "arg": 2
+  },
+  "UNIT_STATE_MAX_MANA": {
+   "conv": "ConvertUnitState",
+   "arg": 3
+  },
+  "AI_DIFFICULTY_NEWBIE": {
+   "conv": "ConvertAIDifficulty",
+   "arg": 0
+  },
+  "AI_DIFFICULTY_NORMAL": {
+   "conv": "ConvertAIDifficulty",
+   "arg": 1
+  },
+  "AI_DIFFICULTY_INSANE": {
+   "conv": "ConvertAIDifficulty",
+   "arg": 2
+  },
+  "PLAYER_SCORE_UNITS_TRAINED": {
+   "conv": "ConvertPlayerScore",
+   "arg": 0
+  },
+  "PLAYER_SCORE_UNITS_KILLED": {
+   "conv": "ConvertPlayerScore",
+   "arg": 1
+  },
+  "PLAYER_SCORE_STRUCT_BUILT": {
+   "conv": "ConvertPlayerScore",
+   "arg": 2
+  },
+  "PLAYER_SCORE_STRUCT_RAZED": {
+   "conv": "ConvertPlayerScore",
+   "arg": 3
+  },
+  "PLAYER_SCORE_TECH_PERCENT": {
+   "conv": "ConvertPlayerScore",
+   "arg": 4
+  },
+  "PLAYER_SCORE_FOOD_MAXPROD": {
+   "conv": "ConvertPlayerScore",
+   "arg": 5
+  },
+  "PLAYER_SCORE_FOOD_MAXUSED": {
+   "conv": "ConvertPlayerScore",
+   "arg": 6
+  },
+  "PLAYER_SCORE_HEROES_KILLED": {
+   "conv": "ConvertPlayerScore",
+   "arg": 7
+  },
+  "PLAYER_SCORE_ITEMS_GAINED": {
+   "conv": "ConvertPlayerScore",
+   "arg": 8
+  },
+  "PLAYER_SCORE_MERCS_HIRED": {
+   "conv": "ConvertPlayerScore",
+   "arg": 9
+  },
+  "PLAYER_SCORE_GOLD_MINED_TOTAL": {
+   "conv": "ConvertPlayerScore",
+   "arg": 10
+  },
+  "PLAYER_SCORE_GOLD_MINED_UPKEEP": {
+   "conv": "ConvertPlayerScore",
+   "arg": 11
+  },
+  "PLAYER_SCORE_GOLD_LOST_UPKEEP": {
+   "conv": "ConvertPlayerScore",
+   "arg": 12
+  },
+  "PLAYER_SCORE_GOLD_LOST_TAX": {
+   "conv": "ConvertPlayerScore",
+   "arg": 13
+  },
+  "PLAYER_SCORE_GOLD_GIVEN": {
+   "conv": "ConvertPlayerScore",
+   "arg": 14
+  },
+  "PLAYER_SCORE_GOLD_RECEIVED": {
+   "conv": "ConvertPlayerScore",
+   "arg": 15
+  },
+  "PLAYER_SCORE_LUMBER_TOTAL": {
+   "conv": "ConvertPlayerScore",
+   "arg": 16
+  },
+  "PLAYER_SCORE_LUMBER_LOST_UPKEEP": {
+   "conv": "ConvertPlayerScore",
+   "arg": 17
+  },
+  "PLAYER_SCORE_LUMBER_LOST_TAX": {
+   "conv": "ConvertPlayerScore",
+   "arg": 18
+  },
+  "PLAYER_SCORE_LUMBER_GIVEN": {
+   "conv": "ConvertPlayerScore",
+   "arg": 19
+  },
+  "PLAYER_SCORE_LUMBER_RECEIVED": {
+   "conv": "ConvertPlayerScore",
+   "arg": 20
+  },
+  "PLAYER_SCORE_UNIT_TOTAL": {
+   "conv": "ConvertPlayerScore",
+   "arg": 21
+  },
+  "PLAYER_SCORE_HERO_TOTAL": {
+   "conv": "ConvertPlayerScore",
+   "arg": 22
+  },
+  "PLAYER_SCORE_RESOURCE_TOTAL": {
+   "conv": "ConvertPlayerScore",
+   "arg": 23
+  },
+  "PLAYER_SCORE_TOTAL": {
+   "conv": "ConvertPlayerScore",
+   "arg": 24
+  },
+  "EVENT_GAME_VICTORY": {
+   "conv": "ConvertGameEvent",
+   "arg": 0
+  },
+  "EVENT_GAME_END_LEVEL": {
+   "conv": "ConvertGameEvent",
+   "arg": 1
+  },
+  "EVENT_GAME_VARIABLE_LIMIT": {
+   "conv": "ConvertGameEvent",
+   "arg": 2
+  },
+  "EVENT_GAME_STATE_LIMIT": {
+   "conv": "ConvertGameEvent",
+   "arg": 3
+  },
+  "EVENT_GAME_TIMER_EXPIRED": {
+   "conv": "ConvertGameEvent",
+   "arg": 4
+  },
+  "EVENT_GAME_ENTER_REGION": {
+   "conv": "ConvertGameEvent",
+   "arg": 5
+  },
+  "EVENT_GAME_LEAVE_REGION": {
+   "conv": "ConvertGameEvent",
+   "arg": 6
+  },
+  "EVENT_GAME_TRACKABLE_HIT": {
+   "conv": "ConvertGameEvent",
+   "arg": 7
+  },
+  "EVENT_GAME_TRACKABLE_TRACK": {
+   "conv": "ConvertGameEvent",
+   "arg": 8
+  },
+  "EVENT_GAME_SHOW_SKILL": {
+   "conv": "ConvertGameEvent",
+   "arg": 9
+  },
+  "EVENT_GAME_BUILD_SUBMENU": {
+   "conv": "ConvertGameEvent",
+   "arg": 10
+  },
+  "EVENT_PLAYER_STATE_LIMIT": {
+   "conv": "ConvertPlayerEvent",
+   "arg": 11
+  },
+  "EVENT_PLAYER_ALLIANCE_CHANGED": {
+   "conv": "ConvertPlayerEvent",
+   "arg": 12
+  },
+  "EVENT_PLAYER_DEFEAT": {
+   "conv": "ConvertPlayerEvent",
+   "arg": 13
+  },
+  "EVENT_PLAYER_VICTORY": {
+   "conv": "ConvertPlayerEvent",
+   "arg": 14
+  },
+  "EVENT_PLAYER_LEAVE": {
+   "conv": "ConvertPlayerEvent",
+   "arg": 15
+  },
+  "EVENT_PLAYER_CHAT": {
+   "conv": "ConvertPlayerEvent",
+   "arg": 16
+  },
+  "EVENT_PLAYER_END_CINEMATIC": {
+   "conv": "ConvertPlayerEvent",
+   "arg": 17
+  },
+  "EVENT_PLAYER_UNIT_ATTACKED": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 18
+  },
+  "EVENT_PLAYER_UNIT_RESCUED": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 19
+  },
+  "EVENT_PLAYER_UNIT_DEATH": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 20
+  },
+  "EVENT_PLAYER_UNIT_DECAY": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 21
+  },
+  "EVENT_PLAYER_UNIT_DETECTED": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 22
+  },
+  "EVENT_PLAYER_UNIT_HIDDEN": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 23
+  },
+  "EVENT_PLAYER_UNIT_SELECTED": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 24
+  },
+  "EVENT_PLAYER_UNIT_DESELECTED": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 25
+  },
+  "EVENT_PLAYER_UNIT_CONSTRUCT_START": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 26
+  },
+  "EVENT_PLAYER_UNIT_CONSTRUCT_CANCEL": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 27
+  },
+  "EVENT_PLAYER_UNIT_CONSTRUCT_FINISH": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 28
+  },
+  "EVENT_PLAYER_UNIT_UPGRADE_START": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 29
+  },
+  "EVENT_PLAYER_UNIT_UPGRADE_CANCEL": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 30
+  },
+  "EVENT_PLAYER_UNIT_UPGRADE_FINISH": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 31
+  },
+  "EVENT_PLAYER_UNIT_TRAIN_START": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 32
+  },
+  "EVENT_PLAYER_UNIT_TRAIN_CANCEL": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 33
+  },
+  "EVENT_PLAYER_UNIT_TRAIN_FINISH": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 34
+  },
+  "EVENT_PLAYER_UNIT_RESEARCH_START": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 35
+  },
+  "EVENT_PLAYER_UNIT_RESEARCH_CANCEL": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 36
+  },
+  "EVENT_PLAYER_UNIT_RESEARCH_FINISH": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 37
+  },
+  "EVENT_PLAYER_UNIT_ISSUED_ORDER": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 38
+  },
+  "EVENT_PLAYER_UNIT_ISSUED_POINT_ORDER": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 39
+  },
+  "EVENT_PLAYER_UNIT_ISSUED_TARGET_ORDER": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 40
+  },
+  "EVENT_PLAYER_UNIT_ISSUED_UNIT_ORDER": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 40
+  },
+  "EVENT_PLAYER_HERO_LEVEL": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 41
+  },
+  "EVENT_PLAYER_HERO_SKILL": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 42
+  },
+  "EVENT_PLAYER_HERO_REVIVABLE": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 43
+  },
+  "EVENT_PLAYER_HERO_REVIVE_START": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 44
+  },
+  "EVENT_PLAYER_HERO_REVIVE_CANCEL": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 45
+  },
+  "EVENT_PLAYER_HERO_REVIVE_FINISH": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 46
+  },
+  "EVENT_PLAYER_UNIT_SUMMON": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 47
+  },
+  "EVENT_PLAYER_UNIT_DROP_ITEM": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 48
+  },
+  "EVENT_PLAYER_UNIT_PICKUP_ITEM": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 49
+  },
+  "EVENT_PLAYER_UNIT_USE_ITEM": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 50
+  },
+  "EVENT_PLAYER_UNIT_LOADED": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 51
+  },
+  "EVENT_PLAYER_UNIT_DAMAGED": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 308
+  },
+  "EVENT_PLAYER_UNIT_DAMAGING": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 315
+  },
+  "EVENT_UNIT_DAMAGED": {
+   "conv": "ConvertUnitEvent",
+   "arg": 52
+  },
+  "EVENT_UNIT_DAMAGING": {
+   "conv": "ConvertUnitEvent",
+   "arg": 314
+  },
+  "EVENT_UNIT_DEATH": {
+   "conv": "ConvertUnitEvent",
+   "arg": 53
+  },
+  "EVENT_UNIT_DECAY": {
+   "conv": "ConvertUnitEvent",
+   "arg": 54
+  },
+  "EVENT_UNIT_DETECTED": {
+   "conv": "ConvertUnitEvent",
+   "arg": 55
+  },
+  "EVENT_UNIT_HIDDEN": {
+   "conv": "ConvertUnitEvent",
+   "arg": 56
+  },
+  "EVENT_UNIT_SELECTED": {
+   "conv": "ConvertUnitEvent",
+   "arg": 57
+  },
+  "EVENT_UNIT_DESELECTED": {
+   "conv": "ConvertUnitEvent",
+   "arg": 58
+  },
+  "EVENT_UNIT_STATE_LIMIT": {
+   "conv": "ConvertUnitEvent",
+   "arg": 59
+  },
+  "EVENT_UNIT_ACQUIRED_TARGET": {
+   "conv": "ConvertUnitEvent",
+   "arg": 60
+  },
+  "EVENT_UNIT_TARGET_IN_RANGE": {
+   "conv": "ConvertUnitEvent",
+   "arg": 61
+  },
+  "EVENT_UNIT_ATTACKED": {
+   "conv": "ConvertUnitEvent",
+   "arg": 62
+  },
+  "EVENT_UNIT_RESCUED": {
+   "conv": "ConvertUnitEvent",
+   "arg": 63
+  },
+  "EVENT_UNIT_CONSTRUCT_CANCEL": {
+   "conv": "ConvertUnitEvent",
+   "arg": 64
+  },
+  "EVENT_UNIT_CONSTRUCT_FINISH": {
+   "conv": "ConvertUnitEvent",
+   "arg": 65
+  },
+  "EVENT_UNIT_UPGRADE_START": {
+   "conv": "ConvertUnitEvent",
+   "arg": 66
+  },
+  "EVENT_UNIT_UPGRADE_CANCEL": {
+   "conv": "ConvertUnitEvent",
+   "arg": 67
+  },
+  "EVENT_UNIT_UPGRADE_FINISH": {
+   "conv": "ConvertUnitEvent",
+   "arg": 68
+  },
+  "EVENT_UNIT_TRAIN_START": {
+   "conv": "ConvertUnitEvent",
+   "arg": 69
+  },
+  "EVENT_UNIT_TRAIN_CANCEL": {
+   "conv": "ConvertUnitEvent",
+   "arg": 70
+  },
+  "EVENT_UNIT_TRAIN_FINISH": {
+   "conv": "ConvertUnitEvent",
+   "arg": 71
+  },
+  "EVENT_UNIT_RESEARCH_START": {
+   "conv": "ConvertUnitEvent",
+   "arg": 72
+  },
+  "EVENT_UNIT_RESEARCH_CANCEL": {
+   "conv": "ConvertUnitEvent",
+   "arg": 73
+  },
+  "EVENT_UNIT_RESEARCH_FINISH": {
+   "conv": "ConvertUnitEvent",
+   "arg": 74
+  },
+  "EVENT_UNIT_ISSUED_ORDER": {
+   "conv": "ConvertUnitEvent",
+   "arg": 75
+  },
+  "EVENT_UNIT_ISSUED_POINT_ORDER": {
+   "conv": "ConvertUnitEvent",
+   "arg": 76
+  },
+  "EVENT_UNIT_ISSUED_TARGET_ORDER": {
+   "conv": "ConvertUnitEvent",
+   "arg": 77
+  },
+  "EVENT_UNIT_HERO_LEVEL": {
+   "conv": "ConvertUnitEvent",
+   "arg": 78
+  },
+  "EVENT_UNIT_HERO_SKILL": {
+   "conv": "ConvertUnitEvent",
+   "arg": 79
+  },
+  "EVENT_UNIT_HERO_REVIVABLE": {
+   "conv": "ConvertUnitEvent",
+   "arg": 80
+  },
+  "EVENT_UNIT_HERO_REVIVE_START": {
+   "conv": "ConvertUnitEvent",
+   "arg": 81
+  },
+  "EVENT_UNIT_HERO_REVIVE_CANCEL": {
+   "conv": "ConvertUnitEvent",
+   "arg": 82
+  },
+  "EVENT_UNIT_HERO_REVIVE_FINISH": {
+   "conv": "ConvertUnitEvent",
+   "arg": 83
+  },
+  "EVENT_UNIT_SUMMON": {
+   "conv": "ConvertUnitEvent",
+   "arg": 84
+  },
+  "EVENT_UNIT_DROP_ITEM": {
+   "conv": "ConvertUnitEvent",
+   "arg": 85
+  },
+  "EVENT_UNIT_PICKUP_ITEM": {
+   "conv": "ConvertUnitEvent",
+   "arg": 86
+  },
+  "EVENT_UNIT_USE_ITEM": {
+   "conv": "ConvertUnitEvent",
+   "arg": 87
+  },
+  "EVENT_UNIT_LOADED": {
+   "conv": "ConvertUnitEvent",
+   "arg": 88
+  },
+  "EVENT_WIDGET_DEATH": {
+   "conv": "ConvertWidgetEvent",
+   "arg": 89
+  },
+  "EVENT_DIALOG_BUTTON_CLICK": {
+   "conv": "ConvertDialogEvent",
+   "arg": 90
+  },
+  "EVENT_DIALOG_CLICK": {
+   "conv": "ConvertDialogEvent",
+   "arg": 91
+  },
+  "EVENT_GAME_LOADED": {
+   "conv": "ConvertGameEvent",
+   "arg": 256
+  },
+  "EVENT_GAME_TOURNAMENT_FINISH_SOON": {
+   "conv": "ConvertGameEvent",
+   "arg": 257
+  },
+  "EVENT_GAME_TOURNAMENT_FINISH_NOW": {
+   "conv": "ConvertGameEvent",
+   "arg": 258
+  },
+  "EVENT_GAME_SAVE": {
+   "conv": "ConvertGameEvent",
+   "arg": 259
+  },
+  "EVENT_GAME_CUSTOM_UI_FRAME": {
+   "conv": "ConvertGameEvent",
+   "arg": 310
+  },
+  "EVENT_PLAYER_ARROW_LEFT_DOWN": {
+   "conv": "ConvertPlayerEvent",
+   "arg": 261
+  },
+  "EVENT_PLAYER_ARROW_LEFT_UP": {
+   "conv": "ConvertPlayerEvent",
+   "arg": 262
+  },
+  "EVENT_PLAYER_ARROW_RIGHT_DOWN": {
+   "conv": "ConvertPlayerEvent",
+   "arg": 263
+  },
+  "EVENT_PLAYER_ARROW_RIGHT_UP": {
+   "conv": "ConvertPlayerEvent",
+   "arg": 264
+  },
+  "EVENT_PLAYER_ARROW_DOWN_DOWN": {
+   "conv": "ConvertPlayerEvent",
+   "arg": 265
+  },
+  "EVENT_PLAYER_ARROW_DOWN_UP": {
+   "conv": "ConvertPlayerEvent",
+   "arg": 266
+  },
+  "EVENT_PLAYER_ARROW_UP_DOWN": {
+   "conv": "ConvertPlayerEvent",
+   "arg": 267
+  },
+  "EVENT_PLAYER_ARROW_UP_UP": {
+   "conv": "ConvertPlayerEvent",
+   "arg": 268
+  },
+  "EVENT_PLAYER_MOUSE_DOWN": {
+   "conv": "ConvertPlayerEvent",
+   "arg": 305
+  },
+  "EVENT_PLAYER_MOUSE_UP": {
+   "conv": "ConvertPlayerEvent",
+   "arg": 306
+  },
+  "EVENT_PLAYER_MOUSE_MOVE": {
+   "conv": "ConvertPlayerEvent",
+   "arg": 307
+  },
+  "EVENT_PLAYER_SYNC_DATA": {
+   "conv": "ConvertPlayerEvent",
+   "arg": 309
+  },
+  "EVENT_PLAYER_KEY": {
+   "conv": "ConvertPlayerEvent",
+   "arg": 311
+  },
+  "EVENT_PLAYER_KEY_DOWN": {
+   "conv": "ConvertPlayerEvent",
+   "arg": 312
+  },
+  "EVENT_PLAYER_KEY_UP": {
+   "conv": "ConvertPlayerEvent",
+   "arg": 313
+  },
+  "EVENT_PLAYER_UNIT_SELL": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 269
+  },
+  "EVENT_PLAYER_UNIT_CHANGE_OWNER": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 270
+  },
+  "EVENT_PLAYER_UNIT_SELL_ITEM": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 271
+  },
+  "EVENT_PLAYER_UNIT_SPELL_CHANNEL": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 272
+  },
+  "EVENT_PLAYER_UNIT_SPELL_CAST": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 273
+  },
+  "EVENT_PLAYER_UNIT_SPELL_EFFECT": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 274
+  },
+  "EVENT_PLAYER_UNIT_SPELL_FINISH": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 275
+  },
+  "EVENT_PLAYER_UNIT_SPELL_ENDCAST": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 276
+  },
+  "EVENT_PLAYER_UNIT_PAWN_ITEM": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 277
+  },
+  "EVENT_PLAYER_UNIT_STACK_ITEM": {
+   "conv": "ConvertPlayerUnitEvent",
+   "arg": 319
+  },
+  "EVENT_UNIT_SELL": {
+   "conv": "ConvertUnitEvent",
+   "arg": 286
+  },
+  "EVENT_UNIT_CHANGE_OWNER": {
+   "conv": "ConvertUnitEvent",
+   "arg": 287
+  },
+  "EVENT_UNIT_SELL_ITEM": {
+   "conv": "ConvertUnitEvent",
+   "arg": 288
+  },
+  "EVENT_UNIT_SPELL_CHANNEL": {
+   "conv": "ConvertUnitEvent",
+   "arg": 289
+  },
+  "EVENT_UNIT_SPELL_CAST": {
+   "conv": "ConvertUnitEvent",
+   "arg": 290
+  },
+  "EVENT_UNIT_SPELL_EFFECT": {
+   "conv": "ConvertUnitEvent",
+   "arg": 291
+  },
+  "EVENT_UNIT_SPELL_FINISH": {
+   "conv": "ConvertUnitEvent",
+   "arg": 292
+  },
+  "EVENT_UNIT_SPELL_ENDCAST": {
+   "conv": "ConvertUnitEvent",
+   "arg": 293
+  },
+  "EVENT_UNIT_PAWN_ITEM": {
+   "conv": "ConvertUnitEvent",
+   "arg": 294
+  },
+  "EVENT_UNIT_STACK_ITEM": {
+   "conv": "ConvertUnitEvent",
+   "arg": 318
+  },
+  "LESS_THAN": {
+   "conv": "ConvertLimitOp",
+   "arg": 0
+  },
+  "LESS_THAN_OR_EQUAL": {
+   "conv": "ConvertLimitOp",
+   "arg": 1
+  },
+  "EQUAL": {
+   "conv": "ConvertLimitOp",
+   "arg": 2
+  },
+  "GREATER_THAN_OR_EQUAL": {
+   "conv": "ConvertLimitOp",
+   "arg": 3
+  },
+  "GREATER_THAN": {
+   "conv": "ConvertLimitOp",
+   "arg": 4
+  },
+  "NOT_EQUAL": {
+   "conv": "ConvertLimitOp",
+   "arg": 5
+  },
+  "UNIT_TYPE_HERO": {
+   "conv": "ConvertUnitType",
+   "arg": 0
+  },
+  "UNIT_TYPE_DEAD": {
+   "conv": "ConvertUnitType",
+   "arg": 1
+  },
+  "UNIT_TYPE_STRUCTURE": {
+   "conv": "ConvertUnitType",
+   "arg": 2
+  },
+  "UNIT_TYPE_FLYING": {
+   "conv": "ConvertUnitType",
+   "arg": 3
+  },
+  "UNIT_TYPE_GROUND": {
+   "conv": "ConvertUnitType",
+   "arg": 4
+  },
+  "UNIT_TYPE_ATTACKS_FLYING": {
+   "conv": "ConvertUnitType",
+   "arg": 5
+  },
+  "UNIT_TYPE_ATTACKS_GROUND": {
+   "conv": "ConvertUnitType",
+   "arg": 6
+  },
+  "UNIT_TYPE_MELEE_ATTACKER": {
+   "conv": "ConvertUnitType",
+   "arg": 7
+  },
+  "UNIT_TYPE_RANGED_ATTACKER": {
+   "conv": "ConvertUnitType",
+   "arg": 8
+  },
+  "UNIT_TYPE_GIANT": {
+   "conv": "ConvertUnitType",
+   "arg": 9
+  },
+  "UNIT_TYPE_SUMMONED": {
+   "conv": "ConvertUnitType",
+   "arg": 10
+  },
+  "UNIT_TYPE_STUNNED": {
+   "conv": "ConvertUnitType",
+   "arg": 11
+  },
+  "UNIT_TYPE_PLAGUED": {
+   "conv": "ConvertUnitType",
+   "arg": 12
+  },
+  "UNIT_TYPE_SNARED": {
+   "conv": "ConvertUnitType",
+   "arg": 13
+  },
+  "UNIT_TYPE_UNDEAD": {
+   "conv": "ConvertUnitType",
+   "arg": 14
+  },
+  "UNIT_TYPE_MECHANICAL": {
+   "conv": "ConvertUnitType",
+   "arg": 15
+  },
+  "UNIT_TYPE_PEON": {
+   "conv": "ConvertUnitType",
+   "arg": 16
+  },
+  "UNIT_TYPE_SAPPER": {
+   "conv": "ConvertUnitType",
+   "arg": 17
+  },
+  "UNIT_TYPE_TOWNHALL": {
+   "conv": "ConvertUnitType",
+   "arg": 18
+  },
+  "UNIT_TYPE_ANCIENT": {
+   "conv": "ConvertUnitType",
+   "arg": 19
+  },
+  "UNIT_TYPE_TAUREN": {
+   "conv": "ConvertUnitType",
+   "arg": 20
+  },
+  "UNIT_TYPE_POISONED": {
+   "conv": "ConvertUnitType",
+   "arg": 21
+  },
+  "UNIT_TYPE_POLYMORPHED": {
+   "conv": "ConvertUnitType",
+   "arg": 22
+  },
+  "UNIT_TYPE_SLEEPING": {
+   "conv": "ConvertUnitType",
+   "arg": 23
+  },
+  "UNIT_TYPE_RESISTANT": {
+   "conv": "ConvertUnitType",
+   "arg": 24
+  },
+  "UNIT_TYPE_ETHEREAL": {
+   "conv": "ConvertUnitType",
+   "arg": 25
+  },
+  "UNIT_TYPE_MAGIC_IMMUNE": {
+   "conv": "ConvertUnitType",
+   "arg": 26
+  },
+  "ITEM_TYPE_PERMANENT": {
+   "conv": "ConvertItemType",
+   "arg": 0
+  },
+  "ITEM_TYPE_CHARGED": {
+   "conv": "ConvertItemType",
+   "arg": 1
+  },
+  "ITEM_TYPE_POWERUP": {
+   "conv": "ConvertItemType",
+   "arg": 2
+  },
+  "ITEM_TYPE_ARTIFACT": {
+   "conv": "ConvertItemType",
+   "arg": 3
+  },
+  "ITEM_TYPE_PURCHASABLE": {
+   "conv": "ConvertItemType",
+   "arg": 4
+  },
+  "ITEM_TYPE_CAMPAIGN": {
+   "conv": "ConvertItemType",
+   "arg": 5
+  },
+  "ITEM_TYPE_MISCELLANEOUS": {
+   "conv": "ConvertItemType",
+   "arg": 6
+  },
+  "ITEM_TYPE_UNKNOWN": {
+   "conv": "ConvertItemType",
+   "arg": 7
+  },
+  "ITEM_TYPE_ANY": {
+   "conv": "ConvertItemType",
+   "arg": 8
+  },
+  "ITEM_TYPE_TOME": {
+   "conv": "ConvertItemType",
+   "arg": 2
+  },
+  "CAMERA_FIELD_TARGET_DISTANCE": {
+   "conv": "ConvertCameraField",
+   "arg": 0
+  },
+  "CAMERA_FIELD_FARZ": {
+   "conv": "ConvertCameraField",
+   "arg": 1
+  },
+  "CAMERA_FIELD_ANGLE_OF_ATTACK": {
+   "conv": "ConvertCameraField",
+   "arg": 2
+  },
+  "CAMERA_FIELD_FIELD_OF_VIEW": {
+   "conv": "ConvertCameraField",
+   "arg": 3
+  },
+  "CAMERA_FIELD_ROLL": {
+   "conv": "ConvertCameraField",
+   "arg": 4
+  },
+  "CAMERA_FIELD_ROTATION": {
+   "conv": "ConvertCameraField",
+   "arg": 5
+  },
+  "CAMERA_FIELD_ZOFFSET": {
+   "conv": "ConvertCameraField",
+   "arg": 6
+  },
+  "CAMERA_FIELD_NEARZ": {
+   "conv": "ConvertCameraField",
+   "arg": 7
+  },
+  "CAMERA_FIELD_LOCAL_PITCH": {
+   "conv": "ConvertCameraField",
+   "arg": 8
+  },
+  "CAMERA_FIELD_LOCAL_YAW": {
+   "conv": "ConvertCameraField",
+   "arg": 9
+  },
+  "CAMERA_FIELD_LOCAL_ROLL": {
+   "conv": "ConvertCameraField",
+   "arg": 10
+  },
+  "BLEND_MODE_NONE": {
+   "conv": "ConvertBlendMode",
+   "arg": 0
+  },
+  "BLEND_MODE_DONT_CARE": {
+   "conv": "ConvertBlendMode",
+   "arg": 0
+  },
+  "BLEND_MODE_KEYALPHA": {
+   "conv": "ConvertBlendMode",
+   "arg": 1
+  },
+  "BLEND_MODE_BLEND": {
+   "conv": "ConvertBlendMode",
+   "arg": 2
+  },
+  "BLEND_MODE_ADDITIVE": {
+   "conv": "ConvertBlendMode",
+   "arg": 3
+  },
+  "BLEND_MODE_MODULATE": {
+   "conv": "ConvertBlendMode",
+   "arg": 4
+  },
+  "BLEND_MODE_MODULATE_2X": {
+   "conv": "ConvertBlendMode",
+   "arg": 5
+  },
+  "RARITY_FREQUENT": {
+   "conv": "ConvertRarityControl",
+   "arg": 0
+  },
+  "RARITY_RARE": {
+   "conv": "ConvertRarityControl",
+   "arg": 1
+  },
+  "TEXMAP_FLAG_NONE": {
+   "conv": "ConvertTexMapFlags",
+   "arg": 0
+  },
+  "TEXMAP_FLAG_WRAP_U": {
+   "conv": "ConvertTexMapFlags",
+   "arg": 1
+  },
+  "TEXMAP_FLAG_WRAP_V": {
+   "conv": "ConvertTexMapFlags",
+   "arg": 2
+  },
+  "TEXMAP_FLAG_WRAP_UV": {
+   "conv": "ConvertTexMapFlags",
+   "arg": 3
+  },
+  "FOG_OF_WAR_MASKED": {
+   "conv": "ConvertFogState",
+   "arg": 1
+  },
+  "FOG_OF_WAR_FOGGED": {
+   "conv": "ConvertFogState",
+   "arg": 2
+  },
+  "FOG_OF_WAR_VISIBLE": {
+   "conv": "ConvertFogState",
+   "arg": 4
+  },
+  "CAMERA_MARGIN_LEFT": {
+   "value": 0
+  },
+  "CAMERA_MARGIN_RIGHT": {
+   "value": 1
+  },
+  "CAMERA_MARGIN_TOP": {
+   "value": 2
+  },
+  "CAMERA_MARGIN_BOTTOM": {
+   "value": 3
+  },
+  "EFFECT_TYPE_EFFECT": {
+   "conv": "ConvertEffectType",
+   "arg": 0
+  },
+  "EFFECT_TYPE_TARGET": {
+   "conv": "ConvertEffectType",
+   "arg": 1
+  },
+  "EFFECT_TYPE_CASTER": {
+   "conv": "ConvertEffectType",
+   "arg": 2
+  },
+  "EFFECT_TYPE_SPECIAL": {
+   "conv": "ConvertEffectType",
+   "arg": 3
+  },
+  "EFFECT_TYPE_AREA_EFFECT": {
+   "conv": "ConvertEffectType",
+   "arg": 4
+  },
+  "EFFECT_TYPE_MISSILE": {
+   "conv": "ConvertEffectType",
+   "arg": 5
+  },
+  "EFFECT_TYPE_LIGHTNING": {
+   "conv": "ConvertEffectType",
+   "arg": 6
+  },
+  "SOUND_TYPE_EFFECT": {
+   "conv": "ConvertSoundType",
+   "arg": 0
+  },
+  "SOUND_TYPE_EFFECT_LOOPED": {
+   "conv": "ConvertSoundType",
+   "arg": 1
+  },
+  "ORIGIN_FRAME_GAME_UI": {
+   "conv": "ConvertOriginFrameType",
+   "arg": 0
+  },
+  "ORIGIN_FRAME_COMMAND_BUTTON": {
+   "conv": "ConvertOriginFrameType",
+   "arg": 1
+  },
+  "ORIGIN_FRAME_HERO_BAR": {
+   "conv": "ConvertOriginFrameType",
+   "arg": 2
+  },
+  "ORIGIN_FRAME_HERO_BUTTON": {
+   "conv": "ConvertOriginFrameType",
+   "arg": 3
+  },
+  "ORIGIN_FRAME_HERO_HP_BAR": {
+   "conv": "ConvertOriginFrameType",
+   "arg": 4
+  },
+  "ORIGIN_FRAME_HERO_MANA_BAR": {
+   "conv": "ConvertOriginFrameType",
+   "arg": 5
+  },
+  "ORIGIN_FRAME_HERO_BUTTON_INDICATOR": {
+   "conv": "ConvertOriginFrameType",
+   "arg": 6
+  },
+  "ORIGIN_FRAME_ITEM_BUTTON": {
+   "conv": "ConvertOriginFrameType",
+   "arg": 7
+  },
+  "ORIGIN_FRAME_MINIMAP": {
+   "conv": "ConvertOriginFrameType",
+   "arg": 8
+  },
+  "ORIGIN_FRAME_MINIMAP_BUTTON": {
+   "conv": "ConvertOriginFrameType",
+   "arg": 9
+  },
+  "ORIGIN_FRAME_SYSTEM_BUTTON": {
+   "conv": "ConvertOriginFrameType",
+   "arg": 10
+  },
+  "ORIGIN_FRAME_TOOLTIP": {
+   "conv": "ConvertOriginFrameType",
+   "arg": 11
+  },
+  "ORIGIN_FRAME_UBERTOOLTIP": {
+   "conv": "ConvertOriginFrameType",
+   "arg": 12
+  },
+  "ORIGIN_FRAME_CHAT_MSG": {
+   "conv": "ConvertOriginFrameType",
+   "arg": 13
+  },
+  "ORIGIN_FRAME_UNIT_MSG": {
+   "conv": "ConvertOriginFrameType",
+   "arg": 14
+  },
+  "ORIGIN_FRAME_TOP_MSG": {
+   "conv": "ConvertOriginFrameType",
+   "arg": 15
+  },
+  "ORIGIN_FRAME_PORTRAIT": {
+   "conv": "ConvertOriginFrameType",
+   "arg": 16
+  },
+  "ORIGIN_FRAME_WORLD_FRAME": {
+   "conv": "ConvertOriginFrameType",
+   "arg": 17
+  },
+  "ORIGIN_FRAME_SIMPLE_UI_PARENT": {
+   "conv": "ConvertOriginFrameType",
+   "arg": 18
+  },
+  "ORIGIN_FRAME_PORTRAIT_HP_TEXT": {
+   "conv": "ConvertOriginFrameType",
+   "arg": 19
+  },
+  "ORIGIN_FRAME_PORTRAIT_MANA_TEXT": {
+   "conv": "ConvertOriginFrameType",
+   "arg": 20
+  },
+  "ORIGIN_FRAME_UNIT_PANEL_BUFF_BAR": {
+   "conv": "ConvertOriginFrameType",
+   "arg": 21
+  },
+  "ORIGIN_FRAME_UNIT_PANEL_BUFF_BAR_LABEL": {
+   "conv": "ConvertOriginFrameType",
+   "arg": 22
+  },
+  "FRAMEPOINT_TOPLEFT": {
+   "conv": "ConvertFramePointType",
+   "arg": 0
+  },
+  "FRAMEPOINT_TOP": {
+   "conv": "ConvertFramePointType",
+   "arg": 1
+  },
+  "FRAMEPOINT_TOPRIGHT": {
+   "conv": "ConvertFramePointType",
+   "arg": 2
+  },
+  "FRAMEPOINT_LEFT": {
+   "conv": "ConvertFramePointType",
+   "arg": 3
+  },
+  "FRAMEPOINT_CENTER": {
+   "conv": "ConvertFramePointType",
+   "arg": 4
+  },
+  "FRAMEPOINT_RIGHT": {
+   "conv": "ConvertFramePointType",
+   "arg": 5
+  },
+  "FRAMEPOINT_BOTTOMLEFT": {
+   "conv": "ConvertFramePointType",
+   "arg": 6
+  },
+  "FRAMEPOINT_BOTTOM": {
+   "conv": "ConvertFramePointType",
+   "arg": 7
+  },
+  "FRAMEPOINT_BOTTOMRIGHT": {
+   "conv": "ConvertFramePointType",
+   "arg": 8
+  },
+  "TEXT_JUSTIFY_TOP": {
+   "conv": "ConvertTextAlignType",
+   "arg": 0
+  },
+  "TEXT_JUSTIFY_MIDDLE": {
+   "conv": "ConvertTextAlignType",
+   "arg": 1
+  },
+  "TEXT_JUSTIFY_BOTTOM": {
+   "conv": "ConvertTextAlignType",
+   "arg": 2
+  },
+  "TEXT_JUSTIFY_LEFT": {
+   "conv": "ConvertTextAlignType",
+   "arg": 3
+  },
+  "TEXT_JUSTIFY_CENTER": {
+   "conv": "ConvertTextAlignType",
+   "arg": 4
+  },
+  "TEXT_JUSTIFY_RIGHT": {
+   "conv": "ConvertTextAlignType",
+   "arg": 5
+  },
+  "FRAMEEVENT_CONTROL_CLICK": {
+   "conv": "ConvertFrameEventType",
+   "arg": 1
+  },
+  "FRAMEEVENT_MOUSE_ENTER": {
+   "conv": "ConvertFrameEventType",
+   "arg": 2
+  },
+  "FRAMEEVENT_MOUSE_LEAVE": {
+   "conv": "ConvertFrameEventType",
+   "arg": 3
+  },
+  "FRAMEEVENT_MOUSE_UP": {
+   "conv": "ConvertFrameEventType",
+   "arg": 4
+  },
+  "FRAMEEVENT_MOUSE_DOWN": {
+   "conv": "ConvertFrameEventType",
+   "arg": 5
+  },
+  "FRAMEEVENT_MOUSE_WHEEL": {
+   "conv": "ConvertFrameEventType",
+   "arg": 6
+  },
+  "FRAMEEVENT_CHECKBOX_CHECKED": {
+   "conv": "ConvertFrameEventType",
+   "arg": 7
+  },
+  "FRAMEEVENT_CHECKBOX_UNCHECKED": {
+   "conv": "ConvertFrameEventType",
+   "arg": 8
+  },
+  "FRAMEEVENT_EDITBOX_TEXT_CHANGED": {
+   "conv": "ConvertFrameEventType",
+   "arg": 9
+  },
+  "FRAMEEVENT_POPUPMENU_ITEM_CHANGED": {
+   "conv": "ConvertFrameEventType",
+   "arg": 10
+  },
+  "FRAMEEVENT_MOUSE_DOUBLECLICK": {
+   "conv": "ConvertFrameEventType",
+   "arg": 11
+  },
+  "FRAMEEVENT_SPRITE_ANIM_UPDATE": {
+   "conv": "ConvertFrameEventType",
+   "arg": 12
+  },
+  "FRAMEEVENT_SLIDER_VALUE_CHANGED": {
+   "conv": "ConvertFrameEventType",
+   "arg": 13
+  },
+  "FRAMEEVENT_DIALOG_CANCEL": {
+   "conv": "ConvertFrameEventType",
+   "arg": 14
+  },
+  "FRAMEEVENT_DIALOG_ACCEPT": {
+   "conv": "ConvertFrameEventType",
+   "arg": 15
+  },
+  "FRAMEEVENT_EDITBOX_ENTER": {
+   "conv": "ConvertFrameEventType",
+   "arg": 16
+  },
+  "MOVE_TYPE_UNKNOWN": {
+   "conv": "ConvertMoveType",
+   "arg": 0
+  },
+  "MOVE_TYPE_FOOT": {
+   "conv": "ConvertMoveType",
+   "arg": 1
+  },
+  "MOVE_TYPE_FLY": {
+   "conv": "ConvertMoveType",
+   "arg": 2
+  },
+  "MOVE_TYPE_HORSE": {
+   "conv": "ConvertMoveType",
+   "arg": 4
+  },
+  "MOVE_TYPE_HOVER": {
+   "conv": "ConvertMoveType",
+   "arg": 8
+  },
+  "MOVE_TYPE_FLOAT": {
+   "conv": "ConvertMoveType",
+   "arg": 16
+  },
+  "MOVE_TYPE_AMPHIBIOUS": {
+   "conv": "ConvertMoveType",
+   "arg": 32
+  },
+  "MOVE_TYPE_UNBUILDABLE": {
+   "conv": "ConvertMoveType",
+   "arg": 64
+  },
+  "TARGET_FLAG_NONE": {
+   "conv": "ConvertTargetFlag",
+   "arg": 1
+  },
+  "TARGET_FLAG_GROUND": {
+   "conv": "ConvertTargetFlag",
+   "arg": 2
+  },
+  "TARGET_FLAG_AIR": {
+   "conv": "ConvertTargetFlag",
+   "arg": 4
+  },
+  "TARGET_FLAG_STRUCTURE": {
+   "conv": "ConvertTargetFlag",
+   "arg": 8
+  },
+  "TARGET_FLAG_WARD": {
+   "conv": "ConvertTargetFlag",
+   "arg": 16
+  },
+  "TARGET_FLAG_ITEM": {
+   "conv": "ConvertTargetFlag",
+   "arg": 32
+  },
+  "TARGET_FLAG_TREE": {
+   "conv": "ConvertTargetFlag",
+   "arg": 64
+  },
+  "TARGET_FLAG_WALL": {
+   "conv": "ConvertTargetFlag",
+   "arg": 128
+  },
+  "TARGET_FLAG_DEBRIS": {
+   "conv": "ConvertTargetFlag",
+   "arg": 256
+  },
+  "TARGET_FLAG_DECORATION": {
+   "conv": "ConvertTargetFlag",
+   "arg": 512
+  },
+  "TARGET_FLAG_BRIDGE": {
+   "conv": "ConvertTargetFlag",
+   "arg": 1024
+  },
+  "DEFENSE_TYPE_LIGHT": {
+   "conv": "ConvertDefenseType",
+   "arg": 0
+  },
+  "DEFENSE_TYPE_MEDIUM": {
+   "conv": "ConvertDefenseType",
+   "arg": 1
+  },
+  "DEFENSE_TYPE_LARGE": {
+   "conv": "ConvertDefenseType",
+   "arg": 2
+  },
+  "DEFENSE_TYPE_FORT": {
+   "conv": "ConvertDefenseType",
+   "arg": 3
+  },
+  "DEFENSE_TYPE_NORMAL": {
+   "conv": "ConvertDefenseType",
+   "arg": 4
+  },
+  "DEFENSE_TYPE_HERO": {
+   "conv": "ConvertDefenseType",
+   "arg": 5
+  },
+  "DEFENSE_TYPE_DIVINE": {
+   "conv": "ConvertDefenseType",
+   "arg": 6
+  },
+  "DEFENSE_TYPE_NONE": {
+   "conv": "ConvertDefenseType",
+   "arg": 7
+  },
+  "HERO_ATTRIBUTE_STR": {
+   "conv": "ConvertHeroAttribute",
+   "arg": 1
+  },
+  "HERO_ATTRIBUTE_INT": {
+   "conv": "ConvertHeroAttribute",
+   "arg": 2
+  },
+  "HERO_ATTRIBUTE_AGI": {
+   "conv": "ConvertHeroAttribute",
+   "arg": 3
+  },
+  "ARMOR_TYPE_WHOKNOWS": {
+   "conv": "ConvertArmorType",
+   "arg": 0
+  },
+  "ARMOR_TYPE_FLESH": {
+   "conv": "ConvertArmorType",
+   "arg": 1
+  },
+  "ARMOR_TYPE_METAL": {
+   "conv": "ConvertArmorType",
+   "arg": 2
+  },
+  "ARMOR_TYPE_WOOD": {
+   "conv": "ConvertArmorType",
+   "arg": 3
+  },
+  "ARMOR_TYPE_ETHREAL": {
+   "conv": "ConvertArmorType",
+   "arg": 4
+  },
+  "ARMOR_TYPE_STONE": {
+   "conv": "ConvertArmorType",
+   "arg": 5
+  },
+  "REGENERATION_TYPE_NONE": {
+   "conv": "ConvertRegenType",
+   "arg": 0
+  },
+  "REGENERATION_TYPE_ALWAYS": {
+   "conv": "ConvertRegenType",
+   "arg": 1
+  },
+  "REGENERATION_TYPE_BLIGHT": {
+   "conv": "ConvertRegenType",
+   "arg": 2
+  },
+  "REGENERATION_TYPE_DAY": {
+   "conv": "ConvertRegenType",
+   "arg": 3
+  },
+  "REGENERATION_TYPE_NIGHT": {
+   "conv": "ConvertRegenType",
+   "arg": 4
+  },
+  "UNIT_CATEGORY_GIANT": {
+   "conv": "ConvertUnitCategory",
+   "arg": 1
+  },
+  "UNIT_CATEGORY_UNDEAD": {
+   "conv": "ConvertUnitCategory",
+   "arg": 2
+  },
+  "UNIT_CATEGORY_SUMMONED": {
+   "conv": "ConvertUnitCategory",
+   "arg": 4
+  },
+  "UNIT_CATEGORY_MECHANICAL": {
+   "conv": "ConvertUnitCategory",
+   "arg": 8
+  },
+  "UNIT_CATEGORY_PEON": {
+   "conv": "ConvertUnitCategory",
+   "arg": 16
+  },
+  "UNIT_CATEGORY_SAPPER": {
+   "conv": "ConvertUnitCategory",
+   "arg": 32
+  },
+  "UNIT_CATEGORY_TOWNHALL": {
+   "conv": "ConvertUnitCategory",
+   "arg": 64
+  },
+  "UNIT_CATEGORY_ANCIENT": {
+   "conv": "ConvertUnitCategory",
+   "arg": 128
+  },
+  "UNIT_CATEGORY_NEUTRAL": {
+   "conv": "ConvertUnitCategory",
+   "arg": 256
+  },
+  "UNIT_CATEGORY_WARD": {
+   "conv": "ConvertUnitCategory",
+   "arg": 512
+  },
+  "UNIT_CATEGORY_STANDON": {
+   "conv": "ConvertUnitCategory",
+   "arg": 1024
+  },
+  "UNIT_CATEGORY_TAUREN": {
+   "conv": "ConvertUnitCategory",
+   "arg": 2048
+  },
+  "PATHING_FLAG_UNWALKABLE": {
+   "conv": "ConvertPathingFlag",
+   "arg": 2
+  },
+  "PATHING_FLAG_UNFLYABLE": {
+   "conv": "ConvertPathingFlag",
+   "arg": 4
+  },
+  "PATHING_FLAG_UNBUILDABLE": {
+   "conv": "ConvertPathingFlag",
+   "arg": 8
+  },
+  "PATHING_FLAG_UNPEONHARVEST": {
+   "conv": "ConvertPathingFlag",
+   "arg": 16
+  },
+  "PATHING_FLAG_BLIGHTED": {
+   "conv": "ConvertPathingFlag",
+   "arg": 32
+  },
+  "PATHING_FLAG_UNFLOATABLE": {
+   "conv": "ConvertPathingFlag",
+   "arg": 64
+  },
+  "PATHING_FLAG_UNAMPHIBIOUS": {
+   "conv": "ConvertPathingFlag",
+   "arg": 128
+  },
+  "PATHING_FLAG_UNITEMPLACABLE": {
+   "conv": "ConvertPathingFlag",
+   "arg": 256
+  },
+  "bj_PI": {
+   "value": 3.14159
+  },
+  "bj_E": {
+   "value": 2.71828
+  },
+  "bj_CELLWIDTH": {
+   "value": 128
+  },
+  "bj_CLIFFHEIGHT": {
+   "value": 128
+  },
+  "bj_UNIT_FACING": {
+   "value": 270
+  },
+  "bj_TEXT_DELAY_QUEST": {
+   "value": 20
+  },
+  "bj_TEXT_DELAY_QUESTUPDATE": {
+   "value": 20
+  },
+  "bj_TEXT_DELAY_QUESTDONE": {
+   "value": 20
+  },
+  "bj_TEXT_DELAY_QUESTFAILED": {
+   "value": 20
+  },
+  "bj_TEXT_DELAY_QUESTREQUIREMENT": {
+   "value": 20
+  },
+  "bj_TEXT_DELAY_MISSIONFAILED": {
+   "value": 20
+  },
+  "bj_TEXT_DELAY_ALWAYSHINT": {
+   "value": 12
+  },
+  "bj_TEXT_DELAY_HINT": {
+   "value": 12
+  },
+  "bj_TEXT_DELAY_SECRET": {
+   "value": 10
+  },
+  "bj_TEXT_DELAY_UNITACQUIRED": {
+   "value": 15
+  },
+  "bj_TEXT_DELAY_UNITAVAILABLE": {
+   "value": 10
+  },
+  "bj_TEXT_DELAY_ITEMACQUIRED": {
+   "value": 10
+  },
+  "bj_TEXT_DELAY_WARNING": {
+   "value": 12
+  },
+  "bj_QUEUE_DELAY_QUEST": {
+   "value": 5
+  },
+  "bj_QUEUE_DELAY_HINT": {
+   "value": 5
+  },
+  "bj_QUEUE_DELAY_SECRET": {
+   "value": 3
+  },
+  "bj_HANDICAP_EASY": {
+   "value": 60
+  },
+  "bj_HANDICAP_NORMAL": {
+   "value": 90
+  },
+  "bj_HANDICAPDAMAGE_EASY": {
+   "value": 50
+  },
+  "bj_HANDICAPDAMAGE_NORMAL": {
+   "value": 90
+  },
+  "bj_HANDICAPREVIVE_NOTHARD": {
+   "value": 50
+  },
+  "bj_GAME_STARTED_THRESHOLD": {
+   "value": 0.01
+  },
+  "bj_WAIT_FOR_COND_MIN_INTERVAL": {
+   "value": 0.1
+  },
+  "bj_POLLED_WAIT_INTERVAL": {
+   "value": 0.1
+  },
+  "bj_POLLED_WAIT_SKIP_THRESHOLD": {
+   "value": 2
+  },
+  "bj_MAX_INVENTORY": {
+   "value": 6
+  },
+  "bj_MAX_PLAYERS": {
+   "call": "GetBJMaxPlayers"
+  },
+  "bj_PLAYER_NEUTRAL_VICTIM": {
+   "call": "GetBJPlayerNeutralVictim"
+  },
+  "bj_PLAYER_NEUTRAL_EXTRA": {
+   "call": "GetBJPlayerNeutralExtra"
+  },
+  "bj_MAX_PLAYER_SLOTS": {
+   "call": "GetBJMaxPlayerSlots"
+  },
+  "bj_MAX_SKELETONS": {
+   "value": 25
+  },
+  "bj_MAX_STOCK_ITEM_SLOTS": {
+   "value": 11
+  },
+  "bj_MAX_STOCK_UNIT_SLOTS": {
+   "value": 11
+  },
+  "bj_MAX_ITEM_LEVEL": {
+   "value": 10
+  },
+  "bj_MAX_CHECKPOINTS": {
+   "value": 5
+  },
+  "bj_TOD_DAWN": {
+   "value": 6
+  },
+  "bj_TOD_DUSK": {
+   "value": 18
+  },
+  "bj_MELEE_STARTING_TOD": {
+   "value": 8
+  },
+  "bj_MELEE_STARTING_GOLD_V0": {
+   "value": 750
+  },
+  "bj_MELEE_STARTING_GOLD_V1": {
+   "value": 500
+  },
+  "bj_MELEE_STARTING_LUMBER_V0": {
+   "value": 200
+  },
+  "bj_MELEE_STARTING_LUMBER_V1": {
+   "value": 150
+  },
+  "bj_MELEE_STARTING_HERO_TOKENS": {
+   "value": 1
+  },
+  "bj_MELEE_HERO_LIMIT": {
+   "value": 3
+  },
+  "bj_MELEE_HERO_TYPE_LIMIT": {
+   "value": 1
+  },
+  "bj_MELEE_MINE_SEARCH_RADIUS": {
+   "value": 2000
+  },
+  "bj_MELEE_CLEAR_UNITS_RADIUS": {
+   "value": 1500
+  },
+  "bj_MELEE_CRIPPLE_TIMEOUT": {
+   "value": 120
+  },
+  "bj_MELEE_CRIPPLE_MSG_DURATION": {
+   "value": 20
+  },
+  "bj_MELEE_MAX_TWINKED_HEROES_V0": {
+   "value": 3
+  },
+  "bj_MELEE_MAX_TWINKED_HEROES_V1": {
+   "value": 1
+  },
+  "bj_CREEP_ITEM_DELAY": {
+   "value": 0.5
+  },
+  "bj_STOCK_RESTOCK_INITIAL_DELAY": {
+   "value": 120
+  },
+  "bj_STOCK_RESTOCK_INTERVAL": {
+   "value": 30
+  },
+  "bj_STOCK_MAX_ITERATIONS": {
+   "value": 20
+  },
+  "bj_MAX_DEST_IN_REGION_EVENTS": {
+   "value": 64
+  },
+  "bj_CAMERA_MIN_FARZ": {
+   "value": 100
+  },
+  "bj_CAMERA_DEFAULT_DISTANCE": {
+   "value": 1650
+  },
+  "bj_CAMERA_DEFAULT_FARZ": {
+   "value": 5000
+  },
+  "bj_CAMERA_DEFAULT_AOA": {
+   "value": 304
+  },
+  "bj_CAMERA_DEFAULT_FOV": {
+   "value": 70
+  },
+  "bj_CAMERA_DEFAULT_ROLL": {
+   "value": 0
+  },
+  "bj_CAMERA_DEFAULT_ROTATION": {
+   "value": 90
+  },
+  "bj_RESCUE_PING_TIME": {
+   "value": 2
+  },
+  "bj_NOTHING_SOUND_DURATION": {
+   "value": 5
+  },
+  "bj_TRANSMISSION_PING_TIME": {
+   "value": 1
+  },
+  "bj_TRANSMISSION_IND_RED": {
+   "value": 255
+  },
+  "bj_TRANSMISSION_IND_BLUE": {
+   "value": 255
+  },
+  "bj_TRANSMISSION_IND_GREEN": {
+   "value": 255
+  },
+  "bj_TRANSMISSION_IND_ALPHA": {
+   "value": 255
+  },
+  "bj_TRANSMISSION_PORT_HANGTIME": {
+   "value": 1.5
+  },
+  "bj_CINEMODE_INTERFACEFADE": {
+   "value": 0.5
+  },
+  "bj_CINEMODE_GAMESPEED": {
+   "conv": "ConvertGameSpeed",
+   "arg": 2
+  },
+  "bj_CINEMODE_VOLUME_UNITMOVEMENT": {
+   "value": 0.4
+  },
+  "bj_CINEMODE_VOLUME_UNITSOUNDS": {
+   "value": 0
+  },
+  "bj_CINEMODE_VOLUME_COMBAT": {
+   "value": 0.4
+  },
+  "bj_CINEMODE_VOLUME_SPELLS": {
+   "value": 0.4
+  },
+  "bj_CINEMODE_VOLUME_UI": {
+   "value": 0
+  },
+  "bj_CINEMODE_VOLUME_MUSIC": {
+   "value": 0.55
+  },
+  "bj_CINEMODE_VOLUME_AMBIENTSOUNDS": {
+   "value": 1
+  },
+  "bj_CINEMODE_VOLUME_FIRE": {
+   "value": 0.6
+  },
+  "bj_SPEECH_VOLUME_UNITMOVEMENT": {
+   "value": 0.25
+  },
+  "bj_SPEECH_VOLUME_UNITSOUNDS": {
+   "value": 0
+  },
+  "bj_SPEECH_VOLUME_COMBAT": {
+   "value": 0.25
+  },
+  "bj_SPEECH_VOLUME_SPELLS": {
+   "value": 0.25
+  },
+  "bj_SPEECH_VOLUME_UI": {
+   "value": 0
+  },
+  "bj_SPEECH_VOLUME_MUSIC": {
+   "value": 0.55
+  },
+  "bj_SPEECH_VOLUME_AMBIENTSOUNDS": {
+   "value": 1
+  },
+  "bj_SPEECH_VOLUME_FIRE": {
+   "value": 0.6
+  },
+  "bj_SMARTPAN_TRESHOLD_PAN": {
+   "value": 500
+  },
+  "bj_SMARTPAN_TRESHOLD_SNAP": {
+   "value": 3500
+  },
+  "bj_MAX_QUEUED_TRIGGERS": {
+   "value": 100
+  },
+  "bj_QUEUED_TRIGGER_TIMEOUT": {
+   "value": 180
+  },
+  "bj_CAMPAIGN_INDEX_T": {
+   "value": 0
+  },
+  "bj_CAMPAIGN_INDEX_H": {
+   "value": 1
+  },
+  "bj_CAMPAIGN_INDEX_U": {
+   "value": 2
+  },
+  "bj_CAMPAIGN_INDEX_O": {
+   "value": 3
+  },
+  "bj_CAMPAIGN_INDEX_N": {
+   "value": 4
+  },
+  "bj_CAMPAIGN_INDEX_XN": {
+   "value": 5
+  },
+  "bj_CAMPAIGN_INDEX_XH": {
+   "value": 6
+  },
+  "bj_CAMPAIGN_INDEX_XU": {
+   "value": 7
+  },
+  "bj_CAMPAIGN_INDEX_XO": {
+   "value": 8
+  },
+  "bj_CAMPAIGN_OFFSET_T": {
+   "value": 0
+  },
+  "bj_CAMPAIGN_OFFSET_H": {
+   "value": 1
+  },
+  "bj_CAMPAIGN_OFFSET_U": {
+   "value": 2
+  },
+  "bj_CAMPAIGN_OFFSET_O": {
+   "value": 3
+  },
+  "bj_CAMPAIGN_OFFSET_N": {
+   "value": 4
+  },
+  "bj_CAMPAIGN_OFFSET_XN": {
+   "value": 5
+  },
+  "bj_CAMPAIGN_OFFSET_XH": {
+   "value": 6
+  },
+  "bj_CAMPAIGN_OFFSET_XU": {
+   "value": 7
+  },
+  "bj_CAMPAIGN_OFFSET_XO": {
+   "value": 8
+  },
+  "bj_CINEMATICINDEX_TOP": {
+   "value": 0
+  },
+  "bj_CINEMATICINDEX_HOP": {
+   "value": 1
+  },
+  "bj_CINEMATICINDEX_HED": {
+   "value": 2
+  },
+  "bj_CINEMATICINDEX_OOP": {
+   "value": 3
+  },
+  "bj_CINEMATICINDEX_OED": {
+   "value": 4
+  },
+  "bj_CINEMATICINDEX_UOP": {
+   "value": 5
+  },
+  "bj_CINEMATICINDEX_UED": {
+   "value": 6
+  },
+  "bj_CINEMATICINDEX_NOP": {
+   "value": 7
+  },
+  "bj_CINEMATICINDEX_NED": {
+   "value": 8
+  },
+  "bj_CINEMATICINDEX_XOP": {
+   "value": 9
+  },
+  "bj_CINEMATICINDEX_XED": {
+   "value": 10
+  },
+  "bj_ALLIANCE_UNALLIED": {
+   "value": 0
+  },
+  "bj_ALLIANCE_UNALLIED_VISION": {
+   "value": 1
+  },
+  "bj_ALLIANCE_ALLIED": {
+   "value": 2
+  },
+  "bj_ALLIANCE_ALLIED_VISION": {
+   "value": 3
+  },
+  "bj_ALLIANCE_ALLIED_UNITS": {
+   "value": 4
+  },
+  "bj_ALLIANCE_ALLIED_ADVUNITS": {
+   "value": 5
+  },
+  "bj_ALLIANCE_NEUTRAL": {
+   "value": 6
+  },
+  "bj_ALLIANCE_NEUTRAL_VISION": {
+   "value": 7
+  },
+  "bj_KEYEVENTTYPE_DEPRESS": {
+   "value": 0
+  },
+  "bj_KEYEVENTTYPE_RELEASE": {
+   "value": 1
+  },
+  "bj_KEYEVENTKEY_LEFT": {
+   "value": 0
+  },
+  "bj_KEYEVENTKEY_RIGHT": {
+   "value": 1
+  },
+  "bj_KEYEVENTKEY_DOWN": {
+   "value": 2
+  },
+  "bj_KEYEVENTKEY_UP": {
+   "value": 3
+  },
+  "bj_MOUSEEVENTTYPE_DOWN": {
+   "value": 0
+  },
+  "bj_MOUSEEVENTTYPE_UP": {
+   "value": 1
+  },
+  "bj_MOUSEEVENTTYPE_MOVE": {
+   "value": 2
+  },
+  "bj_TIMETYPE_ADD": {
+   "value": 0
+  },
+  "bj_TIMETYPE_SET": {
+   "value": 1
+  },
+  "bj_TIMETYPE_SUB": {
+   "value": 2
+  },
+  "bj_CAMERABOUNDS_ADJUST_ADD": {
+   "value": 0
+  },
+  "bj_CAMERABOUNDS_ADJUST_SUB": {
+   "value": 1
+  },
+  "bj_QUESTTYPE_REQ_DISCOVERED": {
+   "value": 0
+  },
+  "bj_QUESTTYPE_REQ_UNDISCOVERED": {
+   "value": 1
+  },
+  "bj_QUESTTYPE_OPT_DISCOVERED": {
+   "value": 2
+  },
+  "bj_QUESTTYPE_OPT_UNDISCOVERED": {
+   "value": 3
+  },
+  "bj_QUESTMESSAGE_DISCOVERED": {
+   "value": 0
+  },
+  "bj_QUESTMESSAGE_UPDATED": {
+   "value": 1
+  },
+  "bj_QUESTMESSAGE_COMPLETED": {
+   "value": 2
+  },
+  "bj_QUESTMESSAGE_FAILED": {
+   "value": 3
+  },
+  "bj_QUESTMESSAGE_REQUIREMENT": {
+   "value": 4
+  },
+  "bj_QUESTMESSAGE_MISSIONFAILED": {
+   "value": 5
+  },
+  "bj_QUESTMESSAGE_ALWAYSHINT": {
+   "value": 6
+  },
+  "bj_QUESTMESSAGE_HINT": {
+   "value": 7
+  },
+  "bj_QUESTMESSAGE_SECRET": {
+   "value": 8
+  },
+  "bj_QUESTMESSAGE_UNITACQUIRED": {
+   "value": 9
+  },
+  "bj_QUESTMESSAGE_UNITAVAILABLE": {
+   "value": 10
+  },
+  "bj_QUESTMESSAGE_ITEMACQUIRED": {
+   "value": 11
+  },
+  "bj_QUESTMESSAGE_WARNING": {
+   "value": 12
+  },
+  "bj_SORTTYPE_SORTBYVALUE": {
+   "value": 0
+  },
+  "bj_SORTTYPE_SORTBYPLAYER": {
+   "value": 1
+  },
+  "bj_SORTTYPE_SORTBYLABEL": {
+   "value": 2
+  },
+  "bj_CINEFADETYPE_FADEIN": {
+   "value": 0
+  },
+  "bj_CINEFADETYPE_FADEOUT": {
+   "value": 1
+  },
+  "bj_CINEFADETYPE_FADEOUTIN": {
+   "value": 2
+  },
+  "bj_REMOVEBUFFS_POSITIVE": {
+   "value": 0
+  },
+  "bj_REMOVEBUFFS_NEGATIVE": {
+   "value": 1
+  },
+  "bj_REMOVEBUFFS_ALL": {
+   "value": 2
+  },
+  "bj_REMOVEBUFFS_NONTLIFE": {
+   "value": 3
+  },
+  "bj_BUFF_POLARITY_POSITIVE": {
+   "value": 0
+  },
+  "bj_BUFF_POLARITY_NEGATIVE": {
+   "value": 1
+  },
+  "bj_BUFF_POLARITY_EITHER": {
+   "value": 2
+  },
+  "bj_BUFF_RESIST_MAGIC": {
+   "value": 0
+  },
+  "bj_BUFF_RESIST_PHYSICAL": {
+   "value": 1
+  },
+  "bj_BUFF_RESIST_EITHER": {
+   "value": 2
+  },
+  "bj_BUFF_RESIST_BOTH": {
+   "value": 3
+  },
+  "bj_HEROSTAT_STR": {
+   "value": 0
+  },
+  "bj_HEROSTAT_AGI": {
+   "value": 1
+  },
+  "bj_HEROSTAT_INT": {
+   "value": 2
+  },
+  "bj_MODIFYMETHOD_ADD": {
+   "value": 0
+  },
+  "bj_MODIFYMETHOD_SUB": {
+   "value": 1
+  },
+  "bj_MODIFYMETHOD_SET": {
+   "value": 2
+  },
+  "bj_UNIT_STATE_METHOD_ABSOLUTE": {
+   "value": 0
+  },
+  "bj_UNIT_STATE_METHOD_RELATIVE": {
+   "value": 1
+  },
+  "bj_UNIT_STATE_METHOD_DEFAULTS": {
+   "value": 2
+  },
+  "bj_UNIT_STATE_METHOD_MAXIMUM": {
+   "value": 3
+  },
+  "bj_GATEOPERATION_CLOSE": {
+   "value": 0
+  },
+  "bj_GATEOPERATION_OPEN": {
+   "value": 1
+  },
+  "bj_GATEOPERATION_DESTROY": {
+   "value": 2
+  },
+  "bj_GAMECACHE_BOOLEAN": {
+   "value": 0
+  },
+  "bj_GAMECACHE_INTEGER": {
+   "value": 1
+  },
+  "bj_GAMECACHE_REAL": {
+   "value": 2
+  },
+  "bj_GAMECACHE_UNIT": {
+   "value": 3
+  },
+  "bj_GAMECACHE_STRING": {
+   "value": 4
+  },
+  "bj_HASHTABLE_BOOLEAN": {
+   "value": 0
+  },
+  "bj_HASHTABLE_INTEGER": {
+   "value": 1
+  },
+  "bj_HASHTABLE_REAL": {
+   "value": 2
+  },
+  "bj_HASHTABLE_STRING": {
+   "value": 3
+  },
+  "bj_HASHTABLE_HANDLE": {
+   "value": 4
+  },
+  "bj_ITEM_STATUS_HIDDEN": {
+   "value": 0
+  },
+  "bj_ITEM_STATUS_OWNED": {
+   "value": 1
+  },
+  "bj_ITEM_STATUS_INVULNERABLE": {
+   "value": 2
+  },
+  "bj_ITEM_STATUS_POWERUP": {
+   "value": 3
+  },
+  "bj_ITEM_STATUS_SELLABLE": {
+   "value": 4
+  },
+  "bj_ITEM_STATUS_PAWNABLE": {
+   "value": 5
+  },
+  "bj_ITEMCODE_STATUS_POWERUP": {
+   "value": 0
+  },
+  "bj_ITEMCODE_STATUS_SELLABLE": {
+   "value": 1
+  },
+  "bj_ITEMCODE_STATUS_PAWNABLE": {
+   "value": 2
+  },
+  "bj_MINIMAPPINGSTYLE_SIMPLE": {
+   "value": 0
+  },
+  "bj_MINIMAPPINGSTYLE_FLASHY": {
+   "value": 1
+  },
+  "bj_MINIMAPPINGSTYLE_ATTACK": {
+   "value": 2
+  },
+  "bj_CAMPPINGSTYLE_PRIMARY": {
+   "value": 0
+  },
+  "bj_CAMPPINGSTYLE_PRIMARY_GREEN": {
+   "value": 1
+  },
+  "bj_CAMPPINGSTYLE_PRIMARY_RED": {
+   "value": 2
+  },
+  "bj_CAMPPINGSTYLE_BONUS": {
+   "value": 3
+  },
+  "bj_CAMPPINGSTYLE_TURNIN": {
+   "value": 4
+  },
+  "bj_CAMPPINGSTYLE_BOSS": {
+   "value": 5
+  },
+  "bj_CAMPPINGSTYLE_CONTROL_ALLY": {
+   "value": 6
+  },
+  "bj_CAMPPINGSTYLE_CONTROL_NEUTRAL": {
+   "value": 7
+  },
+  "bj_CAMPPINGSTYLE_CONTROL_ENEMY": {
+   "value": 8
+  },
+  "bj_CORPSE_MAX_DEATH_TIME": {
+   "value": 8
+  },
+  "bj_CORPSETYPE_FLESH": {
+   "value": 0
+  },
+  "bj_CORPSETYPE_BONE": {
+   "value": 1
+  },
+  "bj_ELEVATOR_BLOCKER_CODE": {
+   "value": 1146381680
+  },
+  "bj_ELEVATOR_CODE01": {
+   "value": 1146384998
+  },
+  "bj_ELEVATOR_CODE02": {
+   "value": 1146385016
+  },
+  "bj_ELEVATOR_WALL_TYPE_ALL": {
+   "value": 0
+  },
+  "bj_ELEVATOR_WALL_TYPE_EAST": {
+   "value": 1
+  },
+  "bj_ELEVATOR_WALL_TYPE_NORTH": {
+   "value": 2
+  },
+  "bj_ELEVATOR_WALL_TYPE_SOUTH": {
+   "value": 3
+  },
+  "bj_ELEVATOR_WALL_TYPE_WEST": {
+   "value": 4
+  }
+ },
+ "functions": [
+  "AbilityId",
+  "AbilityId2String",
+  "AbortCinematicFadeBJ",
+  "Acos",
+  "AcosBJ",
+  "AddHeroXP",
+  "AddHeroXPSwapped",
+  "AddIndicator",
+  "AddItemToAllStock",
+  "AddItemToStock",
+  "AddItemToStockBJ",
+  "AddLightning",
+  "AddLightningEx",
+  "AddLightningLoc",
+  "AddPlayerTechResearched",
+  "AddResourceAmount",
+  "AddResourceAmountBJ",
+  "AddSpecialEffect",
+  "AddSpecialEffectLoc",
+  "AddSpecialEffectLocBJ",
+  "AddSpecialEffectTarget",
+  "AddSpecialEffectTargetUnitBJ",
+  "AddSpellEffect",
+  "AddSpellEffectById",
+  "AddSpellEffectByIdLoc",
+  "AddSpellEffectLoc",
+  "AddSpellEffectTarget",
+  "AddSpellEffectTargetById",
+  "AddUnitAnimationProperties",
+  "AddUnitAnimationPropertiesBJ",
+  "AddUnitToAllStock",
+  "AddUnitToStock",
+  "AddUnitToStockBJ",
+  "AddWeatherEffect",
+  "AddWeatherEffectSaveLast",
+  "AdjustCameraBoundsBJ",
+  "AdjustCameraBoundsForPlayerBJ",
+  "AdjustCameraField",
+  "AdjustPlayerStateBJ",
+  "AdjustPlayerStateSimpleBJ",
+  "AllowVictoryDefeat",
+  "And",
+  "AngleBetweenPoints",
+  "Asin",
+  "AsinBJ",
+  "Atan",
+  "Atan2",
+  "Atan2BJ",
+  "AtanBJ",
+  "AttachSoundToUnit",
+  "AttachSoundToUnitBJ",
+  "AutomationSetTestType",
+  "AutomationTestEnd",
+  "AutomationTestStart",
+  "AutomationTestingFinished",
+  "BJDebugMsg",
+  "BlightGoldMineForPlayer",
+  "BlightGoldMineForPlayerBJ",
+  "BlzAddAbilityBooleanLevelArrayField",
+  "BlzAddAbilityBooleanLevelArrayFieldBJ",
+  "BlzAddAbilityIntegerLevelArrayField",
+  "BlzAddAbilityIntegerLevelArrayFieldBJ",
+  "BlzAddAbilityRealLevelArrayField",
+  "BlzAddAbilityRealLevelArrayFieldBJ",
+  "BlzAddAbilityStringLevelArrayField",
+  "BlzAddAbilityStringLevelArrayFieldBJ",
+  "BlzBitAnd",
+  "BlzBitOr",
+  "BlzBitXor",
+  "BlzCameraSetupApplyForceDurationSmooth",
+  "BlzCameraSetupGetLabel",
+  "BlzCameraSetupSetLabel",
+  "BlzChangeMinimapTerrainTex",
+  "BlzConvertColor",
+  "BlzCreateDeadDestructableWithSkin",
+  "BlzCreateDeadDestructableZWithSkin",
+  "BlzCreateDestructableWithSkin",
+  "BlzCreateDestructableZWithSkin",
+  "BlzCreateFrame",
+  "BlzCreateFrameByType",
+  "BlzCreateItemWithSkin",
+  "BlzCreateSimpleFrame",
+  "BlzCreateUnitWithSkin",
+  "BlzDecPlayerTechResearched",
+  "BlzDestroyFrame",
+  "BlzDisplayChatMessage",
+  "BlzEnableCursor",
+  "BlzEnableSelections",
+  "BlzEnableTargetIndicator",
+  "BlzEnableUIAutoPosition",
+  "BlzEndRecording",
+  "BlzEndUnitAbilityCooldown",
+  "BlzForceHasPlayer",
+  "BlzFrameAddText",
+  "BlzFrameCageMouse",
+  "BlzFrameClearAllPoints",
+  "BlzFrameClick",
+  "BlzFrameGetAlpha",
+  "BlzFrameGetChild",
+  "BlzFrameGetChildrenCount",
+  "BlzFrameGetEnable",
+  "BlzFrameGetHeight",
+  "BlzFrameGetName",
+  "BlzFrameGetParent",
+  "BlzFrameGetText",
+  "BlzFrameGetTextSizeLimit",
+  "BlzFrameGetValue",
+  "BlzFrameGetWidth",
+  "BlzFrameIsVisible",
+  "BlzFrameSetAbsPoint",
+  "BlzFrameSetAllPoints",
+  "BlzFrameSetAlpha",
+  "BlzFrameSetEnable",
+  "BlzFrameSetFocus",
+  "BlzFrameSetFont",
+  "BlzFrameSetLevel",
+  "BlzFrameSetMinMaxValue",
+  "BlzFrameSetModel",
+  "BlzFrameSetParent",
+  "BlzFrameSetPoint",
+  "BlzFrameSetScale",
+  "BlzFrameSetSize",
+  "BlzFrameSetSpriteAnimate",
+  "BlzFrameSetStepSize",
+  "BlzFrameSetText",
+  "BlzFrameSetTextAlignment",
+  "BlzFrameSetTextColor",
+  "BlzFrameSetTextSizeLimit",
+  "BlzFrameSetTexture",
+  "BlzFrameSetTooltip",
+  "BlzFrameSetValue",
+  "BlzFrameSetVertexColor",
+  "BlzFrameSetVisible",
+  "BlzGetAbilityActivatedExtendedTooltip",
+  "BlzGetAbilityActivatedIcon",
+  "BlzGetAbilityActivatedPosX",
+  "BlzGetAbilityActivatedPosY",
+  "BlzGetAbilityActivatedTooltip",
+  "BlzGetAbilityBooleanField",
+  "BlzGetAbilityBooleanLevelArrayField",
+  "BlzGetAbilityBooleanLevelField",
+  "BlzGetAbilityCooldown",
+  "BlzGetAbilityExtendedTooltip",
+  "BlzGetAbilityIcon",
+  "BlzGetAbilityId",
+  "BlzGetAbilityIntegerField",
+  "BlzGetAbilityIntegerLevelArrayField",
+  "BlzGetAbilityIntegerLevelField",
+  "BlzGetAbilityManaCost",
+  "BlzGetAbilityPosX",
+  "BlzGetAbilityPosY",
+  "BlzGetAbilityRealField",
+  "BlzGetAbilityRealLevelArrayField",
+  "BlzGetAbilityRealLevelField",
+  "BlzGetAbilityResearchExtendedTooltip",
+  "BlzGetAbilityResearchTooltip",
+  "BlzGetAbilityStringField",
+  "BlzGetAbilityStringLevelArrayField",
+  "BlzGetAbilityStringLevelField",
+  "BlzGetAbilityTooltip",
+  "BlzGetAbsorbingItem",
+  "BlzGetAnimName",
+  "BlzGetEventAttackType",
+  "BlzGetEventDamageTarget",
+  "BlzGetEventDamageType",
+  "BlzGetEventIsAttack",
+  "BlzGetEventWeaponType",
+  "BlzGetFrameByName",
+  "BlzGetItemAbility",
+  "BlzGetItemAbilityByIndex",
+  "BlzGetItemBooleanField",
+  "BlzGetItemDescription",
+  "BlzGetItemExtendedTooltip",
+  "BlzGetItemIconPath",
+  "BlzGetItemIntegerField",
+  "BlzGetItemRealField",
+  "BlzGetItemSkin",
+  "BlzGetItemStringField",
+  "BlzGetItemTooltip",
+  "BlzGetLocalClientHeight",
+  "BlzGetLocalClientWidth",
+  "BlzGetLocalSpecialEffectX",
+  "BlzGetLocalSpecialEffectY",
+  "BlzGetLocalSpecialEffectZ",
+  "BlzGetLocalUnitZ",
+  "BlzGetLocale",
+  "BlzGetManipulatedItemWasAbsorbed",
+  "BlzGetMouseFocusUnit",
+  "BlzGetOriginFrame",
+  "BlzGetPlayerTownHallCount",
+  "BlzGetSpecialEffectScale",
+  "BlzGetStackingItemSource",
+  "BlzGetStackingItemTarget",
+  "BlzGetStackingItemTargetPreviousCharges",
+  "BlzGetTriggerFrame",
+  "BlzGetTriggerFrameEvent",
+  "BlzGetTriggerFrameText",
+  "BlzGetTriggerFrameValue",
+  "BlzGetTriggerPlayerIsKeyDown",
+  "BlzGetTriggerPlayerKey",
+  "BlzGetTriggerPlayerMetaKey",
+  "BlzGetTriggerPlayerMouseButton",
+  "BlzGetTriggerPlayerMousePosition",
+  "BlzGetTriggerPlayerMouseX",
+  "BlzGetTriggerPlayerMouseY",
+  "BlzGetTriggerSyncData",
+  "BlzGetTriggerSyncPrefix",
+  "BlzGetUnitAbility",
+  "BlzGetUnitAbilityByIndex",
+  "BlzGetUnitAbilityCooldown",
+  "BlzGetUnitAbilityCooldownRemaining",
+  "BlzGetUnitAbilityManaCost",
+  "BlzGetUnitArmor",
+  "BlzGetUnitAttackCooldown",
+  "BlzGetUnitBaseDamage",
+  "BlzGetUnitBooleanField",
+  "BlzGetUnitCollisionSize",
+  "BlzGetUnitDiceNumber",
+  "BlzGetUnitDiceSides",
+  "BlzGetUnitIntegerField",
+  "BlzGetUnitMaxHP",
+  "BlzGetUnitMaxMana",
+  "BlzGetUnitOrderCount",
+  "BlzGetUnitRealField",
+  "BlzGetUnitSkin",
+  "BlzGetUnitStringField",
+  "BlzGetUnitWeaponBooleanField",
+  "BlzGetUnitWeaponIntegerField",
+  "BlzGetUnitWeaponRealField",
+  "BlzGetUnitWeaponStringField",
+  "BlzGetUnitZ",
+  "BlzGroupAddGroupFast",
+  "BlzGroupGetSize",
+  "BlzGroupRemoveGroupFast",
+  "BlzGroupUnitAt",
+  "BlzHideCinematicPanels",
+  "BlzHideOriginFrames",
+  "BlzIsLastInstanceObjectFunctionSuccessful",
+  "BlzIsLocalClientActive",
+  "BlzIsSelectionCircleEnabled",
+  "BlzIsSelectionEnabled",
+  "BlzIsTargetIndicatorEnabled",
+  "BlzIsUnitInvulnerable",
+  "BlzIsUnitSelectable",
+  "BlzItemAddAbility",
+  "BlzItemAddAbilityBJ",
+  "BlzItemRemoveAbility",
+  "BlzItemRemoveAbilityBJ",
+  "BlzLoadTOCFile",
+  "BlzPauseUnitEx",
+  "BlzPlaySpecialEffect",
+  "BlzPlaySpecialEffectWithTimeScale",
+  "BlzQueueBuildOrderById",
+  "BlzQueueImmediateOrderById",
+  "BlzQueueInstantPointOrderById",
+  "BlzQueueInstantTargetOrderById",
+  "BlzQueueNeutralImmediateOrderById",
+  "BlzQueueNeutralPointOrderById",
+  "BlzQueueNeutralTargetOrderById",
+  "BlzQueuePointOrderById",
+  "BlzQueueTargetOrderById",
+  "BlzRemoveAbilityBooleanLevelArrayField",
+  "BlzRemoveAbilityBooleanLevelArrayFieldBJ",
+  "BlzRemoveAbilityIntegerLevelArrayField",
+  "BlzRemoveAbilityIntegerLevelArrayFieldBJ",
+  "BlzRemoveAbilityRealLevelArrayField",
+  "BlzRemoveAbilityRealLevelArrayFieldBJ",
+  "BlzRemoveAbilityStringLevelArrayField",
+  "BlzRemoveAbilityStringLevelArrayFieldBJ",
+  "BlzResetSpecialEffectMatrix",
+  "BlzSendSyncData",
+  "BlzSetAbilityActivatedExtendedTooltip",
+  "BlzSetAbilityActivatedIcon",
+  "BlzSetAbilityActivatedPosX",
+  "BlzSetAbilityActivatedPosY",
+  "BlzSetAbilityActivatedTooltip",
+  "BlzSetAbilityBooleanField",
+  "BlzSetAbilityBooleanFieldBJ",
+  "BlzSetAbilityBooleanLevelArrayField",
+  "BlzSetAbilityBooleanLevelArrayFieldBJ",
+  "BlzSetAbilityBooleanLevelField",
+  "BlzSetAbilityBooleanLevelFieldBJ",
+  "BlzSetAbilityExtendedTooltip",
+  "BlzSetAbilityIcon",
+  "BlzSetAbilityIntegerField",
+  "BlzSetAbilityIntegerFieldBJ",
+  "BlzSetAbilityIntegerLevelArrayField",
+  "BlzSetAbilityIntegerLevelArrayFieldBJ",
+  "BlzSetAbilityIntegerLevelField",
+  "BlzSetAbilityIntegerLevelFieldBJ",
+  "BlzSetAbilityPosX",
+  "BlzSetAbilityPosY",
+  "BlzSetAbilityRealField",
+  "BlzSetAbilityRealFieldBJ",
+  "BlzSetAbilityRealLevelArrayField",
+  "BlzSetAbilityRealLevelArrayFieldBJ",
+  "BlzSetAbilityRealLevelField",
+  "BlzSetAbilityRealLevelFieldBJ",
+  "BlzSetAbilityResearchExtendedTooltip",
+  "BlzSetAbilityResearchTooltip",
+  "BlzSetAbilityStringField",
+  "BlzSetAbilityStringFieldBJ",
+  "BlzSetAbilityStringLevelArrayField",
+  "BlzSetAbilityStringLevelArrayFieldBJ",
+  "BlzSetAbilityStringLevelField",
+  "BlzSetAbilityStringLevelFieldBJ",
+  "BlzSetAbilityTooltip",
+  "BlzSetEventAttackType",
+  "BlzSetEventDamage",
+  "BlzSetEventDamageType",
+  "BlzSetEventWeaponType",
+  "BlzSetHeroProperName",
+  "BlzSetItemBooleanField",
+  "BlzSetItemBooleanFieldBJ",
+  "BlzSetItemDescription",
+  "BlzSetItemExtendedTooltip",
+  "BlzSetItemIconPath",
+  "BlzSetItemIntegerField",
+  "BlzSetItemIntegerFieldBJ",
+  "BlzSetItemName",
+  "BlzSetItemRealField",
+  "BlzSetItemRealFieldBJ",
+  "BlzSetItemSkin",
+  "BlzSetItemStringField",
+  "BlzSetItemStringFieldBJ",
+  "BlzSetItemTooltip",
+  "BlzSetMousePos",
+  "BlzSetSpecialEffectAlpha",
+  "BlzSetSpecialEffectColor",
+  "BlzSetSpecialEffectColorByPlayer",
+  "BlzSetSpecialEffectHeight",
+  "BlzSetSpecialEffectMatrixScale",
+  "BlzSetSpecialEffectOrientation",
+  "BlzSetSpecialEffectPitch",
+  "BlzSetSpecialEffectPosition",
+  "BlzSetSpecialEffectPositionLoc",
+  "BlzSetSpecialEffectRoll",
+  "BlzSetSpecialEffectScale",
+  "BlzSetSpecialEffectTime",
+  "BlzSetSpecialEffectTimeScale",
+  "BlzSetSpecialEffectX",
+  "BlzSetSpecialEffectY",
+  "BlzSetSpecialEffectYaw",
+  "BlzSetSpecialEffectZ",
+  "BlzSetUnitAbilityCooldown",
+  "BlzSetUnitAbilityManaCost",
+  "BlzSetUnitArmor",
+  "BlzSetUnitAttackCooldown",
+  "BlzSetUnitBaseDamage",
+  "BlzSetUnitBooleanField",
+  "BlzSetUnitBooleanFieldBJ",
+  "BlzSetUnitDiceNumber",
+  "BlzSetUnitDiceSides",
+  "BlzSetUnitFacingEx",
+  "BlzSetUnitIntegerField",
+  "BlzSetUnitIntegerFieldBJ",
+  "BlzSetUnitMaxHP",
+  "BlzSetUnitMaxMana",
+  "BlzSetUnitName",
+  "BlzSetUnitRealField",
+  "BlzSetUnitRealFieldBJ",
+  "BlzSetUnitSkin",
+  "BlzSetUnitStringField",
+  "BlzSetUnitStringFieldBJ",
+  "BlzSetUnitWeaponBooleanField",
+  "BlzSetUnitWeaponBooleanFieldBJ",
+  "BlzSetUnitWeaponIntegerField",
+  "BlzSetUnitWeaponIntegerFieldBJ",
+  "BlzSetUnitWeaponRealField",
+  "BlzSetUnitWeaponRealFieldBJ",
+  "BlzSetUnitWeaponStringField",
+  "BlzSetUnitWeaponStringFieldBJ",
+  "BlzShowSkyBox",
+  "BlzShowTerrain",
+  "BlzShowUnitTeamGlow",
+  "BlzSpecialEffectAddSubAnimation",
+  "BlzSpecialEffectClearSubAnimations",
+  "BlzSpecialEffectRemoveSubAnimation",
+  "BlzStartRecording",
+  "BlzStartUnitAbilityCooldown",
+  "BlzTriggerRegisterFrameEvent",
+  "BlzTriggerRegisterPlayerKeyEvent",
+  "BlzTriggerRegisterPlayerSyncEvent",
+  "BlzUnitCancelTimedLife",
+  "BlzUnitClearOrders",
+  "BlzUnitDisableAbility",
+  "BlzUnitForceStopOrder",
+  "BlzUnitHideAbility",
+  "BlzUnitInterruptAttack",
+  "CachePlayerHeroData",
+  "CameraClearNoiseForPlayer",
+  "CameraResetSmoothingFactorBJ",
+  "CameraSetDepthOfFieldScale",
+  "CameraSetEQNoiseForPlayer",
+  "CameraSetFocalDistance",
+  "CameraSetSmoothingFactor",
+  "CameraSetSmoothingFactorBJ",
+  "CameraSetSourceNoise",
+  "CameraSetSourceNoiseEx",
+  "CameraSetSourceNoiseForPlayer",
+  "CameraSetTargetNoise",
+  "CameraSetTargetNoiseEx",
+  "CameraSetTargetNoiseForPlayer",
+  "CameraSetupApply",
+  "CameraSetupApplyForPlayer",
+  "CameraSetupApplyForPlayerSmooth",
+  "CameraSetupApplyForceDuration",
+  "CameraSetupApplyForceDurationWithZ",
+  "CameraSetupApplyWithZ",
+  "CameraSetupGetDestPositionLoc",
+  "CameraSetupGetDestPositionX",
+  "CameraSetupGetDestPositionY",
+  "CameraSetupGetField",
+  "CameraSetupGetFieldSwap",
+  "CameraSetupSetDestPosition",
+  "CameraSetupSetField",
+  "CampaignMinimapIconLocBJ",
+  "CampaignMinimapIconUnitBJ",
+  "CancelCineSceneBJ",
+  "ChangeElevatorHeight",
+  "ChangeElevatorWallBlocker",
+  "ChangeElevatorWalls",
+  "ChangeLevel",
+  "Cheat",
+  "CheckInitPlayerSlotAvailability",
+  "CheckItemStatus",
+  "CheckItemcodeStatus",
+  "ChooseRandomCreep",
+  "ChooseRandomCreepBJ",
+  "ChooseRandomItem",
+  "ChooseRandomItemBJ",
+  "ChooseRandomItemEx",
+  "ChooseRandomItemExBJ",
+  "ChooseRandomNPBuilding",
+  "ChooseRandomNPBuildingBJ",
+  "CinematicFadeBJ",
+  "CinematicFadeCommonBJ",
+  "CinematicFilterGenericBJ",
+  "CinematicModeBJ",
+  "CinematicModeExBJ",
+  "ClearMapMusic",
+  "ClearMapMusicBJ",
+  "ClearSelection",
+  "ClearSelectionForPlayer",
+  "ClearTextMessages",
+  "ClearTextMessagesBJ",
+  "CommandAI",
+  "CommentString",
+  "CompareLocationsBJ",
+  "CompareRectsBJ",
+  "Condition",
+  "ConditionalTriggerExecute",
+  "ConfigureNeutralVictim",
+  "ContinueCinematicFadeAfterBJ",
+  "ContinueCinematicFadeBJ",
+  "ConvertAIDifficulty",
+  "ConvertAbilityBooleanField",
+  "ConvertAbilityBooleanLevelArrayField",
+  "ConvertAbilityBooleanLevelField",
+  "ConvertAbilityIntegerField",
+  "ConvertAbilityIntegerLevelArrayField",
+  "ConvertAbilityIntegerLevelField",
+  "ConvertAbilityRealField",
+  "ConvertAbilityRealLevelArrayField",
+  "ConvertAbilityRealLevelField",
+  "ConvertAbilityStringField",
+  "ConvertAbilityStringLevelArrayField",
+  "ConvertAbilityStringLevelField",
+  "ConvertAllianceType",
+  "ConvertAnimType",
+  "ConvertArmorType",
+  "ConvertAttackType",
+  "ConvertBlendMode",
+  "ConvertCameraField",
+  "ConvertDamageType",
+  "ConvertDefenseType",
+  "ConvertDialogEvent",
+  "ConvertEffectType",
+  "ConvertFGameState",
+  "ConvertFogState",
+  "ConvertFrameEventType",
+  "ConvertFramePointType",
+  "ConvertGameDifficulty",
+  "ConvertGameEvent",
+  "ConvertGameSpeed",
+  "ConvertGameType",
+  "ConvertHeroAttribute",
+  "ConvertIGameState",
+  "ConvertItemBooleanField",
+  "ConvertItemIntegerField",
+  "ConvertItemRealField",
+  "ConvertItemStringField",
+  "ConvertItemType",
+  "ConvertLimitOp",
+  "ConvertMapControl",
+  "ConvertMapDensity",
+  "ConvertMapFlag",
+  "ConvertMapSetting",
+  "ConvertMapVisibility",
+  "ConvertMouseButtonType",
+  "ConvertMoveType",
+  "ConvertOriginFrameType",
+  "ConvertOsKeyType",
+  "ConvertPathingFlag",
+  "ConvertPathingType",
+  "ConvertPlacement",
+  "ConvertPlayerColor",
+  "ConvertPlayerEvent",
+  "ConvertPlayerGameResult",
+  "ConvertPlayerScore",
+  "ConvertPlayerSlotState",
+  "ConvertPlayerState",
+  "ConvertPlayerUnitEvent",
+  "ConvertRace",
+  "ConvertRacePref",
+  "ConvertRarityControl",
+  "ConvertRegenType",
+  "ConvertSoundType",
+  "ConvertStartLocPrio",
+  "ConvertSubAnimType",
+  "ConvertTargetFlag",
+  "ConvertTexMapFlags",
+  "ConvertTextAlignType",
+  "ConvertUnitBooleanField",
+  "ConvertUnitCategory",
+  "ConvertUnitEvent",
+  "ConvertUnitIntegerField",
+  "ConvertUnitRealField",
+  "ConvertUnitState",
+  "ConvertUnitStringField",
+  "ConvertUnitType",
+  "ConvertUnitWeaponBooleanField",
+  "ConvertUnitWeaponIntegerField",
+  "ConvertUnitWeaponRealField",
+  "ConvertUnitWeaponStringField",
+  "ConvertVersion",
+  "ConvertVolumeGroup",
+  "ConvertWeaponType",
+  "ConvertWidgetEvent",
+  "ConvertedPlayer",
+  "CopySaveGame",
+  "CopySaveGameBJ",
+  "Cos",
+  "CosBJ",
+  "CountLivingPlayerUnitsOfTypeId",
+  "CountPlayersInForceBJ",
+  "CountPlayersInForceEnum",
+  "CountUnitsInGroup",
+  "CountUnitsInGroupEnum",
+  "CreateBlightedGoldmine",
+  "CreateBuildCommandButtonEffectBJ",
+  "CreateCameraSetup",
+  "CreateCommandButtonEffect",
+  "CreateCommandButtonEffectBJ",
+  "CreateCommonCommandButtonEffectBJ",
+  "CreateCorpse",
+  "CreateCorpseLocBJ",
+  "CreateDeadDestructable",
+  "CreateDeadDestructableLocBJ",
+  "CreateDeadDestructableZ",
+  "CreateDefeatCondition",
+  "CreateDefeatConditionBJ",
+  "CreateDestructable",
+  "CreateDestructableLoc",
+  "CreateDestructableZ",
+  "CreateFogModifierRadius",
+  "CreateFogModifierRadiusLoc",
+  "CreateFogModifierRadiusLocBJ",
+  "CreateFogModifierRadiusLocSimple",
+  "CreateFogModifierRect",
+  "CreateFogModifierRectBJ",
+  "CreateFogModifierRectSimple",
+  "CreateForce",
+  "CreateGroup",
+  "CreateImage",
+  "CreateImageBJ",
+  "CreateItem",
+  "CreateItemLoc",
+  "CreateItemPool",
+  "CreateLeaderboard",
+  "CreateLeaderboardBJ",
+  "CreateLearnCommandButtonEffect",
+  "CreateLearnCommandButtonEffectBJ",
+  "CreateMIDISound",
+  "CreateMinimapIcon",
+  "CreateMinimapIconAtLoc",
+  "CreateMinimapIconAtLocBJ",
+  "CreateMinimapIconBJ",
+  "CreateMinimapIconOnUnit",
+  "CreateMinimapIconOnUnitBJ",
+  "CreateMultiboard",
+  "CreateMultiboardBJ",
+  "CreateNUnitsAtLoc",
+  "CreateNUnitsAtLocFacingLocBJ",
+  "CreatePermanentCorpseLocBJ",
+  "CreateQuest",
+  "CreateQuestBJ",
+  "CreateQuestItemBJ",
+  "CreateRegion",
+  "CreateSound",
+  "CreateSoundFilenameWithLabel",
+  "CreateSoundFromLabel",
+  "CreateTextTag",
+  "CreateTextTagLocBJ",
+  "CreateTextTagUnitBJ",
+  "CreateTimer",
+  "CreateTimerBJ",
+  "CreateTimerDialog",
+  "CreateTimerDialogBJ",
+  "CreateTrackable",
+  "CreateTrackableForPlayer",
+  "CreateTrackableZ",
+  "CreateTrainCommandButtonEffectBJ",
+  "CreateTrigger",
+  "CreateUbersplat",
+  "CreateUbersplatBJ",
+  "CreateUnit",
+  "CreateUnitAtLoc",
+  "CreateUnitAtLocByName",
+  "CreateUnitAtLocSaveLast",
+  "CreateUnitByName",
+  "CreateUnitPool",
+  "CreateUpgradeCommandButtonEffect",
+  "CreateUpgradeCommandButtonEffectBJ",
+  "CripplePlayer",
+  "CustomDefeatBJ",
+  "CustomDefeatDialogBJ",
+  "CustomDefeatLoadBJ",
+  "CustomDefeatQuitBJ",
+  "CustomDefeatReduceDifficultyBJ",
+  "CustomDefeatRestartBJ",
+  "CustomVictoryBJ",
+  "CustomVictoryDialogBJ",
+  "CustomVictoryOkBJ",
+  "CustomVictoryQuitBJ",
+  "CustomVictorySkipBJ",
+  "DecUnitAbilityLevel",
+  "DecUnitAbilityLevelSwapped",
+  "DefeatConditionSetDescription",
+  "DefeatConditionSetDescriptionBJ",
+  "DefineStartLocation",
+  "DefineStartLocationLoc",
+  "Deg2Rad",
+  "DelayedSuspendDecay",
+  "DelayedSuspendDecayBoneEnum",
+  "DelayedSuspendDecayCreate",
+  "DelayedSuspendDecayFleshEnum",
+  "DelayedSuspendDecayStopAnimEnum",
+  "DestroyBoolExpr",
+  "DestroyCommandButtonEffect",
+  "DestroyCondition",
+  "DestroyDefeatCondition",
+  "DestroyDefeatConditionBJ",
+  "DestroyEffect",
+  "DestroyEffectBJ",
+  "DestroyFilter",
+  "DestroyFogModifier",
+  "DestroyForce",
+  "DestroyGroup",
+  "DestroyImage",
+  "DestroyItemPool",
+  "DestroyLeaderboard",
+  "DestroyLeaderboardBJ",
+  "DestroyLightning",
+  "DestroyLightningBJ",
+  "DestroyMinimapIcon",
+  "DestroyMultiboard",
+  "DestroyMultiboardBJ",
+  "DestroyQuest",
+  "DestroyQuestBJ",
+  "DestroyTextTag",
+  "DestroyTextTagBJ",
+  "DestroyTimer",
+  "DestroyTimerBJ",
+  "DestroyTimerDialog",
+  "DestroyTimerDialogBJ",
+  "DestroyTrigger",
+  "DestroyUbersplat",
+  "DestroyUnitPool",
+  "DestructableAddIndicatorBJ",
+  "DestructableRestoreLife",
+  "DetectGameStarted",
+  "DialogAddButton",
+  "DialogAddButtonBJ",
+  "DialogAddButtonWithHotkeyBJ",
+  "DialogAddQuitButton",
+  "DialogClear",
+  "DialogClearBJ",
+  "DialogCreate",
+  "DialogDestroy",
+  "DialogDisplay",
+  "DialogDisplayBJ",
+  "DialogSetMessage",
+  "DialogSetMessageBJ",
+  "DisableRestartMission",
+  "DisableTrigger",
+  "DisplayCineFilter",
+  "DisplayCineFilterBJ",
+  "DisplayLoadDialog",
+  "DisplayTextToForce",
+  "DisplayTextToPlayer",
+  "DisplayTimedTextFromPlayer",
+  "DisplayTimedTextToForce",
+  "DisplayTimedTextToPlayer",
+  "DistanceBetweenPoints",
+  "DoNotSaveReplay",
+  "DoNothing",
+  "DoTransmissionBasicsXYBJ",
+  "DoesUnitGenerateAlarms",
+  "EnableCreepSleepBJ",
+  "EnableDawnDusk",
+  "EnableDragSelect",
+  "EnableMinimapFilterButtons",
+  "EnableOcclusion",
+  "EnableOcclusionBJ",
+  "EnablePreSelect",
+  "EnableSelect",
+  "EnableTrigger",
+  "EnableUserControl",
+  "EnableUserUI",
+  "EnableWeatherEffect",
+  "EnableWorldFogBoundary",
+  "EnableWorldFogBoundaryBJ",
+  "EndCinematicScene",
+  "EndGame",
+  "EndGameBJ",
+  "EndThematicMusic",
+  "EndThematicMusicBJ",
+  "EnumDestructablesInCircleBJ",
+  "EnumDestructablesInCircleBJFilter",
+  "EnumDestructablesInRect",
+  "EnumDestructablesInRectAll",
+  "EnumItemsInRect",
+  "EnumItemsInRectBJ",
+  "EnumUnitsSelected",
+  "ExecuteFunc",
+  "ExplodeUnitBJ",
+  "FFAInitPlayerSlots",
+  "Filter",
+  "FindElevatorWallBlockerEnum",
+  "FinishCinematicFadeAfterBJ",
+  "FinishCinematicFadeBJ",
+  "FinishUbersplat",
+  "FirstOfGroup",
+  "FlashQuestDialogButton",
+  "FlashQuestDialogButtonBJ",
+  "FlushChildHashtable",
+  "FlushChildHashtableBJ",
+  "FlushGameCache",
+  "FlushGameCacheBJ",
+  "FlushParentHashtable",
+  "FlushParentHashtableBJ",
+  "FlushStoredBoolean",
+  "FlushStoredInteger",
+  "FlushStoredMission",
+  "FlushStoredMissionBJ",
+  "FlushStoredReal",
+  "FlushStoredString",
+  "FlushStoredUnit",
+  "FogEnable",
+  "FogEnableOff",
+  "FogEnableOn",
+  "FogMaskEnable",
+  "FogMaskEnableOff",
+  "FogMaskEnableOn",
+  "FogModifierStart",
+  "FogModifierStop",
+  "ForForce",
+  "ForGroup",
+  "ForGroupBJ",
+  "ForceAddPlayer",
+  "ForceAddPlayerSimple",
+  "ForceCampaignSelectScreen",
+  "ForceCinematicSubtitles",
+  "ForceCinematicSubtitlesBJ",
+  "ForceClear",
+  "ForceEnumAllies",
+  "ForceEnumEnemies",
+  "ForceEnumPlayers",
+  "ForceEnumPlayersCounted",
+  "ForcePickRandomPlayer",
+  "ForcePickRandomPlayerEnum",
+  "ForcePlayerStartLocation",
+  "ForceQuestDialogUpdate",
+  "ForceRemovePlayer",
+  "ForceRemovePlayerSimple",
+  "ForceSetLeaderboardBJ",
+  "ForceUICancel",
+  "ForceUICancelBJ",
+  "ForceUIKey",
+  "ForceUIKeyBJ",
+  "GameOverDialogBJ",
+  "GetAIDifficulty",
+  "GetAbilityEffect",
+  "GetAbilityEffectBJ",
+  "GetAbilityEffectById",
+  "GetAbilityName",
+  "GetAbilitySound",
+  "GetAbilitySoundBJ",
+  "GetAbilitySoundById",
+  "GetAllyColorFilterState",
+  "GetAttackedUnitBJ",
+  "GetAttacker",
+  "GetBJMaxPlayerSlots",
+  "GetBJMaxPlayers",
+  "GetBJPlayerNeutralExtra",
+  "GetBJPlayerNeutralVictim",
+  "GetBooleanAnd",
+  "GetBooleanOr",
+  "GetBuyingUnit",
+  "GetCameraBoundMaxX",
+  "GetCameraBoundMaxY",
+  "GetCameraBoundMinX",
+  "GetCameraBoundMinY",
+  "GetCameraBoundsMapRect",
+  "GetCameraEyePositionLoc",
+  "GetCameraEyePositionX",
+  "GetCameraEyePositionY",
+  "GetCameraEyePositionZ",
+  "GetCameraField",
+  "GetCameraMargin",
+  "GetCameraTargetPositionLoc",
+  "GetCameraTargetPositionX",
+  "GetCameraTargetPositionY",
+  "GetCameraTargetPositionZ",
+  "GetCancelledStructure",
+  "GetChangingUnit",
+  "GetChangingUnitPrevOwner",
+  "GetClickedButton",
+  "GetClickedButtonBJ",
+  "GetClickedDialog",
+  "GetClickedDialogBJ",
+  "GetConstructedStructure",
+  "GetConstructingStructure",
+  "GetConvertedPlayerId",
+  "GetCreatureDensity",
+  "GetCreepCampFilterState",
+  "GetCurrentCameraBoundsMapRectBJ",
+  "GetCurrentCameraSetup",
+  "GetCustomCampaignButtonVisible",
+  "GetDecayingUnit",
+  "GetDefaultDifficulty",
+  "GetDestructableLife",
+  "GetDestructableLoc",
+  "GetDestructableMaxLife",
+  "GetDestructableName",
+  "GetDestructableOccluderHeight",
+  "GetDestructableTypeId",
+  "GetDestructableX",
+  "GetDestructableY",
+  "GetDetectedUnit",
+  "GetDialogueSpeakerNameKey",
+  "GetDialogueTextKey",
+  "GetDyingDestructable",
+  "GetDyingUnit",
+  "GetElevatorHeight",
+  "GetEnteringUnit",
+  "GetEntireMapRect",
+  "GetEnumDestructable",
+  "GetEnumItem",
+  "GetEnumPlayer",
+  "GetEnumUnit",
+  "GetEventDamage",
+  "GetEventDamageSource",
+  "GetEventDetectingPlayer",
+  "GetEventGameState",
+  "GetEventPlayerChatString",
+  "GetEventPlayerChatStringMatched",
+  "GetEventPlayerState",
+  "GetEventTargetUnit",
+  "GetEventUnitState",
+  "GetExpiredTimer",
+  "GetFadeFromSeconds",
+  "GetFadeFromSecondsAsReal",
+  "GetFilterDestructable",
+  "GetFilterItem",
+  "GetFilterPlayer",
+  "GetFilterUnit",
+  "GetFloatGameState",
+  "GetFoodMade",
+  "GetFoodUsed",
+  "GetForLoopIndexA",
+  "GetForLoopIndexB",
+  "GetForceOfPlayer",
+  "GetGameDifficulty",
+  "GetGamePlacement",
+  "GetGameSpeed",
+  "GetGameTypeSelected",
+  "GetHandleId",
+  "GetHandleIdBJ",
+  "GetHeroAgi",
+  "GetHeroInt",
+  "GetHeroLevel",
+  "GetHeroProperName",
+  "GetHeroSkillPoints",
+  "GetHeroStatBJ",
+  "GetHeroStr",
+  "GetHeroXP",
+  "GetIntegerGameState",
+  "GetInventoryIndexOfItemTypeBJ",
+  "GetIssuedOrderId",
+  "GetIssuedOrderIdBJ",
+  "GetItemCharges",
+  "GetItemLevel",
+  "GetItemLifeBJ",
+  "GetItemLoc",
+  "GetItemName",
+  "GetItemOfTypeFromUnitBJ",
+  "GetItemPlayer",
+  "GetItemType",
+  "GetItemTypeId",
+  "GetItemUserData",
+  "GetItemX",
+  "GetItemY",
+  "GetKillingUnit",
+  "GetKillingUnitBJ",
+  "GetLastCreatedButtonBJ",
+  "GetLastCreatedCommandButtonEffectBJ",
+  "GetLastCreatedDefeatConditionBJ",
+  "GetLastCreatedDestructable",
+  "GetLastCreatedEffectBJ",
+  "GetLastCreatedFogModifier",
+  "GetLastCreatedGameCacheBJ",
+  "GetLastCreatedGroup",
+  "GetLastCreatedGroupEnum",
+  "GetLastCreatedHashtableBJ",
+  "GetLastCreatedImage",
+  "GetLastCreatedItem",
+  "GetLastCreatedLeaderboard",
+  "GetLastCreatedLightningBJ",
+  "GetLastCreatedMinimapIcon",
+  "GetLastCreatedMultiboard",
+  "GetLastCreatedQuestBJ",
+  "GetLastCreatedQuestItemBJ",
+  "GetLastCreatedTerrainDeformation",
+  "GetLastCreatedTextTag",
+  "GetLastCreatedTimerBJ",
+  "GetLastCreatedTimerDialogBJ",
+  "GetLastCreatedUbersplat",
+  "GetLastCreatedUnit",
+  "GetLastCreatedWeatherEffect",
+  "GetLastHauntedGoldMine",
+  "GetLastPlayedMusic",
+  "GetLastPlayedSound",
+  "GetLastRemovedItem",
+  "GetLastReplacedUnitBJ",
+  "GetLastRestoredUnitBJ",
+  "GetLastTransmissionDurationBJ",
+  "GetLearnedSkill",
+  "GetLearnedSkillBJ",
+  "GetLearnedSkillLevel",
+  "GetLearningUnit",
+  "GetLeavingUnit",
+  "GetLevelingUnit",
+  "GetLightningColorA",
+  "GetLightningColorABJ",
+  "GetLightningColorB",
+  "GetLightningColorBBJ",
+  "GetLightningColorG",
+  "GetLightningColorGBJ",
+  "GetLightningColorR",
+  "GetLightningColorRBJ",
+  "GetLoadedUnit",
+  "GetLoadedUnitBJ",
+  "GetLocalPlayer",
+  "GetLocalizedHotkey",
+  "GetLocalizedString",
+  "GetLocationX",
+  "GetLocationY",
+  "GetLocationZ",
+  "GetManipulatedItem",
+  "GetManipulatingUnit",
+  "GetObjectName",
+  "GetOrderPointLoc",
+  "GetOrderPointX",
+  "GetOrderPointY",
+  "GetOrderTarget",
+  "GetOrderTargetDestructable",
+  "GetOrderTargetItem",
+  "GetOrderTargetUnit",
+  "GetOrderedUnit",
+  "GetOwningPlayer",
+  "GetPlayableMapRect",
+  "GetPlayerAlliance",
+  "GetPlayerColor",
+  "GetPlayerController",
+  "GetPlayerHandicap",
+  "GetPlayerHandicapBJ",
+  "GetPlayerHandicapDamage",
+  "GetPlayerHandicapDamageBJ",
+  "GetPlayerHandicapReviveTime",
+  "GetPlayerHandicapReviveTimeBJ",
+  "GetPlayerHandicapXP",
+  "GetPlayerHandicapXPBJ",
+  "GetPlayerId",
+  "GetPlayerName",
+  "GetPlayerNeutralAggressive",
+  "GetPlayerNeutralPassive",
+  "GetPlayerRace",
+  "GetPlayerScore",
+  "GetPlayerSelectable",
+  "GetPlayerSlotState",
+  "GetPlayerStartLocation",
+  "GetPlayerStartLocationLoc",
+  "GetPlayerStartLocationX",
+  "GetPlayerStartLocationY",
+  "GetPlayerState",
+  "GetPlayerStructureCount",
+  "GetPlayerTaxRate",
+  "GetPlayerTaxRateBJ",
+  "GetPlayerTeam",
+  "GetPlayerTechCount",
+  "GetPlayerTechCountSimple",
+  "GetPlayerTechMaxAllowed",
+  "GetPlayerTechMaxAllowedSwap",
+  "GetPlayerTechResearched",
+  "GetPlayerTypedUnitCount",
+  "GetPlayerUnitCount",
+  "GetPlayers",
+  "GetPlayersAll",
+  "GetPlayersAllies",
+  "GetPlayersByMapControl",
+  "GetPlayersEnemies",
+  "GetPlayersMatching",
+  "GetRandomDirectionDeg",
+  "GetRandomInt",
+  "GetRandomLocInRect",
+  "GetRandomPercentageBJ",
+  "GetRandomReal",
+  "GetRandomSubGroup",
+  "GetRandomSubGroupEnum",
+  "GetRectCenter",
+  "GetRectCenterX",
+  "GetRectCenterY",
+  "GetRectFromCircleBJ",
+  "GetRectHeightBJ",
+  "GetRectMaxX",
+  "GetRectMaxY",
+  "GetRectMinX",
+  "GetRectMinY",
+  "GetRectWidthBJ",
+  "GetRescuer",
+  "GetResearched",
+  "GetResearchingUnit",
+  "GetResourceAmount",
+  "GetResourceDensity",
+  "GetRevivableUnit",
+  "GetRevivingUnit",
+  "GetSaveBasicFilename",
+  "GetSellingUnit",
+  "GetSoldItem",
+  "GetSoldUnit",
+  "GetSoundDuration",
+  "GetSoundDurationBJ",
+  "GetSoundFileDuration",
+  "GetSoundFileDurationBJ",
+  "GetSoundIsLoading",
+  "GetSoundIsPlaying",
+  "GetSoundIsPlayingBJ",
+  "GetSpellAbility",
+  "GetSpellAbilityId",
+  "GetSpellAbilityUnit",
+  "GetSpellTargetDestructable",
+  "GetSpellTargetItem",
+  "GetSpellTargetLoc",
+  "GetSpellTargetUnit",
+  "GetSpellTargetX",
+  "GetSpellTargetY",
+  "GetStartLocPrio",
+  "GetStartLocPrioSlot",
+  "GetStartLocationLoc",
+  "GetStartLocationX",
+  "GetStartLocationY",
+  "GetStoredBoolean",
+  "GetStoredBooleanBJ",
+  "GetStoredInteger",
+  "GetStoredIntegerBJ",
+  "GetStoredReal",
+  "GetStoredRealBJ",
+  "GetStoredString",
+  "GetStoredStringBJ",
+  "GetSummonedUnit",
+  "GetSummoningUnit",
+  "GetTeams",
+  "GetTerrainCliffLevel",
+  "GetTerrainCliffLevelBJ",
+  "GetTerrainType",
+  "GetTerrainTypeBJ",
+  "GetTerrainVariance",
+  "GetTerrainVarianceBJ",
+  "GetTimeOfDay",
+  "GetTimeOfDayScale",
+  "GetTimeOfDayScalePercentBJ",
+  "GetTournamentFinishNowPlayer",
+  "GetTournamentFinishNowRule",
+  "GetTournamentFinishSoonTimeRemaining",
+  "GetTournamentScore",
+  "GetTrainedUnit",
+  "GetTrainedUnitType",
+  "GetTransmissionDuration",
+  "GetTransportUnit",
+  "GetTransportUnitBJ",
+  "GetTriggerDestructable",
+  "GetTriggerEvalCount",
+  "GetTriggerEventId",
+  "GetTriggerExecCount",
+  "GetTriggerPlayer",
+  "GetTriggerUnit",
+  "GetTriggerWidget",
+  "GetTriggeringRegion",
+  "GetTriggeringTrackable",
+  "GetTriggeringTrigger",
+  "GetUnitAbilityLevel",
+  "GetUnitAbilityLevelSwapped",
+  "GetUnitAcquireRange",
+  "GetUnitCurrentOrder",
+  "GetUnitDefaultAcquireRange",
+  "GetUnitDefaultFlyHeight",
+  "GetUnitDefaultMoveSpeed",
+  "GetUnitDefaultPropWindow",
+  "GetUnitDefaultPropWindowBJ",
+  "GetUnitDefaultTurnSpeed",
+  "GetUnitFacing",
+  "GetUnitFlyHeight",
+  "GetUnitFoodMade",
+  "GetUnitFoodUsed",
+  "GetUnitLevel",
+  "GetUnitLifePercent",
+  "GetUnitLoc",
+  "GetUnitManaPercent",
+  "GetUnitMoveSpeed",
+  "GetUnitName",
+  "GetUnitPointValue",
+  "GetUnitPointValueByType",
+  "GetUnitPropWindow",
+  "GetUnitPropWindowBJ",
+  "GetUnitRace",
+  "GetUnitRallyDestructable",
+  "GetUnitRallyPoint",
+  "GetUnitRallyUnit",
+  "GetUnitState",
+  "GetUnitStatePercent",
+  "GetUnitStateSwap",
+  "GetUnitTurnSpeed",
+  "GetUnitTypeId",
+  "GetUnitUserData",
+  "GetUnitX",
+  "GetUnitY",
+  "GetUnitsInRangeOfLocAll",
+  "GetUnitsInRangeOfLocMatching",
+  "GetUnitsInRectAll",
+  "GetUnitsInRectMatching",
+  "GetUnitsInRectOfPlayer",
+  "GetUnitsInRectOfPlayerFilter",
+  "GetUnitsOfPlayerAll",
+  "GetUnitsOfPlayerAndTypeId",
+  "GetUnitsOfPlayerAndTypeIdFilter",
+  "GetUnitsOfPlayerMatching",
+  "GetUnitsOfTypeIdAll",
+  "GetUnitsOfTypeIdAllFilter",
+  "GetUnitsSelectedAll",
+  "GetWidgetLife",
+  "GetWidgetX",
+  "GetWidgetY",
+  "GetWinningPlayer",
+  "GetWorldBounds",
+  "GroupAddGroup",
+  "GroupAddGroupEnum",
+  "GroupAddUnit",
+  "GroupAddUnitSimple",
+  "GroupClear",
+  "GroupEnumUnitsInRange",
+  "GroupEnumUnitsInRangeCounted",
+  "GroupEnumUnitsInRangeOfLoc",
+  "GroupEnumUnitsInRangeOfLocCounted",
+  "GroupEnumUnitsInRect",
+  "GroupEnumUnitsInRectCounted",
+  "GroupEnumUnitsOfPlayer",
+  "GroupEnumUnitsOfType",
+  "GroupEnumUnitsOfTypeCounted",
+  "GroupEnumUnitsSelected",
+  "GroupImmediateOrder",
+  "GroupImmediateOrderBJ",
+  "GroupImmediateOrderById",
+  "GroupPickRandomUnit",
+  "GroupPickRandomUnitEnum",
+  "GroupPointOrder",
+  "GroupPointOrderById",
+  "GroupPointOrderByIdLoc",
+  "GroupPointOrderLoc",
+  "GroupPointOrderLocBJ",
+  "GroupRemoveGroup",
+  "GroupRemoveGroupEnum",
+  "GroupRemoveUnit",
+  "GroupRemoveUnitSimple",
+  "GroupTargetDestructableOrder",
+  "GroupTargetItemOrder",
+  "GroupTargetOrder",
+  "GroupTargetOrderBJ",
+  "GroupTargetOrderById",
+  "GroupTrainOrderByIdBJ",
+  "HaveSavedBoolean",
+  "HaveSavedHandle",
+  "HaveSavedInteger",
+  "HaveSavedReal",
+  "HaveSavedString",
+  "HaveSavedValue",
+  "HaveStoredBoolean",
+  "HaveStoredInteger",
+  "HaveStoredReal",
+  "HaveStoredString",
+  "HaveStoredUnit",
+  "HaveStoredValue",
+  "I2R",
+  "I2S",
+  "IAbsBJ",
+  "IMaxBJ",
+  "IMinBJ",
+  "ISignBJ",
+  "IncUnitAbilityLevel",
+  "IncUnitAbilityLevelSwapped",
+  "InitBlizzard",
+  "InitBlizzardGlobals",
+  "InitDNCSounds",
+  "InitGameCache",
+  "InitGameCacheBJ",
+  "InitGenericPlayerSlots",
+  "InitHashtable",
+  "InitHashtableBJ",
+  "InitMapRects",
+  "InitNeutralBuildings",
+  "InitQueuedTriggers",
+  "InitRescuableBehaviorBJ",
+  "InitSummonableCaps",
+  "IntegerTertiaryOp",
+  "IsCineFilterDisplayed",
+  "IsCustomCampaignButtonVisibile",
+  "IsDawnDuskEnabled",
+  "IsDestructableAliveBJ",
+  "IsDestructableDeadBJ",
+  "IsDestructableInvulnerable",
+  "IsDestructableInvulnerableBJ",
+  "IsFogEnabled",
+  "IsFogMaskEnabled",
+  "IsFoggedToPlayer",
+  "IsGameTypeSupported",
+  "IsHeroUnitId",
+  "IsItemHiddenBJ",
+  "IsItemIdPawnable",
+  "IsItemIdPowerup",
+  "IsItemIdSellable",
+  "IsItemInvulnerable",
+  "IsItemOwned",
+  "IsItemPawnable",
+  "IsItemPowerup",
+  "IsItemSellable",
+  "IsItemVisible",
+  "IsLeaderboardDisplayed",
+  "IsLocationFoggedToPlayer",
+  "IsLocationInRegion",
+  "IsLocationMaskedToPlayer",
+  "IsLocationVisibleToPlayer",
+  "IsMapFlagSet",
+  "IsMaskedToPlayer",
+  "IsMultiboardDisplayed",
+  "IsMultiboardMinimized",
+  "IsNoDefeatCheat",
+  "IsNoVictoryCheat",
+  "IsPlayerAlly",
+  "IsPlayerEnemy",
+  "IsPlayerFlagSetBJ",
+  "IsPlayerInForce",
+  "IsPlayerObserver",
+  "IsPlayerRacePrefSet",
+  "IsPlayerSlotState",
+  "IsPointBlighted",
+  "IsPointBlightedBJ",
+  "IsPointInRegion",
+  "IsQuestCompleted",
+  "IsQuestDiscovered",
+  "IsQuestEnabled",
+  "IsQuestFailed",
+  "IsQuestItemCompleted",
+  "IsQuestRequired",
+  "IsSuspendedXP",
+  "IsTerrainPathable",
+  "IsTerrainPathableBJ",
+  "IsTimerDialogDisplayed",
+  "IsTriggerEnabled",
+  "IsTriggerQueueEmptyBJ",
+  "IsTriggerQueuedBJ",
+  "IsTriggerWaitOnSleeps",
+  "IsUnit",
+  "IsUnitAliveBJ",
+  "IsUnitAlly",
+  "IsUnitDeadBJ",
+  "IsUnitDetected",
+  "IsUnitEnemy",
+  "IsUnitFogged",
+  "IsUnitGroupDeadBJ",
+  "IsUnitGroupDeadBJEnum",
+  "IsUnitGroupEmptyBJ",
+  "IsUnitGroupEmptyBJEnum",
+  "IsUnitGroupInRectBJ",
+  "IsUnitGroupInRectBJEnum",
+  "IsUnitHidden",
+  "IsUnitHiddenBJ",
+  "IsUnitIdType",
+  "IsUnitIllusion",
+  "IsUnitIllusionBJ",
+  "IsUnitInForce",
+  "IsUnitInGroup",
+  "IsUnitInRange",
+  "IsUnitInRangeLoc",
+  "IsUnitInRangeXY",
+  "IsUnitInRegion",
+  "IsUnitInTransport",
+  "IsUnitInTransportBJ",
+  "IsUnitInvisible",
+  "IsUnitLoaded",
+  "IsUnitLoadedBJ",
+  "IsUnitMasked",
+  "IsUnitOwnedByPlayer",
+  "IsUnitPaused",
+  "IsUnitPausedBJ",
+  "IsUnitRace",
+  "IsUnitSelected",
+  "IsUnitType",
+  "IsUnitVisible",
+  "IsVisibleToPlayer",
+  "IssueBuildOrder",
+  "IssueBuildOrderById",
+  "IssueBuildOrderByIdLocBJ",
+  "IssueHauntOrderAtLocBJ",
+  "IssueHauntOrderAtLocBJFilter",
+  "IssueImmediateOrder",
+  "IssueImmediateOrderBJ",
+  "IssueImmediateOrderById",
+  "IssueInstantPointOrder",
+  "IssueInstantPointOrderById",
+  "IssueInstantTargetOrder",
+  "IssueInstantTargetOrderById",
+  "IssueNeutralImmediateOrder",
+  "IssueNeutralImmediateOrderById",
+  "IssueNeutralPointOrder",
+  "IssueNeutralPointOrderById",
+  "IssueNeutralTargetOrder",
+  "IssueNeutralTargetOrderById",
+  "IssuePointOrder",
+  "IssuePointOrderById",
+  "IssuePointOrderByIdLoc",
+  "IssuePointOrderLoc",
+  "IssuePointOrderLocBJ",
+  "IssueTargetDestructableOrder",
+  "IssueTargetItemOrder",
+  "IssueTargetOrder",
+  "IssueTargetOrderBJ",
+  "IssueTargetOrderById",
+  "IssueTrainOrderByIdBJ",
+  "IssueUpgradeOrderByIdBJ",
+  "ItemAddIndicatorBJ",
+  "ItemPoolAddItemType",
+  "ItemPoolRemoveItemType",
+  "KillDestructable",
+  "KillSoundWhenDone",
+  "KillSoundWhenDoneBJ",
+  "KillUnit",
+  "LeaderboardAddItem",
+  "LeaderboardAddItemBJ",
+  "LeaderboardClear",
+  "LeaderboardDisplay",
+  "LeaderboardDisplayBJ",
+  "LeaderboardGetIndexedPlayerBJ",
+  "LeaderboardGetItemCount",
+  "LeaderboardGetItemCountBJ",
+  "LeaderboardGetLabelText",
+  "LeaderboardGetPlayerIndex",
+  "LeaderboardGetPlayerIndexBJ",
+  "LeaderboardHasPlayerItem",
+  "LeaderboardHasPlayerItemBJ",
+  "LeaderboardRemoveItem",
+  "LeaderboardRemovePlayerItem",
+  "LeaderboardRemovePlayerItemBJ",
+  "LeaderboardResizeBJ",
+  "LeaderboardSetItemLabel",
+  "LeaderboardSetItemLabelColor",
+  "LeaderboardSetItemStyle",
+  "LeaderboardSetItemValue",
+  "LeaderboardSetItemValueColor",
+  "LeaderboardSetLabel",
+  "LeaderboardSetLabelBJ",
+  "LeaderboardSetLabelColor",
+  "LeaderboardSetLabelColorBJ",
+  "LeaderboardSetPlayerItemLabelBJ",
+  "LeaderboardSetPlayerItemLabelColorBJ",
+  "LeaderboardSetPlayerItemStyleBJ",
+  "LeaderboardSetPlayerItemValueBJ",
+  "LeaderboardSetPlayerItemValueColorBJ",
+  "LeaderboardSetSizeByItemCount",
+  "LeaderboardSetStyle",
+  "LeaderboardSetStyleBJ",
+  "LeaderboardSetValueColor",
+  "LeaderboardSetValueColorBJ",
+  "LeaderboardSortItemsBJ",
+  "LeaderboardSortItemsByLabel",
+  "LeaderboardSortItemsByLabelBJ",
+  "LeaderboardSortItemsByPlayer",
+  "LeaderboardSortItemsByPlayerBJ",
+  "LeaderboardSortItemsByValue",
+  "LivingPlayerUnitsOfTypeIdFilter",
+  "LoadAbilityHandle",
+  "LoadAbilityHandleBJ",
+  "LoadBoolean",
+  "LoadBooleanBJ",
+  "LoadBooleanExprHandle",
+  "LoadBooleanExprHandleBJ",
+  "LoadButtonHandle",
+  "LoadButtonHandleBJ",
+  "LoadDefeatConditionHandle",
+  "LoadDefeatConditionHandleBJ",
+  "LoadDestructableHandle",
+  "LoadDestructableHandleBJ",
+  "LoadDialogHandle",
+  "LoadDialogHandleBJ",
+  "LoadEffectHandle",
+  "LoadEffectHandleBJ",
+  "LoadFogModifierHandle",
+  "LoadFogModifierHandleBJ",
+  "LoadFogStateHandle",
+  "LoadFogStateHandleBJ",
+  "LoadForceHandle",
+  "LoadForceHandleBJ",
+  "LoadFrameHandle",
+  "LoadGame",
+  "LoadGameBJ",
+  "LoadGroupHandle",
+  "LoadGroupHandleBJ",
+  "LoadHashtableHandle",
+  "LoadHashtableHandleBJ",
+  "LoadImageHandle",
+  "LoadImageHandleBJ",
+  "LoadInteger",
+  "LoadIntegerBJ",
+  "LoadItemHandle",
+  "LoadItemHandleBJ",
+  "LoadItemPoolHandle",
+  "LoadItemPoolHandleBJ",
+  "LoadLeaderboardHandle",
+  "LoadLeaderboardHandleBJ",
+  "LoadLightningHandle",
+  "LoadLightningHandleBJ",
+  "LoadLocationHandle",
+  "LoadLocationHandleBJ",
+  "LoadMultiboardHandle",
+  "LoadMultiboardHandleBJ",
+  "LoadMultiboardItemHandle",
+  "LoadMultiboardItemHandleBJ",
+  "LoadPlayerHandle",
+  "LoadPlayerHandleBJ",
+  "LoadQuestHandle",
+  "LoadQuestHandleBJ",
+  "LoadQuestItemHandle",
+  "LoadQuestItemHandleBJ",
+  "LoadReal",
+  "LoadRealBJ",
+  "LoadRectHandle",
+  "LoadRectHandleBJ",
+  "LoadRegionHandle",
+  "LoadRegionHandleBJ",
+  "LoadSoundHandle",
+  "LoadSoundHandleBJ",
+  "LoadStr",
+  "LoadStringBJ",
+  "LoadTextTagHandle",
+  "LoadTextTagHandleBJ",
+  "LoadTimerDialogHandle",
+  "LoadTimerDialogHandleBJ",
+  "LoadTimerHandle",
+  "LoadTimerHandleBJ",
+  "LoadTrackableHandle",
+  "LoadTrackableHandleBJ",
+  "LoadTriggerActionHandle",
+  "LoadTriggerActionHandleBJ",
+  "LoadTriggerConditionHandle",
+  "LoadTriggerConditionHandleBJ",
+  "LoadTriggerEventHandle",
+  "LoadTriggerEventHandleBJ",
+  "LoadTriggerHandle",
+  "LoadTriggerHandleBJ",
+  "LoadUbersplatHandle",
+  "LoadUbersplatHandleBJ",
+  "LoadUnitHandle",
+  "LoadUnitHandleBJ",
+  "LoadUnitPoolHandle",
+  "LoadUnitPoolHandleBJ",
+  "LoadWidgetHandle",
+  "LoadWidgetHandleBJ",
+  "Location",
+  "LockGameSpeedBJ",
+  "LockGuardPosition",
+  "MakeUnitRescuableToForceBJ",
+  "MakeUnitRescuableToForceBJEnum",
+  "MakeUnitsPassiveForPlayer",
+  "MakeUnitsPassiveForPlayerEnum",
+  "MakeUnitsPassiveForTeam",
+  "MarkGameStarted",
+  "MathRound",
+  "MeleeCheckAddedUnit",
+  "MeleeCheckForCrippledPlayers",
+  "MeleeCheckForLosersAndVictors",
+  "MeleeCheckForVictors",
+  "MeleeCheckLostUnit",
+  "MeleeClearExcessUnit",
+  "MeleeClearExcessUnits",
+  "MeleeClearNearbyUnits",
+  "MeleeCrippledPlayerTimeout",
+  "MeleeDefeatDialogBJ",
+  "MeleeDoDefeat",
+  "MeleeDoDefeatEnum",
+  "MeleeDoDrawEnum",
+  "MeleeDoLeave",
+  "MeleeDoVictoryEnum",
+  "MeleeEnumFindNearestMine",
+  "MeleeExposeAllPlayers",
+  "MeleeExposePlayer",
+  "MeleeFindNearestMine",
+  "MeleeGetAllyCount",
+  "MeleeGetAllyKeyStructureCount",
+  "MeleeGetAllyStructureCount",
+  "MeleeGetCrippledRevealedMessage",
+  "MeleeGetCrippledTimerMessage",
+  "MeleeGetCrippledWarningMessage",
+  "MeleeGetLocWithinRect",
+  "MeleeGetNearestValueWithin",
+  "MeleeGetProjectedLoc",
+  "MeleeGrantHeroItems",
+  "MeleeGrantItemsToHero",
+  "MeleeGrantItemsToHiredHero",
+  "MeleeGrantItemsToTrainedHero",
+  "MeleeInitPlayerSlots",
+  "MeleeInitVictoryDefeat",
+  "MeleePlayerIsCrippled",
+  "MeleePlayerIsOpponent",
+  "MeleeRandomHeroLoc",
+  "MeleeRemoveObservers",
+  "MeleeStartingAI",
+  "MeleeStartingHeroLimit",
+  "MeleeStartingResources",
+  "MeleeStartingUnits",
+  "MeleeStartingUnitsForPlayer",
+  "MeleeStartingUnitsHuman",
+  "MeleeStartingUnitsNightElf",
+  "MeleeStartingUnitsOrc",
+  "MeleeStartingUnitsUndead",
+  "MeleeStartingUnitsUnknownRace",
+  "MeleeStartingVisibility",
+  "MeleeTournamentFinishNowRuleA",
+  "MeleeTrainedUnitIsHeroBJFilter",
+  "MeleeTriggerActionAllianceChange",
+  "MeleeTriggerActionConstructCancel",
+  "MeleeTriggerActionPlayerDefeated",
+  "MeleeTriggerActionPlayerLeft",
+  "MeleeTriggerActionUnitConstructionStart",
+  "MeleeTriggerActionUnitDeath",
+  "MeleeTriggerTournamentFinishNow",
+  "MeleeTriggerTournamentFinishSoon",
+  "MeleeVictoryDialogBJ",
+  "MeleeWasUserPlayer",
+  "ModifyGateBJ",
+  "ModifyHeroSkillPoints",
+  "ModifyHeroStat",
+  "ModuloInteger",
+  "ModuloReal",
+  "MoveLightning",
+  "MoveLightningEx",
+  "MoveLightningLoc",
+  "MoveLocation",
+  "MoveRectTo",
+  "MoveRectToLoc",
+  "MultiboardAllowDisplayBJ",
+  "MultiboardClear",
+  "MultiboardDisplay",
+  "MultiboardDisplayBJ",
+  "MultiboardGetColumnCount",
+  "MultiboardGetItem",
+  "MultiboardGetRowCount",
+  "MultiboardGetTitleText",
+  "MultiboardMinimize",
+  "MultiboardMinimizeBJ",
+  "MultiboardReleaseItem",
+  "MultiboardSetColumnCount",
+  "MultiboardSetItemColorBJ",
+  "MultiboardSetItemIcon",
+  "MultiboardSetItemIconBJ",
+  "MultiboardSetItemStyle",
+  "MultiboardSetItemStyleBJ",
+  "MultiboardSetItemValue",
+  "MultiboardSetItemValueBJ",
+  "MultiboardSetItemValueColor",
+  "MultiboardSetItemWidth",
+  "MultiboardSetItemWidthBJ",
+  "MultiboardSetItemsIcon",
+  "MultiboardSetItemsStyle",
+  "MultiboardSetItemsValue",
+  "MultiboardSetItemsValueColor",
+  "MultiboardSetItemsWidth",
+  "MultiboardSetRowCount",
+  "MultiboardSetTitleText",
+  "MultiboardSetTitleTextColor",
+  "MultiboardSetTitleTextColorBJ",
+  "MultiboardSuppressDisplay",
+  "NearbyElevatorExists",
+  "NearbyElevatorExistsEnum",
+  "NewSoundEnvironment",
+  "Not",
+  "NudgeItemsInRectEnum",
+  "NudgeObjectsInRect",
+  "NudgeUnitsInRectEnum",
+  "OffsetLocation",
+  "OffsetRectBJ",
+  "OneOnOneInitPlayerSlots",
+  "Or",
+  "OrderId",
+  "OrderId2String",
+  "OrderId2StringBJ",
+  "PanCameraTo",
+  "PanCameraToForPlayer",
+  "PanCameraToLocForPlayer",
+  "PanCameraToTimed",
+  "PanCameraToTimedForPlayer",
+  "PanCameraToTimedLocForPlayer",
+  "PanCameraToTimedLocWithZForPlayer",
+  "PanCameraToTimedWithZ",
+  "PanCameraToWithZ",
+  "ParseTags",
+  "PauseAllUnitsBJ",
+  "PauseAllUnitsBJEnum",
+  "PauseCompAI",
+  "PauseGame",
+  "PauseGameOff",
+  "PauseGameOn",
+  "PauseTimer",
+  "PauseTimerBJ",
+  "PauseUnit",
+  "PauseUnitBJ",
+  "PercentTo255",
+  "PercentToInt",
+  "PerformStockUpdates",
+  "PickMeleeAI",
+  "PingMinimap",
+  "PingMinimapEx",
+  "PingMinimapForForce",
+  "PingMinimapForForceEx",
+  "PingMinimapForPlayer",
+  "PingMinimapLocForForce",
+  "PingMinimapLocForForceEx",
+  "PingMinimapLocForPlayer",
+  "PlaceRandomItem",
+  "PlaceRandomUnit",
+  "PlayCinematic",
+  "PlayDialogueFromSpeakerEx",
+  "PlayDialogueFromSpeakerTypeEx",
+  "PlayModelCinematic",
+  "PlayMusic",
+  "PlayMusicBJ",
+  "PlayMusicEx",
+  "PlayMusicExBJ",
+  "PlaySound",
+  "PlaySoundAtPointBJ",
+  "PlaySoundBJ",
+  "PlaySoundFromOffsetBJ",
+  "PlaySoundOnUnitBJ",
+  "PlayThematicMusic",
+  "PlayThematicMusicBJ",
+  "PlayThematicMusicEx",
+  "PlayThematicMusicExBJ",
+  "Player",
+  "PlayerGetLeaderboard",
+  "PlayerGetLeaderboardBJ",
+  "PlayerSetLeaderboard",
+  "PlayersAreCoAllied",
+  "PolarProjectionBJ",
+  "PolledWait",
+  "PostTriggerExecuteBJ",
+  "Pow",
+  "Preload",
+  "PreloadEnd",
+  "PreloadEndEx",
+  "PreloadFiles",
+  "PreloadGenClear",
+  "PreloadGenEnd",
+  "PreloadGenStart",
+  "PreloadRefresh",
+  "PreloadStart",
+  "Preloader",
+  "QuestCreateItem",
+  "QuestItemSetCompleted",
+  "QuestItemSetCompletedBJ",
+  "QuestItemSetDescription",
+  "QuestItemSetDescriptionBJ",
+  "QuestMessageBJ",
+  "QuestSetCompleted",
+  "QuestSetCompletedBJ",
+  "QuestSetDescription",
+  "QuestSetDescriptionBJ",
+  "QuestSetDiscovered",
+  "QuestSetDiscoveredBJ",
+  "QuestSetEnabled",
+  "QuestSetEnabledBJ",
+  "QuestSetFailed",
+  "QuestSetFailedBJ",
+  "QuestSetIconPath",
+  "QuestSetRequired",
+  "QuestSetTitle",
+  "QuestSetTitleBJ",
+  "QueueDestructableAnimation",
+  "QueueDestructableAnimationBJ",
+  "QueueUnitAnimation",
+  "QueueUnitAnimationBJ",
+  "QueuedTriggerAddBJ",
+  "QueuedTriggerAttemptExec",
+  "QueuedTriggerCheck",
+  "QueuedTriggerClearBJ",
+  "QueuedTriggerClearInactiveBJ",
+  "QueuedTriggerCountBJ",
+  "QueuedTriggerDoneBJ",
+  "QueuedTriggerGetIndex",
+  "QueuedTriggerRemoveBJ",
+  "QueuedTriggerRemoveByIndex",
+  "R2I",
+  "R2S",
+  "R2SW",
+  "RAbsBJ",
+  "RMaxBJ",
+  "RMinBJ",
+  "RSignBJ",
+  "Rad2Deg",
+  "RandomDestructableInRectBJ",
+  "RandomDestructableInRectBJEnum",
+  "RandomDestructableInRectSimpleBJ",
+  "RandomDistAddItem",
+  "RandomDistChoose",
+  "RandomDistReset",
+  "RandomItemInRectBJ",
+  "RandomItemInRectBJEnum",
+  "RandomItemInRectSimpleBJ",
+  "Rect",
+  "RectContainsCoords",
+  "RectContainsItem",
+  "RectContainsLoc",
+  "RectContainsUnit",
+  "RectFromCenterSizeBJ",
+  "RectFromLoc",
+  "RecycleGuardPosition",
+  "ReducePlayerTechMaxAllowed",
+  "RegionAddCell",
+  "RegionAddCellAtLoc",
+  "RegionAddRect",
+  "RegionClearCell",
+  "RegionClearCellAtLoc",
+  "RegionClearRect",
+  "RegisterDestDeathInRegionEnum",
+  "RegisterStackedSound",
+  "ReloadGame",
+  "ReloadGameCachesFromDisk",
+  "RemoveAllGuardPositions",
+  "RemoveDestructable",
+  "RemoveGuardPosition",
+  "RemoveItem",
+  "RemoveItemFromAllStock",
+  "RemoveItemFromStock",
+  "RemoveItemFromStockBJ",
+  "RemoveLocation",
+  "RemovePlayer",
+  "RemovePlayerPreserveUnitsBJ",
+  "RemovePurchasedItem",
+  "RemoveRect",
+  "RemoveRegion",
+  "RemoveSaveDirectory",
+  "RemoveSaveDirectoryBJ",
+  "RemoveSavedBoolean",
+  "RemoveSavedHandle",
+  "RemoveSavedInteger",
+  "RemoveSavedReal",
+  "RemoveSavedString",
+  "RemoveUnit",
+  "RemoveUnitFromAllStock",
+  "RemoveUnitFromStock",
+  "RemoveUnitFromStockBJ",
+  "RemoveWeatherEffect",
+  "RemoveWeatherEffectBJ",
+  "RenameSaveDirectory",
+  "RenameSaveDirectoryBJ",
+  "ReplaceUnitBJ",
+  "RescueUnitBJ",
+  "ResetTerrainFog",
+  "ResetTerrainFogBJ",
+  "ResetToGameCamera",
+  "ResetToGameCameraForPlayer",
+  "ResetTrigger",
+  "ResetUbersplat",
+  "ResetUnitAnimation",
+  "ResetUnitLookAt",
+  "RestartGame",
+  "RestoreUnit",
+  "RestoreUnitLocFacingAngleBJ",
+  "RestoreUnitLocFacingPointBJ",
+  "ResumeMusic",
+  "ResumeMusicBJ",
+  "ResumeTimer",
+  "ReviveHero",
+  "ReviveHeroLoc",
+  "RotateCameraAroundLocBJ",
+  "S2I",
+  "S2R",
+  "SaveAbilityHandle",
+  "SaveAbilityHandleBJ",
+  "SaveAgentHandle",
+  "SaveAgentHandleBJ",
+  "SaveAndChangeLevelBJ",
+  "SaveAndLoadGameBJ",
+  "SaveBoolean",
+  "SaveBooleanBJ",
+  "SaveBooleanExprHandle",
+  "SaveBooleanExprHandleBJ",
+  "SaveButtonHandle",
+  "SaveButtonHandleBJ",
+  "SaveDefeatConditionHandle",
+  "SaveDefeatConditionHandleBJ",
+  "SaveDestructableHandle",
+  "SaveDestructableHandleBJ",
+  "SaveDialogHandle",
+  "SaveDialogHandleBJ",
+  "SaveDyingWidget",
+  "SaveEffectHandle",
+  "SaveEffectHandleBJ",
+  "SaveFogModifierHandle",
+  "SaveFogModifierHandleBJ",
+  "SaveFogStateHandle",
+  "SaveFogStateHandleBJ",
+  "SaveForceHandle",
+  "SaveForceHandleBJ",
+  "SaveFrameHandle",
+  "SaveGame",
+  "SaveGameCache",
+  "SaveGameCacheBJ",
+  "SaveGameCheckPointBJ",
+  "SaveGameCheckpoint",
+  "SaveGameExists",
+  "SaveGroupHandle",
+  "SaveGroupHandleBJ",
+  "SaveHashtableHandle",
+  "SaveHashtableHandleBJ",
+  "SaveImageHandle",
+  "SaveImageHandleBJ",
+  "SaveInteger",
+  "SaveIntegerBJ",
+  "SaveItemHandle",
+  "SaveItemHandleBJ",
+  "SaveItemPoolHandle",
+  "SaveItemPoolHandleBJ",
+  "SaveLeaderboardHandle",
+  "SaveLeaderboardHandleBJ",
+  "SaveLightningHandle",
+  "SaveLightningHandleBJ",
+  "SaveLocationHandle",
+  "SaveLocationHandleBJ",
+  "SaveMultiboardHandle",
+  "SaveMultiboardHandleBJ",
+  "SaveMultiboardItemHandle",
+  "SaveMultiboardItemHandleBJ",
+  "SavePlayerHandle",
+  "SavePlayerHandleBJ",
+  "SaveQuestHandle",
+  "SaveQuestHandleBJ",
+  "SaveQuestItemHandle",
+  "SaveQuestItemHandleBJ",
+  "SaveReal",
+  "SaveRealBJ",
+  "SaveRectHandle",
+  "SaveRectHandleBJ",
+  "SaveRegionHandle",
+  "SaveRegionHandleBJ",
+  "SaveSoundHandle",
+  "SaveSoundHandleBJ",
+  "SaveStr",
+  "SaveStringBJ",
+  "SaveTextTagHandle",
+  "SaveTextTagHandleBJ",
+  "SaveTimerDialogHandle",
+  "SaveTimerDialogHandleBJ",
+  "SaveTimerHandle",
+  "SaveTimerHandleBJ",
+  "SaveTrackableHandle",
+  "SaveTrackableHandleBJ",
+  "SaveTriggerActionHandle",
+  "SaveTriggerActionHandleBJ",
+  "SaveTriggerConditionHandle",
+  "SaveTriggerConditionHandleBJ",
+  "SaveTriggerEventHandle",
+  "SaveTriggerEventHandleBJ",
+  "SaveTriggerHandle",
+  "SaveTriggerHandleBJ",
+  "SaveUbersplatHandle",
+  "SaveUbersplatHandleBJ",
+  "SaveUnitHandle",
+  "SaveUnitHandleBJ",
+  "SaveUnitPoolHandle",
+  "SaveUnitPoolHandleBJ",
+  "SaveWidgetHandle",
+  "SaveWidgetHandleBJ",
+  "SelectGroupBJ",
+  "SelectGroupBJEnum",
+  "SelectGroupForPlayerBJ",
+  "SelectHeroSkill",
+  "SelectUnit",
+  "SelectUnitAdd",
+  "SelectUnitAddForPlayer",
+  "SelectUnitForPlayerSingle",
+  "SelectUnitRemove",
+  "SelectUnitRemoveForPlayer",
+  "SelectUnitSingle",
+  "SetAllItemTypeSlots",
+  "SetAllUnitTypeSlots",
+  "SetAllyColorFilterState",
+  "SetAltMinimapIcon",
+  "SetAmbientDaySound",
+  "SetAmbientNightSound",
+  "SetBlight",
+  "SetBlightLoc",
+  "SetBlightPoint",
+  "SetBlightRadiusLocBJ",
+  "SetBlightRect",
+  "SetBlightRectBJ",
+  "SetCameraBounds",
+  "SetCameraBoundsToRect",
+  "SetCameraBoundsToRectForPlayerBJ",
+  "SetCameraField",
+  "SetCameraFieldForPlayer",
+  "SetCameraOrientController",
+  "SetCameraOrientControllerForPlayerBJ",
+  "SetCameraPosition",
+  "SetCameraPositionForPlayer",
+  "SetCameraPositionLocForPlayer",
+  "SetCameraQuickPosition",
+  "SetCameraQuickPositionForPlayer",
+  "SetCameraQuickPositionLoc",
+  "SetCameraQuickPositionLocForPlayer",
+  "SetCameraRotateMode",
+  "SetCameraTargetController",
+  "SetCameraTargetControllerNoZForPlayer",
+  "SetCampaignAvailable",
+  "SetCampaignAvailableBJ",
+  "SetCampaignMenuRace",
+  "SetCampaignMenuRaceBJ",
+  "SetCampaignMenuRaceEx",
+  "SetCineFilterBlendMode",
+  "SetCineFilterDuration",
+  "SetCineFilterEndColor",
+  "SetCineFilterEndUV",
+  "SetCineFilterStartColor",
+  "SetCineFilterStartUV",
+  "SetCineFilterTexMapFlags",
+  "SetCineFilterTexture",
+  "SetCineModeVolumeGroupsBJ",
+  "SetCineModeVolumeGroupsImmediateBJ",
+  "SetCinematicAudio",
+  "SetCinematicAvailableBJ",
+  "SetCinematicCamera",
+  "SetCinematicCameraForPlayer",
+  "SetCinematicScene",
+  "SetCinematicSceneBJ",
+  "SetCreatureDensity",
+  "SetCreepCampFilterState",
+  "SetCustomCampaignButtonVisible",
+  "SetDNCSoundsDawn",
+  "SetDNCSoundsDay",
+  "SetDNCSoundsDusk",
+  "SetDNCSoundsNight",
+  "SetDayNightModels",
+  "SetDefaultDifficulty",
+  "SetDestAnimationSpeedPercent",
+  "SetDestructableAnimation",
+  "SetDestructableAnimationBJ",
+  "SetDestructableAnimationSpeed",
+  "SetDestructableInvulnerable",
+  "SetDestructableInvulnerableBJ",
+  "SetDestructableLife",
+  "SetDestructableLifePercentBJ",
+  "SetDestructableMaxLife",
+  "SetDestructableMaxLifeBJ",
+  "SetDestructableOccluderHeight",
+  "SetDialogueSpeakerNameKey",
+  "SetDialogueTextKey",
+  "SetDoodadAnimation",
+  "SetDoodadAnimationBJ",
+  "SetDoodadAnimationRect",
+  "SetDoodadAnimationRectBJ",
+  "SetEdCinematicAvailable",
+  "SetEnemyStartLocPrio",
+  "SetEnemyStartLocPrioCount",
+  "SetFloatGameState",
+  "SetFogStateRadius",
+  "SetFogStateRadiusLoc",
+  "SetFogStateRect",
+  "SetForLoopIndexA",
+  "SetForLoopIndexB",
+  "SetForceAllianceStateBJ",
+  "SetGameDifficulty",
+  "SetGamePlacement",
+  "SetGameSpeed",
+  "SetGameTypeSupported",
+  "SetHeroAgi",
+  "SetHeroInt",
+  "SetHeroLevel",
+  "SetHeroLevelBJ",
+  "SetHeroStat",
+  "SetHeroStr",
+  "SetHeroXP",
+  "SetImageAboveWater",
+  "SetImageColor",
+  "SetImageColorBJ",
+  "SetImageConstantHeight",
+  "SetImagePosition",
+  "SetImagePositionBJ",
+  "SetImageRender",
+  "SetImageRenderAlways",
+  "SetImageType",
+  "SetIntegerGameState",
+  "SetIntroShotModel",
+  "SetIntroShotText",
+  "SetItemCharges",
+  "SetItemDropID",
+  "SetItemDropOnDeath",
+  "SetItemDropOnDeathBJ",
+  "SetItemDroppable",
+  "SetItemDroppableBJ",
+  "SetItemInvulnerable",
+  "SetItemInvulnerableBJ",
+  "SetItemLifeBJ",
+  "SetItemPawnable",
+  "SetItemPlayer",
+  "SetItemPlayerBJ",
+  "SetItemPosition",
+  "SetItemPositionLoc",
+  "SetItemTypeSlots",
+  "SetItemUserData",
+  "SetItemVisible",
+  "SetItemVisibleBJ",
+  "SetLightningColor",
+  "SetLightningColorBJ",
+  "SetMapDescription",
+  "SetMapFlag",
+  "SetMapMusic",
+  "SetMapMusicIndexedBJ",
+  "SetMapMusicRandomBJ",
+  "SetMapName",
+  "SetMaxCheckpointSaves",
+  "SetMinimapIconOrphanDestroy",
+  "SetMinimapIconVisible",
+  "SetMissionAvailable",
+  "SetMissionAvailableBJ",
+  "SetMusicOffsetBJ",
+  "SetMusicPlayPosition",
+  "SetMusicVolume",
+  "SetMusicVolumeBJ",
+  "SetNextLevelBJ",
+  "SetOpCinematicAvailable",
+  "SetPlayerAbilityAvailable",
+  "SetPlayerAbilityAvailableBJ",
+  "SetPlayerAlliance",
+  "SetPlayerAllianceBJ",
+  "SetPlayerAllianceStateAllyBJ",
+  "SetPlayerAllianceStateBJ",
+  "SetPlayerAllianceStateControlBJ",
+  "SetPlayerAllianceStateFullControlBJ",
+  "SetPlayerAllianceStateVisionBJ",
+  "SetPlayerColor",
+  "SetPlayerColorBJ",
+  "SetPlayerColorBJEnum",
+  "SetPlayerController",
+  "SetPlayerFlagBJ",
+  "SetPlayerHandicap",
+  "SetPlayerHandicapBJ",
+  "SetPlayerHandicapDamage",
+  "SetPlayerHandicapDamageBJ",
+  "SetPlayerHandicapReviveTime",
+  "SetPlayerHandicapReviveTimeBJ",
+  "SetPlayerHandicapXP",
+  "SetPlayerHandicapXPBJ",
+  "SetPlayerMaxHeroesAllowed",
+  "SetPlayerName",
+  "SetPlayerOnScoreScreen",
+  "SetPlayerOnScoreScreenBJ",
+  "SetPlayerRacePreference",
+  "SetPlayerRaceSelectable",
+  "SetPlayerSlotAvailable",
+  "SetPlayerStartLocation",
+  "SetPlayerState",
+  "SetPlayerStateBJ",
+  "SetPlayerTaxRate",
+  "SetPlayerTaxRateBJ",
+  "SetPlayerTeam",
+  "SetPlayerTechMaxAllowed",
+  "SetPlayerTechMaxAllowedSwap",
+  "SetPlayerTechResearched",
+  "SetPlayerTechResearchedSwap",
+  "SetPlayerUnitAvailableBJ",
+  "SetPlayerUnitsOwner",
+  "SetPlayers",
+  "SetPortraitLight",
+  "SetRandomSeed",
+  "SetRect",
+  "SetRectFromLoc",
+  "SetRescueBuildingColorChangeBJ",
+  "SetRescueUnitColorChangeBJ",
+  "SetReservedLocalHeroButtons",
+  "SetResourceAmount",
+  "SetResourceDensity",
+  "SetSkyModel",
+  "SetSoundChannel",
+  "SetSoundConeAngles",
+  "SetSoundConeAnglesBJ",
+  "SetSoundConeOrientation",
+  "SetSoundDistanceCutoff",
+  "SetSoundDistanceCutoffBJ",
+  "SetSoundDistances",
+  "SetSoundDuration",
+  "SetSoundFacialAnimationGroupLabel",
+  "SetSoundFacialAnimationLabel",
+  "SetSoundFacialAnimationSetFilepath",
+  "SetSoundOffsetBJ",
+  "SetSoundParamsFromLabel",
+  "SetSoundPitch",
+  "SetSoundPitchBJ",
+  "SetSoundPlayPosition",
+  "SetSoundPosition",
+  "SetSoundPositionLocBJ",
+  "SetSoundVelocity",
+  "SetSoundVolume",
+  "SetSoundVolumeBJ",
+  "SetSpeechVolumeGroupsBJ",
+  "SetSpeechVolumeGroupsImmediateBJ",
+  "SetStackedSoundBJ",
+  "SetStartLocPrio",
+  "SetStartLocPrioCount",
+  "SetTeams",
+  "SetTerrainFog",
+  "SetTerrainFogEx",
+  "SetTerrainFogExBJ",
+  "SetTerrainPathable",
+  "SetTerrainPathableBJ",
+  "SetTerrainType",
+  "SetTerrainTypeBJ",
+  "SetTextTagAge",
+  "SetTextTagAgeBJ",
+  "SetTextTagColor",
+  "SetTextTagColorBJ",
+  "SetTextTagFadepoint",
+  "SetTextTagFadepointBJ",
+  "SetTextTagLifespan",
+  "SetTextTagLifespanBJ",
+  "SetTextTagPermanent",
+  "SetTextTagPermanentBJ",
+  "SetTextTagPos",
+  "SetTextTagPosBJ",
+  "SetTextTagPosUnit",
+  "SetTextTagPosUnitBJ",
+  "SetTextTagSuspended",
+  "SetTextTagSuspendedBJ",
+  "SetTextTagText",
+  "SetTextTagTextBJ",
+  "SetTextTagVelocity",
+  "SetTextTagVelocityBJ",
+  "SetTextTagVisibility",
+  "SetThematicMusicOffsetBJ",
+  "SetThematicMusicPlayPosition",
+  "SetThematicMusicVolume",
+  "SetThematicMusicVolumeBJ",
+  "SetTimeOfDay",
+  "SetTimeOfDayScale",
+  "SetTimeOfDayScalePercentBJ",
+  "SetTutorialCleared",
+  "SetUbersplatRender",
+  "SetUbersplatRenderAlways",
+  "SetUnitAbilityLevel",
+  "SetUnitAbilityLevelSwapped",
+  "SetUnitAcquireRange",
+  "SetUnitAcquireRangeBJ",
+  "SetUnitAnimation",
+  "SetUnitAnimationByIndex",
+  "SetUnitAnimationWithRarity",
+  "SetUnitBlendTime",
+  "SetUnitBlendTimeBJ",
+  "SetUnitColor",
+  "SetUnitCreepGuard",
+  "SetUnitExploded",
+  "SetUnitExplodedBJ",
+  "SetUnitFacing",
+  "SetUnitFacingTimed",
+  "SetUnitFacingToFaceLocTimed",
+  "SetUnitFacingToFaceUnitTimed",
+  "SetUnitFlyHeight",
+  "SetUnitFlyHeightBJ",
+  "SetUnitFog",
+  "SetUnitInvulnerable",
+  "SetUnitLifeBJ",
+  "SetUnitLifePercentBJ",
+  "SetUnitLookAt",
+  "SetUnitManaBJ",
+  "SetUnitManaPercentBJ",
+  "SetUnitMoveSpeed",
+  "SetUnitOwner",
+  "SetUnitPathing",
+  "SetUnitPosition",
+  "SetUnitPositionLoc",
+  "SetUnitPositionLocFacingBJ",
+  "SetUnitPositionLocFacingLocBJ",
+  "SetUnitPropWindow",
+  "SetUnitPropWindowBJ",
+  "SetUnitRallyDestructable",
+  "SetUnitRallyPoint",
+  "SetUnitRallyUnit",
+  "SetUnitRescuable",
+  "SetUnitRescueRange",
+  "SetUnitScale",
+  "SetUnitScalePercent",
+  "SetUnitState",
+  "SetUnitTimeScale",
+  "SetUnitTimeScalePercent",
+  "SetUnitTurnSpeed",
+  "SetUnitTurnSpeedBJ",
+  "SetUnitTypeSlots",
+  "SetUnitUseFood",
+  "SetUnitUseFoodBJ",
+  "SetUnitUserData",
+  "SetUnitVertexColor",
+  "SetUnitVertexColorBJ",
+  "SetUnitX",
+  "SetUnitY",
+  "SetUserControlForceOff",
+  "SetUserControlForceOn",
+  "SetWaterBaseColor",
+  "SetWaterBaseColorBJ",
+  "SetWaterDeforms",
+  "SetWidgetLife",
+  "ShareEverythingWithTeam",
+  "ShareEverythingWithTeamAI",
+  "ShowBlueToRed",
+  "ShowCustomCampaignButton",
+  "ShowDestructable",
+  "ShowDestructableBJ",
+  "ShowImage",
+  "ShowImageBJ",
+  "ShowInterface",
+  "ShowInterfaceForceOff",
+  "ShowInterfaceForceOn",
+  "ShowTextTagForceBJ",
+  "ShowUbersplat",
+  "ShowUbersplatBJ",
+  "ShowUnit",
+  "ShowUnitHide",
+  "ShowUnitShow",
+  "Sin",
+  "SinBJ",
+  "SkinManagerGetLocalPath",
+  "SmartCameraPanBJ",
+  "SquareRoot",
+  "StartCampaignAI",
+  "StartMeleeAI",
+  "StartSound",
+  "StartSoundEx",
+  "StartSoundForPlayerBJ",
+  "StartStockUpdates",
+  "StartTimerBJ",
+  "StopCamera",
+  "StopCameraForPlayerBJ",
+  "StopMusic",
+  "StopMusicBJ",
+  "StopSound",
+  "StopSoundBJ",
+  "StoreBoolean",
+  "StoreBooleanBJ",
+  "StoreInteger",
+  "StoreIntegerBJ",
+  "StoreReal",
+  "StoreRealBJ",
+  "StoreString",
+  "StoreStringBJ",
+  "StoreUnit",
+  "StoreUnitBJ",
+  "String2OrderIdBJ",
+  "String2UnitIdBJ",
+  "StringCase",
+  "StringHash",
+  "StringHashBJ",
+  "StringIdentity",
+  "StringLength",
+  "SubString",
+  "SubStringBJ",
+  "SuspendHeroXP",
+  "SuspendHeroXPBJ",
+  "SuspendTimeOfDay",
+  "SyncSelections",
+  "SyncStoredBoolean",
+  "SyncStoredInteger",
+  "SyncStoredReal",
+  "SyncStoredString",
+  "SyncStoredUnit",
+  "Tan",
+  "TanBJ",
+  "TeamInitPlayerSlots",
+  "TerrainDeformCrater",
+  "TerrainDeformRandom",
+  "TerrainDeformRipple",
+  "TerrainDeformStop",
+  "TerrainDeformStopAll",
+  "TerrainDeformWave",
+  "TerrainDeformationCraterBJ",
+  "TerrainDeformationRandomBJ",
+  "TerrainDeformationRippleBJ",
+  "TerrainDeformationStopBJ",
+  "TerrainDeformationWaveBJ",
+  "TextTagSize2Height",
+  "TextTagSpeed2Velocity",
+  "TimerDialogDisplay",
+  "TimerDialogDisplayBJ",
+  "TimerDialogDisplayForPlayerBJ",
+  "TimerDialogSetRealTimeRemaining",
+  "TimerDialogSetSpeed",
+  "TimerDialogSetSpeedBJ",
+  "TimerDialogSetTimeColor",
+  "TimerDialogSetTimeColorBJ",
+  "TimerDialogSetTitle",
+  "TimerDialogSetTitleBJ",
+  "TimerDialogSetTitleColor",
+  "TimerDialogSetTitleColorBJ",
+  "TimerGetElapsed",
+  "TimerGetRemaining",
+  "TimerGetTimeout",
+  "TimerStart",
+  "TransmissionFromUnitTypeWithNameBJ",
+  "TransmissionFromUnitWithNameBJ",
+  "TriggerActionUnitRescuedBJ",
+  "TriggerAddAction",
+  "TriggerAddCondition",
+  "TriggerClearActions",
+  "TriggerClearConditions",
+  "TriggerEvaluate",
+  "TriggerExecute",
+  "TriggerExecuteBJ",
+  "TriggerExecuteWait",
+  "TriggerRegisterAnyUnitEventBJ",
+  "TriggerRegisterBuildCommandEventBJ",
+  "TriggerRegisterBuildSubmenuEventBJ",
+  "TriggerRegisterCommandEvent",
+  "TriggerRegisterCommonCommandEventBJ",
+  "TriggerRegisterDeathEvent",
+  "TriggerRegisterDestDeathInRegionEvent",
+  "TriggerRegisterDialogButtonEvent",
+  "TriggerRegisterDialogEvent",
+  "TriggerRegisterDialogEventBJ",
+  "TriggerRegisterDistanceBetweenUnits",
+  "TriggerRegisterEnterRectSimple",
+  "TriggerRegisterEnterRegion",
+  "TriggerRegisterEnterRegionSimple",
+  "TriggerRegisterFilterUnitEvent",
+  "TriggerRegisterGameEvent",
+  "TriggerRegisterGameLoadedEventBJ",
+  "TriggerRegisterGameSavedEventBJ",
+  "TriggerRegisterGameStateEvent",
+  "TriggerRegisterGameStateEventTimeOfDay",
+  "TriggerRegisterLeaveRectSimple",
+  "TriggerRegisterLeaveRegion",
+  "TriggerRegisterLeaveRegionSimple",
+  "TriggerRegisterPlayerAllianceChange",
+  "TriggerRegisterPlayerChatEvent",
+  "TriggerRegisterPlayerEvent",
+  "TriggerRegisterPlayerEventAllianceChanged",
+  "TriggerRegisterPlayerEventDefeat",
+  "TriggerRegisterPlayerEventEndCinematic",
+  "TriggerRegisterPlayerEventLeave",
+  "TriggerRegisterPlayerEventVictory",
+  "TriggerRegisterPlayerKeyEventBJ",
+  "TriggerRegisterPlayerMouseEventBJ",
+  "TriggerRegisterPlayerSelectionEventBJ",
+  "TriggerRegisterPlayerStateEvent",
+  "TriggerRegisterPlayerUnitEvent",
+  "TriggerRegisterPlayerUnitEventSimple",
+  "TriggerRegisterShowSkillEventBJ",
+  "TriggerRegisterTimerEvent",
+  "TriggerRegisterTimerEventPeriodic",
+  "TriggerRegisterTimerEventSingle",
+  "TriggerRegisterTimerExpireEvent",
+  "TriggerRegisterTimerExpireEventBJ",
+  "TriggerRegisterTrackableHitEvent",
+  "TriggerRegisterTrackableTrackEvent",
+  "TriggerRegisterTrainCommandEventBJ",
+  "TriggerRegisterUnitEvent",
+  "TriggerRegisterUnitInRange",
+  "TriggerRegisterUnitInRangeSimple",
+  "TriggerRegisterUnitLifeEvent",
+  "TriggerRegisterUnitManaEvent",
+  "TriggerRegisterUnitStateEvent",
+  "TriggerRegisterUpgradeCommandEvent",
+  "TriggerRegisterUpgradeCommandEventBJ",
+  "TriggerRegisterVariableEvent",
+  "TriggerRemoveAction",
+  "TriggerRemoveCondition",
+  "TriggerSleepAction",
+  "TriggerSyncReady",
+  "TriggerSyncStart",
+  "TriggerWaitForSound",
+  "TriggerWaitOnSleeps",
+  "TryInitCinematicBehaviorBJ",
+  "TryInitRescuableTriggersBJ",
+  "UnitAddAbility",
+  "UnitAddAbilityBJ",
+  "UnitAddIndicator",
+  "UnitAddIndicatorBJ",
+  "UnitAddItem",
+  "UnitAddItemById",
+  "UnitAddItemByIdSwapped",
+  "UnitAddItemSwapped",
+  "UnitAddItemToSlotById",
+  "UnitAddSleep",
+  "UnitAddSleepPerm",
+  "UnitAddType",
+  "UnitAddTypeBJ",
+  "UnitApplyTimedLife",
+  "UnitApplyTimedLifeBJ",
+  "UnitCanSleep",
+  "UnitCanSleepBJ",
+  "UnitCanSleepPerm",
+  "UnitCountBuffsEx",
+  "UnitCountBuffsExBJ",
+  "UnitDamagePoint",
+  "UnitDamagePointLoc",
+  "UnitDamageTarget",
+  "UnitDamageTargetBJ",
+  "UnitDropItem",
+  "UnitDropItemPoint",
+  "UnitDropItemPointBJ",
+  "UnitDropItemPointLoc",
+  "UnitDropItemSlot",
+  "UnitDropItemSlotBJ",
+  "UnitDropItemTarget",
+  "UnitDropItemTargetBJ",
+  "UnitGenerateAlarms",
+  "UnitHasBuffBJ",
+  "UnitHasBuffsEx",
+  "UnitHasItem",
+  "UnitHasItemOfTypeBJ",
+  "UnitId",
+  "UnitId2OrderIdBJ",
+  "UnitId2String",
+  "UnitId2StringBJ",
+  "UnitIgnoreAlarm",
+  "UnitIgnoreAlarmToggled",
+  "UnitInventoryCount",
+  "UnitInventorySize",
+  "UnitInventorySizeBJ",
+  "UnitIsSleeping",
+  "UnitIsSleepingBJ",
+  "UnitItemInSlot",
+  "UnitItemInSlotBJ",
+  "UnitMakeAbilityPermanent",
+  "UnitMakeAbilityPermanentBJ",
+  "UnitModifySkillPoints",
+  "UnitPauseTimedLife",
+  "UnitPauseTimedLifeBJ",
+  "UnitPoolAddUnitType",
+  "UnitPoolRemoveUnitType",
+  "UnitRemoveAbility",
+  "UnitRemoveAbilityBJ",
+  "UnitRemoveBuffBJ",
+  "UnitRemoveBuffs",
+  "UnitRemoveBuffsBJ",
+  "UnitRemoveBuffsEx",
+  "UnitRemoveBuffsExBJ",
+  "UnitRemoveItem",
+  "UnitRemoveItemFromSlot",
+  "UnitRemoveItemFromSlotSwapped",
+  "UnitRemoveItemSwapped",
+  "UnitRemoveType",
+  "UnitRemoveTypeBJ",
+  "UnitResetCooldown",
+  "UnitSetCanSleepBJ",
+  "UnitSetConstructionProgress",
+  "UnitSetUpgradeProgress",
+  "UnitSetUsesAltIcon",
+  "UnitSetUsesAltIconBJ",
+  "UnitShareVision",
+  "UnitShareVisionBJ",
+  "UnitStripHeroLevel",
+  "UnitSuspendDecay",
+  "UnitSuspendDecayBJ",
+  "UnitUseItem",
+  "UnitUseItemDestructable",
+  "UnitUseItemPoint",
+  "UnitUseItemPointLoc",
+  "UnitUseItemTarget",
+  "UnitWakeUp",
+  "UnitWakeUpBJ",
+  "UnlockGameSpeedBJ",
+  "UnregisterStackedSound",
+  "UpdateEachStockBuilding",
+  "UpdateEachStockBuildingEnum",
+  "UpdateStockAvailability",
+  "UseTimeOfDayBJ",
+  "VersionCompatible",
+  "VersionGet",
+  "VersionSupported",
+  "VolumeGroupReset",
+  "VolumeGroupResetBJ",
+  "VolumeGroupResetImmediateBJ",
+  "VolumeGroupSetVolume",
+  "VolumeGroupSetVolumeBJ",
+  "VolumeGroupSetVolumeForPlayerBJ",
+  "WaitForSoundBJ",
+  "WaitTransmissionDuration",
+  "WakePlayerUnits",
+  "WakePlayerUnitsEnum",
+  "WaygateActivate",
+  "WaygateActivateBJ",
+  "WaygateGetDestinationLocBJ",
+  "WaygateGetDestinationX",
+  "WaygateGetDestinationY",
+  "WaygateIsActive",
+  "WaygateIsActiveBJ",
+  "WaygateSetDestination",
+  "WaygateSetDestinationLocBJ",
+  "WidgetDropItem"
+ ]
+}
