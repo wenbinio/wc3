@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 'use strict';
-// build-map.js <map-source-dir> <out.w3x>
+// build-map.js [--bare] <map-source-dir> <out.w3x>
 // The top-level map compiler:
 //   map source (JSON + war3map.lua + files/ + imports/)
 //     -> translate JSON to war3map.* binaries (temp dir)
 //     -> pack into MPQ v1
 //     -> prepend HM3W pre-header (from _header.json or synthesized)
+// --bare packs a bare MPQ instead (no HM3W pre-header, archive at offset 0)
+// — the modern container real 2023+ maps ship; only 1.31+ clients read it.
+// Passed straight through to the pack layer (tools/w3x-pack.js packDir).
 //
 // Sanity checks before packing: a map script must exist (war3map.lua or
 // war3map.j) and info.json/terrain.json should be present for a playable map.
@@ -17,7 +20,8 @@ const { sourceToExtracted, writeJson } = require('../lib/source');
 const { checkLuaSyntax } = require('../lib/luacheck');
 const { packDir } = require('./w3x-pack');
 
-function buildMap(sourceDir, outW3x) {
+function buildMap(sourceDir, outW3x, opts) {
+  opts = opts || {};
   if (!fs.existsSync(sourceDir)) throw new Error(`map source dir not found: ${sourceDir}`);
 
   const hasScript = ['war3map.lua', 'war3map.j'].some((s) => fs.existsSync(path.join(sourceDir, s)));
@@ -44,7 +48,7 @@ function buildMap(sourceDir, outW3x) {
         );
       }
     }
-    const res = packDir(tmp, outW3x);
+    const res = packDir(tmp, outW3x, { bare: opts.bare });
     return { members: written, ...res };
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
@@ -52,15 +56,17 @@ function buildMap(sourceDir, outW3x) {
 }
 
 function main(argv) {
-  const [sourceDir, outW3x] = argv;
+  const bare = argv.includes('--bare');
+  const [sourceDir, outW3x] = argv.filter((a) => a !== '--bare');
   if (!sourceDir || !outW3x) {
-    console.error('usage: node tools/build-map.js <map-source-dir> <out.w3x>');
+    console.error('usage: node tools/build-map.js [--bare] <map-source-dir> <out.w3x>');
     process.exit(2);
   }
   try {
-    const { files, headerFields, bytes } = buildMap(sourceDir, outW3x);
+    const { files, headerFields, bytes } = buildMap(sourceDir, outW3x, { bare });
     console.log(`built ${outW3x} (${bytes} bytes, ${files.length} archive members)`);
-    console.log(`HM3W header: name=${JSON.stringify(headerFields.name)} maxPlayers=${headerFields.maxPlayers ?? 4}`);
+    if (bare) console.log('bare MPQ container (no HM3W pre-header — 1.31+ clients only)');
+    else console.log(`HM3W header: name=${JSON.stringify(headerFields.name)} maxPlayers=${headerFields.maxPlayers ?? 4}`);
   } catch (e) {
     console.error('build failed: ' + (e.message || e));
     process.exit(1);

@@ -24,9 +24,16 @@ node -e "const i=require('/tmp/work/src/info.json'); console.log(i.map.name, i.p
 
 Gotchas:
 
-- **Classic (pre-Reforged) maps**: `war3map.w3i`/`w3e`/object files fail in
-  wc3maptranslator@5 — sometimes with its version message, but often with a
-  plain `RangeError: offset out of range` (e.g. classic `war3map.doo` v8).
+- **w3e v11 / w3i v25/v31 are NOT a problem**: real published maps
+  (including 1.36/2.0-editor-saved ones) ship these versions, and
+  `lib/codecs/` translates them into the normal editable
+  terrain.json/info.json (with a `"version"` marker that routes the write
+  path back through the same codec byte-faithfully). Expect NO manifest
+  error and no `_viewer/` entry for them — edit and rebuild as usual.
+- **Classic (pre-Reforged) maps**: remaining old-version files (w3i v18,
+  object data v1/v2, classic doo, ...) fail in wc3maptranslator@5 —
+  sometimes with its version message, but often with a plain
+  `RangeError: offset out of range` (e.g. classic `war3map.doo` v8).
   `map-to-json.js` handles ANY such throw: the file is copied through raw
   under `files/` and the error is recorded in `manifest.json` → `errors`. You
   can still edit scripts/assets and repack. Additionally, on any translator

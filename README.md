@@ -60,10 +60,10 @@ All tools are plain Node scripts: `node tools/<name>.js ...`
 | Tool | Usage | Purpose |
 | --- | --- | --- |
 | `w3x-extract.js` | `[--dump-unknown] <map.w3x> <outdir>` | Save the 512-byte HM3W pre-header (`_header.json`) and extract all MPQ contents; `--dump-unknown` also dumps anonymous members of protected maps under `_unknown/` |
-| `w3x-pack.js` | `<dir> <out.w3x>` | Pack a directory into an MPQ v1 and prepend the preserved/synthesized HM3W header |
+| `w3x-pack.js` | `[--bare] <dir> <out.w3x>` | Pack a directory into an MPQ v1 and prepend the preserved/synthesized HM3W header (`--bare`: no pre-header, modern 1.31+ container) |
 | `map-to-json.js` | `<extracted-dir> <json-dir>` | Translate every known `war3map.*` file to JSON; copy opaque files through with a manifest |
 | `json-to-map.js` | `<json-dir> <out-dir>` | Inverse: JSON map source back to raw archive members |
-| `build-map.js` | `<map-source-dir> <out.w3x>` | Top-level compiler: map source → `.w3x` |
+| `build-map.js` | `[--bare] <map-source-dir> <out.w3x>` | Top-level compiler: map source → `.w3x` (`--bare` passes through to the packer) |
 | `validate-map.js` | `<map.w3x>` | Extract, re-parse every translatable file, check script presence; pass/fail summary |
 
 ## Map source layout

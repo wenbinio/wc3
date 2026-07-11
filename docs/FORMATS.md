@@ -64,8 +64,8 @@ Translatable via wc3maptranslator@5 (JSON name used by this toolkit):
 
 | Archive file | Content | Format version | JSON |
 | --- | --- | --- | --- |
-| war3map.w3i | map info, players, forces | **v33** (Reforged; v31 also accepted) | info.json |
-| war3map.w3e | terrain heightmap/tiles | **v12** | terrain.json |
+| war3map.w3i | map info, players, forces | **v33** (upstream translator) + **v25/v31** via lib/codecs/w3i31.js (JSON gains `"version": 25\|31`) | info.json |
+| war3map.w3e | terrain heightmap/tiles | **v12** (upstream translator) + **v11** via lib/codecs/w3e11.js (JSON gains `"version": 11`) | terrain.json |
 | war3map.doo | doodads/destructables | v8 | doodads.json |
 | war3mapUnits.doo | preplaced units/items, start locations | v8 subver 11 | units.json |
 | war3map.w3r | regions | v5 | regions.json |
@@ -108,7 +108,34 @@ Opaque (copied verbatim, under `files/` in a map source):
 Error: WC3MapTranslator cannot currently parse this version of a war3map file
 ```
 
-Consequences:
+**Version codecs (lib/codecs/)** close the worst of this gap: real published
+maps — including ones saved by the current 1.36/2.0 editors — ship **w3e v11**
+terrain and (strategy maps) **w3i v31**, which lib/filemap.js now routes to
+first-class read+write codecs BEFORE any fallback. Their JSON is the exact
+upstream dialect plus a top-level `"version"` marker, lands in the normal
+terrain.json/info.json, and compiles back byte-faithfully (verified as
+read→write byte fixpoints on four real 2023–2026 maps). The exact deltas,
+established against mdx-m3-viewer-th, War3Net and the real samples:
+
+- **w3e v11 ↔ v12**: only per-corner field 3 differs — u8 in v11
+  (groundTexture bits 0–3, ramp/blight/water/boundary flags bits 4–7) vs
+  u16 LE in v12 (groundTexture bits 0–5, same flags at bits 6–9); corners
+  are 7 vs 8 bytes. The codec normalizes JSON `flags` to the v12 bit
+  positions, so switching a source between versions is just the marker
+  (palette ≤ 16 tiles and flags ≤ 0x3C0 required for v11).
+- **w3i v31 ↔ v33**: v33 appends exactly three i32s after gameDataVersion —
+  forceDefaultCameraZoom + forceMaxCameraZoom (v32) and forceMinCameraZoom
+  (v33). Everything else (gameVersion, scriptLanguage, supportedModes,
+  gameDataVersion, per-player enemy priority masks) already exists in v31.
+- **w3i v25 ↔ v31** (classic TFT, also codec-supported): v25 lacks
+  gameVersion + scriptLanguage (v28+) and supportedModes + gameDataVersion +
+  per-player enemyLow/HighPriority masks (v31+).
+- The w3i codec adds optional fidelity fields the upstream dialect can't
+  express: `map.flagsUnknown` (unnamed flag bits — real maps carry 0x8 and
+  WE's always-set 0x400/0x4000) and raw `playersMask` /
+  `*PriorityFlagsMask` passthroughs (bits 24–31 are common in real files).
+
+Remaining consequences for everything OLDER than those versions:
 
 - Classic maps (most Hive Workshop archives, all original Blizzard maps) can
   be **extracted and repacked** but not fully JSON-translated. map-to-json
@@ -117,6 +144,8 @@ Consequences:
   mdx-m3-viewer-th parse under `_viewer/<name>.json`** (viewer object schema,
   `manifest.json` → `viewerFallback`). That output is diagnostics only:
   json-to-map/build-map ignore `_viewer/` and cannot compile it back.
+  With the codecs in place this now applies to w3i v18, object data v1/v2,
+  classic `.doo` etc. — not to w3e v11 / w3i v25/v31.
 - The wc3-ts-template repo's `maps/map.w3x/` folder is classic-format:
   its `.doo`, `w3r`, `w3c`, `wts`, `Units.doo` parse fine, but `w3i`/`w3e`
   do not. This repo's `maps/demo/` was therefore built in current formats

@@ -34,10 +34,14 @@ node -e "const i=require('/tmp/work/src/info.json');console.log(i.map.name, i.pl
 
 Interpreting problems:
 
+- `terrain.json`/`info.json` with a top-level `"version": 11|25|31` →
+  handled by the version codecs (lib/codecs/): fully editable and
+  rebuildable, same dialect as the current formats — keep the marker.
 - `manifest.json.errors` mentioning "cannot currently parse this version"
-  (or a bare `RangeError: offset out of range`) → classic-format map; those
-  files are copied raw (everything else still works) and, where possible,
-  parsed read-only into `_viewer/<name>.json` (`manifest.json` →
+  (or a bare `RangeError: offset out of range`) → classic-format file with
+  no codec (w3i v18, object data v1/v2, classic doo, ...); those files are
+  copied raw (everything else still works) and, where possible, parsed
+  read-only into `_viewer/<name>.json` (`manifest.json` →
   `viewerFallback`; viewer failures in `viewerFallbackErrors`; a truncated
   classic w3i gets a tolerant lib/classicw3i.js read).
 - w3x-extract reporting unresolved (anonymous) entries → protected map

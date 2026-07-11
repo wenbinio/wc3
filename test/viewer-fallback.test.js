@@ -21,14 +21,17 @@ const WORK = fs.mkdtempSync(path.join(os.tmpdir(), 'wc3-toolkit-viewer-test-'));
 
 function readJson(p) { return JSON.parse(fs.readFileSync(p, 'utf8')); }
 
-// Downgrade the Reforged v12 w3e fixture to classic v11 with the viewer's
-// own parser (v11 corners are 7 bytes vs 9 — a version-byte patch would not
-// do): wc3maptranslator@5 must then refuse it with its version error.
+// Downgrade the Reforged v12 w3e fixture to a pre-classic v10 with the
+// viewer's own parser (sub-v12 corners are 7 bytes vs 8 — a version-byte
+// patch would not do): wc3maptranslator@5 must then refuse it with its
+// version error. v10 deliberately: v11 is now handled by lib/codecs/w3e11
+// and never reaches this fallback (see test/codecs.test.js) — the read-only
+// _viewer/ path is for versions NO first-class reader supports.
 function makeClassicW3e() {
   const w3eFile = require('mdx-m3-viewer-th/dist/cjs/parsers/w3x/w3e/file.js').default;
   const f = new w3eFile();
   f.load(new Uint8Array(fs.readFileSync(path.join(FIXTURES, 'war3map.w3e'))));
-  f.version = 11;
+  f.version = 10;
   return Buffer.from(f.save());
 }
 
@@ -53,7 +56,7 @@ test('(a) classic w3e: translator version error triggers the read-only _viewer/ 
   const diag = readJson(path.join(sourceDir, '_viewer', 'war3map.w3e.json'));
   assert.strictEqual(diag._schema, 'mdx-m3-viewer-th');
   assert.match(diag._readOnly, /NOT build-source/);
-  assert.strictEqual(diag.data.version, 11, 'viewer parsed the classic version');
+  assert.strictEqual(diag.data.version, 10, 'viewer parsed the classic version');
   assert.ok(Array.isArray(diag.data.corners) && diag.data.corners.length > 0, 'terrain corners present');
 });
 

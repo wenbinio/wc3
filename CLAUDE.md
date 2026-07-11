@@ -10,7 +10,7 @@ in docs/ and .claude/skills/; follow the pointers.
 
 ```bash
 bash scripts/setup.sh   # idempotent: npm install + optional apt-get smpq fallback
-npm test                # 69 tests; all must pass before you change anything
+npm test                # 124 tests; all must pass before you change anything
 ```
 
 If you touch `lib/mpq.js` or anything archive-related, the suite must be
@@ -24,7 +24,7 @@ node tools/w3x-extract.js  [--dump-unknown] <map.w3x> <outdir>  # header -> _hea
 node tools/map-to-json.js  <extracted-dir> <json-dir>  # binaries -> editable map source
 node tools/json-to-map.js  <json-dir> <out-dir>        # map source -> binaries
 node tools/w3x-pack.js     <dir> <out.w3x>             # binaries -> MPQ v1 + HM3W header
-node tools/build-map.js    <map-source-dir> <out.w3x>  # one-step: source -> .w3x
+node tools/build-map.js    [--bare] <map-source-dir> <out.w3x>  # one-step: source -> .w3x (--bare: no HM3W pre-header, 1.31+ container)
 node tools/validate-map.js <map.w3x>                   # layered pass/fail report, exit 0 = good
 
 bash scripts/crossvalidate-war3net.sh <extracted-dir>  # optional War3Net (C#) third opinion; needs dotnet
@@ -92,13 +92,21 @@ never third-party maps, gotcha 9).
    `InfoTranslator.warToJson(buffer)` → `{json}`,
    `InfoTranslator.jsonToWar(json)` → `{buffer}`.
 2. **Reforged formats only** in wc3maptranslator (w3i v33, w3e v12, objects
-   v3): classic files throw — sometimes a version message, often a bare
-   `RangeError: offset out of range`. map-to-json catches ANY translator
-   throw: file copied raw (manifest.json → `errors`) plus a READ-ONLY
-   mdx-m3-viewer-th parse under `_viewer/` (viewer schema, never repacked —
-   not build-source); viewer failures land in `viewerFallbackErrors`; a
-   truncated classic w3i gets a tolerant read via lib/classicw3i.js.
-   Don't "fix" the throw — it's upstream.
+   v3): other versions throw — sometimes a version message, often a bare
+   `RangeError: offset out of range`. BUT real published maps (2023–2026,
+   incl. 1.36/2.0-editor-saved) ship **w3e v11** terrain and **w3i v25/v31**
+   info — those now have first-class read+WRITE codecs (`lib/codecs/`,
+   routed by lib/filemap.js off the binary version dword / the JSON
+   `"version"` marker) and land in normal editable terrain.json/info.json
+   with byte-faithful write-back (exact v11↔v12 / v25↔v31↔v33 deltas:
+   docs/FORMATS.md). Only versions no codec covers (w3i v18, objects v1/v2,
+   classic doo, ...) still take the old path: map-to-json catches ANY
+   translator throw — file copied raw (manifest.json → `errors`) plus a
+   READ-ONLY mdx-m3-viewer-th parse under `_viewer/` (viewer schema, never
+   repacked — not build-source); viewer failures land in
+   `viewerFallbackErrors`; a truncated classic w3i gets a tolerant read via
+   lib/classicw3i.js. Don't "fix" the upstream throw — add/route a codec in
+   filemap.js instead.
 3. **512-byte HM3W pre-header**: StormLib reads `.w3x` directly but creates
    bare MPQs. w3x-pack builds the header from `_header.json` (or synthesizes
    one); stormlib-node pre-writes it and `SFileCreateArchive` converts it
@@ -236,10 +244,12 @@ never third-party maps, gotcha 9).
 
 ## Testing & validation doctrine
 
-- `npm test` = 69 tests, 12 files: source⇄binary fixed points for all four
-  bundled maps, build+validate end-to-end, MPQ backends, classic/protected
-  fallbacks (`_viewer/`, `_unknown/`, classicw3i), luacheck, gotcha
-  regressions. Both backends when touching archive code (`npm run test:smpq`).
+- `npm test` = 124 tests, 16 files: source⇄binary fixed points for all four
+  bundled maps, build+validate end-to-end, MPQ backends, version codecs
+  (synthetic v11/v25/v31 fixtures cross-checked against mdx-m3-viewer-th +
+  guarded real-sample fixpoints), classic/protected fallbacks (`_viewer/`,
+  `_unknown/`, classicw3i), luacheck, gotcha regressions. Both backends when
+  touching archive code (`npm run test:smpq`).
 - `validate-map` layers: HM3W header + MPQ magic at 512 → extraction →
   required files (w3i/w3e) + script presence → luaparse gate → per-file
   translator parse PLUS JSON→binary→JSON stability → object-data semantic
@@ -269,7 +279,11 @@ or CC0-converted content. Details: docs/ASSETS.md.
 ## Where things live
 
 - `lib/filemap.js` — war3-file ⇄ translator ⇄ JSON-name table (add new
-  formats here; tools pick them up automatically)
+  formats here; tools pick them up automatically) + version routing into
+  `lib/codecs/`
+- `lib/codecs/` — version-aware codecs upstream can't parse: w3e11.js
+  (terrain v11 read+write), w3i31.js (info v25/v31 read+write); same JSON
+  dialect as upstream plus a `"version"` marker (gotcha 2)
 - `lib/header.js` / `lib/mpq.js` — HM3W header (+ w3i flags reader); MPQ I/O,
   two backends (stormlib-node primary / smpq CLI fallback)
 - `lib/source.js` — map-source ⇄ extracted-dir conversion (the core logic,
