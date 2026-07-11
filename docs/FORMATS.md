@@ -53,8 +53,17 @@ the packed `war3map.w3i` (`readW3iFlags` in lib/header.js) whenever
   text→`.txt`, else `.bin`); StormLib opens pseudo-names by their encoded
   block index, and dumps that duplicate a name-probed extraction are skipped.
   The `_unknown/` dump is diagnostics only (map-to-json skips underscore
-  paths) — the true archive path is unrecoverable, so it can never be
-  repacked to the right member name.
+  paths). The true archive path is not stored anywhere in the MPQ, but the
+  map must reference its own files to work, so most names can be harvested
+  back out of the content and verified by hash probe —
+  `w3x-extract --recover-names` / `lib/recover.js` (see docs/PIPELINE.md §1);
+  only members the map never references by path stay anonymous.
+- **Protection traps**: beyond stripping the listfile, protectors replace
+  files the game tolerates being broken with tiny stubs whose entry-count
+  field is garbage (observed in the wild: an 8-byte `war3map.w3r` declaring
+  ~1.26 billion regions) so that naive parsers loop or allocate GBs.
+  `lib/traps.js` detects the pattern before any parser runs (tiny file +
+  count that cannot fit); tools degrade to WARN + raw pass-through.
 - Reforged also reads loose directories named `*.w3x/` (an "extracted map
   folder", e.g. wc3-ts-template's `maps/map.w3x/`) — handy for reference.
 

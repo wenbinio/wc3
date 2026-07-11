@@ -53,7 +53,8 @@ rotations carry float32-stabilized values (e.g. `269.977...` for 270°) and
 `_header.json` carries the flags dword derived from the w3i. Keep it that
 way — if you edit values, build once, re-extract with
 `w3x-extract.js` + `map-to-json.js`, and commit the stabilized JSON.
-Keep `strings.json` ASCII-only: non-ASCII characters (e.g. an em dash) do
-not survive the wts round-trip.
+Keep `strings.json` ASCII-only as a max-compat convention for committed
+sources (our own wts layer round-trips non-ASCII losslessly now — CLAUDE.md
+gotcha 16 — but unpatched wc3maptranslator elsewhere does not).
 
 Tested end-to-end by `test/tidewatch.test.js`.

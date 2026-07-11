@@ -62,8 +62,17 @@ Gotchas:
   `.mdx`, `BLP1`/`BLP2`→`.blp`, text→`.txt`, else `.bin`; duplicates of
   named extractions are skipped). **`_unknown/` is diagnostics only** —
   map-to-json skips it (recorded in `manifest.json` → `skipped`) and it never
-  re-enters a rebuilt archive; the original archive path is genuinely lost, so
-  a repacked map won't reference these files.
+  re-enters a rebuilt archive.
+  - Most anonymous NAMES are recoverable after all: `w3x-extract
+    --recover-names` (implies `--dump-unknown`) harvests candidate paths
+    from the extracted content itself — scripts, object-data art/model
+    fields, `.toc` lines, MDX TEXS texture paths, derived BTN/DISBTN and
+    `.mdl`↔`.mdx` variants — and hash-probes them against the archive
+    (exact-name MPQ lookup needs no listfile), iterating to a fixpoint
+    (`lib/recover.js`). Hits are extracted under their real names and their
+    `_unknown/` duplicates pruned; 448 and 401 imports were renamed this
+    way on two real protected maps. Only what the map never references by
+    path stays anonymous.
 - **MPQ backends**: archive I/O uses the stormlib-node native module when
   loadable and the smpq CLI otherwise. Force the fallback with
   `WC3_MPQ_BACKEND=smpq` (e.g. `npm run test:smpq` runs the whole test suite

@@ -24,7 +24,12 @@ Then read `/tmp/work/src/`:
 - `_header.json` — the .w3x HM3W pre-header (lobby name, maxPlayers)
 - `_unknown/` (extraction dir, only with `w3x-extract --dump-unknown` or
   `WC3_EXTRACT_UNKNOWN=1`) — content of anonymous members of protected maps,
-  content-sniffed extensions; diagnostics only, real names are lost
+  content-sniffed extensions; diagnostics only. `w3x-extract --recover-names`
+  (implies --dump-unknown) goes further: it harvests candidate paths from the
+  extracted content (scripts, object data, .toc lines, MDX TEXS chunks) and
+  hash-probes them, extracting hits under their REAL names and pruning their
+  `_unknown/` twins — ~400+ imports renamed on real protected maps; only the
+  true remainder stays anonymous
 
 Quick summary one-liner:
 
@@ -45,8 +50,16 @@ Interpreting problems:
   `viewerFallback`; viewer failures in `viewerFallbackErrors`; a truncated
   classic w3i gets a tolerant lib/classicw3i.js read).
 - w3x-extract reporting unresolved (anonymous) entries → protected map
-  (no listfile); rerun with `--dump-unknown` to recover their content
-  under `_unknown/`; see docs/FORMATS.md.
+  (stripped or FAKE listfile); rerun with `--recover-names` to rename most
+  of them and dump the remainder under `_unknown/`; see docs/FORMATS.md.
+- `manifest.json.errors` / validate WARN saying "possible protection trap"
+  → a tiny protector stub whose count field is garbage (e.g. an 8-byte w3r
+  declaring ~1.26 G regions). Deliberate: parsing (incl. the viewer
+  fallback) is SKIPPED and the file passes through raw — the game tolerates
+  these files; don't try to parse or "fix" them (CLAUDE.md gotcha 26).
+- No HM3W pre-header (`no _header.json`, validate WARN "bare-MPQ
+  container") → normal for modern 2023+ maps; repack with
+  `w3x-pack/build-map --bare` to preserve the container style.
 - `TRIGSTR_123` values in info.json resolve via `strings.json` key `123`.
 
 Validate any map: `node tools/validate-map.js <map.w3x>` (exit 0 = healthy).

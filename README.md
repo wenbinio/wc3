@@ -59,7 +59,7 @@ All tools are plain Node scripts: `node tools/<name>.js ...`
 
 | Tool | Usage | Purpose |
 | --- | --- | --- |
-| `w3x-extract.js` | `[--dump-unknown] <map.w3x> <outdir>` | Save the 512-byte HM3W pre-header (`_header.json`) and extract all MPQ contents; `--dump-unknown` also dumps anonymous members of protected maps under `_unknown/` |
+| `w3x-extract.js` | `[--dump-unknown] [--recover-names] <map.w3x> <outdir>` | Save the 512-byte HM3W pre-header (`_header.json`) and extract all MPQ contents; `--dump-unknown` also dumps anonymous members of protected maps under `_unknown/`; `--recover-names` additionally recovers their real names by harvesting paths from the extracted content and hash-probing the archive |
 | `w3x-pack.js` | `[--bare] <dir> <out.w3x>` | Pack a directory into an MPQ v1 and prepend the preserved/synthesized HM3W header (`--bare`: no pre-header, modern 1.31+ container) |
 | `map-to-json.js` | `<extracted-dir> <json-dir>` | Translate every known `war3map.*` file to JSON; copy opaque files through with a manifest |
 | `json-to-map.js` | `<json-dir> <out-dir>` | Inverse: JSON map source back to raw archive members |

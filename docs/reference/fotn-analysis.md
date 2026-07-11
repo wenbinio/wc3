@@ -1,5 +1,13 @@
 # Founders of the North 1.24 — decompilation dossier
 
+> **What this is**: the factual reference produced by decomposing the real
+> FoTN 1.24 map (a protected 2011 classic) with this toolkit — game
+> mechanics as actually implemented, object data, imports, map info, and
+> the toolkit gaps the exercise exposed. Written 2026-07 as the worked
+> example for decomposition-driven design (CLAUDE.md workflow list); the
+> toolkit-friction items in §7 have since been fixed. Companion doc:
+> modern-maps-analysis.md (four 2023–2026 production maps).
+
 Source: downloaded from hiveworkshop.com resource 14017 (thread 184407), file
 `FoundersOfTheNorth1.24.w3x`, 4,001,757 bytes, HM3W magic verified
 (`name="Founders of the North 1.24"`, flags 64632, maxPlayers 8).

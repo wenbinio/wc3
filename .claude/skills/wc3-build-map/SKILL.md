@@ -45,9 +45,11 @@ Common edits:
   with 0 errors/severes (CLAUDE.md gotcha 14) or the game crashes on load.
   Object-data model FIELDS referencing the import use the `.mdl` extension
   (`war3mapImported\X.mdl` even for an `.mdx` file — CLAUDE.md gotcha 22).
-- Strings (`strings.json` / TRIGSTR values): **ASCII-only** — the wts
-  translator mangles non-ASCII (em dash → control byte; CLAUDE.md gotcha 16).
-  Write `--`, straight quotes, `...` instead.
+- Strings (`strings.json` / TRIGSTR values): non-ASCII now round-trips
+  losslessly through OUR wts/translator layer (CLAUDE.md gotcha 16), but
+  committed map sources stay ASCII (`--`, straight quotes, `...`) for
+  maximum compat with tools built on unpatched wc3maptranslator —
+  test/northreach.test.js enforces this on the bundled maps.
 - Object data tweaks: `objects-units.json` etc. — shape is
   `{original: {"hfoo": [{id:"umvs", type:"int", value:350, level:0, column:0}]}, custom: {"x000:hfoo": [...]}}`.
   When cloning, override the full visible-identity set (items:

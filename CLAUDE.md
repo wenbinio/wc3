@@ -20,10 +20,10 @@ AND `npm run test:smpq` (forces the smpq CLI fallback).
 ## Command surface
 
 ```bash
-node tools/w3x-extract.js  [--dump-unknown] <map.w3x> <outdir>  # header -> _header.json, extract MPQ
+node tools/w3x-extract.js  [--dump-unknown] [--recover-names] <map.w3x> <outdir>  # header -> _header.json, extract MPQ (+ name recovery, gotcha 4)
 node tools/map-to-json.js  <extracted-dir> <json-dir>  # binaries -> editable map source
 node tools/json-to-map.js  <json-dir> <out-dir>        # map source -> binaries
-node tools/w3x-pack.js     <dir> <out.w3x>             # binaries -> MPQ v1 + HM3W header
+node tools/w3x-pack.js     [--bare] <dir> <out.w3x>    # binaries -> MPQ v1 + HM3W header (--bare: no pre-header)
 node tools/build-map.js    [--bare] <map-source-dir> <out.w3x>  # one-step: source -> .w3x (--bare: no HM3W pre-header, 1.31+ container)
 node tools/validate-map.js <map.w3x>                   # layered pass/fail report, exit 0 = good
 
@@ -83,7 +83,28 @@ never third-party maps, gotcha 9).
   (gotcha 17) — PIPELINE §7.
 - **Decomposition-driven design**: before cloning/adapting a real map,
   decompose the actual artifact — forum lore got nearly every FoTN mechanic
-  wrong; worked example: docs/reference/fotn-analysis.md.
+  wrong; worked examples: docs/reference/fotn-analysis.md (protected
+  classic), docs/reference/modern-maps-analysis.md (4 modern production maps).
+
+## Capability matrix (what we can do per map class, as of 2026-07)
+
+- **Modern Reforged formats (w3e v12, w3i v33, objects v3)** — full:
+  read, edit, rebuild, author from scratch (all bundled maps are this).
+- **Modern production maps (w3e v11, w3i v31 — what real 2023–2026 maps
+  incl. 1.36/2.0-editor-saved ones actually ship)** — full: read + edit +
+  byte-faithful rebuild via lib/codecs/ (gotcha 2); bare-MPQ container via
+  `--bare`.
+- **Classic TFT (w3i v25, w3e v11)** — info.json + terrain.json fully
+  read+write via codecs; object data **v1/v2 and classic .doo remain
+  read-only** (`_viewer/` diagnostics); scripts/assets always editable +
+  repackable.
+- **Protected maps** — extract via listfile∪KNOWN_FILES probing, content
+  dump (`--dump-unknown`), name recovery (`--recover-names`, gotcha 4);
+  trap stubs degrade to WARN (gotcha 26). wtg/wct stay opaque (usually
+  deleted by protectors anyway; the game only needs the compiled script).
+- **Authoring from scratch** — current formats only (demo template);
+  codecs can WRITE v11/v25/v31 for compatibility targets, set the
+  `"version"` marker deliberately.
 
 ## Gotchas (each cost real debugging time; numbers are stable — docs/READMEs cite them)
 
@@ -99,7 +120,9 @@ never third-party maps, gotcha 9).
    routed by lib/filemap.js off the binary version dword / the JSON
    `"version"` marker) and land in normal editable terrain.json/info.json
    with byte-faithful write-back (exact v11↔v12 / v25↔v31↔v33 deltas:
-   docs/FORMATS.md). Only versions no codec covers (w3i v18, objects v1/v2,
+   docs/FORMATS.md). **Keep the `"version"` marker in source JSON** —
+   deleting it makes json-to-map write the NEWEST format (v12/v33), silently
+   changing the on-disk version. Only versions no codec covers (w3i v18, objects v1/v2,
    classic doo, ...) still take the old path: map-to-json catches ANY
    translator throw — file copied raw (manifest.json → `errors`) plus a
    READ-ONLY mdx-m3-viewer-th parse under `_viewer/` (viewer schema, never
@@ -112,17 +135,22 @@ never third-party maps, gotcha 9).
    one); stormlib-node pre-writes it and `SFileCreateArchive` converts it
    (MPQ lands at offset 512), smpq gets it prepended afterwards. MPQ must be
    **v1** (`MPQ_CREATE.ARCHIVE_V1` / `smpq -M 1`) for the game.
-4. **Protected maps have no `(listfile)`** — named extraction falls back to
-   probing known names (`lib/mpq.js` KNOWN_FILES); unresolved members
+4. **Protected maps strip or FAKE the `(listfile)`** — extraction therefore
+   ALWAYS probes the listfile ∪ KNOWN_FILES union (`lib/mpq.js`; a fake
+   2-entry listfile on a real map hid 27 standard files); unresolved members
    enumerate as `FileNNNNNNNN` pseudo-names on BOTH backends. `extractAll`
    returns `{ extracted, total, unresolved, unknown }` — always report the
    counts so anonymous imports aren't silently dropped (w3x-extract prints
-   them). Names are genuinely lost, but CONTENT is recoverable:
-   `--dump-unknown` / `WC3_EXTRACT_UNKNOWN=1` writes them under
-   `_unknown/FileNNNNNNNN.<ext>` with a content-sniffed extension.
-   `_unknown/` is diagnostics only — map-to-json skips underscore paths,
-   nothing repacks them. Always verify extraction ON DISK: smpq exits 0
-   even when a name misses.
+   them). CONTENT is recoverable via `--dump-unknown` /
+   `WC3_EXTRACT_UNKNOWN=1` (dumps under `_unknown/FileNNNNNNNN.<ext>`,
+   content-sniffed extension), and most NAMES are recoverable too:
+   `--recover-names` harvests candidate paths from the extracted content
+   itself (scripts, object data, .toc lines, MDX TEXS chunks, derived
+   BTN/DISBTN + .mdl/.mdx variants) and hash-probes them against the
+   archive to a fixpoint (`lib/recover.js`; 448 and 401 imports renamed on
+   two real protected maps). `_unknown/` is diagnostics only — map-to-json
+   skips underscore paths, nothing repacks them. Always verify extraction
+   ON DISK: smpq exits 0 even when a name misses.
 5. **stormlib-node sharp edges** (primary MPQ backend — lib/mpq.js
    encapsulates all of this; never call it directly elsewhere):
    `SFileReadFile` wants an **ArrayBuffer** — a Node Buffer SIGABRTs the
@@ -182,10 +210,17 @@ never third-party maps, gotcha 9).
     (`lib/viewer.js` enforces both). Its w3c parser disagrees with the
     other stacks on the 1.32 camera layout — w3c is excluded from the
     second opinion (docs/FORMATS.md).
-16. **wts strings (strings.json values) must stay ASCII-only**:
-    wc3maptranslator truncates every char to one byte on write but decodes
-    UTF-8 on read — any non-ASCII char is mangled (em dash → control byte).
-    Spell it in ASCII: `--`, straight quotes, `...`.
+16. **Non-ASCII text now round-trips losslessly — at OUR layer only.**
+    Upstream wc3maptranslator mangles it in both directions (wts write:
+    chars truncated to one byte; binary-format read: latin1 decode of UTF-8
+    bytes), but wts goes through `lib/wts.js` (UTF-8 both ways) and every
+    binary translator gets the UTF-8-safe `readString` patch from
+    `lib/translator-fixes.js` (FIX A) — em dashes, accents, CJK in
+    strings.json and object-data/info/sound name fields survive
+    read→write→read byte-exact. Spelling text in ASCII (`--`, straight
+    quotes, `...`) is no longer required; it remains good advice only for
+    maximum-compat authoring (content that must survive OTHER tools built
+    on unpatched wc3maptranslator).
 17. **The in-game map list shows the INTERNAL map name** (HM3W header + w3i
     name), never the filename — A-B variants look identical unless each gets
     a distinct name in strings/info (TRIGSTR name) AND `_header.json`
@@ -241,6 +276,17 @@ never third-party maps, gotcha 9).
     overridden `uabi` contains no repair-family ability (Ahrp human /
     Arep orc / Aetr night elf / Awha undead — only the human pair is
     playtest-verified; the others are accepted as equivalents).
+26. **Protection-trap stubs**: protectors replace files the game tolerates
+    being broken with tiny booby-trapped stubs whose count field is garbage
+    (real example: an 8-byte war3map.w3r declaring ~1.26 billion regions) —
+    naive parsers loop or allocate GBs on them. `lib/traps.js` detects the
+    pattern BEFORE parsing (tiny file + declared count that cannot fit;
+    deliberately conservative — count 0 or 1 honest entry never triggers):
+    map-to-json/validate-map then skip translation AND the viewer fallback
+    (which would allocate the billion-entry array), degrade to WARN + raw
+    copy, and say why. Related hardening: `lib/translator-fixes.js` FIX B
+    bounds upstream's readString so a truncated/garbage file throws a
+    catchable RangeError instead of spinning forever.
 
 ## Testing & validation doctrine
 
@@ -253,10 +299,19 @@ never third-party maps, gotcha 9).
 - `validate-map` layers: HM3W header + MPQ magic at 512 → extraction →
   required files (w3i/w3e) + script presence → luaparse gate → per-file
   translator parse PLUS JSON→binary→JSON stability → object-data semantic
-  lint (lib/objectlint.js — WARN lines for gotchas 22/23/25, never failures;
-  exit stays 0) → mdx-m3-viewer-th second opinion (independent MPQ open;
-  parses wpm/shd/mmp/wct which the translator can't; MDX sanityTest
-  0 errors/0 severes on every packed model).
+  lint (lib/objectlint.js — gotchas 22/23/25) → mdx-m3-viewer-th second
+  opinion (independent MPQ open; parses wpm/shd/mmp/wct which the
+  translator can't; MDX sanityTest 0 errors/0 severes on every packed
+  model).
+- **WARN semantics** (WARN never fails the map; exit stays 0): things real
+  production maps legitimately do or that only a protector can cause —
+  bare-MPQ container (no HM3W pre-header: modern 2023+ convention, 1.31+
+  clients only), suspected protection-trap files (gotcha 26: parsing
+  skipped, passed through unvalidated), viewer-side MPQ open/enumeration
+  failures on archives StormLib reads fine (protector-mangled
+  header/listfile — disagreement, not proof of breakage), and all
+  object-data lint findings. FAIL is reserved for things that break the
+  map for players.
 - Third opinion for disputed layouts: `scripts/crossvalidate-war3net.sh`
   (War3Net handles classic AND Reforged; the tie-breaker).
 - **Honest limit: structural validity ≠ game acceptance.** Only the game
@@ -293,9 +348,17 @@ or CC0-converted content. Details: docs/ASSETS.md.
 - `lib/luacheck.js` — luaparse Lua 5.3 gate; `lib/minimap.js` — minimap
   tga/mmp generation; `lib/unitscript.js` — CreateAllUnits() generation;
   `lib/objectlint.js` — object-data semantic WARNings (gotchas 22/23/25)
+- `lib/wts.js` — linear wts parser/serializer, upstream dialect (upstream's
+  regex reader OOMs on production-scale ~10k-string files; gotcha 16);
+  `lib/translator-fixes.js` — runtime patches for upstream sharp edges
+  (UTF-8 reads, bounded readString, doodad life:0 — gotchas 16, 26);
+  `lib/traps.js` — protection-trap heuristic (gotcha 26);
+  `lib/recover.js` — protected-map name recovery (gotcha 4)
 - `docs/PIPELINE.md` — workflows §1–7 (read/edit/new/import/validate/War3Net/
   A-B naming); `docs/FORMATS.md` — format knowledge, tileset FourCC tables,
   references; `docs/ASSETS.md` — asset sourcing/conversion + legal;
-  `docs/reference/fotn-analysis.md` — worked decomposition example
+  `docs/reference/` — worked decompositions: fotn-analysis.md (protected
+  2011 classic), modern-maps-analysis.md (four 2023–2026 production maps +
+  the ranked toolkit-gap list with fix status)
 - `.claude/skills/` — wc3-read-map, wc3-build-map, wc3-new-map,
   wc3-import-asset (operational recipes)
