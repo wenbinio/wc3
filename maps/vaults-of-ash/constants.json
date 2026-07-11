@@ -22,11 +22,32 @@
       "name": "Ashspawn Acolyte",
       "source": "objects-units.json"
     },
+    "UNIT_ASH_REVENANT": {
+      "kind": "unit",
+      "rawcode": "u029",
+      "base": "nrvf",
+      "name": "Ash Revenant",
+      "source": "objects-units.json"
+    },
     "UNIT_ASH_TIDE_CRAWLER": {
       "kind": "unit",
       "rawcode": "u003",
       "base": "nmrl",
       "name": "Ash Tide Crawler",
+      "source": "objects-units.json"
+    },
+    "UNIT_CHAINED_HOWLER": {
+      "kind": "unit",
+      "rawcode": "u018",
+      "base": "nwld",
+      "name": "Chained Howler",
+      "source": "objects-units.json"
+    },
+    "UNIT_CINDERWING_HARPY": {
+      "kind": "unit",
+      "rawcode": "u022",
+      "base": "nhar",
+      "name": "Cinderwing Harpy",
       "source": "objects-units.json"
     },
     "UNIT_CINDER_BRUTE": {
@@ -36,11 +57,53 @@
       "name": "Cinder Brute",
       "source": "objects-units.json"
     },
+    "UNIT_CINDER_ZEALOT": {
+      "kind": "unit",
+      "rawcode": "u013",
+      "base": "ngna",
+      "name": "Cinder Zealot",
+      "source": "objects-units.json"
+    },
+    "UNIT_COVENANT_ALTAR": {
+      "kind": "unit",
+      "rawcode": "n005",
+      "base": "nech",
+      "name": "Covenant Altar",
+      "source": "objects-units.json"
+    },
+    "UNIT_DEEP_VAULT_MAULER": {
+      "kind": "unit",
+      "rawcode": "u023",
+      "base": "nomg",
+      "name": "Deep Vault Mauler",
+      "source": "objects-units.json"
+    },
+    "UNIT_DOOMCINDER_BERSERKER": {
+      "kind": "unit",
+      "rawcode": "u028",
+      "base": "nftb",
+      "name": "Doomcinder Berserker",
+      "source": "objects-units.json"
+    },
+    "UNIT_EMBERBOUND_MARAUDER": {
+      "kind": "unit",
+      "rawcode": "u015",
+      "base": "nban",
+      "name": "Emberbound Marauder",
+      "source": "objects-units.json"
+    },
     "UNIT_EMBERFANG_ALPHA": {
       "kind": "unit",
       "rawcode": "u005",
       "base": "nwlg",
       "name": "Emberfang Alpha",
+      "source": "objects-units.json"
+    },
+    "UNIT_EMBERLORD_MAULER": {
+      "kind": "unit",
+      "rawcode": "u027",
+      "base": "nogl",
+      "name": "Emberlord Mauler",
       "source": "objects-units.json"
     },
     "UNIT_EMBER_BRAZIER": {
@@ -50,11 +113,32 @@
       "name": "Ember Brazier",
       "source": "objects-units.json"
     },
+    "UNIT_GRAVE_WARDEN": {
+      "kind": "unit",
+      "rawcode": "u019",
+      "base": "nske",
+      "name": "Grave Warden",
+      "source": "objects-units.json"
+    },
     "UNIT_HEART_SPARK": {
       "kind": "unit",
       "rawcode": "u009",
       "base": "nkob",
       "name": "Heart Spark",
+      "source": "objects-units.json"
+    },
+    "UNIT_KINDLED_OVERSEER": {
+      "kind": "unit",
+      "rawcode": "u025",
+      "base": "ngnw",
+      "name": "Kindled Overseer",
+      "source": "objects-units.json"
+    },
+    "UNIT_KINDLING_WHELP": {
+      "kind": "unit",
+      "rawcode": "u011",
+      "base": "nkol",
+      "name": "Kindling Whelp",
       "source": "objects-units.json"
     },
     "UNIT_MOLTEN_SHARD": {
@@ -69,6 +153,13 @@
       "rawcode": "n001",
       "base": "nech",
       "name": "Omen Obelisk",
+      "source": "objects-units.json"
+    },
+    "UNIT_PYREBLADE_ENFORCER": {
+      "kind": "unit",
+      "rawcode": "u020",
+      "base": "nenf",
+      "name": "Pyreblade Enforcer",
       "source": "objects-units.json"
     },
     "UNIT_PYRE_WARDEN": {
@@ -92,11 +183,46 @@
       "name": "Sealstone Door",
       "source": "objects-units.json"
     },
+    "UNIT_SOOTBLADE_ASSASSIN": {
+      "kind": "unit",
+      "rawcode": "u026",
+      "base": "nass",
+      "name": "Sootblade Assassin",
+      "source": "objects-units.json"
+    },
+    "UNIT_SOOTFANG_PUP": {
+      "kind": "unit",
+      "rawcode": "u012",
+      "base": "nwlt",
+      "name": "Sootfang Pup",
+      "source": "objects-units.json"
+    },
+    "UNIT_SOOTVEIL_STALKER": {
+      "kind": "unit",
+      "rawcode": "u017",
+      "base": "nrog",
+      "name": "Sootveil Stalker",
+      "source": "objects-units.json"
+    },
     "UNIT_TORCHBEARER": {
       "kind": "unit",
       "rawcode": "H000",
       "base": "Hpal",
       "name": "Torchbearer",
+      "source": "objects-units.json"
+    },
+    "UNIT_TWICE_BURNED_ZEALOT": {
+      "kind": "unit",
+      "rawcode": "u024",
+      "base": "ngnv",
+      "name": "Twice-Burned Zealot",
+      "source": "objects-units.json"
+    },
+    "UNIT_VAULTBONE_ARCHER": {
+      "kind": "unit",
+      "rawcode": "u014",
+      "base": "nska",
+      "name": "Vaultbone Archer",
       "source": "objects-units.json"
     },
     "UNIT_VAULTBOUND_OGRE": {
@@ -106,11 +232,25 @@
       "name": "Vaultbound Ogre",
       "source": "objects-units.json"
     },
+    "UNIT_VAULT_GEOMANCER": {
+      "kind": "unit",
+      "rawcode": "u016",
+      "base": "nkog",
+      "name": "Vault Geomancer",
+      "source": "objects-units.json"
+    },
     "UNIT_VAULT_HEART": {
       "kind": "unit",
       "rawcode": "u008",
       "base": "nogm",
       "name": "Vault Heart",
+      "source": "objects-units.json"
+    },
+    "UNIT_VAULT_HEXER": {
+      "kind": "unit",
+      "rawcode": "u021",
+      "base": "ndtr",
+      "name": "Vault Hexer",
       "source": "objects-units.json"
     },
     "UNIT_VAULT_KOBOLD": {
@@ -127,11 +267,60 @@
       "name": "Ashbreaker",
       "source": "objects-items.json"
     },
+    "ITEM_ASHEN_CODEX": {
+      "kind": "item",
+      "rawcode": "I034",
+      "base": "ches",
+      "name": "Ashen Codex",
+      "source": "objects-items.json"
+    },
     "ITEM_ASHEN_GRACE": {
       "kind": "item",
       "rawcode": "I001",
       "base": "ches",
       "name": "Ashen Grace",
+      "source": "objects-items.json"
+    },
+    "ITEM_ASHFATHER_S_BRAND": {
+      "kind": "item",
+      "rawcode": "I013",
+      "base": "ches",
+      "name": "Ashfather's Brand",
+      "source": "objects-items.json"
+    },
+    "ITEM_BEACON_OF_THE_ORDER": {
+      "kind": "item",
+      "rawcode": "I030",
+      "base": "ches",
+      "name": "Beacon of the Order",
+      "source": "objects-items.json"
+    },
+    "ITEM_BLOODTITHE_PACT": {
+      "kind": "item",
+      "rawcode": "I022",
+      "base": "ches",
+      "name": "Bloodtithe Pact",
+      "source": "objects-items.json"
+    },
+    "ITEM_BLOODWARD_ICON": {
+      "kind": "item",
+      "rawcode": "I036",
+      "base": "ches",
+      "name": "Bloodward Icon",
+      "source": "objects-items.json"
+    },
+    "ITEM_BLOODWARMTH": {
+      "kind": "item",
+      "rawcode": "I018",
+      "base": "ches",
+      "name": "Bloodwarmth",
+      "source": "objects-items.json"
+    },
+    "ITEM_BUTCHER_S_RHYTHM": {
+      "kind": "item",
+      "rawcode": "I020",
+      "base": "ches",
+      "name": "Butcher's Rhythm",
       "source": "objects-items.json"
     },
     "ITEM_CINDERGUARD": {
@@ -141,11 +330,46 @@
       "name": "Cinderguard",
       "source": "objects-items.json"
     },
+    "ITEM_CINDERSHIELD_PHIAL": {
+      "kind": "item",
+      "rawcode": "I040",
+      "base": "pnvl",
+      "name": "Cindershield Phial",
+      "source": "objects-items.json"
+    },
+    "ITEM_DAWNWARD_FLAME": {
+      "kind": "item",
+      "rawcode": "I029",
+      "base": "ches",
+      "name": "Dawnward Flame",
+      "source": "objects-items.json"
+    },
+    "ITEM_DEEP_SIGHT": {
+      "kind": "item",
+      "rawcode": "I026",
+      "base": "ches",
+      "name": "Deep Sight",
+      "source": "objects-items.json"
+    },
     "ITEM_EMBEREDGE": {
       "kind": "item",
       "rawcode": "I005",
       "base": "ches",
       "name": "Emberedge",
+      "source": "objects-items.json"
+    },
+    "ITEM_EMBERLORD_S_COVENANT": {
+      "kind": "item",
+      "rawcode": "I014",
+      "base": "ches",
+      "name": "Emberlord's Covenant",
+      "source": "objects-items.json"
+    },
+    "ITEM_EMBER_CHALICE": {
+      "kind": "item",
+      "rawcode": "I033",
+      "base": "ches",
+      "name": "Ember Chalice",
       "source": "objects-items.json"
     },
     "ITEM_EMBER_DRAUGHT": {
@@ -169,6 +393,20 @@
       "name": "Kindled Mind",
       "source": "objects-items.json"
     },
+    "ITEM_LANTERN_OF_THE_ORDER": {
+      "kind": "item",
+      "rawcode": "I037",
+      "base": "ches",
+      "name": "Lantern of the Order",
+      "source": "objects-items.json"
+    },
+    "ITEM_LIGHTWARDEN_S_OATH": {
+      "kind": "item",
+      "rawcode": "I032",
+      "base": "ches",
+      "name": "Lightwarden's Oath",
+      "source": "objects-items.json"
+    },
     "ITEM_MONASTIC_RELIC": {
       "kind": "item",
       "rawcode": "I008",
@@ -176,11 +414,102 @@
       "name": "Monastic Relic",
       "source": "objects-items.json"
     },
+    "ITEM_NULLWARD_SHELL": {
+      "kind": "item",
+      "rawcode": "I027",
+      "base": "ches",
+      "name": "Nullward Shell",
+      "source": "objects-items.json"
+    },
+    "ITEM_OMEN_EYE": {
+      "kind": "item",
+      "rawcode": "I023",
+      "base": "ches",
+      "name": "Omen Eye",
+      "source": "objects-items.json"
+    },
     "ITEM_PYRE_WARD": {
       "kind": "item",
       "rawcode": "I007",
       "base": "ches",
       "name": "Pyre Ward",
+      "source": "objects-items.json"
+    },
+    "ITEM_QUIET_STEP": {
+      "kind": "item",
+      "rawcode": "I025",
+      "base": "ches",
+      "name": "Quiet Step",
+      "source": "objects-items.json"
+    },
+    "ITEM_RADIANT_EDGE": {
+      "kind": "item",
+      "rawcode": "I031",
+      "base": "ches",
+      "name": "Radiant Edge",
+      "source": "objects-items.json"
+    },
+    "ITEM_RED_VIGIL": {
+      "kind": "item",
+      "rawcode": "I019",
+      "base": "ches",
+      "name": "Red Vigil",
+      "source": "objects-items.json"
+    },
+    "ITEM_SEER_S_DIADEM": {
+      "kind": "item",
+      "rawcode": "I028",
+      "base": "ches",
+      "name": "Seer's Diadem",
+      "source": "objects-items.json"
+    },
+    "ITEM_SKYWARD_REFLEX": {
+      "kind": "item",
+      "rawcode": "I015",
+      "base": "ches",
+      "name": "Skyward Reflex",
+      "source": "objects-items.json"
+    },
+    "ITEM_SOOTWARD_HIDE": {
+      "kind": "item",
+      "rawcode": "I011",
+      "base": "ches",
+      "name": "Sootward Hide",
+      "source": "objects-items.json"
+    },
+    "ITEM_STORMFLASK": {
+      "kind": "item",
+      "rawcode": "I039",
+      "base": "pspd",
+      "name": "Stormflask",
+      "source": "objects-items.json"
+    },
+    "ITEM_STORMHEART_CORE": {
+      "kind": "item",
+      "rawcode": "I017",
+      "base": "ches",
+      "name": "Stormheart Core",
+      "source": "objects-items.json"
+    },
+    "ITEM_STORMSTEP": {
+      "kind": "item",
+      "rawcode": "I012",
+      "base": "ches",
+      "name": "Stormstep",
+      "source": "objects-items.json"
+    },
+    "ITEM_STORM_IDOL": {
+      "kind": "item",
+      "rawcode": "I035",
+      "base": "ches",
+      "name": "Storm Idol",
+      "source": "objects-items.json"
+    },
+    "ITEM_TEMPEST_BRAND": {
+      "kind": "item",
+      "rawcode": "I016",
+      "base": "ches",
+      "name": "Tempest Brand",
       "source": "objects-items.json"
     },
     "ITEM_TORCHBEARER_VIGOR": {
@@ -195,6 +524,27 @@
       "rawcode": "I010",
       "base": "pman",
       "name": "Torch Oil",
+      "source": "objects-items.json"
+    },
+    "ITEM_VEIN_OF_THE_VAULT": {
+      "kind": "item",
+      "rawcode": "I021",
+      "base": "ches",
+      "name": "Vein of the Vault",
+      "source": "objects-items.json"
+    },
+    "ITEM_VOID_TITHE": {
+      "kind": "item",
+      "rawcode": "I024",
+      "base": "ches",
+      "name": "Void Tithe",
+      "source": "objects-items.json"
+    },
+    "ITEM_WARDFLAME_SALVE": {
+      "kind": "item",
+      "rawcode": "I038",
+      "base": "pghe",
+      "name": "Wardflame Salve",
       "source": "objects-items.json"
     },
     "ABIL_ASHBREAKER_BASH": {
@@ -225,12 +575,46 @@
       "name": "Heartshatter Slam",
       "source": "objects-abilities.json"
     },
+    "ABIL_RADIANT_STRIKE": {
+      "kind": "ability",
+      "rawcode": "A005",
+      "base": "ACct",
+      "name": "Radiant Strike",
+      "source": "objects-abilities.json"
+    },
     "ABIL_VAULT_SLAM": {
       "kind": "ability",
       "rawcode": "A003",
       "base": "ACtc",
       "name": "Vault Slam",
       "source": "objects-abilities.json"
+    },
+    "ABIL_WRATHFIRE_SLAM": {
+      "kind": "ability",
+      "rawcode": "A006",
+      "base": "ACtc",
+      "name": "Wrathfire Slam",
+      "source": "objects-abilities.json"
+    },
+    "REGION_ALTAR_CINDERS": {
+      "kind": "region",
+      "name": "AltarCinders",
+      "source": "regions.json"
+    },
+    "REGION_ALTAR_SEALED": {
+      "kind": "region",
+      "name": "AltarSealed",
+      "source": "regions.json"
+    },
+    "REGION_ALTAR_STILLNESS": {
+      "kind": "region",
+      "name": "AltarStillness",
+      "source": "regions.json"
+    },
+    "REGION_ALTAR_UNBOUND": {
+      "kind": "region",
+      "name": "AltarUnbound",
+      "source": "regions.json"
     },
     "REGION_BOON_PLATE_A": {
       "kind": "region",
@@ -342,9 +726,19 @@
       "name": "ShrineHeal",
       "source": "regions.json"
     },
+    "REGION_SHRINE_REKINDLE": {
+      "kind": "region",
+      "name": "ShrineRekindle",
+      "source": "regions.json"
+    },
     "REGION_SHRINE_REROLL": {
       "kind": "region",
       "name": "ShrineReroll",
+      "source": "regions.json"
+    },
+    "REGION_TRIAL_DOOR": {
+      "kind": "region",
+      "name": "TrialDoor",
       "source": "regions.json"
     },
     "REGION_VAULT_GATE": {

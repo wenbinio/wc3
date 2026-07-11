@@ -73,7 +73,17 @@ export const BOON_PLATES = [
 export const SHRINE_PLATES = [
   { x: 896, y: -7040 }, { x: 1216, y: -7040 }, { x: 1536, y: -7040 },
 ];
+export const SHRINE_REKINDLE = { x: 576, y: -7040 };   // phase 2: revive plate
 export const SHRINE_KEEPER = { x: 1216, y: -6592 };
+
+// phase 2 hub furniture: the Trial door (west edge, below the door row) and
+// the four Covenant altars (west mirror of the shrine plates)
+export const TRIAL_DOOR = { x: -1600, y: -5888 };       // region center
+export const TRIAL_FRAME = { x: -1600, y: -5664 };      // Sealstone Door unit
+export const TRIAL_OBELISK = { x: -1600, y: -6144 };    // Omen Obelisk unit
+export const COVENANT_ALTARS = [                        // Cinders/Stillness/Sealed/Unbound
+  { x: -1600, y: -7040 }, { x: -1280, y: -7040 }, { x: -960, y: -7040 }, { x: -640, y: -7040 },
+];
 
 // per-room geometry (relative to room center)
 export const ROOM_ENTRY_DY = -704;   // party teleport target
@@ -239,7 +249,13 @@ const mustBeIsland = [
   ...DOOR_X.map((x, i) => ({ x: x + OBELISK_DX, y: OBELISK_Y, tag: `obelisk ${i}` })),
   ...BOON_PLATES.map((p, i) => ({ ...p, tag: `boon plate ${i}` })),
   ...SHRINE_PLATES.map((p, i) => ({ ...p, tag: `shrine plate ${i}` })),
+  { ...SHRINE_REKINDLE, tag: 'shrine rekindle plate' },
   { ...SHRINE_KEEPER, tag: 'shrine keeper' },
+  { ...TRIAL_DOOR, tag: 'trial door region' },
+  { ...TRIAL_FRAME, tag: 'trial door frame' },
+  { ...TRIAL_OBELISK, tag: 'trial obelisk' },
+  ...COVENANT_ALTARS.map((p, i) => ({ ...p, tag: `covenant altar ${i}` })),
+  ...COVENANT_ALTARS.map((p, i) => ({ x: p.x, y: p.y + 224, tag: `covenant altar unit ${i}` })),
   { ...BOSS_ENTRY, tag: 'boss entry' },
   { ...BOSS_SPAWN, tag: 'boss spawn' },
   ...roomRects.map((rr) => ({ x: rr.cx, y: rr.cy + ROOM_ENTRY_DY, tag: `room f${rr.floor} i${rr.idx} entry` })),
@@ -289,6 +305,12 @@ addRegion('BoonPlateC', BOON_PLATES[2].x, BOON_PLATES[2].y, PLATE_HALF, PLATE_HA
 addRegion('ShrineHeal', SHRINE_PLATES[0].x, SHRINE_PLATES[0].y, PLATE_HALF, PLATE_HALF, [64, 128, 255]);
 addRegion('ShrineReroll', SHRINE_PLATES[1].x, SHRINE_PLATES[1].y, PLATE_HALF, PLATE_HALF, [96, 128, 255]);
 addRegion('ShrineFortify', SHRINE_PLATES[2].x, SHRINE_PLATES[2].y, PLATE_HALF, PLATE_HALF, [128, 128, 255]);
+addRegion('ShrineRekindle', SHRINE_REKINDLE.x, SHRINE_REKINDLE.y, PLATE_HALF, PLATE_HALF, [160, 128, 255]);
+addRegion('TrialDoor', TRIAL_DOOR.x, TRIAL_DOOR.y, DOOR_HALF, DOOR_HALF, [255, 255, 96]);
+addRegion('AltarCinders', COVENANT_ALTARS[0].x, COVENANT_ALTARS[0].y, PLATE_HALF, PLATE_HALF, [255, 96, 32]);
+addRegion('AltarStillness', COVENANT_ALTARS[1].x, COVENANT_ALTARS[1].y, PLATE_HALF, PLATE_HALF, [96, 196, 255]);
+addRegion('AltarSealed', COVENANT_ALTARS[2].x, COVENANT_ALTARS[2].y, PLATE_HALF, PLATE_HALF, [196, 96, 255]);
+addRegion('AltarUnbound', COVENANT_ALTARS[3].x, COVENANT_ALTARS[3].y, PLATE_HALF, PLATE_HALF, [255, 255, 255]);
 
 // one rect per room/arena so the map script reads island geometry from the
 // generated REGION_* constants instead of duplicating coordinates
@@ -329,6 +351,13 @@ U('n003', SHRINE_KEEPER.x, SHRINE_KEEPER.y, 27);                  // Ashen Shrin
 // two braziers flanking the party spawn
 U('n002', -704, -6912, 27);
 U('n002', 704, -6912, 27);
+
+// phase 2: the Trial door (frame + omen obelisk), the Rekindling plate's
+// brazier and the four Covenant altars
+U('n000', TRIAL_FRAME.x, TRIAL_FRAME.y, 27);                      // Sealstone Door
+U('n001', TRIAL_OBELISK.x, TRIAL_OBELISK.y, 27);                  // Omen Obelisk
+U('n002', SHRINE_REKINDLE.x, SHRINE_REKINDLE.y + 224, 27);        // Ember Brazier
+COVENANT_ALTARS.forEach((p) => U('n005', p.x, p.y + 224, 27));    // Covenant Altar
 
 const doodads = { regular: [], special: [] };
 

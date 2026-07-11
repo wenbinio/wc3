@@ -3,7 +3,7 @@
     "value": "The Vaults of Ash"
   },
   "2": {
-    "value": "The last torchbearers of a burned monastic order descend the vault the order died sealing. A seeded one-session co-op roguelike for 1-3 players: pick one of three omen-marked doors per floor, clear the room behind it, spend Embers at the campfire shrine, draft boons, and break the Vault Heart on the fourth floor. Permadeath -- one seed, one exact dungeon (~30 minutes). Type -help in game; -seed N before the first door replays any dungeon."
+    "value": "The last torchbearers of a burned monastic order descend the vault the order died sealing. A seeded one-session co-op roguelike for 1-3 players: swear a Covenant, read the omens, pick a door (or a Trial), clear the room, draft sigil-marked boons, watch your Wrath, spend Embers before the Heart feeds on them. Fallen torches rekindle at the next cleared room; a full wipe ends the run (~30 minutes). One seed = one exact dungeon: -seed N before the first door replays any run. Type -help in game. Design inspirations, with credit: Roguelike by DeathdruidX, Ulfsire's Roguelike, and Just Another Roguelike by PortusM."
   },
   "3": {
     "value": "wc3-map-toolkit"

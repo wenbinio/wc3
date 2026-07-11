@@ -35,7 +35,7 @@ from source with build-map — rebuild them whenever a map source changes:
 
 ```bash
 node tools/build-map.js maps/<name> maps/builds/<name>.w3x
-# bundled sources: demo, crossroads-siege, tidewatch-arena, northreach
+# bundled sources: demo, crossroads-siege, tidewatch-arena, northreach, vaults-of-ash
 ```
 
 ## Pipeline
@@ -72,8 +72,10 @@ A map source directory (see `maps/demo/` for a minimal working example and
 `maps/crossroads-siege/` for a full-featured one — non-flat 64x64 terrain,
 5 players/2 forces, regions/cameras/sounds, custom object data, a generated
 MDX import and a complete Lua game mode; `maps/tidewatch-arena/` is the
-custom-forces lobby reference and `maps/northreach/` the economy /
-custom-models reference — each has its own README):
+custom-forces lobby reference, `maps/northreach/` the economy /
+custom-models reference and `maps/vaults-of-ash/` the flagship: a seeded
+co-op roguelike with a machine-verified golden-run replay and 52 headless
+logic tests — each has its own README):
 
 ```
 maps/mymap/
@@ -102,6 +104,9 @@ maps/mymap/
 - `docs/ASSETS.md` — **assets & models**: MDX/MDL versions, PNG→BLP1, the
   glTF/OBJ→MDX conversion chain, and legal sourcing rules (Blizzard paths,
   Hive Workshop credits, CC0 packs)
+- `docs/reference/roguelike-comparison.md` — honest capability matrix of
+  `maps/vaults-of-ash/` against the three strongest WC3 roguelike maps
+  (what was adapted from each, with credit, and what they still win)
 - `CLAUDE.md` — operational notes for AI agent sessions
 - `.claude/skills/` — agent skills: `wc3-read-map`, `wc3-build-map`,
   `wc3-new-map`, `wc3-import-asset`

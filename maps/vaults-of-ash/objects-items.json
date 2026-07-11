@@ -21,14 +21,14 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Boon: +6 Strength to the torchbearer who claims it."
+        "value": "Boon (COMMON -- Ash sigil): +6 Strength to the torchbearer who claims it. Sigil set Ash: 2 held: party +4 Strength / 3 held: room clears pay +10 Embers."
       },
       {
         "id": "ides",
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Boon: +6 Strength to the torchbearer who claims it."
+        "value": "Boon (COMMON -- Ash sigil): +6 Strength to the torchbearer who claims it. Sigil set Ash: 2 held: party +4 Strength / 3 held: room clears pay +10 Embers."
       },
       {
         "id": "ifil",
@@ -79,14 +79,14 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Boon: +6 Agility to the torchbearer who claims it."
+        "value": "Boon (COMMON -- Storm sigil): +6 Agility to the torchbearer who claims it. Sigil set Storm: 2 held: party +20 move speed / 3 held: party +6 Agility."
       },
       {
         "id": "ides",
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Boon: +6 Agility to the torchbearer who claims it."
+        "value": "Boon (COMMON -- Storm sigil): +6 Agility to the torchbearer who claims it. Sigil set Storm: 2 held: party +20 move speed / 3 held: party +6 Agility."
       },
       {
         "id": "ifil",
@@ -137,14 +137,14 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Boon: +6 Intelligence to the torchbearer who claims it."
+        "value": "Boon (COMMON -- Light sigil): +6 Intelligence to the torchbearer who claims it. Sigil set Light: 2 held: party +4 Intelligence / 3 held: every boon claim: party +1 all stats."
       },
       {
         "id": "ides",
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Boon: +6 Intelligence to the torchbearer who claims it."
+        "value": "Boon (COMMON -- Light sigil): +6 Intelligence to the torchbearer who claims it. Sigil set Light: 2 held: party +4 Intelligence / 3 held: every boon claim: party +1 all stats."
       },
       {
         "id": "ifil",
@@ -195,14 +195,14 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Boon: +150 maximum life to the torchbearer who claims it."
+        "value": "Boon (COMMON -- Blood sigil): +150 maximum life to the torchbearer who claims it. Sigil set Blood: 2 held: party +100 max life / 3 held: party heals 25% on every room clear."
       },
       {
         "id": "ides",
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Boon: +150 maximum life to the torchbearer who claims it."
+        "value": "Boon (COMMON -- Blood sigil): +150 maximum life to the torchbearer who claims it. Sigil set Blood: 2 held: party +100 max life / 3 held: party heals 25% on every room clear."
       },
       {
         "id": "ifil",
@@ -253,14 +253,14 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Boon: grants Cinderguard Evasion to the torchbearer who claims it."
+        "value": "Boon (RARE -- Ash sigil): grants Cinderguard Evasion to the torchbearer who claims it. Sigil set Ash: 2 held: party +4 Strength / 3 held: room clears pay +10 Embers."
       },
       {
         "id": "ides",
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Boon: grants Cinderguard Evasion to the torchbearer who claims it."
+        "value": "Boon (RARE -- Ash sigil): grants Cinderguard Evasion to the torchbearer who claims it. Sigil set Ash: 2 held: party +4 Strength / 3 held: room clears pay +10 Embers."
       },
       {
         "id": "ifil",
@@ -311,14 +311,14 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Boon: grants Emberedge Strike (critical hits) to the torchbearer who claims it."
+        "value": "Boon (RARE -- Storm sigil): grants Emberedge Strike (critical hits) to the torchbearer who claims it. Sigil set Storm: 2 held: party +20 move speed / 3 held: party +6 Agility."
       },
       {
         "id": "ides",
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Boon: grants Emberedge Strike (critical hits) to the torchbearer who claims it."
+        "value": "Boon (RARE -- Storm sigil): grants Emberedge Strike (critical hits) to the torchbearer who claims it. Sigil set Storm: 2 held: party +20 move speed / 3 held: party +6 Agility."
       },
       {
         "id": "ifil",
@@ -369,14 +369,14 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Boon: grants Ashbreaker Bash to the torchbearer who claims it."
+        "value": "Boon (RARE -- Ash sigil): grants Ashbreaker Bash to the torchbearer who claims it. Sigil set Ash: 2 held: party +4 Strength / 3 held: room clears pay +10 Embers."
       },
       {
         "id": "ides",
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Boon: grants Ashbreaker Bash to the torchbearer who claims it."
+        "value": "Boon (RARE -- Ash sigil): grants Ashbreaker Bash to the torchbearer who claims it. Sigil set Ash: 2 held: party +4 Strength / 3 held: room clears pay +10 Embers."
       },
       {
         "id": "ifil",
@@ -427,14 +427,14 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Boon: +4 to all attributes of the torchbearer who claims it."
+        "value": "Boon (RARE -- Light sigil): +4 to all attributes of the torchbearer who claims it. Sigil set Light: 2 held: party +4 Intelligence / 3 held: every boon claim: party +1 all stats."
       },
       {
         "id": "ides",
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Boon: +4 to all attributes of the torchbearer who claims it."
+        "value": "Boon (RARE -- Light sigil): +4 to all attributes of the torchbearer who claims it. Sigil set Light: 2 held: party +4 Intelligence / 3 held: every boon claim: party +1 all stats."
       },
       {
         "id": "ifil",
@@ -602,6 +602,1704 @@
         "level": 0,
         "column": 0,
         "value": "ReplaceableTextures\\CommandButtons\\BTNVialFull.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 25
+      }
+    ],
+    "I011:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Sootward Hide"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Sootward Hide"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (COMMON -- Ash sigil): +120 maximum life to the claimer. Sigil set Ash: 2 held: party +4 Strength / 3 held: room clears pay +10 Embers."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (COMMON -- Ash sigil): +120 maximum life to the claimer. Sigil set Ash: 2 held: party +4 Strength / 3 held: room clears pay +10 Embers."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNHelmutPurple.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I012:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Stormstep"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Stormstep"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (COMMON -- Storm sigil): +25 move speed to the claimer. Sigil set Storm: 2 held: party +20 move speed / 3 held: party +6 Agility."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (COMMON -- Storm sigil): +25 move speed to the claimer. Sigil set Storm: 2 held: party +20 move speed / 3 held: party +6 Agility."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNBootsOfSpeed.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I013:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Ashfather's Brand"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Ashfather's Brand"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (EPIC -- Ash sigil): build-around: every Vault's Breath now ALSO tempers the party (+1 all stats per breath) -- linger and grow. Sigil set Ash: 2 held: party +4 Strength / 3 held: room clears pay +10 Embers."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (EPIC -- Ash sigil): build-around: every Vault's Breath now ALSO tempers the party (+1 all stats per breath) -- linger and grow. Sigil set Ash: 2 held: party +4 Strength / 3 held: room clears pay +10 Embers."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNFire.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I014:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Emberlord's Covenant"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Emberlord's Covenant"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (EPIC -- Ash sigil): build-around: Wrath builds twice as fast, and a slain Ash Revenant pays an EPIC boon instead of a rare. Sigil set Ash: 2 held: party +4 Strength / 3 held: room clears pay +10 Embers."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (EPIC -- Ash sigil): build-around: Wrath builds twice as fast, and a slain Ash Revenant pays an EPIC boon instead of a rare. Sigil set Ash: 2 held: party +4 Strength / 3 held: room clears pay +10 Embers."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNIncinerate.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I015:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Skyward Reflex"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Skyward Reflex"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (COMMON -- Storm sigil): +4 Agility and +10 move speed to the claimer. Sigil set Storm: 2 held: party +20 move speed / 3 held: party +6 Agility."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (COMMON -- Storm sigil): +4 Agility and +10 move speed to the claimer. Sigil set Storm: 2 held: party +20 move speed / 3 held: party +6 Agility."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNEvasion.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I016:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Tempest Brand"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Tempest Brand"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (RARE -- Storm sigil): +8 Agility and +4 Intelligence to the claimer. Sigil set Storm: 2 held: party +20 move speed / 3 held: party +6 Agility."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (RARE -- Storm sigil): +8 Agility and +4 Intelligence to the claimer. Sigil set Storm: 2 held: party +20 move speed / 3 held: party +6 Agility."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNLightningShield.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I017:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Stormheart Core"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Stormheart Core"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (EPIC -- Storm sigil): build-around: every room clear grants the party +15 move speed, permanently stacking. Sigil set Storm: 2 held: party +20 move speed / 3 held: party +6 Agility."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (EPIC -- Storm sigil): build-around: every room clear grants the party +15 move speed, permanently stacking. Sigil set Storm: 2 held: party +20 move speed / 3 held: party +6 Agility."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNPurge.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I018:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Bloodwarmth"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Bloodwarmth"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (COMMON -- Blood sigil): +80 maximum life and +3 Strength to the claimer. Sigil set Blood: 2 held: party +100 max life / 3 held: party heals 25% on every room clear."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (COMMON -- Blood sigil): +80 maximum life and +3 Strength to the claimer. Sigil set Blood: 2 held: party +100 max life / 3 held: party heals 25% on every room clear."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNPotionRed.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I019:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Red Vigil"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Red Vigil"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (COMMON -- Blood sigil): +5 Strength to the claimer, who also heals half their wounds. Sigil set Blood: 2 held: party +100 max life / 3 held: party heals 25% on every room clear."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (COMMON -- Blood sigil): +5 Strength to the claimer, who also heals half their wounds. Sigil set Blood: 2 held: party +100 max life / 3 held: party heals 25% on every room clear."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNHealingSalve.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I020:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Butcher's Rhythm"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Butcher's Rhythm"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (RARE -- Blood sigil): +10 Strength to the claimer. Sigil set Blood: 2 held: party +100 max life / 3 held: party heals 25% on every room clear."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (RARE -- Blood sigil): +10 Strength to the claimer. Sigil set Blood: 2 held: party +100 max life / 3 held: party heals 25% on every room clear."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNOrcMeleeUpThree.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I021:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Vein of the Vault"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Vein of the Vault"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (RARE -- Blood sigil): +250 maximum life to the claimer. Sigil set Blood: 2 held: party +100 max life / 3 held: party heals 25% on every room clear."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (RARE -- Blood sigil): +250 maximum life to the claimer. Sigil set Blood: 2 held: party +100 max life / 3 held: party heals 25% on every room clear."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNPeriapt1.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I022:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Bloodtithe Pact"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Bloodtithe Pact"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (EPIC -- Blood sigil): build-around: every elite or boss kill pays the party +2 Strength and heals 25% of maximum life. Sigil set Blood: 2 held: party +100 max life / 3 held: party heals 25% on every room clear."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (EPIC -- Blood sigil): build-around: every elite or boss kill pays the party +2 Strength and heals 25% of maximum life. Sigil set Blood: 2 held: party +100 max life / 3 held: party heals 25% on every room clear."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNVampiricAura.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I023:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Omen Eye"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Omen Eye"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (COMMON -- Void sigil): +1 Insight (sharper omens, finer campfire stock -- see -help). Sigil set Void: 2 held: party +1 Insight / 3 held: campfire prices -15 Embers."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (COMMON -- Void sigil): +1 Insight (sharper omens, finer campfire stock -- see -help). Sigil set Void: 2 held: party +1 Insight / 3 held: campfire prices -15 Embers."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNSentryWard.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I024:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Void Tithe"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Void Tithe"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (COMMON -- Void sigil): the party pool gains 50 Embers at once. Sigil set Void: 2 held: party +1 Insight / 3 held: campfire prices -15 Embers."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (COMMON -- Void sigil): the party pool gains 50 Embers at once. Sigil set Void: 2 held: party +1 Insight / 3 held: campfire prices -15 Embers."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNChestOfGold.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I025:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Quiet Step"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Quiet Step"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (COMMON -- Void sigil): +3 Agility and +15 move speed to the claimer. Sigil set Void: 2 held: party +1 Insight / 3 held: campfire prices -15 Embers."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (COMMON -- Void sigil): +3 Agility and +15 move speed to the claimer. Sigil set Void: 2 held: party +1 Insight / 3 held: campfire prices -15 Embers."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNShadowMeld.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I026:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Deep Sight"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Deep Sight"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (RARE -- Void sigil): +1 Insight and +6 Intelligence to the claimer. Sigil set Void: 2 held: party +1 Insight / 3 held: campfire prices -15 Embers."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (RARE -- Void sigil): +1 Insight and +6 Intelligence to the claimer. Sigil set Void: 2 held: party +1 Insight / 3 held: campfire prices -15 Embers."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNScatterRockets.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I027:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Nullward Shell"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Nullward Shell"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (RARE -- Void sigil): +120 maximum life and +4 Intelligence to the claimer. Sigil set Void: 2 held: party +1 Insight / 3 held: campfire prices -15 Embers."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (RARE -- Void sigil): +120 maximum life and +4 Intelligence to the claimer. Sigil set Void: 2 held: party +1 Insight / 3 held: campfire prices -15 Embers."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNThickFur.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I028:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Seer's Diadem"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Seer's Diadem"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (EPIC -- Void sigil): build-around: +2 Insight at once, and campfire boon rerolls become FREE. Sigil set Void: 2 held: party +1 Insight / 3 held: campfire prices -15 Embers."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (EPIC -- Void sigil): build-around: +2 Insight at once, and campfire boon rerolls become FREE. Sigil set Void: 2 held: party +1 Insight / 3 held: campfire prices -15 Embers."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNCrystalBall.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I029:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Dawnward Flame"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Dawnward Flame"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (COMMON -- Light sigil): +4 Intelligence and +60 maximum life to the claimer. Sigil set Light: 2 held: party +4 Intelligence / 3 held: every boon claim: party +1 all stats."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (COMMON -- Light sigil): +4 Intelligence and +60 maximum life to the claimer. Sigil set Light: 2 held: party +4 Intelligence / 3 held: every boon claim: party +1 all stats."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNWandOfNeutralization.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I030:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Beacon of the Order"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Beacon of the Order"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (COMMON -- Light sigil): +2 to all attributes of the claimer. Sigil set Light: 2 held: party +4 Intelligence / 3 held: every boon claim: party +1 all stats."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (COMMON -- Light sigil): +2 to all attributes of the claimer. Sigil set Light: 2 held: party +4 Intelligence / 3 held: every boon claim: party +1 all stats."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNHumanMissileUpOne.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I031:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Radiant Edge"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Radiant Edge"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (RARE -- Light sigil): grants Radiant Strike (critical hits) to the torchbearer who claims it. Sigil set Light: 2 held: party +4 Intelligence / 3 held: every boon claim: party +1 all stats."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (RARE -- Light sigil): grants Radiant Strike (critical hits) to the torchbearer who claims it. Sigil set Light: 2 held: party +4 Intelligence / 3 held: every boon claim: party +1 all stats."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNOrbOfLightning.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I032:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Lightwarden's Oath"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Lightwarden's Oath"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (EPIC -- Light sigil): build-around: when a torch gutters out, the survivors rally: +4 all stats and a full heal. Sigil set Light: 2 held: party +4 Intelligence / 3 held: every boon claim: party +1 all stats."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon (EPIC -- Light sigil): build-around: when a torch gutters out, the survivors rally: +4 all stats and a full heal. Sigil set Light: 2 held: party +4 Intelligence / 3 held: every boon claim: party +1 all stats."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNHolyBolt.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I033:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Ember Chalice"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Ember Chalice"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A relic of the burned order (reliquary exclusive; each run's six relics are drawn without replacement). Party blessing: +75 maximum life to every torchbearer."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A relic of the burned order (reliquary exclusive; each run's six relics are drawn without replacement). Party blessing: +75 maximum life to every torchbearer."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNGoblinsGrease.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 150
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I034:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Ashen Codex"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Ashen Codex"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A relic of the burned order (reliquary exclusive; each run's six relics are drawn without replacement). Party blessing: +1 Insight to the party."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A relic of the burned order (reliquary exclusive; each run's six relics are drawn without replacement). Party blessing: +1 Insight to the party."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNTome.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 150
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I035:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Storm Idol"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Storm Idol"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A relic of the burned order (reliquary exclusive; each run's six relics are drawn without replacement). Party blessing: +20 move speed to every torchbearer, permanently."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A relic of the burned order (reliquary exclusive; each run's six relics are drawn without replacement). Party blessing: +20 move speed to every torchbearer, permanently."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNBrilliance.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 150
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I036:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Bloodward Icon"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Bloodward Icon"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A relic of the burned order (reliquary exclusive; each run's six relics are drawn without replacement). Party blessing: +3 Strength to every torchbearer."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A relic of the burned order (reliquary exclusive; each run's six relics are drawn without replacement). Party blessing: +3 Strength to every torchbearer."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNHumanArmorUpThree.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 150
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I037:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Lantern of the Order"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Lantern of the Order"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A relic of the burned order (reliquary exclusive; each run's six relics are drawn without replacement). Party blessing: +3 Agility and +3 Intelligence to every torchbearer."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A relic of the burned order (reliquary exclusive; each run's six relics are drawn without replacement). Party blessing: +3 Agility and +3 Intelligence to every torchbearer."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNWispSplode.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 150
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I038:pghe": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Wardflame Salve"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Wardflame Salve"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A salve of warded flame. Restores a great deal of life when used. Dropped by elite wardens."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Restores a great deal of life."
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNLesserRejuvPotion.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 25
+      }
+    ],
+    "I039:pspd": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Stormflask"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Stormflask"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Bottled vault-wind. Grants a burst of move speed when drunk. Dropped by elite wardens."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Grants a burst of move speed."
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNPotionOfDivinity.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 25
+      }
+    ],
+    "I040:pnvl": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Cindershield Phial"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Cindershield Phial"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A phial of hardened cinder-light. Brief invulnerability when drunk. Dropped by elite wardens."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Brief invulnerability."
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNPotionOfRestoration.blp"
       },
       {
         "id": "igol",

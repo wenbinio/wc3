@@ -87,6 +87,52 @@
         "column": 0,
         "value": 8
       }
+    ],
+    "A005:ACct": [
+      {
+        "id": "anam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Radiant Strike"
+      },
+      {
+        "id": "Ctc1",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 25
+      }
+    ],
+    "A006:ACtc": [
+      {
+        "id": "anam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Wrathfire Slam"
+      },
+      {
+        "id": "Ctc1",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 60
+      },
+      {
+        "id": "aare",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 350
+      },
+      {
+        "id": "acdn",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 10
+      }
     ]
   }
 }

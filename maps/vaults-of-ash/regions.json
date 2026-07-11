@@ -170,8 +170,110 @@
     }
   },
   {
-    "name": "RoomF1A",
+    "name": "ShrineRekindle",
     "id": 10,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      160,
+      128,
+      255
+    ],
+    "position": {
+      "left": 432,
+      "bottom": -7184,
+      "right": 720,
+      "top": -6896
+    }
+  },
+  {
+    "name": "TrialDoor",
+    "id": 11,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      255,
+      255,
+      96
+    ],
+    "position": {
+      "left": -1744,
+      "bottom": -6032,
+      "right": -1456,
+      "top": -5744
+    }
+  },
+  {
+    "name": "AltarCinders",
+    "id": 12,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      255,
+      96,
+      32
+    ],
+    "position": {
+      "left": -1744,
+      "bottom": -7184,
+      "right": -1456,
+      "top": -6896
+    }
+  },
+  {
+    "name": "AltarStillness",
+    "id": 13,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      96,
+      196,
+      255
+    ],
+    "position": {
+      "left": -1424,
+      "bottom": -7184,
+      "right": -1136,
+      "top": -6896
+    }
+  },
+  {
+    "name": "AltarSealed",
+    "id": 14,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      196,
+      96,
+      255
+    ],
+    "position": {
+      "left": -1104,
+      "bottom": -7184,
+      "right": -816,
+      "top": -6896
+    }
+  },
+  {
+    "name": "AltarUnbound",
+    "id": 15,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      255,
+      255,
+      255
+    ],
+    "position": {
+      "left": -784,
+      "bottom": -7184,
+      "right": -496,
+      "top": -6896
+    }
+  },
+  {
+    "name": "RoomF1A",
+    "id": 16,
     "weatherEffect": "\u0000\u0000\u0000\u0000",
     "ambientSound": "",
     "color": [
@@ -188,7 +290,7 @@
   },
   {
     "name": "RoomF1B",
-    "id": 11,
+    "id": 17,
     "weatherEffect": "\u0000\u0000\u0000\u0000",
     "ambientSound": "",
     "color": [
@@ -205,7 +307,7 @@
   },
   {
     "name": "RoomF1C",
-    "id": 12,
+    "id": 18,
     "weatherEffect": "\u0000\u0000\u0000\u0000",
     "ambientSound": "",
     "color": [
@@ -222,7 +324,7 @@
   },
   {
     "name": "RoomF1D",
-    "id": 13,
+    "id": 19,
     "weatherEffect": "\u0000\u0000\u0000\u0000",
     "ambientSound": "",
     "color": [
@@ -239,7 +341,7 @@
   },
   {
     "name": "RoomF2A",
-    "id": 14,
+    "id": 20,
     "weatherEffect": "\u0000\u0000\u0000\u0000",
     "ambientSound": "",
     "color": [
@@ -256,7 +358,7 @@
   },
   {
     "name": "RoomF2B",
-    "id": 15,
+    "id": 21,
     "weatherEffect": "\u0000\u0000\u0000\u0000",
     "ambientSound": "",
     "color": [
@@ -273,7 +375,7 @@
   },
   {
     "name": "RoomF2C",
-    "id": 16,
+    "id": 22,
     "weatherEffect": "\u0000\u0000\u0000\u0000",
     "ambientSound": "",
     "color": [
@@ -290,7 +392,7 @@
   },
   {
     "name": "RoomF2D",
-    "id": 17,
+    "id": 23,
     "weatherEffect": "\u0000\u0000\u0000\u0000",
     "ambientSound": "",
     "color": [
@@ -307,7 +409,7 @@
   },
   {
     "name": "RoomF3A",
-    "id": 18,
+    "id": 24,
     "weatherEffect": "\u0000\u0000\u0000\u0000",
     "ambientSound": "",
     "color": [
@@ -324,7 +426,7 @@
   },
   {
     "name": "RoomF3B",
-    "id": 19,
+    "id": 25,
     "weatherEffect": "\u0000\u0000\u0000\u0000",
     "ambientSound": "",
     "color": [
@@ -341,7 +443,7 @@
   },
   {
     "name": "RoomF3C",
-    "id": 20,
+    "id": 26,
     "weatherEffect": "\u0000\u0000\u0000\u0000",
     "ambientSound": "",
     "color": [
@@ -358,7 +460,7 @@
   },
   {
     "name": "RoomF3D",
-    "id": 21,
+    "id": 27,
     "weatherEffect": "\u0000\u0000\u0000\u0000",
     "ambientSound": "",
     "color": [
@@ -375,7 +477,7 @@
   },
   {
     "name": "BossArena",
-    "id": 22,
+    "id": 28,
     "weatherEffect": "\u0000\u0000\u0000\u0000",
     "ambientSound": "",
     "color": [
@@ -392,7 +494,7 @@
   },
   {
     "name": "HubReturn",
-    "id": 23,
+    "id": 29,
     "weatherEffect": "\u0000\u0000\u0000\u0000",
     "ambientSound": "",
     "color": [
