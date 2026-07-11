@@ -173,8 +173,42 @@ end
 function InitGlobals()
 end
 
--- Lobby configuration. Must stay consistent with info.json (players/force)
--- and the two 'sloc' start locations in units.json.
+-- Lobby configuration, kept in the exact shape World Editor generates for a
+-- "Use Custom Forces" + "Fixed Player Settings" map (compare the genuine WE
+-- Lua in wc3-ts-template): InitCustomPlayerSlots + InitCustomTeams, with
+-- ForcePlayerStartLocation (start positions are fixed in info.json) and
+-- SetPlayerRaceSelectable(false) (player settings are fixed).
+--
+-- CRITICAL invariant: every team index passed to SetPlayerTeam below MUST be
+-- the index of a force in info.json's "forces" array. A team without a
+-- matching w3i force (the pre-fix state: one force but SetPlayerTeam(...,1))
+-- leaves the locked lobby with no valid slot arrangement and the multiplayer
+-- "Create" button disabled.
+function InitCustomPlayerSlots()
+  -- Player 0: user, human, southwest
+  SetPlayerStartLocation(Player(0), 0)
+  ForcePlayerStartLocation(Player(0), 0)
+  SetPlayerColor(Player(0), ConvertPlayerColor(0))
+  SetPlayerRacePreference(Player(0), RACE_PREF_HUMAN)
+  SetPlayerRaceSelectable(Player(0), false)
+  SetPlayerController(Player(0), MAP_CONTROL_USER)
+
+  -- Player 1: user, orc, northeast
+  SetPlayerStartLocation(Player(1), 1)
+  ForcePlayerStartLocation(Player(1), 1)
+  SetPlayerColor(Player(1), ConvertPlayerColor(1))
+  SetPlayerRacePreference(Player(1), RACE_PREF_ORC)
+  SetPlayerRaceSelectable(Player(1), false)
+  SetPlayerController(Player(1), MAP_CONTROL_USER)
+end
+
+function InitCustomTeams()
+  -- Force: TRIGSTR_009 (South Rivals)
+  SetPlayerTeam(Player(0), 0)
+  -- Force: TRIGSTR_010 (North Rivals)
+  SetPlayerTeam(Player(1), 1)
+end
+
 function config()
   SetMapName("TRIGSTR_001")
   SetMapDescription("TRIGSTR_002")
@@ -185,22 +219,8 @@ function config()
   DefineStartLocation(0, -2304.0, -2304.0)
   DefineStartLocation(1, 2304.0, 2304.0)
 
-  -- Player 0: user, human, southwest
-  SetPlayerStartLocation(Player(0), 0)
-  SetPlayerColor(Player(0), ConvertPlayerColor(0))
-  SetPlayerRacePreference(Player(0), RACE_PREF_HUMAN)
-  SetPlayerRaceSelectable(Player(0), true)
-  SetPlayerController(Player(0), MAP_CONTROL_USER)
-
-  -- Player 1: user, orc, northeast
-  SetPlayerStartLocation(Player(1), 1)
-  SetPlayerColor(Player(1), ConvertPlayerColor(1))
-  SetPlayerRacePreference(Player(1), RACE_PREF_ORC)
-  SetPlayerRaceSelectable(Player(1), true)
-  SetPlayerController(Player(1), MAP_CONTROL_USER)
-
-  SetPlayerTeam(Player(0), 0)
-  SetPlayerTeam(Player(1), 1)
+  InitCustomPlayerSlots()
+  InitCustomTeams()
 end
 
 -- Map start.

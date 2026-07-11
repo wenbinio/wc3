@@ -9,6 +9,8 @@ dist/
 # ...except the committed compiled maps in maps/builds/ (regenerated via
 # tools/build-map.js — see README.md "Committed builds")
 !maps/builds/*.w3x
+# ...and the crash-bisection diagnostic variants (see maps/builds/diag/README.md)
+!maps/builds/diag/*.w3x
 *.w3m
 *.mpq
 *.mpq.tmp

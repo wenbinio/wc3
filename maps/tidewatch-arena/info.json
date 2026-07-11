@@ -117,7 +117,19 @@
         "shareAdvUnitControl": false
       },
       "players": [
-        "red",
+        "red"
+      ]
+    },
+    {
+      "name": "TRIGSTR_010",
+      "flags": {
+        "allied": false,
+        "alliedVictory": false,
+        "shareVision": false,
+        "shareUnitControl": false,
+        "shareAdvUnitControl": false
+      },
+      "players": [
         "blue"
       ]
     }

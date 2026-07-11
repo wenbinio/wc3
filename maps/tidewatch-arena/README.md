@@ -23,7 +23,14 @@ emission at small scale** plus the custom-unit and CreateAllUnits paths.
 
 ## Script (`war3map.lua`)
 
-`config()` defines the 2-player lobby; `main()` calls the generated
+`config()` defines the 2-player lobby in the exact shape World Editor
+generates for a "Use Custom Forces" + "Fixed Player Settings" map
+(`InitCustomPlayerSlots()` + `InitCustomTeams()`). info.json declares TWO
+one-player forces, and every team index passed to `SetPlayerTeam` is a force
+index — keep them in sync: a `SetPlayerTeam` team with no matching w3i force
+leaves the locked lobby with no valid arrangement and the multiplayer
+"Create" button greyed out (that was this map's original hosting bug).
+`main()` calls the generated
 `CreateAllUnits()` (units.json is the single source of truth — see CLAUDE.md
 gotcha 10) before enumerating the arena, then wires up:
 
