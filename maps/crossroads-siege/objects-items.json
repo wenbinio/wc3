@@ -25,6 +25,34 @@
         "level": 0,
         "column": 0,
         "value": 750
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Blade of the Crossroads"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A keen-edged blade taken from the Dreadflesh Colossus. Increases the attack damage of the wielder by 15."
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNSteelMelee.blp"
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
       }
     ],
     "I001:phea": [
@@ -41,6 +69,34 @@
         "level": 0,
         "column": 0,
         "value": 0
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Elixir of the Siege"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A potent draught brewed for the defenders of the Crossroads. Restores hit points when used."
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNPotionGreen.blp"
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
       }
     ]
   }

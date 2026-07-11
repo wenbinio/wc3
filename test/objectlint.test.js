@@ -9,12 +9,13 @@
 //   c) a unit with a build list whose overridden uabi has no repair
 //      ability starts buildings that never finish (AHbu needs Ahrp).
 // Also pins the validate-map integration: warnings print as WARN lines,
-// never flip a map to FAIL, and the committed builds stay exit-0
-// (crossroads-siege carries known true-positive warnings; northreach,
-// fixed in the playtest commit, must be warning-clean).
+// never flip a map to FAIL, and every committed build is warning-clean
+// (the crossroads-siege true positives the lint originally caught are
+// fixed in source, like northreach's playtest-commit fixes before them).
 
 const test = require('node:test');
 const assert = require('node:assert');
+const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
@@ -114,19 +115,20 @@ function runValidate(w3x) {
     { encoding: 'utf8' });
 }
 
-test('validate-map: crossroads-siege warns (known true positives) but stays exit 0 / no FAIL', () => {
+test('validate-map: crossroads-siege (lint true positives fixed in source) is warning-clean', () => {
   const out = runValidate('crossroads-siege.w3x');
   assert.doesNotMatch(out, /^FAIL/m);
-  // gotcha 22: the pre-fix .mdx umdl value ships in this committed source
-  assert.match(out, /WARN {2}lint war3map\.w3u n000:nech {2}\(umdl "war3mapImported\\SiegeCrystal\.mdx" ends in \.mdx/);
-  // gotcha 23: two renamed items without art overrides
-  assert.match(out, /WARN {2}lint war3map\.w3t I000:ratf/);
-  assert.match(out, /WARN {2}lint war3map\.w3t I001:phea/);
-  assert.match(out, /warning\(s\) — warnings don't fail the map/);
+  assert.doesNotMatch(out, /^WARN/m);
+  assert.match(out, /35\/35 checks passed/);
 });
 
-test('validate-map: northreach (playtest-fixed) is warning-clean', () => {
-  const out = runValidate('northreach.w3x');
-  assert.doesNotMatch(out, /^FAIL/m);
-  assert.doesNotMatch(out, /^WARN/m);
+test('validate-map: every committed build is warning-clean (and no FAIL)', () => {
+  const builds = fs.readdirSync(path.join(ROOT, 'maps', 'builds'))
+    .filter((f) => f.endsWith('.w3x'));
+  assert.ok(builds.length >= 4, `expected the bundled builds, got ${builds.join(', ')}`);
+  for (const w3x of builds) {
+    const out = runValidate(w3x);
+    assert.doesNotMatch(out, /^FAIL/m, `${w3x} has a FAIL line`);
+    assert.doesNotMatch(out, /^WARN/m, `${w3x} has a WARN line`);
+  }
 });

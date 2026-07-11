@@ -73,8 +73,8 @@ test('crossroads-siege source has the advertised moving parts', () => {
   const objUnits = readJson(path.join(SIEGE_SRC, 'objects-units.json'));
   assert.ok(Object.keys(objUnits.custom).length >= 3, '3+ custom units');
   assert.ok(
-    JSON.stringify(objUnits.custom).includes('war3mapImported\\\\SiegeCrystal.mdx'),
-    'a custom unit references the imported model'
+    JSON.stringify(objUnits.custom).includes('war3mapImported\\\\SiegeCrystal.mdl'),
+    'a custom unit references the imported model (.mdl field value, gotcha 22)'
   );
   assert.ok(fs.existsSync(path.join(SIEGE_SRC, 'imports', 'war3mapImported', 'SiegeCrystal.mdx')));
 
