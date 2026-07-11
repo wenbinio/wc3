@@ -205,3 +205,15 @@ scaffolds a tiny console project referencing
 `War3Net.Build.Core`, and runs `MapInfo.Parse`/`MapEnvironment.Parse` over an
 extracted map directory, reporting per-file parse results. Use it when the
 two bundled parser stacks disagree and you need a tie-breaker.
+
+## 7. Diagnostics / A-B testing maps in-game
+
+The game's map list shows the map NAME stored **inside** the file (HM3W
+header + w3i name), never the filename — so `siege-no-sounds.w3x` and
+`siege-no-import.w3x` both appear identically as "Crossroads Siege" and
+cannot be told apart in-game. When building variant maps for in-game
+bisection/A-B testing, give EACH variant a distinct in-game name: change
+the map name in the source (the TRIGSTR entry in `strings.json` that
+`info.json` `name` points to, or `name` directly) AND `_header.json`
+`name`, e.g. "Siege DIAG-1 no-objabil". Renaming the `.w3x` alone is
+invisible in-game.

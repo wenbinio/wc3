@@ -132,6 +132,10 @@ third-party maps, see gotcha 9).
     `—` → control byte 0x14; `é` → invalid UTF-8). Until an upstream fix,
     the workaround is to spell it in ASCII: `--` for dashes, straight
     quotes, `...` for ellipses.
+17. **The in-game map list shows the INTERNAL map name** (HM3W header +
+    w3i name), never the filename — variant builds for in-game A-B testing
+    all look identical unless each gets a distinct name in the source's
+    strings/info (TRIGSTR name) AND `_header.json` (docs/PIPELINE.md §7).
 
 ## Where things live
 
