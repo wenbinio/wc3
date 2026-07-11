@@ -154,7 +154,7 @@ Ranked by how hard each blocked the decomposition. "wave 1" = `fbfdf46`
 | 15 | No JASS syntax gate: the Lua path has luaparse, `war3map.j` is packed unchecked (pjass is the known tool) | **OPEN** |
 | 16 | Scale/streaming: NB (91 MB, 1,685 members) works but whole-file buffering is the pattern everywhere; no streaming extraction/pack | **OPEN** |
 | 17 | MDX v1000+ (NB ships 2): sanityTest bar is only proven for v800 — needs a >800 spot-check before trusting PASS/FAIL on Reforged models | **OPEN** |
-| 18 | Object data v2 (XHS) and classic `.doo` remain read-only via `_viewer/`; wtg/wct remain opaque (no TriggerData.txt) | **OPEN** (unchanged classic gap; v25/v11 half was closed by wave 2) |
+| 18 | Object data v2 (XHS) and classic `.doo` remain read-only via `_viewer/`; wtg/wct remain opaque (no TriggerData.txt) | **PARTLY FIXED** (v25/v11 by wave 2; object data v1/v2 by `f4a9a40` — lib/codecs/objects2.js read+write, see docs/reference/ambitious-maps-analysis.md; classic `.doo` and wtg/wct stay read-only/opaque) |
 
 ## 4. Reproduction
 

@@ -39,16 +39,21 @@ node -e "const i=require('/tmp/work/src/info.json');console.log(i.map.name, i.pl
 
 Interpreting problems:
 
-- `terrain.json`/`info.json` with a top-level `"version": 11|25|31` →
+- `terrain.json`/`info.json`/`objects-*.json` with a top-level
+  `"version": 11|25|31` (terrain/info) or `"version": 1|2` (object data) →
   handled by the version codecs (lib/codecs/): fully editable and
-  rebuildable, same dialect as the current formats — keep the marker.
+  rebuildable, same dialect as the current formats — keep the marker. An
+  info.json with `_truncated: true`/`_truncatedAt` is a protector-truncated
+  w3i the codec still reads and writes back byte-faithfully — keep those
+  markers too.
 - `manifest.json.errors` mentioning "cannot currently parse this version"
   (or a bare `RangeError: offset out of range`) → classic-format file with
-  no codec (w3i v18, object data v1/v2, classic doo, ...); those files are
+  no codec (w3i v18, classic doo, ...); those files are
   copied raw (everything else still works) and, where possible, parsed
   read-only into `_viewer/<name>.json` (`manifest.json` →
-  `viewerFallback`; viewer failures in `viewerFallbackErrors`; a truncated
-  classic w3i gets a tolerant lib/classicw3i.js read).
+  `viewerFallback`; viewer failures in `viewerFallbackErrors`; a w3i cut
+  inside the settings block gets a tolerant read-only lib/classicw3i.js
+  read).
 - w3x-extract reporting unresolved (anonymous) entries → protected map
   (stripped or FAKE listfile); rerun with `--recover-names` to rename most
   of them and dump the remainder under `_unknown/`; see docs/FORMATS.md.
@@ -66,7 +71,9 @@ Validate any map: `node tools/validate-map.js <map.w3x>` (exit 0 = healthy).
 Besides the wc3maptranslator round-trip checks, this cross-validates with
 mdx-m3-viewer-th (`viewer ...` lines): its independent MPQ reader, parsers
 for wpm/shd/mmp that the translator lacks, and an MDX sanity test on every
-imported model (0 errors + 0 severes required — crash bar). Object data is
+packed model (WARN only here — third-party maps ship models that fail the
+bar yet run; the strict 0-errors/0-severes FAIL is build-map's, on source
+imports/ — CLAUDE.md gotcha 14). Object data is
 also semantically linted: `WARN lint ...` lines (CLAUDE.md gotchas
 22/23/25) flag in-game bug classes without failing the map.
 

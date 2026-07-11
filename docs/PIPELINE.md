@@ -24,14 +24,18 @@ node -e "const i=require('/tmp/work/src/info.json'); console.log(i.map.name, i.p
 
 Gotchas:
 
-- **w3e v11 / w3i v25/v31 are NOT a problem**: real published maps
-  (including 1.36/2.0-editor-saved ones) ship these versions, and
-  `lib/codecs/` translates them into the normal editable
-  terrain.json/info.json (with a `"version"` marker that routes the write
-  path back through the same codec byte-faithfully). Expect NO manifest
-  error and no `_viewer/` entry for them — edit and rebuild as usual.
+- **w3e v11 / w3i v25/v31 / object data v1/v2 are NOT a problem**: real
+  published maps (including 1.36/2.0-editor-saved, Wurst-built and classic
+  ones) ship these versions, and `lib/codecs/` translates them into the
+  normal editable terrain.json/info.json/objects-*.json (with a
+  `"version"` marker that routes the write path back through the same
+  codec byte-faithfully). Expect NO manifest error and no `_viewer/` entry
+  for them — edit and rebuild as usual. A w3i v25/v31 whose TAIL a
+  protector truncated (players section onward) also lands editable, with
+  `_truncated`/`_truncatedAt` markers that keep the write-back
+  byte-faithful — keep the markers.
 - **Classic (pre-Reforged) maps**: remaining old-version files (w3i v18,
-  object data v1/v2, classic doo, ...) fail in wc3maptranslator@5 —
+  classic doo, ...) fail in wc3maptranslator@5 —
   sometimes with its version message, but often with a plain
   `RangeError: offset out of range` (e.g. classic `war3map.doo` v8).
   `map-to-json.js` handles ANY such throw: the file is copied through raw
@@ -49,7 +53,10 @@ Gotchas:
     truncated **classic** `war3map.w3i` additionally gets a tolerant
     second-tier read via `lib/classicw3i.js` (header through forces, tolerant
     of a chopped tail; output tagged `_schema: wc3-map-toolkit-classic-w3i`
-    with `_truncated`/`_truncatedAt`).
+    with `_truncated`/`_truncatedAt`). This read-only path is only reached
+    when the w3i is cut inside the settings block (or is a version with no
+    codec, e.g. v18) — a v25/v31 truncated in the tail sections stays fully
+    editable via the codec (see the bullet above).
 - **Protected maps**: the MPQ `(listfile)` is stripped, so member names are
   unrecoverable and every entry enumerates as a `FileNNNNNNNN` pseudo-name
   (both backends). `w3x-extract.js` falls back to probing a built-in list of
@@ -234,10 +241,13 @@ parser stack (`viewer ...` lines in the report):
 - every inner file it has a parser for must parse — this covers
   `war3map.wpm`/`shd`/`mmp`/`wct`, which wc3maptranslator has no translator
   for (`war3map.w3c` and `war3map.wtg` are excluded — see docs/FORMATS.md);
-- every packed `.mdx`/`.mdl` must pass its MDX sanity test with **0 errors
-  and 0 severe issues** (a malformed model hard-crashes the game at map
-  load — e.g. a missing Death sequence or a Bone referencing a nonexistent
-  GeosetAnim).
+- every packed `.mdx`/`.mdl` gets its MDX sanity test; findings are **WARN
+  only** here — repacked third-party maps ship hundreds of models that fail
+  the 0-errors/0-severes bar yet run in game. The STRICT tier lives in
+  **build-map**, which FAILS the build when any model under the map
+  source's `imports/` has errors or severe issues (a malformed custom
+  model hard-crashes the game at map load — e.g. a missing Death sequence
+  or a Bone referencing a nonexistent GeosetAnim; CLAUDE.md gotcha 14).
 
 The viewer is read-only here: its MPQ *write* path is known-broken
 (locale/platform swap) and is never used, and it is always fed fresh

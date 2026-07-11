@@ -42,7 +42,10 @@ Common edits:
   mentions it, build-map wraps main() to call it after main() returns.
 - Custom assets: drop under `imports/war3mapImported/...` — war3map.imp is
   auto-generated on build. Custom MDX must pass mdx-m3-viewer's sanityTest
-  with 0 errors/severes (CLAUDE.md gotcha 14) or the game crashes on load.
+  with 0 errors/severes (CLAUDE.md gotcha 14) or the game crashes on load;
+  build-map enforces this and FAILS the build on any model under imports/
+  that misses the bar (validate-map only WARNs — its passthrough tier is
+  for third-party models).
   Object-data model FIELDS referencing the import use the `.mdl` extension
   (`war3mapImported\X.mdl` even for an `.mdx` file — CLAUDE.md gotcha 22).
 - Strings (`strings.json` / TRIGSTR values): non-ASCII now round-trips

@@ -10,7 +10,7 @@ in docs/ and .claude/skills/; follow the pointers.
 
 ```bash
 bash scripts/setup.sh   # idempotent: npm install + optional apt-get smpq fallback
-npm test                # 124 tests; all must pass before you change anything
+npm test                # 193 tests; all must pass before you change anything
 ```
 
 If you touch `lib/mpq.js` or anything archive-related, the suite must be
@@ -84,7 +84,10 @@ never third-party maps, gotcha 9).
 - **Decomposition-driven design**: before cloning/adapting a real map,
   decompose the actual artifact — forum lore got nearly every FoTN mechanic
   wrong; worked examples: docs/reference/fotn-analysis.md (protected
-  classic), docs/reference/modern-maps-analysis.md (4 modern production maps).
+  classic), docs/reference/modern-maps-analysis.md (4 modern production
+  maps), docs/reference/ambitious-maps-analysis.md (persistence/competitive/
+  campaign ecosystems + 4 flagship decompositions: Gaias, Sunken City,
+  DracoL1ch DotA, Island Troll Tribes).
 
 ## Capability matrix (what we can do per map class, as of 2026-07)
 
@@ -135,9 +138,13 @@ never third-party maps, gotcha 9).
    translator throw — file copied raw (manifest.json → `errors`) plus a
    READ-ONLY mdx-m3-viewer-th parse under `_viewer/` (viewer schema, never
    repacked — not build-source); viewer failures land in
-   `viewerFallbackErrors`; a truncated classic w3i gets a tolerant read via
-   lib/classicw3i.js. Don't "fix" the upstream throw — add/route a codec in
-   filemap.js instead.
+   `viewerFallbackErrors`. Protector-TRUNCATED w3i files stay editable: a
+   v25/v31 cut off inside the tail sections (players onward — real case:
+   DracoL1ch DotA, cut at byte 640) lands in normal info.json with
+   `_truncated: true` + `_truncatedAt` markers and writes back
+   byte-faithfully (keep the markers); only truncation inside the settings
+   block falls back to a tolerant READ-ONLY lib/classicw3i.js parse. Don't
+   "fix" the upstream throw — add/route a codec in filemap.js instead.
 3. **512-byte HM3W pre-header**: StormLib reads `.w3x` directly but creates
    bare MPQs. w3x-pack builds the header from `_header.json` (or synthesizes
    one); stormlib-node pre-writes it and `SFileCreateArchive` converts it
@@ -145,7 +152,13 @@ never third-party maps, gotcha 9).
    **v1** (`MPQ_CREATE.ARCHIVE_V1` / `smpq -M 1`) for the game.
 4. **Protected maps strip or FAKE the `(listfile)`** — extraction therefore
    ALWAYS probes the listfile ∪ KNOWN_FILES union (`lib/mpq.js`; a fake
-   2-entry listfile on a real map hid 27 standard files); unresolved members
+   2-entry listfile on a real map hid 27 standard files). KNOWN_FILES
+   includes the 56-entry engine **SLK-optimization name set**
+   (`Units\*.slk`, per-race/common `*Func.txt`/`*Strings.txt`,
+   `Doodads\Doodads.slk`): slk-optimizers move object data OUT of
+   war3map.w3u/w3t/... INTO those archive members, and protectors hide them
+   — without the probe set the map's object data silently vanishes (real
+   case: DracoL1ch DotA). Unresolved members
    enumerate as `FileNNNNNNNN` pseudo-names on BOTH backends. `extractAll`
    returns `{ extracted, total, unresolved, unknown }` — always report the
    counts so anonymous imports aren't silently dropped (w3x-extract prints
@@ -205,12 +218,18 @@ never third-party maps, gotcha 9).
     value in both places). w3x-pack derives flags from the packed
     war3map.w3i when `_header.json` has flags 0 (`readW3iFlags` in
     lib/header.js). Flags 0 is a pick-time divergence every tool notices.
-14. **Custom MDX must pass mdx-m3-viewer's sanityTest (0 errors/severes)** or
-    the game hard-crashes at load. Classic traps: an unspecified Bone
-    GeosetAnimId defaults to 0 — invalid with no GeosetAnim chunk (write
-    `GeosetAnimId None` or add a GeosetAnim); missing "Death" sequence;
-    missing "Origin Ref" attachment. validate-map enforces this bar on
-    every packed .mdx/.mdl.
+14. **Model sanity is a TWO-TIER bar.** Custom MDX must pass mdx-m3-viewer's
+    sanityTest (0 errors/severes) or the game hard-crashes at load — classic
+    traps: an unspecified Bone GeosetAnimId defaults to 0 — invalid with no
+    GeosetAnim chunk (write `GeosetAnimId None` or add a GeosetAnim);
+    missing "Death" sequence; missing "Origin Ref" attachment. Enforcement:
+    **build-map FAILS the build** when any model under the map source's
+    `imports/` misses the bar (our own artifacts, strict);
+    **validate-map only WARNs** on sanity findings for packed models —
+    repacked third-party maps ship hundreds of models that fail the bar yet
+    demonstrably run in game (a repacked Gaias: 402 of 915 checked), so a
+    FAIL there would make validate useless on exactly the maps worth
+    studying.
 15. **mdx-m3-viewer-th must be fed `new Uint8Array(fs.readFileSync(p))`,
     NEVER a Node Buffer** — its MPQ code mutates the input in place and
     misparses. NEVER use its MPQ save/write path (locale/platform field
@@ -228,7 +247,12 @@ never third-party maps, gotcha 9).
     read→write→read byte-exact. Spelling text in ASCII (`--`, straight
     quotes, `...`) is no longer required; it remains good advice only for
     maximum-compat authoring (content that must survive OTHER tools built
-    on unpatched wc3maptranslator).
+    on unpatched wc3maptranslator). lib/wts.js also preserves third-party
+    wts FILE dialects byte-identically (UTF-8 BOM / LF vs CRLF / no blank
+    separator line — real maps ship all of these): warToJson records any
+    non-WE-default dialect under a `_dialect` sidecar key in strings.json
+    and jsonToWar consumes+strips it — keep the sidecar, it is not a
+    string entry.
 17. **The in-game map list shows the INTERNAL map name** (HM3W header + w3i
     name), never the filename — A-B variants look identical unless each gets
     a distinct name in strings/info (TRIGSTR name) AND `_header.json`
@@ -298,28 +322,31 @@ never third-party maps, gotcha 9).
 
 ## Testing & validation doctrine
 
-- `npm test` = 124 tests, 16 files: source⇄binary fixed points for all four
+- `npm test` = 193 tests, 18 files: source⇄binary fixed points for all four
   bundled maps, build+validate end-to-end, MPQ backends, version codecs
-  (synthetic v11/v25/v31 fixtures cross-checked against mdx-m3-viewer-th +
-  guarded real-sample fixpoints), classic/protected fallbacks (`_viewer/`,
-  `_unknown/`, classicw3i), luacheck, gotcha regressions. Both backends when
-  touching archive code (`npm run test:smpq`).
+  (synthetic v11/v25/v31 + object-data v1/v2 fixtures cross-checked against
+  mdx-m3-viewer-th + guarded real-sample fixpoints), classic/protected
+  fallbacks (`_viewer/`, `_unknown/`, classicw3i, truncated w3i), wts
+  dialects, luacheck, gotcha regressions. Both backends when touching
+  archive code (`npm run test:smpq`).
 - `validate-map` layers: HM3W header + MPQ magic at 512 → extraction →
   required files (w3i/w3e) + script presence → luaparse gate → per-file
   translator parse PLUS JSON→binary→JSON stability → object-data semantic
   lint (lib/objectlint.js — gotchas 22/23/25) → mdx-m3-viewer-th second
   opinion (independent MPQ open; parses wpm/shd/mmp/wct which the
-  translator can't; MDX sanityTest 0 errors/0 severes on every packed
-  model).
+  translator can't; MDX sanityTest on every packed model — findings are
+  WARN here, the strict 0-errors/0-severes FAIL lives in build-map for
+  source `imports/`, gotcha 14).
 - **WARN semantics** (WARN never fails the map; exit stays 0): things real
   production maps legitimately do or that only a protector can cause —
   bare-MPQ container (no HM3W pre-header: modern 2023+ convention, 1.31+
   clients only), suspected protection-trap files (gotcha 26: parsing
   skipped, passed through unvalidated), viewer-side MPQ open/enumeration
   failures on archives StormLib reads fine (protector-mangled
-  header/listfile — disagreement, not proof of breakage), and all
-  object-data lint findings. FAIL is reserved for things that break the
-  map for players.
+  header/listfile — disagreement, not proof of breakage), model-sanity
+  findings on packed third-party models (gotcha 14's passthrough tier),
+  and all object-data lint findings. FAIL is reserved for things that
+  break the map for players.
 - Third opinion for disputed layouts: `scripts/crossvalidate-war3net.sh`
   (War3Net handles classic AND Reforged; the tie-breaker).
 - **Honest limit: structural validity ≠ game acceptance.** Only the game
@@ -357,8 +384,9 @@ or CC0-converted content. Details: docs/ASSETS.md.
 - `lib/luacheck.js` — luaparse Lua 5.3 gate; `lib/minimap.js` — minimap
   tga/mmp generation; `lib/unitscript.js` — CreateAllUnits() generation;
   `lib/objectlint.js` — object-data semantic WARNings (gotchas 22/23/25)
-- `lib/wts.js` — linear wts parser/serializer, upstream dialect (upstream's
-  regex reader OOMs on production-scale ~10k-string files; gotcha 16);
+- `lib/wts.js` — linear wts parser/serializer, upstream dialect + byte-exact
+  file-dialect preservation via the `_dialect` sidecar (upstream's regex
+  reader OOMs on production-scale ~10k-string files; gotcha 16);
   `lib/translator-fixes.js` — runtime patches for upstream sharp edges
   (UTF-8 reads, bounded readString, doodad life:0 — gotchas 16, 26);
   `lib/traps.js` — protection-trap heuristic (gotcha 26);
@@ -368,6 +396,9 @@ or CC0-converted content. Details: docs/ASSETS.md.
   references; `docs/ASSETS.md` — asset sourcing/conversion + legal;
   `docs/reference/` — worked decompositions: fotn-analysis.md (protected
   2011 classic), modern-maps-analysis.md (four 2023–2026 production maps +
-  the ranked toolkit-gap list with fix status)
+  the ranked toolkit-gap list with fix status), ambitious-maps-analysis.md
+  (persistence/competitive/campaign/peer-pipeline research + four flagship
+  profiles: Gaias, Sunken City, DracoL1ch DotA, ITT — and the ranked
+  deferred-capabilities list)
 - `.claude/skills/` — wc3-read-map, wc3-build-map, wc3-new-map,
   wc3-import-asset (operational recipes)
