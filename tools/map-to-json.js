@@ -41,7 +41,7 @@ function main(argv) {
     console.log(`skipped ${manifest.skipped.length} non-archive diagnostic file(s) (_unknown/, _viewer/, ...): not map source`);
   }
   for (const e of manifest.errors) {
-    console.error(`  WARN could not translate ${e.file} (copied through raw): ${e.error}`);
+    console.error(`  WARN could not translate ${e.file} (copied through raw): ${e.error}${e.note ? ` [${e.note}]` : ''}`);
   }
   for (const [war, out] of Object.entries(manifest.viewerFallback || {})) {
     console.log(`  viewer fallback: ${war} -> ${out} (read-only diagnostics — not build-source)`);

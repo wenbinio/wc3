@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 'use strict';
-// w3x-pack.js <dir> <out.w3x>
+// w3x-pack.js [--bare] <dir> <out.w3x>
 // Packs a directory of raw archive members (as produced by w3x-extract) into
 // an MPQ v1 and prepends the 512-byte HM3W pre-header.
 // Header fields come from <dir>/_header.json if present (as saved by
 // w3x-extract), otherwise they are synthesized (name from war3map.w3i when
 // parseable, else the directory name).
+// --bare emits a bare MPQ instead (no HM3W pre-header, archive at offset 0)
+// — the modern container real 2023+ maps ship; only 1.31+ clients read it.
 // Files named _*, manifest.json are never packed.
 
 const fs = require('fs');
@@ -28,9 +30,19 @@ function synthesizeHeader(dir) {
   return fields;
 }
 
-function packDir(dir, outW3x) {
+function packDir(dir, outW3x, opts) {
+  opts = opts || {};
   const files = walk(dir).filter((f) => !f.startsWith('_') && f !== 'manifest.json');
   if (files.length === 0) throw new Error(`no files to pack in ${dir}`);
+
+  if (opts.bare) {
+    // Bare MPQ (no HM3W pre-header, archive at offset 0): the modern .w3x
+    // container. stormlib: create fresh with no pre-written header file;
+    // smpq: no concat step — both are what createArchive does without a
+    // headerBuf argument.
+    const outAbs = createArchive(outW3x, dir, files);
+    return { files, headerFields: null, bare: true, bytes: fs.statSync(outAbs).size };
+  }
 
   const hdrPath = path.join(dir, '_header.json');
   const headerFields = fs.existsSync(hdrPath) ? readJson(hdrPath) : synthesizeHeader(dir);
@@ -52,18 +64,20 @@ function packDir(dir, outW3x) {
   // the MPQ v1 archive follows at offset 512 (lib/mpq.js handles both
   // backends; with stormlib-node no concat step is needed at all).
   const outAbs = createArchive(outW3x, dir, files, buildHeader(headerFields));
-  return { files, headerFields, bytes: fs.statSync(outAbs).size };
+  return { files, headerFields, bare: false, bytes: fs.statSync(outAbs).size };
 }
 
 function main(argv) {
-  const [dir, outW3x] = argv;
+  const bare = argv.includes('--bare');
+  const [dir, outW3x] = argv.filter((a) => a !== '--bare');
   if (!dir || !outW3x) {
-    console.error('usage: node tools/w3x-pack.js <dir> <out.w3x>');
+    console.error('usage: node tools/w3x-pack.js [--bare] <dir> <out.w3x>');
     process.exit(2);
   }
-  const { files, headerFields, bytes } = packDir(dir, outW3x);
+  const { files, headerFields, bytes } = packDir(dir, outW3x, { bare });
   console.log(`packed ${files.length} file(s) into ${outW3x} (${bytes} bytes)`);
-  console.log(`HM3W header: name=${JSON.stringify(headerFields.name)} flags=${headerFields.flags ?? 0} maxPlayers=${headerFields.maxPlayers ?? 4}`);
+  if (bare) console.log('bare MPQ container (no HM3W pre-header — 1.31+ clients only)');
+  else console.log(`HM3W header: name=${JSON.stringify(headerFields.name)} flags=${headerFields.flags ?? 0} maxPlayers=${headerFields.maxPlayers ?? 4}`);
 }
 
 if (require.main === module) main(process.argv.slice(2));

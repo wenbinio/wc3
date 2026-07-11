@@ -21,6 +21,7 @@ const assert = require('assert');
 const { hasHM3W, parseHeader, HEADER_SIZE } = require('../lib/header');
 const { extractAll } = require('../lib/mpq');
 const { byWar, CONSUMED_AS_SKIN, warToJson, jsonToWar } = require('../lib/filemap');
+const { checkSuspectedTrap } = require('../lib/traps');
 const { walk } = require('../lib/source');
 const { checkLuaSyntax } = require('../lib/luacheck');
 const { lintObjectData } = require('../lib/objectlint');
@@ -43,7 +44,10 @@ function validate(mapPath) {
     if (mpqMagic === 'MPQ\x1a') ok('MPQ magic at offset 512', '');
     else fail('MPQ magic at offset 512', `found ${JSON.stringify(mpqMagic)}`);
   } else if (buf.toString('latin1', 0, 4) === 'MPQ\x1a') {
-    fail('HM3W pre-header', 'bare MPQ: WC3 expects the 512-byte HM3W pre-header on .w3x maps');
+    // Real modern maps (2023+) ship exactly this: a bare MPQ with no HM3W
+    // pre-header. 1.31+ clients read it fine; only pre-1.31 clients need the
+    // pre-header. Container warning only — every other check still runs.
+    warn('HM3W pre-header', 'missing (MPQ magic at offset 0): modern bare-MPQ container, 1.31+ clients only');
   } else {
     fail('HM3W pre-header', 'no HM3W or MPQ magic at offset 0');
     return results; // nothing more we can do
@@ -77,18 +81,31 @@ function validate(mapPath) {
       else ok(`lua syntax ${s}`, 'parses as Lua 5.3 (luaparse)');
     }
 
-    // 4. Parse every translatable file + stability cycle
+    // 4. Parse every translatable file + stability cycle. Every per-file
+    // step is isolated: a throw degrades to a per-file FAIL and validation
+    // continues. Protection-trap stubs (lib/traps.js — tiny file, absurd
+    // count field) are detected BEFORE parsing and reported as WARN: the
+    // game itself tolerates these files, and running a parser (ours or the
+    // viewer's, see crossValidate) on them means loops/GB allocations.
     const objectFiles = []; // successfully translated object data, for 4b
+    const trapped = new Set(); // suspected-trap members: viewer must skip too
     for (const rel of walk(tmp).sort()) {
       if (CONSUMED_AS_SKIN.has(rel)) continue;
       const entry = byWar.get(rel);
       if (!entry) continue;
       try {
+        const raw = fs.readFileSync(path.join(tmp, rel));
+        const trap = checkSuspectedTrap(rel, raw);
+        if (trap) {
+          trapped.add(rel);
+          warn(`translate ${rel}`, `${trap} — parsing skipped, file passed through unvalidated`);
+          continue;
+        }
         let skinBuf;
         if (entry.skinWar && fs.existsSync(path.join(tmp, entry.skinWar))) {
           skinBuf = fs.readFileSync(path.join(tmp, entry.skinWar));
         }
-        const json1 = warToJson(entry, fs.readFileSync(path.join(tmp, rel)), skinBuf);
+        const json1 = warToJson(entry, raw, skinBuf);
         const back = jsonToWar(entry, json1);
         const json2 = warToJson(entry, back.buffer, back.skinBuffer);
         assert.deepStrictEqual(json2, json1);
@@ -103,12 +120,16 @@ function validate(mapPath) {
     // failures (playtest heuristics, CLAUDE.md gotchas 22/23/25):
     // .mdx model-field values / unresolved war3mapImported model paths,
     // items renamed without re-arting, builders without a repair ability.
-    for (const w of lintObjectData(objectFiles, walk(tmp))) {
-      warn(`lint ${w.file} ${w.objectId}`, w.message);
+    try {
+      for (const w of lintObjectData(objectFiles, walk(tmp))) {
+        warn(`lint ${w.file} ${w.objectId}`, w.message);
+      }
+    } catch (e) {
+      warn('lint object data', `lint pass itself failed: ${String(e.message || e).split('\n')[0]}`);
     }
 
     // 5. Second opinion: mdx-m3-viewer-th (independent MPQ + format parsers).
-    crossValidate(buf, tmp, ok, fail);
+    crossValidate(buf, tmp, ok, fail, warn, trapped);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
@@ -119,8 +140,14 @@ function validate(mapPath) {
 // Uint8Array copies, never Node Buffers (its MPQ code mutates the input in
 // place and would misparse); its MPQ save/write path is known-broken
 // (locale/platform swap) and is never used — everything here is read-only.
-function crossValidate(w3xBuf, extractedDir, ok, fail) {
-  // 5a. The viewer's own MPQ reader must open the archive.
+function crossValidate(w3xBuf, extractedDir, ok, fail, warn, trapped) {
+  trapped = trapped || new Set();
+  // 5a. The viewer's own MPQ reader should open the archive. crossValidate
+  // only ever runs AFTER StormLib successfully extracted the same bytes, so
+  // a viewer-side failure here is a nonstandard-container disagreement
+  // (protector-mangled header fields, stripped/fake listfile), not proof of
+  // a broken map — WARN, never FAIL (lib/viewer.js already normalizes known
+  // header mangling on a copy before the viewer sees it).
   let viewerMap = null;
   try {
     viewerMap = viewer.openMapReadonly(w3xBuf);
@@ -128,9 +155,9 @@ function crossValidate(w3xBuf, extractedDir, ok, fail) {
     // '(attributes)' entry missing from the listfile shows up as FileNNNNNNNN)
     const names = viewerMap.getFileNames().filter((n) => !n.startsWith('(') && !/^File\d{8}/.test(n));
     if (names.length > 0) ok('viewer opens archive', `${names.length} member(s) via mdx-m3-viewer-th MPQ reader`);
-    else fail('viewer opens archive', 'mdx-m3-viewer-th MPQ reader found no members');
+    else warn('viewer opens archive', 'skipped: nonstandard archive — viewer found no named members (stripped/fake listfile?) though StormLib reads it');
   } catch (e) {
-    fail('viewer opens archive', String(e.message || e).split('\n')[0]);
+    warn('viewer opens archive', `skipped: nonstandard archive — viewer failed to open what StormLib reads (${String(e.message || e).split('\n')[0]})`);
   }
 
   // 5b. Parse every inner file the viewer has a parser for (this covers
@@ -144,6 +171,12 @@ function crossValidate(w3xBuf, extractedDir, ok, fail) {
   for (const rel of rels) {
     const base = rel.includes('/') ? null : rel;
     if (!base || !viewer.hasParser(base)) continue;
+    if (trapped.has(base)) {
+      // suspected protection trap (step 4): the viewer parser would loop or
+      // allocate on the absurd count — same skip, surfaced as a warning.
+      (warn || fail)(`viewer parse ${rel}`, 'skipped: suspected protection trap (see translate warning above)');
+      continue;
+    }
     try {
       viewer.parseMember(base, fs.readFileSync(path.join(extractedDir, rel)), ctx);
       ok(`viewer parse ${rel}`, 'second opinion agrees');

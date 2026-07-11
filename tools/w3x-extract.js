@@ -1,27 +1,35 @@
 #!/usr/bin/env node
 'use strict';
-// w3x-extract.js [--dump-unknown] <map.w3x> <outdir>
+// w3x-extract.js [--dump-unknown] [--recover-names] <map.w3x> <outdir>
 // Detects and saves the 512-byte HM3W pre-header (as <outdir>/_header.json),
 // then extracts all MPQ contents into <outdir>.
 // Works on bare MPQs too (no pre-header -> no _header.json written).
-// Protected maps (stripped listfile): named extraction probes known names;
-// the summary always reports how many anonymous (unresolved) entries remain.
+// Protected maps (stripped OR fake listfile): named extraction always probes
+// the listfile ∪ known names; the summary always reports how many anonymous
+// (unresolved) entries remain.
 // --dump-unknown (or WC3_EXTRACT_UNKNOWN=1) additionally dumps those under
 // <outdir>/_unknown/ with their FileNNNNNNNN pseudo-names and content-sniffed
 // extensions (MDLX -> .mdx, BLP1/BLP2 -> .blp, ...). _unknown/ is diagnostics
 // only — map-to-json ignores it and it never enters a rebuilt archive.
+// --recover-names (implies --dump-unknown for the remainder) then harvests
+// candidate path strings from the extracted content itself (scripts, object
+// data, .toc lists, MDX TEXS chunks, derived BTN/DISBTN + .mdl/.mdx
+// variants), hash-probes them against the archive, and extracts every hit
+// under its real name — see lib/recover.js.
 
 const fs = require('fs');
 const path = require('path');
 const { hasHM3W, parseHeader } = require('../lib/header');
 const { extractAll } = require('../lib/mpq');
+const { recoverNames } = require('../lib/recover');
 const { writeJson } = require('../lib/source');
 
 function main(argv) {
-  const dumpUnknown = argv.includes('--dump-unknown');
-  const [mapPath, outDir] = argv.filter((a) => a !== '--dump-unknown');
+  const recover = argv.includes('--recover-names');
+  const dumpUnknown = argv.includes('--dump-unknown') || recover;
+  const [mapPath, outDir] = argv.filter((a) => !a.startsWith('--'));
   if (!mapPath || !outDir) {
-    console.error('usage: node tools/w3x-extract.js [--dump-unknown] <map.w3x> <outdir>');
+    console.error('usage: node tools/w3x-extract.js [--dump-unknown] [--recover-names] <map.w3x> <outdir>');
     process.exit(2);
   }
   try {
@@ -53,6 +61,12 @@ function main(argv) {
       for (const f of unknown) console.log('  ' + f);
     } else if (unresolved > 0) {
       console.log(`note: ${unresolved} anonymous member(s) were NOT extracted (listfile stripped?) — rerun with --dump-unknown (or WC3_EXTRACT_UNKNOWN=1) to dump them under _unknown/`);
+    }
+    if (recover) {
+      const st = recoverNames(mapPath, outDir);
+      console.log(`name recovery: ${st.recovered.length} name(s) recovered (${st.probed} candidate(s) probed over ${st.passes} pass(es); ${st.pruned} _unknown/ duplicate(s) pruned):`);
+      for (const f of st.recovered.slice().sort()) console.log('  ' + f);
+      if (st.recovered.length === 0) console.log('  (none — the map may not reference its hidden members by path)');
     }
   } catch (e) {
     console.error('extract failed: ' + (e.message || e));
