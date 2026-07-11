@@ -1,0 +1,38 @@
+[
+  {
+    "target": {
+      "x": -1200,
+      "y": -1800
+    },
+    "offsetZ": 0,
+    "rotation": 90,
+    "aoa": 330,
+    "distance": 4800,
+    "roll": 0,
+    "fov": 70,
+    "farClipping": 10000,
+    "nearClipping": 16,
+    "name": "IntroPan",
+    "localPitch": 0,
+    "localYaw": 0,
+    "localRoll": 0
+  },
+  {
+    "target": {
+      "x": 0,
+      "y": -1600
+    },
+    "offsetZ": 0,
+    "rotation": 120,
+    "aoa": 315,
+    "distance": 3600,
+    "roll": 0,
+    "fov": 70,
+    "farClipping": 10000,
+    "nearClipping": 16,
+    "name": "FjordOverlook",
+    "localPitch": 0,
+    "localYaw": 0,
+    "localRoll": 0
+  }
+]

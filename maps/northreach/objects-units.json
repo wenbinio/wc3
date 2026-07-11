@@ -1,0 +1,176 @@
+{
+  "original": {},
+  "custom": {
+    "H000:Hpal": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "TRIGSTR_013"
+      },
+      {
+        "id": "upro",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Halvar the Wayfinder"
+      },
+      {
+        "id": "umvs",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 300
+      }
+    ],
+    "h001:hfoo": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "TRIGSTR_014"
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\NorthLongship.mdx"
+      },
+      {
+        "id": "umvt",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "amph"
+      },
+      {
+        "id": "umvs",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 300
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 550
+      },
+      {
+        "id": "ua1b",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 18
+      },
+      {
+        "id": "usca",
+        "type": "unreal",
+        "level": 0,
+        "column": 0,
+        "value": 1.1
+      }
+    ],
+    "h003:htow": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "TRIGSTR_015"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 2200
+      },
+      {
+        "id": "utra",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "hpea,h001"
+      }
+    ],
+    "n000:nech": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "TRIGSTR_016"
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\FounderBanner.mdx"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 300
+      },
+      {
+        "id": "usca",
+        "type": "unreal",
+        "level": 0,
+        "column": 0,
+        "value": 1.6
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "n001:nech": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "TRIGSTR_017"
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\WaystoneCairn.mdx"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 250
+      },
+      {
+        "id": "usca",
+        "type": "unreal",
+        "level": 0,
+        "column": 0,
+        "value": 1.4
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ]
+  }
+}
