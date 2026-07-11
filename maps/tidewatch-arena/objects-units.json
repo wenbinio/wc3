@@ -1,0 +1,77 @@
+{
+  "original": {},
+  "custom": {
+    "H000:Hpal": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "TRIGSTR_005"
+      },
+      {
+        "id": "upro",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "TRIGSTR_006"
+      },
+      {
+        "id": "ustr",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 42
+      },
+      {
+        "id": "uagi",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 24
+      },
+      {
+        "id": "uini",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 30
+      },
+      {
+        "id": "ulev",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 10
+      },
+      {
+        "id": "ua1b",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 58
+      },
+      {
+        "id": "udef",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 9
+      },
+      {
+        "id": "umvs",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 300
+      },
+      {
+        "id": "usca",
+        "type": "unreal",
+        "level": 0,
+        "column": 0,
+        "value": 1.4
+      }
+    ]
+  }
+}

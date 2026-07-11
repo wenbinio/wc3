@@ -1,0 +1,53 @@
+[
+  {
+    "name": "ArenaCenter",
+    "id": 0,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      255,
+      64,
+      64
+    ],
+    "position": {
+      "left": -768,
+      "bottom": -768,
+      "right": 768,
+      "top": 768
+    }
+  },
+  {
+    "name": "SpawnSouthwest",
+    "id": 1,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      64,
+      128,
+      255
+    ],
+    "position": {
+      "left": -2688,
+      "bottom": -2688,
+      "right": -1920,
+      "top": -1920
+    }
+  },
+  {
+    "name": "SpawnNortheast",
+    "id": 2,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      64,
+      255,
+      128
+    ],
+    "position": {
+      "left": 1920,
+      "bottom": 1920,
+      "right": 2688,
+      "top": 2688
+    }
+  }
+]

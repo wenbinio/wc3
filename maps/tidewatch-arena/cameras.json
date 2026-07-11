@@ -1,0 +1,20 @@
+[
+  {
+    "target": {
+      "x": 0,
+      "y": 0
+    },
+    "offsetZ": 0,
+    "rotation": 90,
+    "aoa": 320,
+    "distance": 3200,
+    "roll": 0,
+    "fov": 70,
+    "farClipping": 10000,
+    "nearClipping": 16,
+    "name": "ArenaOverlook",
+    "localPitch": 0,
+    "localYaw": 0,
+    "localRoll": 0
+  }
+]

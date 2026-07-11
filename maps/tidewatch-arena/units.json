@@ -1,0 +1,336 @@
+[
+  {
+    "type": "sloc",
+    "position": [
+      -2304,
+      -2304,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 0,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 0,
+    "id": 0,
+    "targetAcquisition": 0
+  },
+  {
+    "type": "sloc",
+    "position": [
+      2304,
+      2304,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 0,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 1,
+    "id": 1,
+    "targetAcquisition": 0
+  },
+  {
+    "type": "htow",
+    "position": [
+      -2304,
+      -2304,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 0,
+    "id": 2
+  },
+  {
+    "type": "hpea",
+    "position": [
+      -2048,
+      -2560,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 0,
+    "id": 3
+  },
+  {
+    "type": "hpea",
+    "position": [
+      -2560,
+      -2048,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 0,
+    "id": 4
+  },
+  {
+    "type": "hpea",
+    "position": [
+      -2048,
+      -2048,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 0,
+    "id": 5
+  },
+  {
+    "type": "htow",
+    "position": [
+      2304,
+      2304,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 1,
+    "id": 6
+  },
+  {
+    "type": "hpea",
+    "position": [
+      2048,
+      2560,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 1,
+    "id": 7
+  },
+  {
+    "type": "hpea",
+    "position": [
+      2560,
+      2048,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 1,
+    "id": 8
+  },
+  {
+    "type": "hpea",
+    "position": [
+      2048,
+      2048,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 1,
+    "id": 9
+  },
+  {
+    "type": "ngol",
+    "position": [
+      -2432,
+      -1280,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 24,
+    "id": 10,
+    "gold": 12500
+  },
+  {
+    "type": "ngol",
+    "position": [
+      2432,
+      1280,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 24,
+    "id": 11,
+    "gold": 12500
+  },
+  {
+    "type": "nkob",
+    "position": [
+      -2432,
+      -1024,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 24,
+    "id": 12,
+    "targetAcquisition": -2
+  },
+  {
+    "type": "nkob",
+    "position": [
+      2432,
+      1024,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 24,
+    "id": 13,
+    "targetAcquisition": -2
+  },
+  {
+    "type": "H000",
+    "position": [
+      0,
+      0,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 10,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 24,
+    "id": 14,
+    "targetAcquisition": -2
+  },
+  {
+    "type": "nkob",
+    "position": [
+      384,
+      0,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 24,
+    "id": 15,
+    "targetAcquisition": -2
+  },
+  {
+    "type": "nkob",
+    "position": [
+      -384,
+      0,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 24,
+    "id": 16,
+    "targetAcquisition": -2
+  },
+  {
+    "type": "nkog",
+    "position": [
+      0,
+      384,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 24,
+    "id": 17,
+    "targetAcquisition": -2
+  },
+  {
+    "type": "nkog",
+    "position": [
+      0,
+      -384,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 24,
+    "id": 18,
+    "targetAcquisition": -2
+  }
+]
