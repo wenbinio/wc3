@@ -1,0 +1,35 @@
+{
+  "_generated": "wc3-map-toolkit: derived from the map source JSON by build-map — regenerated every build, do not hand-edit",
+  "constants": {
+    "UNIT_hfoo": {
+      "kind": "unit",
+      "rawcode": "hfoo",
+      "source": "units.json"
+    },
+    "UNIT_hpea": {
+      "kind": "unit",
+      "rawcode": "hpea",
+      "source": "units.json"
+    },
+    "UNIT_ngol": {
+      "kind": "unit",
+      "rawcode": "ngol",
+      "source": "units.json"
+    },
+    "UNIT_ogru": {
+      "kind": "unit",
+      "rawcode": "ogru",
+      "source": "units.json"
+    },
+    "UNIT_opeo": {
+      "kind": "unit",
+      "rawcode": "opeo",
+      "source": "units.json"
+    },
+    "DOOD_LTlt": {
+      "kind": "doodad",
+      "rawcode": "LTlt",
+      "source": "doodads.json"
+    }
+  }
+}

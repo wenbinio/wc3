@@ -1,0 +1,216 @@
+{
+  "_generated": "wc3-map-toolkit: derived from the map source JSON by build-map — regenerated every build, do not hand-edit",
+  "constants": {
+    "UNIT_CROSSROADS_KEEP": {
+      "kind": "unit",
+      "rawcode": "h001",
+      "base": "htow",
+      "name": "Crossroads Keep",
+      "source": "objects-units.json"
+    },
+    "UNIT_CROSSROADS_MILITIA": {
+      "kind": "unit",
+      "rawcode": "h000",
+      "base": "hfoo",
+      "name": "Crossroads Militia",
+      "source": "objects-units.json"
+    },
+    "UNIT_DREADFLESH_COLOSSUS": {
+      "kind": "unit",
+      "rawcode": "u000",
+      "base": "uabo",
+      "name": "Dreadflesh Colossus",
+      "source": "objects-units.json"
+    },
+    "UNIT_WARD_CRYSTAL": {
+      "kind": "unit",
+      "rawcode": "n000",
+      "base": "nech",
+      "name": "Ward Crystal",
+      "source": "objects-units.json"
+    },
+    "UNIT_hbar": {
+      "kind": "unit",
+      "rawcode": "hbar",
+      "source": "units.json"
+    },
+    "UNIT_hfoo": {
+      "kind": "unit",
+      "rawcode": "hfoo",
+      "source": "objects-units.json"
+    },
+    "UNIT_hhou": {
+      "kind": "unit",
+      "rawcode": "hhou",
+      "source": "units.json"
+    },
+    "UNIT_hpea": {
+      "kind": "unit",
+      "rawcode": "hpea",
+      "source": "units.json"
+    },
+    "UNIT_hrif": {
+      "kind": "unit",
+      "rawcode": "hrif",
+      "source": "units.json"
+    },
+    "UNIT_htow": {
+      "kind": "unit",
+      "rawcode": "htow",
+      "source": "units.json"
+    },
+    "UNIT_nftb": {
+      "kind": "unit",
+      "rawcode": "nftb",
+      "source": "units.json"
+    },
+    "UNIT_nftr": {
+      "kind": "unit",
+      "rawcode": "nftr",
+      "source": "units.json"
+    },
+    "UNIT_ngme": {
+      "kind": "unit",
+      "rawcode": "ngme",
+      "source": "units.json"
+    },
+    "UNIT_ngnb": {
+      "kind": "unit",
+      "rawcode": "ngnb",
+      "source": "units.json"
+    },
+    "UNIT_ngno": {
+      "kind": "unit",
+      "rawcode": "ngno",
+      "source": "units.json"
+    },
+    "UNIT_ngol": {
+      "kind": "unit",
+      "rawcode": "ngol",
+      "source": "units.json"
+    },
+    "UNIT_nkob": {
+      "kind": "unit",
+      "rawcode": "nkob",
+      "source": "units.json"
+    },
+    "UNIT_nkog": {
+      "kind": "unit",
+      "rawcode": "nkog",
+      "source": "units.json"
+    },
+    "UNIT_nmrl": {
+      "kind": "unit",
+      "rawcode": "nmrl",
+      "source": "units.json"
+    },
+    "UNIT_nogm": {
+      "kind": "unit",
+      "rawcode": "nogm",
+      "source": "units.json"
+    },
+    "UNIT_nogr": {
+      "kind": "unit",
+      "rawcode": "nogr",
+      "source": "units.json"
+    },
+    "UNIT_ntav": {
+      "kind": "unit",
+      "rawcode": "ntav",
+      "source": "units.json"
+    },
+    "ITEM_BLADE_OF_THE_CROSSROADS": {
+      "kind": "item",
+      "rawcode": "I000",
+      "base": "ratf",
+      "name": "Blade of the Crossroads",
+      "source": "objects-items.json"
+    },
+    "ITEM_ELIXIR_OF_THE_SIEGE": {
+      "kind": "item",
+      "rawcode": "I001",
+      "base": "phea",
+      "name": "Elixir of the Siege",
+      "source": "objects-items.json"
+    },
+    "ITEM_phea": {
+      "kind": "item",
+      "rawcode": "phea",
+      "source": "objects-items.json"
+    },
+    "DOOD_LTlt": {
+      "kind": "doodad",
+      "rawcode": "LTlt",
+      "source": "doodads.json"
+    },
+    "DOOD_LTrc": {
+      "kind": "doodad",
+      "rawcode": "LTrc",
+      "source": "doodads.json"
+    },
+    "ABIL_Aslo": {
+      "kind": "ability",
+      "rawcode": "Aslo",
+      "source": "objects-abilities.json"
+    },
+    "ABIL_COLOSSUS_SLAM": {
+      "kind": "ability",
+      "rawcode": "A000",
+      "base": "ACtc",
+      "name": "Colossus Slam",
+      "source": "objects-abilities.json"
+    },
+    "REGION_BOSS_ARENA": {
+      "kind": "region",
+      "name": "BossArena",
+      "source": "regions.json"
+    },
+    "REGION_CENTER_KEEP": {
+      "kind": "region",
+      "name": "CenterKeep",
+      "source": "regions.json"
+    },
+    "REGION_POND_MIST": {
+      "kind": "region",
+      "name": "PondMist",
+      "source": "regions.json"
+    },
+    "REGION_SHORTCUT_GROVE": {
+      "kind": "region",
+      "name": "ShortcutGrove",
+      "source": "regions.json"
+    },
+    "REGION_SPAWN_EAST": {
+      "kind": "region",
+      "name": "SpawnEast",
+      "source": "regions.json"
+    },
+    "REGION_SPAWN_NORTH": {
+      "kind": "region",
+      "name": "SpawnNorth",
+      "source": "regions.json"
+    },
+    "REGION_SPAWN_SOUTH": {
+      "kind": "region",
+      "name": "SpawnSouth",
+      "source": "regions.json"
+    },
+    "REGION_SPAWN_WEST": {
+      "kind": "region",
+      "name": "SpawnWest",
+      "source": "regions.json"
+    },
+    "SOUND_VICTORY_FANFARE": {
+      "kind": "sound",
+      "name": "VictoryFanfare",
+      "path": "Sound\\Music\\mp3Music\\Comradeship.flac",
+      "source": "sounds.json"
+    },
+    "SOUND_WAVE_REWARD": {
+      "kind": "sound",
+      "name": "WaveReward",
+      "path": "Abilities\\Spells\\Items\\AIam\\Tomes.flac",
+      "source": "sounds.json"
+    }
+  }
+}

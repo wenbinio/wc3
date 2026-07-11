@@ -264,11 +264,14 @@ test('w3x-extract + map-to-json reproduce the northreach source JSON', () => {
     readJson(path.join(jsonDir, 'imports.json')).slice().sort(),
     MODELS.map((m) => `war3mapImported\\${m}`).sort()
   );
-  // script came through: source text plus the generated CreateAllUnits block,
-  // and the FoTN systems + chat-command wiring is in the packed script
+  // script came through: generated constants block + source text + the
+  // generated CreateAllUnits block, and the FoTN systems + chat-command
+  // wiring is in the packed script
   const packedLua = fs.readFileSync(path.join(jsonDir, 'war3map.lua'), 'utf8');
   const srcLua = fs.readFileSync(path.join(SRC, 'war3map.lua'), 'utf8');
-  assert.ok(packedLua.startsWith(srcLua), 'packed lua starts with the source script');
+  assert.ok(packedLua.startsWith('-- ### BEGIN wc3-map-toolkit generated: constants'),
+    'packed lua starts with the generated constants block');
+  assert.ok(packedLua.includes(srcLua), 'packed lua contains the source script verbatim');
   assert.match(packedLua, /BEGIN wc3-map-toolkit generated: CreateAllUnits/);
   assert.doesNotMatch(packedLua, /__wc3tk_user_main/, 'no wrapper: main() calls CreateAllUnits');
   for (const needle of ['TriggerRegisterPlayerChatEvent', '"-test"', '%-gold%s+(%d+)',

@@ -1,0 +1,57 @@
+{
+  "_generated": "wc3-map-toolkit: derived from the map source JSON by build-map — regenerated every build, do not hand-edit",
+  "constants": {
+    "UNIT_ARENA_CHAMPION": {
+      "kind": "unit",
+      "rawcode": "H000",
+      "base": "Hpal",
+      "name": "Arena Champion",
+      "source": "objects-units.json"
+    },
+    "UNIT_hpea": {
+      "kind": "unit",
+      "rawcode": "hpea",
+      "source": "units.json"
+    },
+    "UNIT_htow": {
+      "kind": "unit",
+      "rawcode": "htow",
+      "source": "units.json"
+    },
+    "UNIT_ngol": {
+      "kind": "unit",
+      "rawcode": "ngol",
+      "source": "units.json"
+    },
+    "UNIT_nkob": {
+      "kind": "unit",
+      "rawcode": "nkob",
+      "source": "units.json"
+    },
+    "UNIT_nkog": {
+      "kind": "unit",
+      "rawcode": "nkog",
+      "source": "units.json"
+    },
+    "DOOD_NTtw": {
+      "kind": "doodad",
+      "rawcode": "NTtw",
+      "source": "doodads.json"
+    },
+    "REGION_ARENA_CENTER": {
+      "kind": "region",
+      "name": "ArenaCenter",
+      "source": "regions.json"
+    },
+    "REGION_SPAWN_NORTHEAST": {
+      "kind": "region",
+      "name": "SpawnNortheast",
+      "source": "regions.json"
+    },
+    "REGION_SPAWN_SOUTHWEST": {
+      "kind": "region",
+      "name": "SpawnSouthwest",
+      "source": "regions.json"
+    }
+  }
+}

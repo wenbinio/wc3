@@ -155,6 +155,44 @@ to the **packed** `war3map.lua` (the source file is never modified):
   files ONLY. Never copy the extracted `war3map.lua` back into the source —
   it contains this generated block.
 
+### Named constants instead of raw FourCCs (generated)
+
+Never hand-type `FourCC("xxxx")` rawcodes in map code — every industrial WC3
+pipeline generates named constants, and hand-typed rawcodes caused real bugs
+here (wrong-case codes, stale clone ids, region coordinates duplicated out of
+sync with regions.json). On every build, build-map PREPENDS a second
+marker-delimited block (`lib/constants.js`, same strip-and-regenerate
+lifecycle as CreateAllUnits) above the user script in the **packed**
+`war3map.lua`, defining one Lua global per:
+
+- object-data entry in `objects-*.json` — all seven types, custom and
+  modified-original entries, Reforged skin twins merged onto the same
+  rawcode, `TRIGSTR_n` names resolved through strings.json:
+  `UNIT_CROSSROADS_MILITIA = FourCC("h000")`;
+- distinct type placed/referenced in `units.json` (unit types, inventory /
+  customItemSets items, preplaced abilities) and `doodads.json` — entries
+  with no display name use the rawcode verbatim (`UNIT_hfoo`; Lua
+  identifiers are case-sensitive, exactly like rawcodes);
+- region in `regions.json` / sound in `sounds.json` — inert data tables,
+  since war3map.w3r is editor data and Lua maps create their own rects:
+  `Rect(REGION_SPAWN_NORTH.minX, REGION_SPAWN_NORTH.minY,
+  REGION_SPAWN_NORTH.maxX, REGION_SPAWN_NORTH.maxY)` and
+  `CreateSound(S.path, S.looping, S.is3D, S.stopOutOfRange, S.fadeIn,
+  S.fadeOut, S.effect)`.
+
+Naming: `PREFIX_` (UNIT_/ITEM_/DEST_/DOOD_/ABIL_/BUFF_/UPGR_/REGION_/SOUND_)
+plus the sanitized ASCII display name (CamelCase split, uppercased); name
+collisions suffix ALL colliders with `_<rawcode>` (regions `_<id>`, sounds
+`_<index>`), so the scheme is order-independent. build-map also rewrites a
+machine-readable index `<map-source>/constants.json`
+(constant → rawcode/name → source file) — grep it to find the right name.
+`maps/demo/war3map.lua` uses `UNIT_hfoo` as the worked example. Traps:
+CLAUDE.md gotcha 27 (renames/collisions RENAME constants — stale references
+are runtime nil, not parse errors; don't define your own globals with these
+prefixes; the block shifts packed-script line numbers in build errors).
+Doodads vs destructables placed in doodads.json can only be told apart via
+the map's own object data, so unclassified codes default to `DOOD_`.
+
 ### Minimap preview (generated)
 
 Every real map ships a minimap image + icons file; the map picker renders

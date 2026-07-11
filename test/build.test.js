@@ -62,10 +62,14 @@ test('w3x-extract + map-to-json reproduce the demo source JSON', () => {
   for (const f of ['info.json', 'terrain.json', 'units.json', 'doodads.json', 'strings.json']) {
     assert.deepStrictEqual(readJson(path.join(jsonDir, f)), readJson(path.join(DEMO_SRC, f)), f);
   }
-  // Script came through: source text plus the generated CreateAllUnits block
+  // Script came through: generated constants block above the source text plus
+  // the generated CreateAllUnits block below it
   const packedLua = fs.readFileSync(path.join(jsonDir, 'war3map.lua'), 'utf8');
   const srcLua = fs.readFileSync(path.join(DEMO_SRC, 'war3map.lua'), 'utf8');
-  assert.ok(packedLua.startsWith(srcLua), 'packed lua starts with the source script');
+  assert.ok(packedLua.startsWith('-- ### BEGIN wc3-map-toolkit generated: constants'),
+    'packed lua starts with the generated constants block');
+  assert.ok(packedLua.includes(srcLua), 'packed lua contains the source script verbatim');
+  assert.match(packedLua, /^UNIT_hfoo = FourCC\("hfoo"\)/m, 'constant for a placed unit type');
   assert.match(packedLua, /BEGIN wc3-map-toolkit generated: CreateAllUnits/);
   // Opaque files came through; generated minimap files appear under files/
   for (const f of ['war3map.shd', 'war3map.wpm']) {

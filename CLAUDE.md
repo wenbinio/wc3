@@ -10,7 +10,7 @@ in docs/ and .claude/skills/; follow the pointers.
 
 ```bash
 bash scripts/setup.sh   # idempotent: npm install + optional apt-get smpq fallback
-npm test                # 193 tests; all must pass before you change anything
+npm test                # 201 tests; all must pass before you change anything
 ```
 
 If you touch `lib/mpq.js` or anything archive-related, the suite must be
@@ -24,7 +24,7 @@ node tools/w3x-extract.js  [--dump-unknown] [--recover-names] <map.w3x> <outdir>
 node tools/map-to-json.js  <extracted-dir> <json-dir>  # binaries -> editable map source
 node tools/json-to-map.js  <json-dir> <out-dir>        # map source -> binaries
 node tools/w3x-pack.js     [--bare] <dir> <out.w3x>    # binaries -> MPQ v1 + HM3W header (--bare: no pre-header)
-node tools/build-map.js    [--bare] <map-source-dir> <out.w3x>  # one-step: source -> .w3x (--bare: no HM3W pre-header, 1.31+ container)
+node tools/build-map.js    [--bare] <map-source-dir> <out.w3x>  # one-step: source -> .w3x (--bare: no HM3W pre-header, 1.31+ container); also injects the generated named-constants + CreateAllUnits Lua blocks and rewrites <map-source>/constants.json (gotchas 10, 27)
 node tools/validate-map.js <map.w3x>                   # layered pass/fail report, exit 0 = good
 
 bash scripts/crossvalidate-war3net.sh <extracted-dir>  # optional War3Net (C#) third opinion; needs dotnet
@@ -44,6 +44,9 @@ maps/mymap/
 ├── objects-*.json     object data: units/items/destructables/doodads/
 │                      abilities/buffs/upgrades (+ -skin) — see lib/filemap.js
 ├── war3map.lua        map script: config() + main()   (JASS: war3map.j)
+├── constants.json     GENERATED index of the named Lua constants (constant
+│                      -> rawcode/name -> source file) — build-map rewrites
+│                      it every build; grep it, don't hand-edit (gotcha 27)
 ├── files/             opaque binaries copied verbatim (wpm/shd/mmp/tga...);
 │                      minimap tga+mmp auto-generated unless provided here
 ├── imports/           custom assets; path under imports/ IS the archive path;
@@ -319,10 +322,32 @@ never third-party maps, gotcha 9).
     copy, and say why. Related hardening: `lib/translator-fixes.js` FIX B
     bounds upstream's readString so a truncated/garbage file throws a
     catchable RangeError instead of spinning forever.
+27. **Use the GENERATED named constants, not hand-typed FourCC literals.**
+    Every build prepends a marker-delimited constants block to the packed
+    war3map.lua (`lib/constants.js`; stripped+regenerated like the
+    CreateAllUnits block — gotcha 6's copy-JSON-only trap applies to it too):
+    `UNIT_`/`ITEM_`/`DEST_`/`DOOD_`/`ABIL_`/`BUFF_`/`UPGR_` = `FourCC(..)`
+    globals for every objects-*.json entry (all seven types, skin twins
+    merged, TRIGSTR names resolved) and every type placed in
+    units.json/doodads.json, plus inert `REGION_`/`SOUND_` data tables from
+    regions.json/sounds.json (rect coords / CreateSound args — regions.w3r is
+    editor data, Lua maps make their own rects). Index: `constants.json` in
+    the map source (rewritten every build). Hand-typed rawcodes caused real
+    bugs (wrong case, stale clone ids, drifted region coords) — reference the
+    constants. TRAPS: (a) constant names derive from DISPLAY names — renaming
+    an object, or adding a second entry with the same name (ALL colliders
+    then get a `_<rawcode>` suffix), RENAMES the constant; a script using the
+    old name sees nil at RUNTIME (luaparse can't catch undefined globals) —
+    grep constants.json after object-data renames; (b) don't define your own
+    globals with these nine prefixes; (c) unnamed entries fall back to
+    case-sensitive rawcode names (`UNIT_hfoo`); (d) the block sits ABOVE the
+    user script, so packed-script line numbers in build errors are offset by
+    the block length; (e) JASS (war3map.j) gets no injection — the index is
+    still written for reference.
 
 ## Testing & validation doctrine
 
-- `npm test` = 193 tests, 18 files: source⇄binary fixed points for all four
+- `npm test` = 201 tests, 19 files: source⇄binary fixed points for all four
   bundled maps, build+validate end-to-end, MPQ backends, version codecs
   (synthetic v11/v25/v31 + object-data v1/v2 fixtures cross-checked against
   mdx-m3-viewer-th + guarded real-sample fixpoints), classic/protected

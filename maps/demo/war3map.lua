@@ -62,11 +62,15 @@ function main()
     CreateAllUnits()
 
     -- Demo payload: greet and spawn one EXTRA footman at map center after 2s
-    -- (on top of the units.json starting units created above).
+    -- (on top of the units.json starting units created above). UNIT_hfoo is a
+    -- generated named constant: build-map prepends a marker-delimited block
+    -- of UNIT_/ITEM_/... globals derived from this map source's JSON to the
+    -- packed script (lib/constants.js; index: constants.json). Prefer these
+    -- over raw FourCC("xxxx") literals — hand-typed rawcodes caused real bugs.
     local t = CreateTimer()
     TimerStart(t, 2.00, false, function()
         print("Hello from the wc3-map-toolkit demo map!")
-        CreateUnit(Player(0), FourCC("hfoo"), 0.0, 0.0, 270.0)
+        CreateUnit(Player(0), UNIT_hfoo, 0.0, 0.0, 270.0)
         DestroyTimer(t)
     end)
 end

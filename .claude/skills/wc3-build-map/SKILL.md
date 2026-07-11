@@ -31,7 +31,15 @@ Common edits:
   force containing that player, or the multiplayer Create button greys out
   (CLAUDE.md gotcha 18; WE-exact pattern: maps/tidewatch-arena)
 - Gameplay logic: `war3map.lua` — game calls `config()` then `main()`;
-  `scriptLanguage` in info.json must be 1 for Lua (0 for JASS + war3map.j)
+  `scriptLanguage` in info.json must be 1 for Lua (0 for JASS + war3map.j).
+  Reference object types via the GENERATED named constants, not hand-typed
+  `FourCC("xxxx")` literals: build-map prepends a constants block to the
+  packed script (UNIT_/ITEM_/DEST_/DOOD_/ABIL_/BUFF_/UPGR_ FourCC globals
+  from objects-*.json names + placed types; REGION_/SOUND_ data tables from
+  regions/sounds.json) and rewrites the `constants.json` index in the map
+  source — grep it for the right name. Renaming an object (or adding a
+  name collision) RENAMES its constant; stale references are runtime nil,
+  so grep constants.json after object-data renames (CLAUDE.md gotcha 27)
 - Units: append to `units.json` (copy an existing entry; `type` is the
   4-char rawcode, e.g. hfoo/hpea/ogru; player 0-23, 24 = neutral hostile,
   27 = neutral passive). units.json is the single source of truth for

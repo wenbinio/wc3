@@ -133,11 +133,14 @@ test('w3x-extract + map-to-json reproduce the tidewatch-arena source JSON', () =
   for (const f of SOURCE_JSON) {
     assert.deepStrictEqual(readJson(path.join(jsonDir, f)), readJson(path.join(SRC, f)), f);
   }
-  // script came through: source text plus the generated CreateAllUnits block,
-  // and no main() wrapper (the source script calls CreateAllUnits itself)
+  // script came through: generated constants block + source text + the
+  // generated CreateAllUnits block, and no main() wrapper (the source script
+  // calls CreateAllUnits itself)
   const packedLua = fs.readFileSync(path.join(jsonDir, 'war3map.lua'), 'utf8');
   const srcLua = fs.readFileSync(path.join(SRC, 'war3map.lua'), 'utf8');
-  assert.ok(packedLua.startsWith(srcLua), 'packed lua starts with the source script');
+  assert.ok(packedLua.startsWith('-- ### BEGIN wc3-map-toolkit generated: constants'),
+    'packed lua starts with the generated constants block');
+  assert.ok(packedLua.includes(srcLua), 'packed lua contains the source script verbatim');
   assert.match(packedLua, /BEGIN wc3-map-toolkit generated: CreateAllUnits/);
   assert.doesNotMatch(packedLua, /__wc3tk_user_main/, 'no wrapper: main() calls CreateAllUnits');
   // the boss gets its hero level from units.json

@@ -1,0 +1,224 @@
+{
+  "_generated": "wc3-map-toolkit: derived from the map source JSON by build-map — regenerated every build, do not hand-edit",
+  "constants": {
+    "UNIT_FISHING_SHOAL": {
+      "kind": "unit",
+      "rawcode": "n003",
+      "base": "nmrl",
+      "name": "Fishing Shoal",
+      "source": "objects-units.json"
+    },
+    "UNIT_FOUNDER": {
+      "kind": "unit",
+      "rawcode": "H000",
+      "base": "Hpal",
+      "name": "Founder",
+      "source": "objects-units.json"
+    },
+    "UNIT_FOUNDER_BANNER": {
+      "kind": "unit",
+      "rawcode": "n000",
+      "base": "nech",
+      "name": "Founder Banner",
+      "source": "objects-units.json"
+    },
+    "UNIT_HOMESTEAD": {
+      "kind": "unit",
+      "rawcode": "h005",
+      "base": "hhou",
+      "name": "Homestead",
+      "source": "objects-units.json"
+    },
+    "UNIT_LONGSHIP": {
+      "kind": "unit",
+      "rawcode": "h001",
+      "base": "hfoo",
+      "name": "Longship",
+      "source": "objects-units.json"
+    },
+    "UNIT_LONGSHIP_DOCK": {
+      "kind": "unit",
+      "rawcode": "h006",
+      "base": "hshy",
+      "name": "Longship Dock",
+      "source": "objects-units.json"
+    },
+    "UNIT_NORTHREACH_MARKET": {
+      "kind": "unit",
+      "rawcode": "n002",
+      "base": "ngme",
+      "name": "Northreach Market",
+      "source": "objects-units.json"
+    },
+    "UNIT_SHELTER": {
+      "kind": "unit",
+      "rawcode": "h004",
+      "base": "hhou",
+      "name": "Shelter",
+      "source": "objects-units.json"
+    },
+    "UNIT_TOWN_HALL": {
+      "kind": "unit",
+      "rawcode": "h003",
+      "base": "htow",
+      "name": "Town Hall",
+      "source": "objects-units.json"
+    },
+    "UNIT_WAYSTONE_CAIRN": {
+      "kind": "unit",
+      "rawcode": "n001",
+      "base": "nech",
+      "name": "Waystone Cairn",
+      "source": "objects-units.json"
+    },
+    "UNIT_hpea": {
+      "kind": "unit",
+      "rawcode": "hpea",
+      "source": "objects-units.json"
+    },
+    "UNIT_nder": {
+      "kind": "unit",
+      "rawcode": "nder",
+      "source": "units.json"
+    },
+    "UNIT_ngnb": {
+      "kind": "unit",
+      "rawcode": "ngnb",
+      "source": "units.json"
+    },
+    "UNIT_ngno": {
+      "kind": "unit",
+      "rawcode": "ngno",
+      "source": "units.json"
+    },
+    "UNIT_ngol": {
+      "kind": "unit",
+      "rawcode": "ngol",
+      "source": "units.json"
+    },
+    "UNIT_nogm": {
+      "kind": "unit",
+      "rawcode": "nogm",
+      "source": "units.json"
+    },
+    "UNIT_nogr": {
+      "kind": "unit",
+      "rawcode": "nogr",
+      "source": "units.json"
+    },
+    "UNIT_nwlg": {
+      "kind": "unit",
+      "rawcode": "nwlg",
+      "source": "units.json"
+    },
+    "UNIT_nwlt": {
+      "kind": "unit",
+      "rawcode": "nwlt",
+      "source": "units.json"
+    },
+    "ITEM_COASTAL_CATCH": {
+      "kind": "item",
+      "rawcode": "I002",
+      "base": "ches",
+      "name": "Coastal Catch",
+      "source": "objects-items.json"
+    },
+    "ITEM_DEER_HIDE": {
+      "kind": "item",
+      "rawcode": "I000",
+      "base": "ches",
+      "name": "Deer Hide",
+      "source": "objects-items.json"
+    },
+    "ITEM_TRADE_COIN_100": {
+      "kind": "item",
+      "rawcode": "I003",
+      "base": "ches",
+      "name": "Trade Coin (100)",
+      "source": "objects-items.json"
+    },
+    "ITEM_TRADE_COIN_1000": {
+      "kind": "item",
+      "rawcode": "I005",
+      "base": "ches",
+      "name": "Trade Coin (1000)",
+      "source": "objects-items.json"
+    },
+    "ITEM_TRADE_COIN_500": {
+      "kind": "item",
+      "rawcode": "I004",
+      "base": "ches",
+      "name": "Trade Coin (500)",
+      "source": "objects-items.json"
+    },
+    "ITEM_WOLF_PELT": {
+      "kind": "item",
+      "rawcode": "I001",
+      "base": "ches",
+      "name": "Wolf Pelt",
+      "source": "objects-items.json"
+    },
+    "DOOD_LTrc": {
+      "kind": "doodad",
+      "rawcode": "LTrc",
+      "source": "doodads.json"
+    },
+    "DOOD_NTtw": {
+      "kind": "doodad",
+      "rawcode": "NTtw",
+      "source": "doodads.json"
+    },
+    "REGION_DEN_EAST_SHORE": {
+      "kind": "region",
+      "name": "DenEastShore",
+      "source": "regions.json"
+    },
+    "REGION_DEN_NORTH_PASS": {
+      "kind": "region",
+      "name": "DenNorthPass",
+      "source": "regions.json"
+    },
+    "REGION_SITE_EASTMARK": {
+      "kind": "region",
+      "name": "SiteEastmark",
+      "source": "regions.json"
+    },
+    "REGION_SITE_FJORDMOUTH": {
+      "kind": "region",
+      "name": "SiteFjordmouth",
+      "source": "regions.json"
+    },
+    "REGION_SITE_HIGHCAIRN": {
+      "kind": "region",
+      "name": "SiteHighcairn",
+      "source": "regions.json"
+    },
+    "REGION_SITE_MIDLANDS": {
+      "kind": "region",
+      "name": "SiteMidlands",
+      "source": "regions.json"
+    },
+    "REGION_SITE_NORTHGATE": {
+      "kind": "region",
+      "name": "SiteNorthgate",
+      "source": "regions.json"
+    },
+    "REGION_SITE_NORTHWOOD": {
+      "kind": "region",
+      "name": "SiteNorthwood",
+      "source": "regions.json"
+    },
+    "SOUND_FOUND_CHIME": {
+      "kind": "sound",
+      "name": "FoundChime",
+      "path": "Abilities\\Spells\\Items\\AIam\\Tomes.flac",
+      "source": "sounds.json"
+    },
+    "SOUND_VICTORY_HORN": {
+      "kind": "sound",
+      "name": "VictoryHorn",
+      "path": "Sound\\Music\\mp3Music\\Comradeship.flac",
+      "source": "sounds.json"
+    }
+  }
+}

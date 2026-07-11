@@ -23,7 +23,13 @@ melee-ish Lua map — it builds as-is):
 4. `war3map.lua` — update `SetPlayers/SetTeams/DefineStartLocation/
    SetPlayerStartLocation` to match; put gameplay logic in `main()`.
    For a "Use Custom Forces" lobby copy the maps/tidewatch-arena `config()`
-   pattern and keep team indexes == force indexes (CLAUDE.md gotcha 18)
+   pattern and keep team indexes == force indexes (CLAUDE.md gotcha 18).
+   In map code, reference the GENERATED named constants (`UNIT_hfoo`,
+   `ITEM_...`, `REGION_...` — see the demo's `main()`), never hand-typed
+   `FourCC("xxxx")` literals: build-map derives them from the source JSON,
+   prepends them to the packed script, and indexes them in
+   `maps/<name>/constants.json` (CLAUDE.md gotcha 27; docs/PIPELINE.md §3).
+   Run build-map once after editing JSON to refresh the index.
 5. Optional: `doodads.json` (trees `LTlt`), `strings.json`,
    `objects-*.json` (custom units), `imports/` (custom MDX/BLP assets)
 

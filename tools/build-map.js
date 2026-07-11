@@ -24,6 +24,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { sourceToExtracted, writeJson, walk } = require('../lib/source');
+const { collectConstants, constantsIndex } = require('../lib/constants');
 const { checkLuaSyntax } = require('../lib/luacheck');
 const { packDir } = require('./w3x-pack');
 
@@ -71,6 +72,19 @@ function buildMap(sourceDir, outW3x, opts) {
     }
   }
   checkImportedModels(sourceDir); // gotcha 14 strict tier: build-time FAIL
+
+  // Machine-readable index of the generated named constants (the Lua block
+  // itself is injected by sourceToExtracted — lib/constants.js): written
+  // into the map source dir so agents can grep constant -> rawcode -> file.
+  // Regenerated every build; only written when the source yields constants.
+  try {
+    const constants = collectConstants(sourceDir);
+    if (constants.length > 0) {
+      writeJson(path.join(sourceDir, 'constants.json'), constantsIndex(constants));
+    }
+  } catch (e) {
+    console.error(`warning: could not write ${sourceDir}/constants.json: ${e.message || e}`);
+  }
 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'w3xbuild-'));
   try {

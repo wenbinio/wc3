@@ -129,10 +129,13 @@ test('w3x-extract + map-to-json reproduce the crossroads-siege source JSON', () 
   }
   // auto-generated import manifest lists the model
   assert.deepStrictEqual(readJson(path.join(jsonDir, 'imports.json')), ['war3mapImported\\SiegeCrystal.mdx']);
-  // script came through: source text plus the generated CreateAllUnits block
+  // script came through: generated constants block + source text + the
+  // generated CreateAllUnits block
   const packedLua = fs.readFileSync(path.join(jsonDir, 'war3map.lua'), 'utf8');
   const srcLua = fs.readFileSync(path.join(SIEGE_SRC, 'war3map.lua'), 'utf8');
-  assert.ok(packedLua.startsWith(srcLua), 'packed lua starts with the source script');
+  assert.ok(packedLua.startsWith('-- ### BEGIN wc3-map-toolkit generated: constants'),
+    'packed lua starts with the generated constants block');
+  assert.ok(packedLua.includes(srcLua), 'packed lua contains the source script verbatim');
   assert.match(packedLua, /BEGIN wc3-map-toolkit generated: CreateAllUnits/);
   // generated minimap preview files appear under files/
   for (const f of ['war3map.mmp', 'war3mapMap.tga']) {
