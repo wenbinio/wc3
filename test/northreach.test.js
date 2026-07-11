@@ -1,11 +1,15 @@
 'use strict';
-// End-to-end pipeline tests for maps/northreach — the "colonization + custom
-// models" map source: 80x80 Northrend coast (sea along south/west, fjord,
-// river, NE mountain massif with cliff layers 3-4 and ramp flags), 4 user
-// players in 4 one-player forces (team index = force index, the tidewatch
-// invariant), 6 creep-guarded expansion sites, THREE generated custom MDX
-// models (longship / settlement banner / waystone cairn, all sanity-clean),
-// and a Lua colonization script with a '-test' chat-command debug mode.
+// End-to-end pipeline tests for maps/northreach — the "FoTN mechanics +
+// custom models" map source: 80x80 Northrend coast (sea along south/west,
+// fjord, river, NE mountain massif with cliff layers 3-4 and ramp flags),
+// 4 user players who all start TOGETHER at one communal southern landing
+// (4 one-player forces, team index = force index, the tidewatch invariant),
+// an active hunting/fishing item economy sold at a neutral Market, a
+// corruption tax with coin counter-play, free-form Shelter -> Homestead ->
+// Town Hall founding, wolves that hunt at night, a player-declared
+// '-endgame' purge, THREE generated custom MDX models (longship / founder
+// banner / waystone cairn, all sanity-clean), and a '-test' debug mode.
+// Design source: docs/reference/fotn-analysis.md.
 // Mirrors test/siege.test.js: build -> validate -> extract -> compare ->
 // full repack round-trip. The committed JSON is a translator fixed point.
 
@@ -27,6 +31,7 @@ const MODELS = ['NorthLongship.mdx', 'FounderBanner.mdx', 'WaystoneCairn.mdx'];
 const SOURCE_JSON = [
   'info.json', 'terrain.json', 'units.json', 'doodads.json', 'strings.json',
   'regions.json', 'cameras.json', 'sounds.json', 'objects-units.json',
+  'objects-items.json',
 ];
 
 function run(tool, ...args) {
@@ -58,15 +63,27 @@ test('northreach source has the advertised moving parts', () => {
   // the northeast massif is raised
   assert.strictEqual(at(terrain.layerHeight, 16, 62), 4, 'massif core on layer 4');
 
+  // --- units: communal start, no per-player bases, huntable wild ---
   const units = readJson(path.join(SRC, 'units.json'));
   const slocs = units.filter((u) => u.type === 'sloc');
-  assert.strictEqual(slocs.length, 4, '4 start locations');
-  assert.strictEqual(units.filter((u) => u.type === 'h003').length, 4, 'one capital per player');
-  assert.strictEqual(units.filter((u) => u.type === 'H000').length, 4, 'one Captain hero per player');
-  assert.strictEqual(units.filter((u) => u.type === 'h001').length, 4, 'one Longship per player');
-  assert.strictEqual(units.filter((u) => u.type === 'ngol').length, 10, '4 home + 6 expansion gold mines');
+  assert.strictEqual(slocs.length, 4, '4 start locations (lobby validity)');
+  for (const s of slocs) {
+    // all four slocs cluster at the communal landing near the southern coast
+    assert.ok(Math.abs(s.position[0] - -2688) <= 256 && Math.abs(s.position[1] - -2496) <= 256,
+      `sloc ${s.player} is at the communal landing (got ${s.position[0]},${s.position[1]})`);
+  }
+  assert.strictEqual(units.filter((u) => u.type === 'H000').length, 4, 'one Founder hero per player');
+  assert.strictEqual(units.filter((u) => u.type === 'h003').length, 0, 'no preplaced Town Halls/capitals');
+  assert.strictEqual(units.filter((u) => u.type === 'hpea').length, 0, 'no starting workers (FoTN)');
+  assert.strictEqual(units.filter((u) => u.type === 'h001').length, 0, 'longships are trained, not preplaced');
+  assert.strictEqual(units.filter((u) => u.type === 'n002').length, 1, 'one neutral Northreach Market');
+  assert.strictEqual(units.filter((u) => u.type === 'n003').length, 3, 'three fishing shoals');
+  assert.ok(units.filter((u) => u.type === 'nder').length >= 6, 'deer to hunt');
+  assert.ok(units.filter((u) => /^nwl[tg]$/.test(u.type)).length >= 8, 'wolf packs to fear');
+  assert.strictEqual(units.filter((u) => u.type === 'ngol').length, 2,
+    'exactly 2 creep-guarded flavor mines -- players have no gold mines');
   assert.strictEqual(units.filter((u) => u.type === 'n001').length, 6, 'a waystone cairn at every site');
-  assert.ok(units.filter((u) => u.player === 24 && u.targetAcquisition === -2).length >= 18,
+  assert.ok(units.filter((u) => u.player === 24 && u.targetAcquisition === -2).length >= 6,
     'camp-acquisition creep guards');
 
   const doodads = readJson(path.join(SRC, 'doodads.json'));
@@ -92,14 +109,17 @@ test('northreach source has the advertised moving parts', () => {
   }
 
   const regions = readJson(path.join(SRC, 'regions.json'));
-  assert.strictEqual(regions.length, 8, '6 expansion sites + 2 raid spawns');
+  assert.strictEqual(regions.length, 8, '6 recommended sites + 2 wolf dens');
   assert.strictEqual(regions.filter((r) => r.name.startsWith('Site')).length, 6);
-  assert.strictEqual(regions.filter((r) => r.name.startsWith('Raid')).length, 2);
+  assert.strictEqual(regions.filter((r) => r.name.startsWith('Den')).length, 2);
   assert.strictEqual(readJson(path.join(SRC, 'cameras.json')).length, 2, 'two cameras');
   assert.ok(readJson(path.join(SRC, 'sounds.json')).length >= 2, 'sounds defined');
 
   const strings = readJson(path.join(SRC, 'strings.json'));
-  for (const ref of JSON.stringify(info).match(/TRIGSTR_(\d+)/g)) {
+  const objUnits = readJson(path.join(SRC, 'objects-units.json'));
+  const objItems = readJson(path.join(SRC, 'objects-items.json'));
+  const referenced = JSON.stringify(info) + JSON.stringify(objUnits) + JSON.stringify(objItems);
+  for (const ref of referenced.match(/TRIGSTR_(\d+)/g)) {
     const n = String(parseInt(ref.replace('TRIGSTR_', ''), 10));
     assert.ok(strings[n], `${ref} resolves in strings.json`);
   }
@@ -109,21 +129,46 @@ test('northreach source has the advertised moving parts', () => {
   }
 
   // custom units reference all three generated models; binaries committed
-  const objUnits = readJson(path.join(SRC, 'objects-units.json'));
-  const blob = JSON.stringify(objUnits.custom);
+  const unitBlob = JSON.stringify(objUnits.custom);
   for (const m of MODELS) {
-    assert.ok(blob.includes(`war3mapImported\\\\${m}`), `a custom unit references ${m}`);
+    assert.ok(unitBlob.includes(`war3mapImported\\\\${m}`), `a custom unit references ${m}`);
     assert.ok(fs.existsSync(path.join(SRC, 'imports', 'war3mapImported', m)), `${m} committed`);
   }
+  // the founding chain and the market wiring live in object data
+  const flat = {};
+  for (const [k, mods] of Object.entries(objUnits.custom)) {
+    flat[k.split(':')[0]] = Object.fromEntries(mods.map((m) => [m.id, m.value]));
+  }
+  assert.strictEqual(flat.h004.uupt, 'h005', 'Shelter upgrades to Homestead');
+  assert.strictEqual(flat.h005.uupt, 'h003', 'Homestead upgrades to Town Hall');
+  assert.ok(flat.H000.ubui.includes('h004'), 'the Founder himself builds the Shelter');
+  assert.ok(flat.H000.uabi.includes('AHbu'), 'Founder carries the human build ability');
+  assert.strictEqual(flat.h006.utra, 'h001', 'the Longship trains at the coastal Dock');
+  assert.strictEqual(flat.n002.usei, 'I003,I004,I005', 'Market sells the three Trade Coins');
+  // hunt drops and coins: every custom item is pawnable with a gold value
+  const itemIds = Object.keys(objItems.custom).map((k) => k.split(':')[0]).sort();
+  assert.deepStrictEqual(itemIds, ['I000', 'I001', 'I002', 'I003', 'I004', 'I005']);
+  for (const [k, mods] of Object.entries(objItems.custom)) {
+    const byId = Object.fromEntries(mods.map((m) => [m.id, m.value]));
+    assert.ok(byId.igol > 0, `${k} has a gold value`);
+    assert.strictEqual(byId.ipaw, 1, `${k} is pawnable at the Market`);
+  }
 
-  // the map script drives the colonization loop and the -test debug mode
+  // the map script drives the FoTN loop and the '-test' debug mode
   const lua = fs.readFileSync(path.join(SRC, 'war3map.lua'), 'utf8');
   for (const needle of ['function config()', 'function main()', 'CreateAllUnits()',
     'InitCustomPlayerSlots', 'InitCustomTeams', 'TriggerRegisterPlayerChatEvent',
-    'EVENT_PLAYER_UNIT_CONSTRUCT_FINISH', 'CreateMultiboard', 'CustomVictoryBJ',
-    '"-test"', '-gold', '-found', '-income', '-raid', '-reveal', '-victory', '-ff', '-help']) {
+    'EVENT_PLAYER_UNIT_CONSTRUCT_FINISH', 'EVENT_PLAYER_UNIT_UPGRADE_FINISH',
+    'EVENT_PLAYER_UNIT_PAWN_ITEM',           // market sale top-up wiring
+    'DoCorruptionTick', 'TAX_PERIOD',        // corruption tax wiring
+    'GRACE_PERIOD', 'WolfSurge',             // grace period + night threat
+    'CreateMultiboard', 'CustomVictoryBJ', 'ReviveHero',
+    '"-test"', '"-endgame"', '"-town"', '-gold', '"-found"', '"-tax"',
+    '"-wolves"', '"-grace"', '"-reveal"', '"-victory"', '"-ff"', '-help']) {
     assert.ok(lua.includes(needle), `war3map.lua contains ${needle}`);
   }
+  assert.strictEqual(lua.includes('SETTLEMENTS_TO_WIN'), false,
+    'no first-to-N auto victory remains');
 });
 
 test('all three model generators are committed and models pass sanityTest', () => {
@@ -160,7 +205,7 @@ test('validate-map passes on the built northreach map (incl. 3 MDX sanity lines)
   assert.match(out, /map script present/);
   assert.match(out, /PASS {2}lua syntax war3map\.lua/);
   // every translatable family must be present AND round-trip stable
-  for (const war of ['w3i', 'w3e', 'w3r', 'w3c', 'w3s', 'w3u', 'wts', 'imp']) {
+  for (const war of ['w3i', 'w3e', 'w3r', 'w3c', 'w3s', 'w3u', 'w3t', 'wts', 'imp']) {
     assert.match(out, new RegExp(`PASS  translate war3map\\.${war}`), `war3map.${war} packed and stable`);
   }
   assert.match(out, /PASS {2}translate war3mapUnits\.doo/);
@@ -200,14 +245,18 @@ test('w3x-extract + map-to-json reproduce the northreach source JSON', () => {
     MODELS.map((m) => `war3mapImported\\${m}`).sort()
   );
   // script came through: source text plus the generated CreateAllUnits block,
-  // and the -test chat-command wiring is in the packed script
+  // and the FoTN systems + chat-command wiring is in the packed script
   const packedLua = fs.readFileSync(path.join(jsonDir, 'war3map.lua'), 'utf8');
   const srcLua = fs.readFileSync(path.join(SRC, 'war3map.lua'), 'utf8');
   assert.ok(packedLua.startsWith(srcLua), 'packed lua starts with the source script');
   assert.match(packedLua, /BEGIN wc3-map-toolkit generated: CreateAllUnits/);
   assert.doesNotMatch(packedLua, /__wc3tk_user_main/, 'no wrapper: main() calls CreateAllUnits');
   for (const needle of ['TriggerRegisterPlayerChatEvent', '"-test"', '%-gold%s+(%d+)',
-    '"-found"', '"-income"', '"-raid"', '"-reveal"', '"-victory"', '"-ff"', '"-help"']) {
+    '"-endgame"', '"-town"', '"-found"', '"-tax"', '"-wolves"', '"-grace"',
+    '"-reveal"', '"-victory"', '"-ff"', '"-help"',
+    'EVENT_PLAYER_UNIT_PAWN_ITEM', 'DoCorruptionTick',       // tax + market top-up
+    'DROPS', 'HandleHuntDeath', 'ScheduleRespawn',           // hunt-drop loop
+    'GRACE_PERIOD', 'WolfSurge', 'EliminationSweep']) {      // grace/night/purge
     assert.ok(packedLua.includes(needle), `packed war3map.lua contains ${needle}`);
   }
   // creep camps get WE "camp" acquisition from units.json targetAcquisition -2

@@ -1,5 +1,15 @@
 {
-  "original": {},
+  "original": {
+    "hpea": [
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "h004,h006"
+      }
+    ]
+  },
   "custom": {
     "H000:Hpal": [
       {
@@ -14,7 +24,7 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Halvar the Wayfinder"
+        "value": "Halvar the Founder"
       },
       {
         "id": "umvs",
@@ -22,6 +32,20 @@
         "level": 0,
         "column": 0,
         "value": 300
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "AInv,AHbu"
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "h004,h006"
       }
     ],
     "h001:hfoo": [
@@ -73,6 +97,13 @@
         "level": 0,
         "column": 0,
         "value": 1.1
+      },
+      {
+        "id": "ugol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 180
       }
     ],
     "h003:htow": [
@@ -95,7 +126,160 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "hpea,h001"
+        "value": "hpea,hfoo"
+      },
+      {
+        "id": "ugol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 900
+      },
+      {
+        "id": "ulum",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 20
+      },
+      {
+        "id": "ubld",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 70
+      }
+    ],
+    "h004:hhou": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "TRIGSTR_018"
+      },
+      {
+        "id": "ugol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 120
+      },
+      {
+        "id": "ulum",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 400
+      },
+      {
+        "id": "ubld",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 20
+      },
+      {
+        "id": "uupt",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "h005"
+      }
+    ],
+    "h005:hhou": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "TRIGSTR_019"
+      },
+      {
+        "id": "ugol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 320
+      },
+      {
+        "id": "ulum",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 800
+      },
+      {
+        "id": "ubld",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 40
+      },
+      {
+        "id": "ufma",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 8
+      },
+      {
+        "id": "uupt",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "h003"
+      }
+    ],
+    "h006:hshy": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "TRIGSTR_020"
+      },
+      {
+        "id": "ugol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 150
+      },
+      {
+        "id": "ulum",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ubld",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 30
+      },
+      {
+        "id": "utra",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "h001"
       }
     ],
     "n000:nech": [
@@ -170,6 +354,52 @@
         "level": 0,
         "column": 0,
         "value": ""
+      }
+    ],
+    "n002:ngme": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "TRIGSTR_021"
+      },
+      {
+        "id": "usei",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "I003,I004,I005"
+      }
+    ],
+    "n003:nmrl": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "TRIGSTR_022"
+      },
+      {
+        "id": "uaen",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 240
+      },
+      {
+        "id": "usca",
+        "type": "unreal",
+        "level": 0,
+        "column": 0,
+        "value": 0.8
       }
     ]
   }

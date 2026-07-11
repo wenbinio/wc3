@@ -1,0 +1,206 @@
+{
+  "original": {},
+  "custom": {
+    "I000:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "TRIGSTR_023"
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "The warm hide of a northern deer. Pawn it at the Northreach Market for its full value."
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 25
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 1
+      }
+    ],
+    "I001:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "TRIGSTR_024"
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A thick wolf pelt, prized in the cold north. Pawn it at the Northreach Market for its full value."
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 60
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 1
+      }
+    ],
+    "I002:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "TRIGSTR_025"
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A haul of cold-water fish from a coastal shoal. Pawn it at the Northreach Market for its full value."
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 35
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 1
+      }
+    ],
+    "I003:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "TRIGSTR_026"
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Minted trade coin worth 100 gold. Corruption cannot tax coined wealth; pawn it back at the Market for full value."
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 100
+      },
+      {
+        "id": "isel",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 1
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 1
+      }
+    ],
+    "I004:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "TRIGSTR_027"
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Minted trade coin worth 500 gold. Corruption cannot tax coined wealth; pawn it back at the Market for full value."
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 500
+      },
+      {
+        "id": "isel",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 1
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 1
+      }
+    ],
+    "I005:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "TRIGSTR_028"
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Minted trade coin worth 1000 gold. Corruption cannot tax coined wealth; pawn it back at the Market for full value."
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 1000
+      },
+      {
+        "id": "isel",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 1
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 1
+      }
+    ]
+  }
+}

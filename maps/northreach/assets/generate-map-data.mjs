@@ -12,9 +12,11 @@
 //     winding down from the eastern mountains into the fjord head;
 //   - mountain massif in the NORTHEAST (cliff layers 3 and 4, rock + snow,
 //     a frozen tarn) with a ramp on its southwest face up to a plateau;
-//   - 6 creep-guarded expansion sites with gold mines + waystone cairns;
-//   - 4 coastal player starts (capital h003, peasants, Captain H000,
-//     Longship h001, home gold mine).
+//   - 6 recommended sites marked by waystone cairns (2 of them keep a
+//     creep-guarded flavor gold mine);
+//   - one COMMUNAL landing on the southern coast (4 slocs + 4 Founder
+//     heroes + the Northreach Market), fishing shoals offshore, deer and
+//     wolf packs in the wild (FoTN mechanics — docs/reference/fotn-analysis.md).
 //
 // NOTE (CLAUDE.md gotcha 6): the committed JSON is a translator FIXED POINT
 // produced by running build -> extract -> map-to-json once over this
@@ -60,19 +62,33 @@ function vnoise(r, c, salt) {
 
 // Named world-coordinate anchors — units.json/regions.json/war3map.lua and
 // info.json startingPos all use these numbers.
+// FoTN-style communal landing: all four charters start together on the
+// southern coast (see docs/reference/fotn-analysis.md).
 export const STARTS = [
-  { x: -2624, y: -2624 }, // P0 red    — southwest coast
-  { x: 1280, y: -2688 },  // P1 blue   — south coast
-  { x: -2688, y: 2176 },  // P2 teal   — west coast
-  { x: 3712, y: -2432 },  // P3 purple — southeast coast
+  { x: -2816, y: -2624 }, // P0 red
+  { x: -2560, y: -2624 }, // P1 blue
+  { x: -2816, y: -2368 }, // P2 teal
+  { x: -2560, y: -2368 }, // P3 purple
 ];
-export const HOME_MINES = [
-  { x: -2368, y: -1920 }, { x: 1920, y: -2048 },
-  { x: -2048, y: 1920 }, { x: 3072, y: -1728 },
+export const FOUNDERS = [
+  { x: -2880, y: -2688 }, { x: -2496, y: -2688 },
+  { x: -2880, y: -2304 }, { x: -2496, y: -2304 },
 ];
-export const LONGSHIPS = [
-  { x: -3072, y: -3072 }, { x: 1280, y: -3200 },
-  { x: -3072, y: 2176 }, { x: 3712, y: -3072 },
+export const MARKET = { x: -2240, y: -2496 };
+// fishing shoals sit just offshore (south beach + west coast)
+export const SHOALS = [
+  { x: -3328, y: -3392 }, { x: -1408, y: -3712 }, { x: -3968, y: 320 },
+];
+export const DEER = [
+  { x: -1664, y: -896 }, { x: -896, y: 1408 }, { x: 512, y: 2176 },
+  { x: 2688, y: 384 }, { x: -2176, y: 896 }, { x: 1408, y: -256 },
+];
+// two den packs + two roaming packs
+export const WOLVES = [
+  ['nwlt', -704, 4416], ['nwlt', -832, 4352], ['nwlg', -768, 4480],
+  ['nwlt', 4544, -448], ['nwlt', 4480, -320], ['nwlg', 4608, -384],
+  ['nwlt', -2944, 1664], ['nwlt', -2816, 1536],
+  ['nwlt', 2816, -1088], ['nwlg', 2688, -1152],
 ];
 export const SITES = [
   { name: 'Midlands', x: -640, y: 128 },
@@ -82,9 +98,9 @@ export const SITES = [
   { name: 'Fjordmouth', x: 1664, y: -1664 },
   { name: 'Highcairn', x: 2048, y: 1792 }, // mountain plateau, layer 3
 ];
-export const RAIDS = [
-  { name: 'RaidNorthPass', x: -768, y: 4736 },
-  { name: 'RaidEastShore', x: 4736, y: -640 },
+export const DENS = [
+  { name: 'DenNorthPass', x: -768, y: 4736 },
+  { name: 'DenEastShore', x: 4736, y: -640 },
 ];
 
 // sea boundaries (vertex space)
@@ -257,14 +273,20 @@ function vertexInfo(x, y) {
 }
 const mustBeLand = [
   ...STARTS.map((p, i) => ({ ...p, tag: `start ${i}` })),
-  ...HOME_MINES.map((p, i) => ({ ...p, tag: `home mine ${i}` })),
-  ...LONGSHIPS.map((p, i) => ({ ...p, tag: `longship ${i}` })),
+  ...FOUNDERS.map((p, i) => ({ ...p, tag: `founder ${i}` })),
+  { ...MARKET, tag: 'market' },
+  ...DEER.map((p, i) => ({ ...p, tag: `deer ${i}` })),
+  ...WOLVES.map(([, x, y], i) => ({ x, y, tag: `wolf ${i}` })),
   ...SITES.map((s) => ({ ...s, tag: `site ${s.name}` })),
-  ...RAIDS.map((s) => ({ ...s, tag: `raid ${s.name}` })),
+  ...DENS.map((s) => ({ ...s, tag: `den ${s.name}` })),
 ];
 for (const p of mustBeLand) {
   const v = vertexInfo(p.x, p.y);
   if (v.water) throw new Error(`${p.tag} (${p.x},${p.y}) is on water (vertex r${v.r} c${v.c})`);
+}
+for (const [i, p] of SHOALS.entries()) {
+  const v = vertexInfo(p.x, p.y);
+  if (!v.water) throw new Error(`shoal ${i} (${p.x},${p.y}) is on land (vertex r${v.r} c${v.c})`);
 }
 const high = vertexInfo(SITES[5].x, SITES[5].y);
 if (high.layer !== 3) throw new Error(`Highcairn expected layer 3, got ${high.layer}`);
@@ -351,38 +373,30 @@ const U = (type, x, y, player, extra = {}) => {
   });
 };
 
-// start locations + per-player forces
+// the communal landing: slocs, one Founder hero per player, the Market
 STARTS.forEach((p, i) => U('sloc', p.x, p.y, i, { targetAcquisition: 0 }));
-STARTS.forEach((p, i) => {
-  U('h003', p.x, p.y, i);                                     // Founders' Capital
-  U('H000', p.x + 320, p.y - 64, i);                          // Captain (hero)
-  for (let k = 0; k < 4; k++) U('hpea', p.x - 256 + k * 128, p.y - 320, i);
-  U('h001', LONGSHIPS[i].x, LONGSHIPS[i].y, i);               // Longship
-  U('ngol', HOME_MINES[i].x, HOME_MINES[i].y, 24, { gold: 12500 });
-});
+FOUNDERS.forEach((p, i) => U('H000', p.x, p.y, i));           // the Founder
+U('n002', MARKET.x, MARKET.y, 27);                            // Northreach Market
 
-// expansion sites: gold mine + waystone cairn + creep guard
-const CREEP_CAMPS = [
-  ['nftr', 'nftr', 'nftb'],          // Midlands   — forest trolls
-  ['ngno', 'ngno', 'ngnb'],          // Northwood  — gnolls
-  ['nftr', 'nftb', 'nftb'],          // Northgate  — forest trolls
-  ['nkob', 'nkob', 'nkog'],          // Eastmark   — kobolds
-  ['nmrl', 'nmrl', 'nmrl'],          // Fjordmouth — murlocs
-  ['nogr', 'nogr', 'nogm'],          // Highcairn  — ogres
+// the huntable wild: shoals, deer, wolves
+SHOALS.forEach((p) => U('n003', p.x, p.y, 24, { targetAcquisition: -2 }));
+DEER.forEach((p) => U('nder', p.x, p.y, 27));
+WOLVES.forEach(([code, x, y]) => U(code, x, y, 24, { targetAcquisition: -2 }));
+
+// waystone cairns mark every recommended site; two sites also keep a
+// creep-guarded flavor gold mine (players have no way to mine)
+SITES.forEach((s) => U('n001', s.x - 288, s.y + 224, 27));    // Waystone Cairn
+const FLAVOR_MINES = [
+  { site: 1, gold: 11000, camp: ['ngno', 'ngno', 'ngnb'] },   // Northwood — gnolls
+  { site: 5, gold: 12000, camp: ['nogr', 'nogr', 'nogm'] },   // Highcairn — ogres
 ];
-SITES.forEach((s, i) => {
-  U('ngol', s.x, s.y, 24, { gold: 10000 + 1000 * (i % 3) });
-  U('n001', s.x - 288, s.y + 224, 27);                        // Waystone Cairn
-  CREEP_CAMPS[i].forEach((code, k) => {
+FLAVOR_MINES.forEach(({ site, gold, camp }) => {
+  const s = SITES[site];
+  U('ngol', s.x, s.y, 24, { gold });
+  camp.forEach((code, k) => {
     U(code, s.x + 224 - k * 160, s.y - 256, 24, { targetAcquisition: -2 });
   });
 });
-
-// coastal color: a couple of extra murloc camps on the beaches
-U('nmrl', -1408, -3200, 24, { targetAcquisition: -2 });
-U('nmrl', -1280, -3264, 24, { targetAcquisition: -2 });
-U('nmrl', -3264, 448, 24, { targetAcquisition: -2 });
-U('nmrl', -3328, 320, 24, { targetAcquisition: -2 });
 
 // -------------------------------------------------------------- regions ---
 
@@ -399,7 +413,7 @@ SITES.forEach((s, i) => {
     },
   });
 });
-RAIDS.forEach((s, i) => {
+DENS.forEach((s, i) => {
   regions.push({
     name: s.name, id: SITES.length + i,
     weatherEffect: '\u0000\u0000\u0000\u0000', ambientSound: '',

@@ -102,7 +102,7 @@
     }
   },
   {
-    "name": "RaidNorthPass",
+    "name": "DenNorthPass",
     "id": 6,
     "weatherEffect": "\u0000\u0000\u0000\u0000",
     "ambientSound": "",
@@ -119,7 +119,7 @@
     }
   },
   {
-    "name": "RaidEastShore",
+    "name": "DenEastShore",
     "id": 7,
     "weatherEffect": "\u0000\u0000\u0000\u0000",
     "ambientSound": "",

@@ -78,7 +78,7 @@
     {
       "name": "TRIGSTR_005",
       "startingPos": {
-        "x": -2624,
+        "x": -2816,
         "y": -2624,
         "fixed": true
       },
@@ -93,8 +93,8 @@
     {
       "name": "TRIGSTR_006",
       "startingPos": {
-        "x": 1280,
-        "y": -2688,
+        "x": -2560,
+        "y": -2624,
         "fixed": true
       },
       "playerNum": 1,
@@ -108,8 +108,8 @@
     {
       "name": "TRIGSTR_007",
       "startingPos": {
-        "x": -2688,
-        "y": 2176,
+        "x": -2816,
+        "y": -2368,
         "fixed": true
       },
       "playerNum": 2,
@@ -123,8 +123,8 @@
     {
       "name": "TRIGSTR_008",
       "startingPos": {
-        "x": 3712,
-        "y": -2432,
+        "x": -2560,
+        "y": -2368,
         "fixed": true
       },
       "playerNum": 3,

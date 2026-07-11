@@ -3,7 +3,7 @@
     "value": "Northreach Founders"
   },
   "2": {
-    "value": "Sail to the cold coast of Northreach, raise your capital, and race rival captains to found settlements at the old waystone sites. First charter to hold 4 settlements -- or the last capital standing -- claims the North. Type -help in game for commands."
+    "value": "Four Founders land together on the cold coast of Northreach with 320 gold and a dream. Hunt deer and wolves, fish the shoals, sell your take at the Market, and raise a Shelter, a Homestead and at last a Town Hall anywhere you like. Corruption taxes hoarded gold, wolves hunt at night, and no one wins until a Founder declares the endgame. Type -help in game for commands."
   },
   "3": {
     "value": "wc3-map-toolkit"
@@ -36,18 +36,51 @@
     "value": "Whitewake"
   },
   "13": {
-    "value": "Captain of the Founders"
+    "value": "Founder"
   },
   "14": {
     "value": "Longship"
   },
   "15": {
-    "value": "Founders' Capital"
+    "value": "Town Hall"
   },
   "16": {
-    "value": "Settlement Banner"
+    "value": "Founder Banner"
   },
   "17": {
     "value": "Waystone Cairn"
+  },
+  "18": {
+    "value": "Shelter"
+  },
+  "19": {
+    "value": "Homestead"
+  },
+  "20": {
+    "value": "Longship Dock"
+  },
+  "21": {
+    "value": "Northreach Market"
+  },
+  "22": {
+    "value": "Fishing Shoal"
+  },
+  "23": {
+    "value": "Deer Hide"
+  },
+  "24": {
+    "value": "Wolf Pelt"
+  },
+  "25": {
+    "value": "Coastal Catch"
+  },
+  "26": {
+    "value": "Trade Coin (100)"
+  },
+  "27": {
+    "value": "Trade Coin (500)"
+  },
+  "28": {
+    "value": "Trade Coin (1000)"
   }
 }

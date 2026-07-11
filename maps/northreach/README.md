@@ -1,41 +1,78 @@
 # Northreach Founders
 
-A 4-player **colonization race** on a cold Northrend coast, built entirely
-headlessly with wc3-map-toolkit. Each captain lands with a capital, workers,
-a hero Captain and a Longship, then races rival charters to found settlements
-at six creep-guarded waystone sites. It is the "custom models + systems map"
-of the bundled sources: three original generated MDX models, a Lua
-colonization loop, a multiboard score, periodic creep raids, and a
+A 4-player **frontier-economy sandbox** on a cold Northrend coast, built
+entirely headlessly with wc3-map-toolkit. All four Founders land TOGETHER at
+one neutral landing on the southern coast with 320 gold and 20 lumber, hunt
+and fish the wild for trade goods, sell them at the neutral Northreach
+Market, and raise a town anywhere they like -- while corruption taxes hoarded
+gold, wolves hunt at night, and nobody wins until somebody dares to declare
+the endgame. It is the "custom models + systems map" of the bundled sources:
+three original generated MDX models, a Lua economy/founding loop, and a
 chat-command debug mode.
 
-Inspired by **Founders of the North by ShadeGabriel/Sifonseal on Hive
-Workshop** (https://www.hiveworkshop.com/threads/founders-of-the-north-1-24.184407/)
--- design inspiration only: no assets, code or map data were taken or
-downloaded. FotN's open-world "rise from wanderer to lord of the North" loop
-(many incomes, trade, guilds, calamities) is scaled down here to what this
-toolkit supports: found settlements -> earn charter income -> survive raids ->
-first to 4 settlements or last capital standing wins.
+Modeled on the **actual decompiled mechanics** of *Founders of the North* by
+ShadeGabriel/Sifonseal on Hive Workshop
+(https://www.hiveworkshop.com/threads/founders-of-the-north-1-24.184407/) --
+see `docs/reference/fotn-analysis.md` for our full analysis. Design lineage
+only: no assets, code or map data were taken or downloaded.
+
+## What carries the FoTN DNA (and what does not)
+
+Kept, faithfully scaled down:
+
+- **Communal start**: every player is exactly one Founder hero at one shared
+  southern landing, 320g/20w, no base, no workers (FoTN-exact numbers).
+- **Free-form founding**: the Founder himself builds a Shelter anywhere and
+  upgrades it Shelter -> Homestead -> Town Hall (FoTN: Store House -> Farm
+  House -> Town Tower). `-town` only *pings* the six recommended waystone
+  sites; nothing enforces them.
+- **Active income only**: no gold mines for players, no periodic income.
+  Hunt deer/wolves and break coastal fishing shoals; they drop trade-good
+  items pawned at the neutral Market. A trigger tops the engine's 50% pawn
+  price up to 100% (FoTN's "Currency Return").
+- **Corruption tax**: every 40s, any player owning a Town Hall loses
+  gold/20 (5%) of carried gold (FoTN-exact). Counter: Trade Coins
+  (100/500/1000) bought at the Market pawn back at full value.
+- **Grace period**: 300s peace timer with a timer dialog (FoTN uses 900s;
+  our map is far smaller). Wolves stay docile until it ends.
+- **Night threat**: at night wolves speed up, their acquire range triples
+  and a fresh pack surges from the two dens; dawn calms them.
+- **No automatic victory**: only defeats. A Founder holding a Town Hall may
+  declare `-endgame`; from then on any player with no Town Hall and a dead
+  Founder is purged, and the last charter standing wins (FoTN's R008
+  "END GAME" research + purge, as a chat command).
+- The multiboard is an info-only **ledger** (halls owned / gold earned) --
+  FoTN has no score of any kind, so ours ranks nothing.
+
+Deliberately scoped out (see the analysis doc for what the real map does):
+the bandit second life, NPC towns/factions/diplomacy, farming/herding/
+gathering/alchemy/merchantry professions, supply-driven prices, guilds,
+companions, dungeons, calamities and the quiz. Those need either far more
+object data than a demo source wants, or systems (supply simulation,
+per-item shop stock) that plain Lua + our pipeline could carry but would
+drown the map source in noise.
 
 ## Layout
 
 - **80x80 Northrend terrain** (`tileset: "N"`, tiles
-  Ndrt/Ndrd/Ngrs/Nsnw/Nrck/Nice, cliffs CNdi/CNsn — FourCCs from the
-  docs/FORMATS.md tables): a **cold sea along the south and west edges** with
-  wavy dirt beaches, a **fjord** cutting north from the south sea, a shallow
-  **river** winding down from the mountains into the fjord head, and a
-  **northeast mountain massif** (cliff layers 3 and 4, rocky rim, snowy core,
-  a frozen tarn) with a ramp-flagged path up its southwest face.
-- **4 user players** on the coast (SW / S / W / SE), each starting with a
-  Founders' Capital (`h003`), 4 peasants, a Captain hero (`H000`), a Longship
-  (`h001`) and a kobold-free home gold mine.
-- **6 expansion sites** (regions `Site*`): Midlands, Northwood, Northgate,
-  Eastmark, Fjordmouth and Highcairn (on the mountain plateau) — each a gold
-  mine + a Waystone Cairn marker guarded by trolls/gnolls/kobolds/murlocs/
-  ogres (camp acquisition).
-- **2 raid spawn points** (regions `Raid*`), 2 cameras (IntroPan,
-  FjordOverlook), 2 built-in-path sounds, NTtw forests + LTrc rock doodads.
+  Ndrt/Ndrd/Ngrs/Nsnw/Nrck/Nice, cliffs CNdi/CNsn): a **cold sea along the
+  south and west edges** with wavy dirt beaches, a **fjord** cutting north
+  from the south sea, a shallow **river** winding down from the mountains,
+  and a **northeast mountain massif** (cliff layers 3 and 4) with a
+  ramp-flagged path up its southwest face. Unchanged from the first
+  iteration except for placements.
+- **The landing** (all four start locations + the Northreach Market) sits on
+  the southern coast around (-2688, -2496), with three fishing shoals just
+  offshore (south beach and west coast).
+- **6 recommended sites** (regions `Site*`): Midlands, Northwood, Northgate,
+  Eastmark, Fjordmouth and Highcairn -- each marked by a Waystone Cairn.
+  Founding is NOT restricted to them; two (Northwood, Highcairn) also hold a
+  creep-guarded flavor gold mine (players have no way to mine them).
+- **2 wolf dens** (regions `Den*`, north pass and east shore): night surges
+  spawn packs here. Deer graze the midlands; wolf packs prowl between.
+- 2 cameras (IntroPan, FjordOverlook), 2 built-in-path sounds, NTtw forests.
 
-## Custom models (the point of this map)
+## Custom models (still the point of this map)
 
 All three are original, generated by committed scripts in `assets/` via the
 proven MDL -> war3-model -> MDX chain, textured ONLY with ReplaceableId 1
@@ -45,62 +82,78 @@ mdx-m3-viewer's sanityTest with **0 errors / 0 severes / 0 warnings**
 
 | Model | Generator | Used by |
 | --- | --- | --- |
-| `NorthLongship.mdx` (3.4 KB) | `assets/generate-longship.mjs` | `h001` Longship: amphibious, trainable at the capital |
-| `FounderBanner.mdx` (2.9 KB) | `assets/generate-banner.mjs` | `n000` Settlement Banner: planted by script when a settlement is founded |
-| `WaystoneCairn.mdx` (3.4 KB) | `assets/generate-cairn.mjs` | `n001` Waystone Cairn: neutral-passive marker at every expansion site |
+| `NorthLongship.mdx` (3.4 KB) | `assets/generate-longship.mjs` | `h001` Longship: amphibious, trained at the `h006` Longship Dock |
+| `FounderBanner.mdx` (2.9 KB) | `assets/generate-banner.mjs` | `n000` Founder Banner: planted by trigger when a Town Hall finishes |
+| `WaystoneCairn.mdx` (3.4 KB) | `assets/generate-cairn.mjs` | `n001` Waystone Cairn: neutral-passive marker at every recommended site |
 
 Regenerate with `node maps/northreach/assets/generate-<name>.mjs`
 (`assets/mdl-lib.mjs` holds the shared MDL builder + sanity self-check).
 
-## Mechanics (`war3map.lua`)
+## Mechanics (`war3map.lua` + object data)
 
-- **Found settlements**: build a Town Hall (`htow`) inside a `Site*` region
-  (an `EVENT_PLAYER_UNIT_CONSTRUCT_FINISH` trigger checks the claim boxes).
-  A team-color Founder Banner is planted; losing the hall razes the
-  settlement and frees the site.
-- **Charter income**: every 30s each standing capital pays 40 gold + 30 per
-  owned settlement, with per-player announcements.
-- **Founders Score**: a multiboard (name + settlement count per player),
-  updated on every found/raze/fall event.
-- **Raids**: from 4:00, every 3:00 an escalating wild warband (forest trolls,
-  then trolls+ogres) spawns at a random `Raid*` point and attack-moves to a
-  random owned settlement (or a capital while none exist).
-- **Victory**: first charter to hold **4 settlements**, or the **last capital
-  standing** (capital death defeats its player).
+- **Founder** (`H000`, Hpal base): carries the human build ability with a
+  build list of Shelter (`h004`) + Longship Dock (`h006`). Shelter upgrades
+  to Homestead (`h005`), Homestead to Town Hall (`h003`, trains Worker +
+  Footman) via `uupt` chains. The Dock (shipyard base, so it must touch the
+  shore) trains the Longship.
+- **Hunting** (`EVENT_PLAYER_UNIT_DEATH`): deer (`nder`) drop a Deer Hide,
+  wolves (`nwlt`/`nwlg`) a Wolf Pelt, fishing shoals (`n003`, attack-less
+  murloc base broken open by ship or shore attacks) two Coastal Catch --
+  dropped at a paired shore landing so they never sink. Everything respawns
+  after 45s from static spawn tables.
+- **Market** (`n002`, ngme base): sells Trade Coins via `usei`; its stock
+  goblin-merchant pawn ability buys any item. On
+  `EVENT_PLAYER_UNIT_PAWN_ITEM` the script tops the engine's 50% up to the
+  item's full `igol` value and logs it in the ledger.
+- **Corruption** (40s tick on the master clock): `gold // 20` from every
+  Town Hall owner, quietly announced to that player only.
+- **Founding trigger**: Town Halls finish via `EVENT_PLAYER_UNIT_UPGRADE_FINISH`
+  (the uupt chain) or `EVENT_PLAYER_UNIT_CONSTRUCT_FINISH`; either plants a
+  team-color Founder Banner and pings the map.
+- **Death rules**: a dead Founder revives after 30s at his Town Hall (or the
+  landing). After `-endgame` is declared, no hall + dead Founder = purged;
+  last charter standing wins. Leavers are "retired from life in the North".
 - **Lobby**: `config()` uses the tidewatch-arena fixed pattern
   (`InitCustomPlayerSlots` + `InitCustomTeams`, "Use Custom Forces" + "Fixed
   Player Settings"); info.json declares 4 one-player forces and every
   `SetPlayerTeam` index equals its force index — keep that invariant.
 
-## `-test` debug mode (chat commands)
+## Chat commands
 
-Type `-test` to toggle debug mode for yourself (announced to all); `-help`
-is always available. Commands are parsed from
+`-help`, `-town` (ping recommended sites + Market) and `-endgame` (declare
+the purge; needs a Town Hall) are always available. Type `-test` to toggle
+debug mode for yourself (announced to all). Commands are parsed from
 `TriggerRegisterPlayerChatEvent(trig, Player(i), "-", false)` substring
 events.
 
 | Command | Effect |
 | --- | --- |
 | `-help` | print this command list (always available) |
+| `-town` | ping the six recommended sites and the Market (always available) |
+| `-endgame` | declare the endgame/purge -- needs a Town Hall (always available) |
 | `-test` | toggle debug mode for the typing player |
 | `-gold N` | set your gold to N |
-| `-found` | instantly claim the nearest unclaimed site (spawns the hall + banner) |
-| `-income` | force an income tick now (resets the income countdown) |
-| `-raid` | launch a creep raid now (resets the raid countdown) |
+| `-found` | plant a finished Town Hall (with banner) at your Founder |
+| `-tax` | force a corruption tick now (resets the tax countdown) |
+| `-wolves` | force a wolf surge (night buff + den packs) now |
+| `-grace` | end the grace period immediately |
 | `-reveal` | reveal the whole map for you |
 | `-victory` | run the victory sequence (you win) |
-| `-ff` | toggle 4x speed on the income/raid master clock |
+| `-ff` | toggle 4x speed on the tax/prowl master clock |
+
+(The first iteration's `-income`/`-raid` are gone with the systems they
+drove; `-found` now plants a hall at the Founder instead of claiming a site.)
 
 ## Build
 
 ```bash
 node tools/build-map.js maps/northreach maps/builds/northreach.w3x
-node tools/validate-map.js maps/builds/northreach.w3x   # 33/33 checks
+node tools/validate-map.js maps/builds/northreach.w3x
 ```
 
 The committed JSON is a **translator fixed point** (CLAUDE.md gotcha 6):
-`assets/generate-map-data.mjs` authored terrain/doodads/units/regions and the
-terrain-sized `files/war3map.wpm`/`war3map.shd`, then one
-build -> extract -> map-to-json cycle stabilized the JSON, which was committed
-(*.json only — never the extracted `war3map.lua`, gotcha 6/10). If you re-run
-the generator or edit values, repeat that cycle.
+`assets/generate-map-data.mjs` authored the original terrain/doodads and the
+terrain-sized `files/war3map.wpm`/`war3map.shd`; units/regions/objects were
+since revised by hand for the FoTN mechanics. After any edit, run one
+build -> extract -> map-to-json cycle and commit the stabilized JSON
+(*.json only — never the extracted `war3map.lua`, gotcha 6/10).
