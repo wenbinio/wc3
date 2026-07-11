@@ -82,8 +82,8 @@ Translatable via wc3maptranslator@5 (JSON name used by this toolkit):
 | war3map.w3s | sounds | v3 | sounds.json |
 | war3map.wts | trigger strings (TRIGSTR_n) | text | strings.json |
 | war3map.imp | imported-file manifest | v1 | imports.json |
-| war3map.w3u/w3t/w3b/w3d/w3a/w3h/w3q | object data: units/items/destructables/doodads/abilities/buffs/upgrades | **v3** | objects-*.json |
-| war3mapSkin.w3u/w3t/w3d/w3a/w3h/w3q | Reforged skin-mode object overrides (same v3 format) | v3 | objects-*-skin.json |
+| war3map.w3u/w3t/w3b/w3d/w3a/w3h/w3q | object data: units/items/destructables/doodads/abilities/buffs/upgrades | **v3** (upstream translator) + **v1/v2** via lib/codecs/objects2.js (JSON gains `"version": 1\|2`) | objects-*.json |
+| war3mapSkin.w3u/w3t/w3d/w3a/w3h/w3q | Reforged skin-mode object overrides (same v3 format) | v3 (+ v1/v2 routed identically) | objects-*-skin.json |
 
 **war3mapSkin.w3b split**: Reforged splits destructable data across
 `war3map.w3b` + `war3mapSkin.w3b` (visual "skin" fields like `bnam`, `bfil`,
@@ -143,6 +143,29 @@ established against mdx-m3-viewer-th, War3Net and the real samples:
   express: `map.flagsUnknown` (unnamed flag bits — real maps carry 0x8 and
   WE's always-set 0x400/0x4000) and raw `playersMask` /
   `*PriorityFlagsMask` passthroughs (bits 24–31 are common in real files).
+- **object data v2 ↔ v3** (w3u/w3t/w3b/w3d/w3a/w3h/w3q, via
+  lib/codecs/objects2.js): v3 wraps each object's modification list in
+  "sets" — after oldId/newId, v3 reads a u32 sets count, then a u32 set
+  flag per set before the u32 modification count (WE/upstream always write
+  one set, flag 0 — 8 extra bytes per object). That is the ONLY delta: the
+  modification record itself is identical across v1/v2/v3, including the two
+  extra i32s (level/variation + data column) that the LEVELED types
+  (w3d/w3a/w3q) carry at every version — a per-type property, not a v3
+  addition. **v1 ↔ v2: no layout difference at all** (confirmed against
+  mdx-m3-viewer-th, War3Net and WC3MapSpecification; v1 is just an older
+  marker value, read+written identically). v2 is NOT merely legacy: the
+  current Wurst toolchain emits it (Island Troll Tribes v3.9c, all seven
+  object files), DracoL1ch DotA ships v2 w3a/w3b/w3d, and classic WE saves
+  (X Hero Siege 2024) are v2 — all verified read→write byte fixpoints
+  (test/objects2.test.js). Fidelity extension: each modification's trailing
+  u32 "sanity check" is re-synthesized by convention on write (original
+  table → base-id bytes, custom table → 0, matching upstream's v3 writer);
+  when a real file deviates (Wurst writes the custom id there, DotA/WE mix
+  zeros and ids), the modification gets a raw `sanityCheck` (u32)
+  passthrough. Note the war3mapSkin.* split is a Reforged container
+  convention, not part of the binary format — at v1/v2 the codec never
+  splits destructable "skin" fields out (`bnam` etc. are ordinary main-file
+  fields in the classic format).
 
 Remaining consequences for everything OLDER than those versions:
 
@@ -153,8 +176,8 @@ Remaining consequences for everything OLDER than those versions:
   mdx-m3-viewer-th parse under `_viewer/<name>.json`** (viewer object schema,
   `manifest.json` → `viewerFallback`). That output is diagnostics only:
   json-to-map/build-map ignore `_viewer/` and cannot compile it back.
-  With the codecs in place this now applies to w3i v18, object data v1/v2,
-  classic `.doo` etc. — not to w3e v11 / w3i v25/v31.
+  With the codecs in place this now applies to w3i v18, classic `.doo`
+  etc. — not to w3e v11 / w3i v25/v31 / object data v1/v2.
 - The wc3-ts-template repo's `maps/map.w3x/` folder is classic-format:
   its `.doo`, `w3r`, `w3c`, `wts`, `Units.doo` parse fine, but `w3i`/`w3e`
   do not. This repo's `maps/demo/` was therefore built in current formats

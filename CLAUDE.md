@@ -94,17 +94,21 @@ never third-party maps, gotcha 9).
   incl. 1.36/2.0-editor-saved ones actually ship)** — full: read + edit +
   byte-faithful rebuild via lib/codecs/ (gotcha 2); bare-MPQ container via
   `--bare`.
-- **Classic TFT (w3i v25, w3e v11)** — info.json + terrain.json fully
-  read+write via codecs; object data **v1/v2 and classic .doo remain
-  read-only** (`_viewer/` diagnostics); scripts/assets always editable +
-  repackable.
+- **Classic TFT (w3i v25, w3e v11, object data v1/v2)** — info.json +
+  terrain.json fully read+write via codecs; object data **v1/v2 now fully
+  read+write** too (lib/codecs/objects2.js, all seven types + skin twins;
+  byte-faithful — and v2 is NOT just legacy: current Wurst toolchain output
+  (Island Troll Tribes v3.9c), DracoL1ch DotA and classic WE 2024 saves
+  (X Hero Siege) all ship v2; v1 = same layout, marker preserved). Only
+  **classic .doo remains read-only** (`_viewer/` diagnostics);
+  scripts/assets always editable + repackable.
 - **Protected maps** — extract via listfile∪KNOWN_FILES probing, content
   dump (`--dump-unknown`), name recovery (`--recover-names`, gotcha 4);
   trap stubs degrade to WARN (gotcha 26). wtg/wct stay opaque (usually
   deleted by protectors anyway; the game only needs the compiled script).
 - **Authoring from scratch** — current formats only (demo template);
-  codecs can WRITE v11/v25/v31 for compatibility targets, set the
-  `"version"` marker deliberately.
+  codecs can WRITE w3e v11 / w3i v25/v31 / object data v1/v2 for
+  compatibility targets, set the `"version"` marker deliberately.
 
 ## Gotchas (each cost real debugging time; numbers are stable — docs/READMEs cite them)
 
@@ -115,14 +119,18 @@ never third-party maps, gotcha 9).
 2. **Reforged formats only** in wc3maptranslator (w3i v33, w3e v12, objects
    v3): other versions throw — sometimes a version message, often a bare
    `RangeError: offset out of range`. BUT real published maps (2023–2026,
-   incl. 1.36/2.0-editor-saved) ship **w3e v11** terrain and **w3i v25/v31**
-   info — those now have first-class read+WRITE codecs (`lib/codecs/`,
+   incl. 1.36/2.0-editor-saved) ship **w3e v11** terrain, **w3i v25/v31**
+   info and **object data v1/v2** (current Wurst emits v2 today) — those now
+   have first-class read+WRITE codecs (`lib/codecs/`,
    routed by lib/filemap.js off the binary version dword / the JSON
-   `"version"` marker) and land in normal editable terrain.json/info.json
-   with byte-faithful write-back (exact v11↔v12 / v25↔v31↔v33 deltas:
-   docs/FORMATS.md). **Keep the `"version"` marker in source JSON** —
-   deleting it makes json-to-map write the NEWEST format (v12/v33), silently
-   changing the on-disk version. Only versions no codec covers (w3i v18, objects v1/v2,
+   `"version"` marker) and land in normal editable
+   terrain.json/info.json/objects-*.json
+   with byte-faithful write-back (exact v11↔v12 / v25↔v31↔v33 / objects
+   v1/v2↔v3 deltas: docs/FORMATS.md). **Keep the `"version"` marker in
+   source JSON** —
+   deleting it makes json-to-map write the NEWEST format (v12/v33/objects
+   v3), silently
+   changing the on-disk version. Only versions no codec covers (w3i v18,
    classic doo, ...) still take the old path: map-to-json catches ANY
    translator throw — file copied raw (manifest.json → `errors`) plus a
    READ-ONLY mdx-m3-viewer-th parse under `_viewer/` (viewer schema, never
@@ -337,7 +345,8 @@ or CC0-converted content. Details: docs/ASSETS.md.
   formats here; tools pick them up automatically) + version routing into
   `lib/codecs/`
 - `lib/codecs/` — version-aware codecs upstream can't parse: w3e11.js
-  (terrain v11 read+write), w3i31.js (info v25/v31 read+write); same JSON
+  (terrain v11 read+write), w3i31.js (info v25/v31 read+write), objects2.js
+  (object data v1/v2 read+write, all seven types); same JSON
   dialect as upstream plus a `"version"` marker (gotcha 2)
 - `lib/header.js` / `lib/mpq.js` — HM3W header (+ w3i flags reader); MPQ I/O,
   two backends (stormlib-node primary / smpq CLI fallback)

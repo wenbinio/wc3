@@ -6,13 +6,24 @@
 // verifies a map script is present, then cross-validates with a SECOND,
 // independent parser stack (mdx-m3-viewer-th): its MPQ reader must open the
 // archive, every inner file it has a parser for must parse (it also covers
-// wpm/shd/mmp/wct which wc3maptranslator can't), and every imported
-// .mdx/.mdl must pass its sanity test with 0 errors AND 0 severe issues
-// (a malformed MDX hard-crashes the game on map load — same bar as
-// test/fixes.test.js). Object data additionally gets a semantic lint
-// (lib/objectlint.js — gotchas 22/23/25) whose findings print as WARN
+// wpm/shd/mmp/wct which wc3maptranslator can't), and every packed .mdx/.mdl
+// gets mdx-m3-viewer's sanity test. Object data additionally gets a semantic
+// lint (lib/objectlint.js — gotchas 22/23/25) whose findings print as WARN
 // lines and never fail the map. Prints a pass/fail summary; exit code
 // 0 = all PASS (warnings allowed).
+//
+// MODEL SANITY IS A TWO-TIER BAR (gotcha 14):
+//   - validate-map (this tool, any .w3x): sanity findings are WARN only.
+//     Repacked third-party production maps ship hundreds of models that
+//     fail the 0-errors/0-severes bar yet demonstrably run in game (Gaias:
+//     402 of 1047; Sunken City: ~190) — hard-failing them makes validate
+//     useless on exactly the maps worth studying, and a WARN still surfaces
+//     every finding.
+//   - build-map (our own artifacts): every .mdx/.mdl under the map source's
+//     imports/ must pass with 0 errors AND 0 severe issues or the BUILD
+//     fails — a malformed custom model hard-crashes the game at map load
+//     (the SiegeCrystal.mdx postmortem bar, also enforced per-map in
+//     test/fixes.test.js and test/northreach.test.js).
 
 const fs = require('fs');
 const os = require('os');
@@ -185,10 +196,13 @@ function crossValidate(w3xBuf, extractedDir, ok, fail, warn, trapped) {
     }
   }
 
-  // 5c. Sanity-test every imported model. Errors AND severe issues both fail
-  // (a model missing e.g. its Death sequence or referencing a nonexistent
-  // GeosetAnim hard-crashes the game — the bar set when SiegeCrystal.mdx
-  // was fixed, enforced in test/fixes.test.js).
+  // 5c. Sanity-test every packed model. Findings (errors/severes, or a model
+  // the viewer can't even parse) are WARN, never FAIL: this tool validates
+  // arbitrary .w3x files, and repacked third-party production maps ship
+  // hundreds of models that fail this bar yet run in game (see the two-tier
+  // policy in the header). The STRICT tier lives in build-map, which fails
+  // the build when a model under the map source's imports/ has errors or
+  // severe issues (gotcha 14 — a bad custom model hard-crashes the game).
   for (const rel of rels) {
     const isMdl = rel.toLowerCase().endsWith('.mdl');
     if (!rel.toLowerCase().endsWith('.mdx') && !isMdl) continue;
@@ -196,9 +210,9 @@ function crossValidate(w3xBuf, extractedDir, ok, fail, warn, trapped) {
       const r = viewer.sanityCheckModel(fs.readFileSync(path.join(extractedDir, rel)), isMdl);
       const detail = `errors=${r.errors} severe=${r.severe} warnings=${r.warnings}`;
       if (r.errors === 0 && r.severe === 0) ok(`viewer sanity ${rel}`, detail);
-      else fail(`viewer sanity ${rel}`, detail + ' — the game may hard-crash loading this model');
+      else warn(`viewer sanity ${rel}`, detail + ' — fails the strict bar our own imports must meet (build-map enforces it); shipping third-party models often fail it yet run in game');
     } catch (e) {
-      fail(`viewer sanity ${rel}`, String(e.message || e).split('\n')[0]);
+      warn(`viewer sanity ${rel}`, `viewer could not parse the model (${String(e.message || e).split('\n')[0]}) — advisory only on repacked maps; build-map enforces the strict bar on source imports/`);
     }
   }
 }

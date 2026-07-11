@@ -177,9 +177,11 @@ test('doo: life 0 round-trips (upstream would silently write 100)', () => {
 
   // document the upstream asymmetry this guards against: read keeps 0,
   // write drops it (`life || 100`) — if upstream ever fixes it, FIX C in
-  // lib/translator-fixes.js can be retired.
-  const { DoodadsTranslator } = require('wc3maptranslator');
-  const upstreamBack = DoodadsTranslator.jsonToWar(j1).buffer;
+  // lib/translator-fixes.js can be retired. NB: the exported class is now
+  // WRAPPED by applyW3BufferPatches (FIX C applies to every caller), so the
+  // canary pins the bug on the saved pre-wrap original.
+  const { UPSTREAM_ORIGINALS } = require('../lib/translator-fixes');
+  const upstreamBack = UPSTREAM_ORIGINALS.doodadsJsonToWar(j1).buffer;
   assert.strictEqual(upstreamBack[57], 100, 'upstream still has the life||100 bug');
 });
 

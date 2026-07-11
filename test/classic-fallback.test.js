@@ -6,8 +6,10 @@
 //       mdx-m3-viewer-th parses it fine
 //   (2) fallback failures are recorded in manifest.viewerFallbackErrors and
 //       warned about by map-to-json — never swallowed silently
-//   (3) a protector-truncated CLASSIC w3i (viewer parse also fails) gets a
-//       second-tier tolerant read via lib/classicw3i.js
+//   (3) a protector-truncated CLASSIC w3i: TAIL-section truncation now lands
+//       in EDITABLE info.json via lib/codecs/w3i31.js's tolerant read
+//       (byte-faithful write-back); truncation inside the settings block
+//       still gets the second-tier read-only lib/classicw3i.js fallback
 // Plus unit tests for the tolerant classic w3i reader itself.
 
 const test = require('node:test');
@@ -123,24 +125,46 @@ test('(2) fallback failure is recorded in manifest.viewerFallbackErrors, not swa
   assert.match(res.stderr, /WARN viewer fallback failed for war3map\.w3i/, 'user sees the fallback failure');
 });
 
-test('(3) protector-truncated classic w3i: tolerant second-tier reader recovers header through players', () => {
+test('(3) protector-truncated classic w3i, TAIL sections: lands in EDITABLE info.json via the tolerant w3i31 codec', () => {
+  // truncated mid-way through player 2 — a TAIL-section truncation, which
+  // lib/codecs/w3i31.js now reads tolerantly (and writes back byte-faithfully)
+  // instead of demoting the file to the read-only _viewer/ fallback.
   const trunc = makeV25W3i({ complete: false });
   const { sourceDir, manifest } = toSource('trunc-classic-w3i', { 'war3map.w3i': trunc });
 
+  assert.strictEqual(manifest.errors.length, 0, 'no translator error: the codec tolerates tail truncation');
+  assert.strictEqual(manifest.translated['war3map.w3i'], 'info.json', 'editable info.json, not _viewer/');
+  assert.ok(!manifest.viewerFallback, 'no _viewer fallback needed');
+  assert.ok(!fs.existsSync(path.join(sourceDir, '_viewer')), 'no _viewer dir written');
+  const info = readJson(path.join(sourceDir, 'info.json'));
+  assert.strictEqual(info.version, 25);
+  assert.strictEqual(info.map.name, 'Frozen Vale');
+  assert.strictEqual(info._truncated, true);
+  assert.strictEqual(info._truncatedAt, 'players', 'partial players section dropped as a whole');
+  assert.deepStrictEqual(info.players, []);
+  assert.ok(info._truncatedTail.length > 0, 'undecodable tail kept as hex');
+  // write-capable: rebuilding from the JSON reproduces the truncated original
+  const w3i31 = require(path.join(ROOT, 'lib', 'codecs', 'w3i31'));
+  assert.ok(w3i31.jsonToWar(info).buffer.equals(trunc), 'byte-faithful rebuild of the truncated file');
+});
+
+test('(3b) w3i truncated INSIDE the settings block still falls back to the second-tier classic reader', () => {
+  // cut mid camera-bounds: nothing byte-faithful can be written from half a
+  // settings block, so the codec throws and the read-only diagnostics tiers
+  // take over (viewer parse fails -> lib/classicw3i.js tolerant read).
+  const trunc = makeV25W3i({ complete: true }).slice(0, 60);
+  const { sourceDir, manifest } = toSource('trunc-classic-w3i-head', { 'war3map.w3i': trunc });
+
   assert.strictEqual(manifest.errors.length, 1, 'translator error recorded');
-  // the strict viewer parse failed and was recorded...
   const fe = (manifest.viewerFallbackErrors || []).find((e) => e.file === 'war3map.w3i');
   assert.ok(fe, 'viewer failure recorded');
   assert.match(fe.note || '', /tolerant classic w3i/i, 'recovery noted');
-  // ...but the tolerant classic reader still produced diagnostics
   assert.strictEqual(manifest.viewerFallback['war3map.w3i'], '_viewer/war3map.w3i.json');
   const diag = readJson(path.join(sourceDir, '_viewer', 'war3map.w3i.json'));
   assert.strictEqual(diag._schema, 'wc3-map-toolkit-classic-w3i');
   assert.strictEqual(diag.data.version, 25);
   assert.strictEqual(diag.data.name, 'Frozen Vale');
-  assert.strictEqual(diag.data.flags, 0x8010);
   assert.strictEqual(diag.data._truncated, true);
-  assert.strictEqual(diag.data.players.length, 1, 'complete players kept, truncated one dropped');
 });
 
 test('classicw3i: complete v25 parses through forces; truncation returns a marked partial; Reforged is refused', () => {

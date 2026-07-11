@@ -64,13 +64,22 @@ test('wts: dialect corner cases match upstream', () => {
   const buf = Buffer.from(text, 'utf8');
   const ours = wts.warToJson(buf).json;
   const upstream = StringsTranslator.warToJson(buf).json;
-  assert.deepStrictEqual(ours, upstream);
+  // the `_dialect` sidecar (BOM detected here) is OUR fidelity extension —
+  // upstream has no equivalent; the STRING entries must match it exactly
+  assert.deepStrictEqual(ours._dialect, { bom: true, newline: 'crlf', separator: 'blank' });
+  const oursEntries = { ...ours };
+  delete oursEntries._dialect;
+  assert.deepStrictEqual(oursEntries, upstream);
   assert.strictEqual(ours['2'].value, 'last one wins');
   assert.strictEqual(ours['007'].value, 'leading zeros stay literal');
   assert.strictEqual(ours['0'].comment, '// Comment: kept verbatim (Hotkey - Learn)\r\n');
   assert.strictEqual(ours['3'].value, 'value with { brace\r\nand a blank line:\r\n\r\nand STRING 99 inside');
-  // ASCII re-serialization also byte-matches upstream
-  assert.ok(wts.jsonToWar(ours).buffer.equals(StringsTranslator.jsonToWar(upstream).buffer));
+  // ASCII re-serialization byte-matches upstream once the sidecar is dropped
+  // (with it, the only difference is the reproduced BOM)
+  assert.ok(wts.jsonToWar(oursEntries).buffer.equals(StringsTranslator.jsonToWar(upstream).buffer));
+  const bom = Buffer.from([0xEF, 0xBB, 0xBF]);
+  assert.ok(wts.jsonToWar(ours).buffer.equals(
+    Buffer.concat([bom, StringsTranslator.jsonToWar(upstream).buffer])));
 });
 
 test('wts: production-scale file (~10k strings) parses in <2s on a normal heap', () => {
@@ -94,7 +103,8 @@ test('wts: production-scale file (~10k strings) parses in <2s on a normal heap',
   const json2 = wts.warToJson(rewritten).json;
   const elapsed = Date.now() - t0;
 
-  assert.strictEqual(Object.keys(json).length, 10000);
+  assert.strictEqual(Object.keys(json).filter((k) => !k.startsWith('_')).length, 10000,
+    'all 10k STRING entries parsed (the _dialect sidecar is not an entry)');
   assert.deepStrictEqual(json2, json);
   assert.ok(elapsed < 2000, `parse+serialize+reparse took ${elapsed}ms (must be <2000ms)`);
 });
