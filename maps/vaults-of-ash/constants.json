@@ -1,6 +1,13 @@
 {
   "_generated": "wc3-map-toolkit: derived from the map source JSON by build-map — regenerated every build, do not hand-edit",
   "constants": {
+    "UNIT_ASHBLADE": {
+      "kind": "unit",
+      "rawcode": "H001",
+      "base": "Obla",
+      "name": "Ashblade",
+      "source": "objects-units.json"
+    },
     "UNIT_ASHEN_CHAMPION": {
       "kind": "unit",
       "rawcode": "u007",
@@ -36,11 +43,32 @@
       "name": "Ash Tide Crawler",
       "source": "objects-units.json"
     },
+    "UNIT_BLOOD_PROVOST": {
+      "kind": "unit",
+      "rawcode": "u032",
+      "base": "nban",
+      "name": "Blood Provost",
+      "source": "objects-units.json"
+    },
+    "UNIT_BONE_WARDEN": {
+      "kind": "unit",
+      "rawcode": "u030",
+      "base": "nske",
+      "name": "Bone Warden",
+      "source": "objects-units.json"
+    },
     "UNIT_CHAINED_HOWLER": {
       "kind": "unit",
       "rawcode": "u018",
       "base": "nwld",
       "name": "Chained Howler",
+      "source": "objects-units.json"
+    },
+    "UNIT_CHORISTER": {
+      "kind": "unit",
+      "rawcode": "H002",
+      "base": "Hblm",
+      "name": "Chorister",
       "source": "objects-units.json"
     },
     "UNIT_CINDERWING_HARPY": {
@@ -113,6 +141,13 @@
       "name": "Ember Brazier",
       "source": "objects-units.json"
     },
+    "UNIT_GALE_MATRIARCH": {
+      "kind": "unit",
+      "rawcode": "u031",
+      "base": "nhar",
+      "name": "Gale Matriarch",
+      "source": "objects-units.json"
+    },
     "UNIT_GRAVE_WARDEN": {
       "kind": "unit",
       "rawcode": "u019",
@@ -125,6 +160,13 @@
       "rawcode": "u009",
       "base": "nkob",
       "name": "Heart Spark",
+      "source": "objects-units.json"
+    },
+    "UNIT_HOLLOW_KING": {
+      "kind": "unit",
+      "rawcode": "u035",
+      "base": "nogl",
+      "name": "Hollow King",
       "source": "objects-units.json"
     },
     "UNIT_KINDLED_OVERSEER": {
@@ -160,6 +202,13 @@
       "rawcode": "u020",
       "base": "nenf",
       "name": "Pyreblade Enforcer",
+      "source": "objects-units.json"
+    },
+    "UNIT_PYRE_SENTINEL": {
+      "kind": "unit",
+      "rawcode": "u034",
+      "base": "nogm",
+      "name": "Pyre Sentinel",
       "source": "objects-units.json"
     },
     "UNIT_PYRE_WARDEN": {
@@ -211,6 +260,13 @@
       "name": "Torchbearer",
       "source": "objects-units.json"
     },
+    "UNIT_TORCH_PEDESTAL": {
+      "kind": "unit",
+      "rawcode": "n006",
+      "base": "nech",
+      "name": "Torch Pedestal",
+      "source": "objects-units.json"
+    },
     "UNIT_TWICE_BURNED_ZEALOT": {
       "kind": "unit",
       "rawcode": "u024",
@@ -258,6 +314,20 @@
       "rawcode": "u001",
       "base": "nkob",
       "name": "Vault Kobold",
+      "source": "objects-units.json"
+    },
+    "UNIT_VAULT_RUBBLE": {
+      "kind": "unit",
+      "rawcode": "n007",
+      "base": "nech",
+      "name": "Vault Rubble",
+      "source": "objects-units.json"
+    },
+    "UNIT_VOID_CURATOR": {
+      "kind": "unit",
+      "rawcode": "u033",
+      "base": "nkog",
+      "name": "Void Curator",
       "source": "objects-units.json"
     },
     "ITEM_ASHBREAKER": {
@@ -561,6 +631,13 @@
       "name": "Cinderguard Evasion",
       "source": "objects-abilities.json"
     },
+    "ABIL_CINDER_STEP": {
+      "kind": "ability",
+      "rawcode": "A007",
+      "base": "AEbl",
+      "name": "Cinder Step",
+      "source": "objects-abilities.json"
+    },
     "ABIL_EMBEREDGE_STRIKE": {
       "kind": "ability",
       "rawcode": "A001",
@@ -654,6 +731,21 @@
     "REGION_HUB_RETURN": {
       "kind": "region",
       "name": "HubReturn",
+      "source": "regions.json"
+    },
+    "REGION_PEDESTAL_ASHBLADE": {
+      "kind": "region",
+      "name": "PedestalAshblade",
+      "source": "regions.json"
+    },
+    "REGION_PEDESTAL_CHORISTER": {
+      "kind": "region",
+      "name": "PedestalChorister",
+      "source": "regions.json"
+    },
+    "REGION_PEDESTAL_TORCHBEARER": {
+      "kind": "region",
+      "name": "PedestalTorchbearer",
       "source": "regions.json"
     },
     "REGION_ROOM_F1_A": {

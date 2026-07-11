@@ -460,5 +460,56 @@
     },
     "player": 27,
     "id": 26
+  },
+  {
+    "type": "n006",
+    "position": [
+      -1600,
+      -6272,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 27,
+    "id": 27
+  },
+  {
+    "type": "n006",
+    "position": [
+      -1280,
+      -6272,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 27,
+    "id": 28
+  },
+  {
+    "type": "n006",
+    "position": [
+      -960,
+      -6272,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 27,
+    "id": 29
   }
 ]

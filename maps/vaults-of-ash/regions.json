@@ -508,5 +508,56 @@
       "right": 192,
       "top": -6400
     }
+  },
+  {
+    "name": "PedestalTorchbearer",
+    "id": 30,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      255,
+      220,
+      120
+    ],
+    "position": {
+      "left": -1744,
+      "bottom": -6640,
+      "right": -1456,
+      "top": -6352
+    }
+  },
+  {
+    "name": "PedestalAshblade",
+    "id": 31,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      255,
+      160,
+      80
+    ],
+    "position": {
+      "left": -1424,
+      "bottom": -6640,
+      "right": -1136,
+      "top": -6352
+    }
+  },
+  {
+    "name": "PedestalChorister",
+    "id": 32,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      160,
+      255,
+      200
+    ],
+    "position": {
+      "left": -1104,
+      "bottom": -6640,
+      "right": -816,
+      "top": -6352
+    }
   }
 ]

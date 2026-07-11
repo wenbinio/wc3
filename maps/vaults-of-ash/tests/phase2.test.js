@@ -228,6 +228,12 @@ test('Trial of the Gale (default seed, floor 1): debuff is real (breath every 30
   sim.advance(61); // survive objective, with the gale tripling the breath clock
   assert.strictEqual(sim.global('VaultBreathStacks'), 2,
     'gale debuff: two breath ticks inside 60s (normally 90s apart)');
+  // phase 3: the trash crumbles but the Floor Guardian holds the descent
+  assert.match(runlog(sim), /standoff\|guardian/, 'the Guardian standoff after the countdown');
+  assert.ok(!/trial\|clear/.test(runlog(sim)), 'no clear while the Guardian stands');
+  const g = creeps(sim);
+  assert.strictEqual(g.length, 1, 'only the Guardian remains after the crumble');
+  sim.kill(g[0], h);
   sim.advance(4);
   assert.match(runlog(sim), /trial\|clear\|gale/);
   assert.strictEqual(sim.global('InsightLevel'), 1, 'trial payout: +1 Insight');
@@ -245,11 +251,14 @@ test('Trial of Cinders (seed 7): -40% max life inside, restored on clear, +2 all
   sim.moveUnit(h, ...DOOR.TRIAL);
   assert.strictEqual(h.maxLife, 390, 'cinders debuff: max life -40% while inside');
   const strBefore = h.str;
-  killRoom(sim);
+  killRoom(sim); // guards + the Floor Guardian (Shielded Blood Provost on this seed)
   sim.advance(4);
-  assert.strictEqual(h.maxLife, 650, 'debuff lifted in full when the trial clears');
-  assert.strictEqual(h.str, strBefore + 2 + 3,
-    'payout +2 all stats (plus +3 str: the reliquary objective drew the Bloodward Icon relic)');
+  assert.match(runlog(sim), /guardian\|Shielded Blood Provost\|floor=1\|sig=drain/,
+    'the seed-7 Guardian draw is pinned');
+  assert.match(runlog(sim), /relic\|Ember Chalice/, 'the relic deck draw is pinned');
+  assert.strictEqual(h.maxLife, 650 + 75,
+    'debuff lifted in full when the trial clears (+75: the Ember Chalice relic)');
+  assert.strictEqual(h.str, strBefore + 2, 'payout: +2 all stats');
   assert.match(runlog(sim), /trial\|clear\|cinders/);
 });
 

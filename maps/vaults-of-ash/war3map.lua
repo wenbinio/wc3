@@ -1,5 +1,5 @@
 -- =========================================================================
--- The Vaults of Ash — war3map.lua (phase 2)
+-- The Vaults of Ash — war3map.lua (phase 3)
 -- =========================================================================
 -- A seeded one-session co-op roguelike for 1-3 players. The last
 -- torchbearers of a burned monastic order descend the vault the order died
@@ -7,6 +7,20 @@
 -- void. Travel is trigger teleport only.
 --
 -- The run:
+--   * HEROES (phase 3): three playable torchbearer kits — the Torchbearer
+--     (default), the Ashblade (glass cannon with the innate Cinder Step
+--     blink) and the Chorister (support with the trigger-driven Kindled
+--     Chorus heal) — picked at the hub HERO PEDESTALS before the first
+--     door (the covenant-altar pattern). Identity = hero x covenant x
+--     sigil path (IdentityCount = 60).
+--   * FLOOR GUARDIANS (phase 3; Ulfsire's Guardian promotion +
+--     exit-from-corpse, credited): every room entered through a real door
+--     is warded by a Guardian from a seeded 6-pool (no replacement across
+--     the run), affixed, floor/party-scaled, each with one scripted
+--     signature behavior. The descent door SPAWNS AT ITS CORPSE.
+--   * INTERIOR VARIANTS (phase 3): each of the 20 templates carries 3
+--     authored interior variants (obstacle arrangements from a 6-key
+--     library, seeded jitter) — 60 interiors; two seeds provably differ.
 --   * COVENANTS: before the first door each player may swear ONE covenant
 --     at the hub altars — an explicit reward and an explicit price, both
 --     printed on selection (Cinders / Stillness / Sealed; the fourth altar,
@@ -104,13 +118,20 @@ local WRATH_GAIN       = { fast = 40, mid = 20, slow = 5, survive = 15 }
 local TRIAL_CHANCE     = 0.45    -- per-floor trial-door roll (1-2 guaranteed)
 local FEAST_PER_EMBERS = 10      -- boss phase 3: +1 damage per 10 unspent embers
 local VOW_PHRASE       = "emberoath" -- the knowledge code (earned in-game)
+local CHORUS_PERIOD    = 10      -- Kindled Chorus (Chorister innate) cadence
+local CHORUS_HEAL      = 20      -- ... heal per tick
+local CHORUS_RANGE     = 700     -- ... radius around the Chorister
+local GUARDIAN_SIPHON  = 15      -- Void Curator: embers curated per pulse
+local GUARDIAN_DRAIN   = 20      -- Blood Provost: life tithed per hero per pulse
+local GUARDIAN_PULSE   = 25      -- Gale Matriarch: life torn per hero per shriek
 
 -- -------------------------------------------------------------- game state
 local DOOR_LETTERS = { "A", "B", "C" }
 
 local users        = {}    -- seated human pids, in slot order
 local numPlayers   = 1
-local heroes       = {}    -- pid -> Torchbearer hero
+local heroes       = {}    -- pid -> the player's hero (any of the 3 kinds)
+local heroKindOf   = {}    -- pid -> hero kind key ("torch" default)
 local testMode     = {}    -- pid -> bool
 local clockScale   = 1
 local gameOver     = false
@@ -181,6 +202,12 @@ local bossPattern  = nil
 local bossFeast    = 0
 local gateArmed    = false
 
+local chorusLeft   = CHORUS_PERIOD -- Kindled Chorus tick countdown
+local guardianOrder = nil  -- seeded shuffle of the 6-guardian pool (lazy)
+local guardian     = nil   -- active Floor Guardian bookkeeping
+local guardiansSlain = 0
+local obstacles    = {}    -- interior-variant obstacle units (per room)
+
 -- exposed for the headless sim / -runlog (plain globals, sim.global reads them)
 RUNLOG = ""
 RunSeed = DEFAULT_SEED
@@ -190,6 +217,9 @@ InsightLevel = 0
 TrialsCleared = 0
 DeathsCount = 0
 TemplateIndex = "" -- built at load: every template key, per floor
+VariantIndex = ""  -- built at load: every template's 3 interior-variant keys
+IdentityCount = 0  -- built at load: hero kinds x covenants x sigil paths
+GuardiansSlain = 0
 
 -- sounds (created in InitSounds from the same paths sounds.json declares)
 local sndSealChime, sndBreathHorn, sndVictoryHorn = nil, nil, nil
@@ -354,7 +384,7 @@ end
 
 function ReapplyMoveSpeed()
   ForEachHero(function(h, pid)
-    SetUnitMoveSpeed(h, BASE_MS + partyMs + (heroMs[pid] or 0))
+    SetUnitMoveSpeed(h, HeroBaseMs(pid) + partyMs + (heroMs[pid] or 0))
   end)
 end
 
@@ -382,6 +412,28 @@ end
 -- ----------------------------------------------------- data: rooms & creeps
 -- built at load time from the generated constants (the block build-map
 -- prepends sits above this script, so the globals already exist here)
+
+-- the three playable torchbearer kits (phase 3): distinct object-data kits,
+-- chosen at the hub hero pedestals BEFORE the first door (same pattern as
+-- the covenant altars); the party defaults to the Torchbearer. Run identity
+-- = hero kind x covenant x sigil path (IdentityCount, below).
+local HERO_KINDS = {
+  torch = { type = UNIT_TORCHBEARER, name = "Torchbearer", ms = BASE_MS,
+    str = START_STR, agi = START_AGI, int = START_INT,
+    kit = "the steady flame -- balanced arms, 650 life" },
+  ashblade = { type = UNIT_ASHBLADE, name = "Ashblade", ms = 350,
+    str = 14, agi = 22, int = 12,
+    kit = "the glass cannon -- faster and far deadlier, only 520 life; innate CINDER STEP (a 600-range blink, 9s cooldown)" },
+  chorister = { type = UNIT_CHORISTER, name = "Chorister", ms = 300,
+    str = 16, agi = 10, int = 22,
+    kit = "the choir's last voice -- 780 life but weak in arms; innate KINDLED CHORUS (mends every torchbearer within "
+      .. CHORUS_RANGE .. " range for " .. CHORUS_HEAL .. " life every " .. CHORUS_PERIOD .. "s, announced)" },
+}
+local HERO_ORDER = { "torch", "ashblade", "chorister" }
+
+function HeroBaseMs(pid)
+  return HERO_KINDS[heroKindOf[pid] or "torch"].ms
+end
 
 local ROOMS = {
   { REGION_ROOM_F1_A, REGION_ROOM_F1_B, REGION_ROOM_F1_C, REGION_ROOM_F1_D },
@@ -433,6 +485,28 @@ local TIER_ELITES = {
   { { type = UNIT_EMBERLORD_MAULER, name = "Emberlord Mauler", dmg = 42 },
     { type = UNIT_DOOMCINDER_BERSERKER, name = "Doomcinder Berserker", dmg = 38 } },
 }
+-- FLOOR GUARDIANS (phase 3; adapted from Ulfsire's Roguelike's Guardian
+-- promotion + exit-from-corpse, credited): a 6-pool of themed mid-bosses,
+-- one per creep tier pair. Every room entered through a REAL door is warded
+-- by the floor's Guardian — seeded from the pool without replacement, always
+-- carrying a seeded affix, stats scaled by floor and party size, one
+-- scripted signature behavior each. The floor's descent door SPAWNS AT THE
+-- GUARDIAN'S CORPSE. (Debug '-room' chambers stay bare test rooms.)
+local GUARDIANS = {
+  { key = "bone", name = "Bone Warden", type = UNIT_BONE_WARDEN, dmg = 30, sig = "summon",
+    sigDesc = "at half life it calls 2 vault-born from the ossuary" },
+  { key = "gale", name = "Gale Matriarch", type = UNIT_GALE_MATRIARCH, dmg = 26, sig = "pulse",
+    sigDesc = "every 15s her shriek tears " .. GUARDIAN_PULSE .. " life from every torchbearer in the room (never below 1)" },
+  { key = "blood", name = "Blood Provost", type = UNIT_BLOOD_PROVOST, dmg = 28, sig = "drain",
+    sigDesc = "every 20s it tithes " .. GUARDIAN_DRAIN .. " life from each torchbearer and drinks the sum" },
+  { key = "void", name = "Void Curator", type = UNIT_VOID_CURATOR, dmg = 25, sig = "siphon",
+    sigDesc = "every 20s it curates " .. GUARDIAN_SIPHON .. " Embers out of the party pool" },
+  { key = "pyre", name = "Pyre Sentinel", type = UNIT_PYRE_SENTINEL, dmg = 32, sig = "enrage",
+    sigDesc = "below a quarter life it ignites: +60% damage" },
+  { key = "hollow", name = "Hollow King", type = UNIT_HOLLOW_KING, dmg = 34, sig = "mantle",
+    sigDesc = "at half life it dons the wrathfire mantle (a heavier slam) and knits a quarter of its wounds" },
+}
+
 local REVENANT_SPEC = { type = UNIT_ASH_REVENANT, name = "Ash Revenant", dmg = 45 }
 local BOSS_SPEC = { type = UNIT_VAULT_HEART, name = "Vault Heart", dmg = 55 }
 local ADD_SPECS = {
@@ -464,54 +538,91 @@ local BOSS_PATTERNS = {
 -- base, per} -> ScaleCount(base + per*(danger-1)) spawns per entry.
 -- trickle: creep indices cycled by survive reinforcements.
 -- pattern: scatter | ring | corners | line | packs (seeded placement).
+-- variants: each template's 3 seeded INTERIOR VARIANTS (phase 3) — keys
+-- into ARRANGEMENTS below; one is drawn per real-door room and its
+-- obstacle layout spawned with seeded jitter (2 runs on different seeds
+-- provably differ). 20 templates x 3 variants = 60 authored interiors.
 local TEMPLATES = {
   { -- floor 1 (7)
     { key = "KILN", name = "The Cold Kiln", obj = "killall", pattern = "scatter",
+      variants = { "colonnade", "rubble", "braziers" },
       comp = { { c = 1, base = 2, per = 1 }, { c = 2, base = 2, per = 1 } } },
     { key = "WARREN", name = "Kobold Warren", obj = "killall", pattern = "packs",
+      variants = { "cairns", "rubble", "walls" },
       comp = { { c = 2, base = 3, per = 1 }, { c = 3, base = 2, per = 1 } } },
     { key = "PROCESSION", name = "Ashen Procession", obj = "killall", pattern = "line",
+      variants = { "braziers", "colonnade", "walls" },
       comp = { { c = 1, base = 3, per = 1 }, { c = 5, base = 1, per = 1 } } },
     { key = "HOWLPIT", name = "The Howlpit", obj = "survive", pattern = "scatter",
+      variants = { "cairns", "ossuary", "rubble" },
       comp = { { c = 4, base = 2, per = 1 } }, trickle = { 4, 3 } },
     { key = "BONEGALLERY", name = "Bone Gallery", obj = "killall", pattern = "ring",
+      variants = { "ossuary", "colonnade", "cairns" },
       comp = { { c = 6, base = 2, per = 1 }, { c = 2, base = 2, per = 0 } } },
     { key = "RELICNICHE", name = "Reliquary Niche", obj = "reliquary", pattern = "corners",
+      variants = { "braziers", "walls", "ossuary" },
       comp = { { c = 1, base = 2, per = 1 }, { c = 5, base = 1, per = 1 } } },
     { key = "EMBERCRECHE", name = "Ember Creche", obj = "survive", pattern = "corners",
+      variants = { "rubble", "braziers", "cairns" },
       comp = { { c = 3, base = 3, per = 1 } }, trickle = { 5, 3 } },
   },
   { -- floor 2 (7)
     { key = "BRUTEHALL", name = "Brutehall", obj = "killall", pattern = "scatter",
+      variants = { "walls", "colonnade", "rubble" },
       comp = { { c = 1, base = 2, per = 1 }, { c = 2, base = 2, per = 1 } } },
     { key = "TOLLROAD", name = "The Toll Road", obj = "killall", pattern = "line",
+      variants = { "braziers", "walls", "cairns" },
       comp = { { c = 3, base = 2, per = 1 }, { c = 5, base = 2, per = 0 } } },
     { key = "GEOMANCY", name = "Geomancer Circle", obj = "killall", pattern = "ring",
+      variants = { "colonnade", "ossuary", "braziers" },
       comp = { { c = 4, base = 2, per = 1 }, { c = 1, base = 1, per = 1 } } },
     { key = "HOWLINGDARK", name = "The Howling Dark", obj = "survive", pattern = "scatter",
+      variants = { "rubble", "cairns", "ossuary" },
       comp = { { c = 6, base = 2, per = 1 } }, trickle = { 6, 5 } },
     { key = "GRAVEWATCH", name = "Gravewatch", obj = "reliquary", pattern = "corners",
+      variants = { "ossuary", "walls", "colonnade" },
       comp = { { c = 7, base = 2, per = 1 }, { c = 2, base = 2, per = 0 } } },
     { key = "SMUGGLERS", name = "Smugglers Cache", obj = "reliquary", pattern = "corners",
+      variants = { "cairns", "rubble", "walls" },
       comp = { { c = 3, base = 3, per = 1 } } },
     { key = "TIDEWALK", name = "Ash Tide Walk", obj = "survive", pattern = "scatter",
+      variants = { "walls", "braziers", "rubble" },
       comp = { { c = 2, base = 3, per = 1 } }, trickle = { 2, 1 } },
   },
   { -- floor 3 (6)
     { key = "OGREDEPTHS", name = "Ogre Depths", obj = "killall", pattern = "scatter",
+      variants = { "cairns", "walls", "ossuary" },
       comp = { { c = 1, base = 2, per = 1 }, { c = 6, base = 1, per = 1 } } },
     { key = "PYREGUARD", name = "The Pyre Guard", obj = "killall", pattern = "line",
+      variants = { "braziers", "colonnade", "rubble" },
       comp = { { c = 3, base = 2, per = 1 }, { c = 7, base = 2, per = 0 } } },
     { key = "HEXGALLERY", name = "Hex Gallery", obj = "killall", pattern = "ring",
+      variants = { "colonnade", "braziers", "ossuary" },
       comp = { { c = 4, base = 2, per = 1 }, { c = 5, base = 2, per = 1 } } },
     { key = "LASTHUNT", name = "The Last Hunt", obj = "survive", pattern = "scatter",
+      variants = { "rubble", "ossuary", "cairns" },
       comp = { { c = 2, base = 3, per = 1 } }, trickle = { 5, 2 } },
     { key = "SEALVAULT", name = "The Sealed Vault", obj = "reliquary", pattern = "corners",
+      variants = { "walls", "ossuary", "braziers" },
       comp = { { c = 7, base = 2, per = 1 }, { c = 1, base = 1, per = 1 } } },
     { key = "CINDERSTORM", name = "Cinderstorm", obj = "survive", pattern = "corners",
+      variants = { "rubble", "colonnade", "cairns" },
       comp = { { c = 5, base = 2, per = 1 }, { c = 3, base = 1, per = 1 } }, trickle = { 3 } },
   },
 }
+
+-- the interior-arrangement library the template variants draw from: each
+-- key is an obstacle/decor layout spawned at room activation with seeded
+-- jitter (braziers use the Ember Brazier prop, everything else Vault Rubble)
+local ARRANGEMENTS = {
+  colonnade = { n = 4, desc = "A shattered colonnade rings the fight" },
+  cairns    = { n = 2, desc = "Twin rubble cairns split the floor" },
+  braziers  = { n = 3, desc = "A line of cold braziers crosses the room" },
+  rubble    = { n = 6, desc = "A rubble field chokes the approaches" },
+  walls     = { n = 4, desc = "Two fallen walls funnel the fight" },
+  ossuary   = { n = 5, desc = "Bone-heap mounds crowd the seal" },
+}
+
 do
   local parts = {}
   for f = 1, 3 do
@@ -520,6 +631,13 @@ do
     parts[f] = "F" .. f .. ":" .. table.concat(keys, ",")
   end
   TemplateIndex = table.concat(parts, ";")
+  local vparts = {}
+  for f = 1, 3 do
+    for _, t in ipairs(TEMPLATES[f]) do
+      vparts[#vparts + 1] = t.key .. "=" .. table.concat(t.variants, ",")
+    end
+  end
+  VariantIndex = table.concat(vparts, ";")
 end
 
 -- ------------------------------------------------------ data: the boon table
@@ -684,6 +802,97 @@ local ALTAR_REGIONS = {
   { region = REGION_ALTAR_SEALED, key = "sealed" },
   { region = REGION_ALTAR_UNBOUND, key = "unbound" },
 }
+local PEDESTAL_REGIONS = {
+  { region = REGION_PEDESTAL_TORCHBEARER, key = "torch" },
+  { region = REGION_PEDESTAL_ASHBLADE, key = "ashblade" },
+  { region = REGION_PEDESTAL_CHORISTER, key = "chorister" },
+}
+
+-- run identities: hero kinds x covenants x sigil paths (the matrix math)
+do
+  local hk, cv = 0, 0
+  for _ in pairs(HERO_KINDS) do hk = hk + 1 end
+  for _ in pairs(COVENANTS) do cv = cv + 1 end
+  IdentityCount = hk * cv * #SIGIL_ORDER
+end
+
+-- ------------------------------------------------------------ hero kinds
+
+function SpawnHero(pid, kindKey, x, y, facing)
+  local k = HERO_KINDS[kindKey]
+  local h = CreateUnit(Player(pid), k.type, x, y, facing or 90.0)
+  SetHeroStr(h, k.str, true)
+  SetHeroAgi(h, k.agi, true)
+  SetHeroInt(h, k.int, true)
+  heroes[pid] = h
+  heroKindOf[pid] = kindKey
+  if kindKey == "ashblade" then
+    UnitAddAbility(h, ABIL_CINDER_STEP) -- the innate blink, granted by trigger
+  end
+  ReapplyMoveSpeed()
+  return h
+end
+
+function PickHero(pid, kindKey)
+  if gameOver then return end
+  if firstDoor then
+    Tell(pid, "|cffaaaaaaThe pedestals answer only before the first door.|r")
+    return
+  end
+  if (heroKindOf[pid] or "torch") == kindKey then
+    Tell(pid, "|cffaaaaaaYou already carry the " .. HERO_KINDS[kindKey].name .. "'s torch.|r")
+    return
+  end
+  local old = heroes[pid]
+  local x, y = GetUnitX(old), GetUnitY(old)
+  RemoveUnit(old)
+  local k = HERO_KINDS[kindKey]
+  SpawnHero(pid, kindKey, x, y)
+  StartSound(sndSealChime)
+  AnnounceAll("|cffffcc88" .. GetPlayerName(Player(pid)) .. " takes up the " .. k.name
+    .. ": " .. k.kit .. ".|r")
+  LogRun("hero|pid=" .. pid .. "|" .. kindKey)
+end
+
+function HeroSummary()
+  local parts = {}
+  for _, pid in ipairs(users) do
+    parts[#parts + 1] = GetPlayerName(Player(pid)) .. ": "
+      .. HERO_KINDS[heroKindOf[pid] or "torch"].name
+  end
+  return table.concat(parts, ", ")
+end
+
+-- Kindled Chorus (the Chorister's innate): every CHORUS_PERIOD seconds each
+-- living Chorister mends every living torchbearer within CHORUS_RANGE
+-- (itself included) for CHORUS_HEAL life — real trigger heal math, announced
+function ChorusTick()
+  ForEachHero(function(c, cpid)
+    if heroKindOf[cpid] == "chorister" and Alive(c) then
+      local cx, cy = GetUnitX(c), GetUnitY(c)
+      local healed = 0
+      ForEachHero(function(h)
+        if Alive(h) then
+          local dx, dy = GetUnitX(h) - cx, GetUnitY(h) - cy
+          if dx * dx + dy * dy <= CHORUS_RANGE * CHORUS_RANGE then
+            local maxhp = GetUnitState(h, UNIT_STATE_MAX_LIFE)
+            local life = GetUnitState(h, UNIT_STATE_LIFE)
+            if life < maxhp then
+              SetUnitState(h, UNIT_STATE_LIFE, math.min(maxhp, life + CHORUS_HEAL))
+              healed = healed + 1
+            end
+          end
+        end
+      end)
+      if healed > 0 then
+        AnnounceTimedAll(4.0, "|cff88ffaaKindled Chorus: the Chorister's song mends "
+          .. healed .. " torchbearer" .. (healed == 1 and "" or "s")
+          .. " (+" .. CHORUS_HEAL .. " life).|r")
+        LogRun("chorus|healed=" .. healed)
+      end
+    end
+  end)
+end
 
 -- --------------------------------------------------------- insight & sigils
 
@@ -866,20 +1075,22 @@ end
 
 -- spawn counts for a template at a danger level — the SAME function feeds
 -- the omen creep counts (Insight 1+) and the actual spawns, so the omen
--- can never lie. Elite (+1) appears behind three-skull doors; a Wrath
--- ambush is announced separately and is never part of the omen count.
+-- can never lie. Elite (+1) appears behind three-skull doors; withGuardian
+-- (+1) counts the Floor Guardian every real door hides; a Wrath ambush is
+-- announced separately and is never part of the omen count.
 function CompCount(entry, danger, legion)
   local n = ScaleCount(entry.base + entry.per * (danger - 1))
   if legion then n = math.ceil(n * 1.5) end
   return n
 end
 
-function CountSpawns(template, danger, legion)
+function CountSpawns(template, danger, legion, withGuardian)
   local total = 0
   for _, entry in ipairs(template.comp) do
     total = total + CompCount(entry, danger, legion)
   end
   if danger >= 3 then total = total + 1 end -- the elite
+  if withGuardian then total = total + 1 end -- the Floor Guardian
   return total
 end
 
@@ -932,6 +1143,216 @@ function SpawnRevenant(x, y, inRoom)
   return u
 end
 
+-- ----------------------------------------------- floor guardians & variants
+
+-- seeded interior variant: one of the template's 3 authored arrangements,
+-- obstacle positions jittered by the run PRNG. Obstacles are inert neutral
+-- props (removed on clear) — the variation is provably seeded (run log).
+function VariantPositions(key, cx, cy, n)
+  local pts = {}
+  if key == "colonnade" then
+    local a0 = NextRand() * 2 * math.pi
+    for i = 1, n do
+      local ang = a0 + (2 * math.pi) * (i - 1) / n
+      pts[i] = { x = cx + math.cos(ang) * 620, y = cy + math.sin(ang) * 460 }
+    end
+  elseif key == "cairns" then
+    for i = 1, n do
+      local side = (i % 2 == 0) and 1 or -1
+      pts[i] = { x = cx + side * (420 + NextRand() * 160), y = cy + NextRand() * 384 - 192 }
+    end
+  elseif key == "braziers" then
+    for i = 1, n do
+      pts[i] = { x = cx - 448 + (i - 1) * 448, y = cy + 96 + NextRand() * 128 - 64 }
+    end
+  elseif key == "walls" then
+    for i = 1, n do
+      local side = (i <= n / 2) and -1 or 1
+      pts[i] = { x = cx + side * 384, y = cy + ((i % 2 == 0) and 288 or -288) + NextRand() * 96 - 48 }
+    end
+  elseif key == "ossuary" then
+    for i = 1, n do
+      pts[i] = { x = cx + NextRand() * 768 - 384, y = cy + 256 + NextRand() * 256 }
+    end
+  else -- rubble
+    for i = 1, n do
+      pts[i] = { x = cx + NextRand() * 1400 - 700, y = cy + NextRand() * 1000 - 500 }
+    end
+  end
+  for _, p in ipairs(pts) do
+    p.x = math.floor(p.x)
+    p.y = math.floor(p.y)
+  end
+  return pts
+end
+
+function ApplyInteriorVariant(tmpl, R)
+  local vIdx = RandInt(1, 3)
+  local key = tmpl.variants[vIdx]
+  local a = ARRANGEMENTS[key]
+  local cx, cy = RegionCenter(R)
+  for _, p in ipairs(VariantPositions(key, cx, cy, a.n)) do
+    local utype = (key == "braziers") and UNIT_EMBER_BRAZIER or UNIT_VAULT_RUBBLE
+    local o = CreateUnit(Player(PLAYER_NEUTRAL_PASSIVE), utype, p.x, p.y, 270.0)
+    SetUnitInvulnerable(o, true)
+    obstacles[#obstacles + 1] = o
+  end
+  AnnounceTimedAll(6.0, "|cff888888" .. a.desc .. ".|r")
+  LogRun("variant|" .. tmpl.key .. "|v" .. vIdx .. "|" .. key)
+end
+
+function ClearObstacles()
+  for _, o in ipairs(obstacles) do
+    RemoveUnit(o)
+  end
+  obstacles = {}
+end
+
+-- the Floor Guardian (Ulfsire's Guardian promotion, credited): seeded from
+-- the 6-pool without replacement across the run's floors, affixed, stats
+-- scaled by floor and party size, one signature behavior (GuardianWatch)
+function SpawnGuardian(f, R)
+  if guardianOrder == nil then guardianOrder = ShuffledIndices(#GUARDIANS) end
+  local spec = GUARDIANS[guardianOrder[((f - 1) % #GUARDIANS) + 1]]
+  local affix = AFFIXES[RandInt(1, #AFFIXES)]
+  local mine = { type = spec.type, name = affix.name .. " " .. spec.name,
+    dmg = math.floor(spec.dmg * (1 + 0.3 * (f - 1)) * (affix.dmgMult or 1) + 0.5),
+    guardian = true, affix = affix.key }
+  local cx, cy = RegionCenter(R)
+  local u = SpawnHostile(mine, cx, cy + 320.0)
+  BlzSetUnitName(u, mine.name)
+  local hp = GetUnitState(u, UNIT_STATE_MAX_LIFE)
+    * (1 + 0.35 * (f - 1) + 0.25 * (numPlayers - 1)) * (affix.hpMult or 1)
+  SetUnitState(u, UNIT_STATE_MAX_LIFE, hp)
+  SetUnitState(u, UNIT_STATE_LIFE, hp)
+  if affix.ms then SetUnitMoveSpeed(u, GetUnitMoveSpeed(u) + affix.ms) end
+  if affix.key == "ashveiled" then UnitAddAbility(u, ABIL_CINDERGUARD_EVASION) end
+  TrackRoomUnit(u, mine)
+  guardian = { unit = u, spec = spec, name = mine.name, affixKey = affix.key,
+    slain = false, sigDone = false,
+    pulseLeft = (spec.sig == "pulse") and 15 or 20 }
+  AnnounceTimedAll(12.0, "|cffff66ffFLOOR GUARDIAN -- " .. mine.name .. " (" .. affix.desc
+    .. ") wards this floor's final room: " .. spec.sigDesc
+    .. ". The way down opens at its corpse.|r")
+  LogRun("guardian|" .. mine.name .. "|floor=" .. f .. "|sig=" .. spec.sig)
+  return u
+end
+
+-- the exit-from-corpse beat (Ulfsire's, credited): the descent door rises
+-- exactly where the Guardian fell
+function GuardianFell(u, spec)
+  guardian.slain = true
+  guardiansSlain = guardiansSlain + 1
+  GuardiansSlain = guardiansSlain
+  local x, y = GetUnitX(u), GetUnitY(u)
+  guardian.corpseX, guardian.corpseY = math.floor(x), math.floor(y)
+  local door = CreateUnit(Player(PLAYER_NEUTRAL_PASSIVE), UNIT_SEALSTONE_DOOR, x, y, 270.0)
+  SetUnitInvulnerable(door, true)
+  obstacles[#obstacles + 1] = door -- swept with the room props on clear
+  StartSound(sndSealChime)
+  AnnounceTimedAll(10.0, "|cff88ff88The Guardian falls -- the descent door TEARS OPEN AT ITS CORPSE"
+    .. " where " .. spec.name .. " fell.|r")
+  LogRun("guardian|slain|" .. spec.name .. "|x=" .. guardian.corpseX .. "|y=" .. guardian.corpseY)
+end
+
+-- crumble every non-guardian hostile of the active room (survive standoff);
+-- untracked before the kill so no drops/burst/clear bookkeeping fires
+function CrumbleTrash()
+  for _, u in ipairs(activeUnits) do
+    local s = activeSet[u]
+    if s ~= nil and not s.guardian and Alive(u) then
+      activeSet[u] = nil
+      remaining = remaining - 1
+      KillUnit(u)
+    end
+  end
+end
+
+-- signature behaviors, one per guardian, driven by the master clock:
+-- summon (Bone Warden, once at 50%), pulse (Gale Matriarch, 15s),
+-- drain (Blood Provost, 20s), siphon (Void Curator, 20s),
+-- enrage (Pyre Sentinel, once below 25%), mantle (Hollow King, once at 50%)
+function GuardianWatch()
+  if guardian == nil or guardian.slain or roomState ~= "active" then return end
+  local u = guardian.unit
+  if not Alive(u) then return end
+  local spec = guardian.spec
+  local ratio = GetWidgetLife(u) / GetUnitState(u, UNIT_STATE_MAX_LIFE)
+  if spec.sig == "summon" then
+    if not guardian.sigDone and ratio <= 0.5 then
+      guardian.sigDone = true
+      local fodder = TIER_CREEPS[activeRoom.floor][1]
+      for k = 1, 2 do
+        local mine = { type = fodder.type, name = fodder.name, dmg = fodder.dmg }
+        TrackRoomUnit(SpawnHostile(mine, GetUnitX(u) + (k * 256 - 384), GetUnitY(u)), mine)
+      end
+      AnnounceAll("|cffff66ff" .. guardian.name .. " calls the ossuary: 2 vault-born claw free!|r")
+      LogRun("guardiansig|summon")
+    end
+  elseif spec.sig == "enrage" then
+    if not guardian.sigDone and ratio <= 0.25 then
+      guardian.sigDone = true
+      local s = activeSet[u]
+      s.dmg = math.floor(s.dmg * 1.6 + 0.5)
+      BlzSetUnitBaseDamage(u, math.floor(s.dmg * BreathFactor() + 0.5), 0)
+      AnnounceAll("|cffff2222" .. guardian.name .. " IGNITES: +60% damage!|r")
+      LogRun("guardiansig|enrage")
+    end
+  elseif spec.sig == "mantle" then
+    if not guardian.sigDone and ratio <= 0.5 then
+      guardian.sigDone = true
+      UnitAddAbility(u, ABIL_WRATHFIRE_SLAM)
+      SetUnitState(u, UNIT_STATE_LIFE, math.min(GetUnitState(u, UNIT_STATE_MAX_LIFE),
+        GetWidgetLife(u) + GetUnitState(u, UNIT_STATE_MAX_LIFE) * 0.25))
+      AnnounceAll("|cffff66ff" .. guardian.name
+        .. " dons the wrathfire mantle and knits a quarter of its wounds!|r")
+      LogRun("guardiansig|mantle")
+    end
+  else -- the periodic signatures
+    guardian.pulseLeft = guardian.pulseLeft - clockScale
+    while guardian.pulseLeft <= 0 do
+      guardian.pulseLeft = guardian.pulseLeft + ((spec.sig == "pulse") and 15 or 20)
+      if spec.sig == "pulse" then
+        local n = 0
+        ForEachHero(function(h)
+          if Alive(h) then
+            SetUnitState(h, UNIT_STATE_LIFE,
+              math.max(1, GetUnitState(h, UNIT_STATE_LIFE) - GUARDIAN_PULSE))
+            n = n + 1
+          end
+        end)
+        AnnounceAll("|cffff8866" .. guardian.name .. " shrieks: " .. GUARDIAN_PULSE
+          .. " life torn from " .. n .. " torchbearer" .. (n == 1 and "" or "s") .. ".|r")
+        LogRun("guardiansig|pulse|" .. n)
+      elseif spec.sig == "drain" then
+        local total = 0
+        ForEachHero(function(h)
+          if Alive(h) then
+            local take = math.min(GUARDIAN_DRAIN,
+              math.max(0, math.floor(GetUnitState(h, UNIT_STATE_LIFE)) - 1))
+            SetUnitState(h, UNIT_STATE_LIFE, GetUnitState(h, UNIT_STATE_LIFE) - take)
+            total = total + take
+          end
+        end)
+        SetUnitState(u, UNIT_STATE_LIFE, math.min(GetUnitState(u, UNIT_STATE_MAX_LIFE),
+          GetWidgetLife(u) + total))
+        AnnounceAll("|cffff8866" .. guardian.name .. " tithes " .. total
+          .. " life from the party and drinks it.|r")
+        LogRun("guardiansig|drain|" .. total)
+      else -- siphon
+        local take = math.min(GUARDIAN_SIPHON, embersPool)
+        if take > 0 then
+          embersPool = embersPool - take
+          SyncEmbers()
+          AnnounceAll("|cffff8866" .. guardian.name .. " curates " .. take
+            .. " Embers out of the party's pool.|r")
+          LogRun("guardiansig|siphon|-" .. take)
+        end
+      end
+    end
+  end
+end
+
 -- --------------------------------------------------------------------- wrath
 
 function AddWrath(n, why)
@@ -980,7 +1401,7 @@ end
 function OmenText(d)
   local s = "danger " .. string.rep("!", d.danger) .. " / reward: " .. REWARD_LABEL[d.reward]
   if insight >= 1 then
-    s = s .. " / " .. CountSpawns(d.template, d.danger, false) .. " vault-born"
+    s = s .. " / " .. CountSpawns(d.template, d.danger, false, true) .. " vault-born"
   end
   if insight >= 2 then
     if d.reward == "embers" then
@@ -1381,8 +1802,10 @@ end
 
 function BuildSummary(verdict)
   local boons = (#boonsTaken > 0) and table.concat(boonsTaken, ", ") or "none"
-  return "THE VAULTS OF ASH -- " .. verdict .. ". Floor reached: " .. floorNum
-    .. "/4. Rooms cleared: " .. roomsCleared .. ". Embers earned: " .. embersEarned
+  return "THE VAULTS OF ASH -- " .. verdict .. ". Torchbearers: " .. HeroSummary()
+    .. ". Floor reached: " .. floorNum
+    .. "/4. Rooms cleared: " .. roomsCleared .. ". Guardians slain: " .. guardiansSlain
+    .. ". Embers earned: " .. embersEarned
     .. ". Boons: " .. boons .. ". Sigils: " .. SigilSummary()
     .. ". Wrath peak: " .. wrathPeak .. "%. Trials cleared: " .. trialsCleared
     .. ". Insight: " .. insight .. ". Deaths: " .. deaths
@@ -1519,6 +1942,15 @@ function ClearRoom()
     .. (SigilActive("Ash", 3) and ", Ash 3pc +10" or "") .. "). Party Embers: " .. embersPool .. ".|r")
   LogRun("clear|room=" .. ROOM_KEYS[room.floor][room.island] .. "|t=" .. clearTime
     .. "|embers=" .. pay .. "|total=" .. embersPool)
+  -- the exit-from-corpse beat: the party descends through the door that rose
+  -- where the Guardian fell (Ulfsire's Roguelike, credited)
+  if guardian ~= nil and guardian.slain then
+    AnnounceAll("|cffaaddffThe party takes the descent door at the Guardian's corpse;"
+      .. " it seals behind them.|r")
+    LogRun("descend|corpse|x=" .. guardian.corpseX .. "|y=" .. guardian.corpseY)
+  end
+  guardian = nil
+  ClearObstacles()
   roomsCleared = roomsCleared + 1
   floorNum = roomsCleared + 1
 
@@ -1596,7 +2028,7 @@ function ClearRoom()
   After(2.5, ReturnToHub)
 end
 
-function ActivateRoom(f, d)
+function ActivateRoom(f, d, real)
   local R = ROOMS[f][d.island]
   local cx, cy = RegionCenter(R)
   local entryX, entryY = cx, R.minY + 320.0
@@ -1659,6 +2091,12 @@ function ActivateRoom(f, d)
   if revenantArmed then
     SpawnRevenant(cx, cy - 256.0, true)
   end
+  -- real doors only (debug '-room' chambers stay bare): the seeded interior
+  -- variant, then the floor's Guardian — draw order is pinned by the tests
+  if real then
+    ApplyInteriorVariant(tmpl, R)
+    SpawnGuardian(f, R)
+  end
   AnnounceTimedAll(10.0, "|cffff9966" .. tmpl.name .. " -- the seal breaks: "
     .. OBJ_LABEL[tmpl.obj] .. (tmpl.obj == "survive" and ". They will not stop coming" or "") .. ".|r")
 end
@@ -1678,7 +2116,7 @@ function EnterDoor(i)
   StartSound(sndSealChime)
   AnnounceAll("|cffaaddffDoor " .. DOOR_LETTERS[i] .. " grinds open...|r")
   LogRun("door|" .. DOOR_LETTERS[i] .. "|floor=" .. floorNum)
-  ActivateRoom(floorNum, d)
+  ActivateRoom(floorNum, d, true)
 end
 
 function EnterTrialDoor()
@@ -1694,7 +2132,7 @@ function EnterTrialDoor()
   AnnounceAll("|cffffff66The Trial door grinds open...|r")
   LogRun("door|TRIAL|floor=" .. floorNum)
   ActivateRoom(floorNum, { island = t.island, template = t.template, danger = 3,
-    reward = "embers", trial = t.contract })
+    reward = "embers", trial = t.contract }, true)
 end
 
 -- ------------------------------------------------------------- covenants
@@ -1822,14 +2260,28 @@ function StartClock()
       breathLeft = breathLeft + BREATH_PERIOD
       ApplyBreathTick()
     end
+    chorusLeft = chorusLeft - clockScale
+    while chorusLeft <= 0 do
+      chorusLeft = chorusLeft + CHORUS_PERIOD
+      ChorusTick()
+    end
     if roomState == "active" and activeRoom ~= nil then
       roomClock = roomClock + clockScale
-      if activeRoom.template.obj == "survive" then
+      if activeRoom.template.obj == "survive" and not activeRoom.surviveDone then
         surviveLeft = surviveLeft - clockScale
         trickleLeft = trickleLeft - clockScale
         if surviveLeft <= 0 then
-          AnnounceAll("|cff88ff88The onslaught spends itself; the survivors crumble.|r")
-          ClearRoom()
+          activeRoom.surviveDone = true
+          CrumbleTrash()
+          if guardian ~= nil and not guardian.slain and Alive(guardian.unit) then
+            -- the Guardian standoff: the trash crumbles, the descent waits
+            AnnounceAll("|cff88ff88The onslaught spends itself -- only the GUARDIAN"
+              .. " stands between you and the descent.|r")
+            LogRun("standoff|guardian")
+          else
+            AnnounceAll("|cff88ff88The onslaught spends itself; the survivors crumble.|r")
+            ClearRoom()
+          end
         elseif trickleLeft <= 0 then
           trickleLeft = trickleLeft + TRICKLE_EVERY
           local refs = activeRoom.template.trickle or { 1 }
@@ -1840,6 +2292,7 @@ function StartClock()
           end
         end
       end
+      GuardianWatch()
     end
     BossPhaseWatch()
   end)
@@ -1928,13 +2381,17 @@ function HandleDeath()
     local spec = activeSet[u]
     activeSet[u] = nil
     remaining = remaining - 1
+    -- the Floor Guardian: its corpse becomes the descent door
+    if spec.guardian and guardian ~= nil and u == guardian.unit then
+      GuardianFell(u, spec)
+    end
     -- elites carry consumables (seeded from the 5-deep drop table)
     if spec.elite then
       CreateItem(ELITE_DROPS[RandInt(1, #ELITE_DROPS)], GetUnitX(u), GetUnitY(u))
       LogRun("elitedrop|" .. spec.name)
     end
-    -- Bloodtithe Pact: elite (and revenant) kills feed the party
-    if (spec.elite or spec.revenant) and epicFlags.bloodpact then
+    -- Bloodtithe Pact: elite (and revenant/guardian) kills feed the party
+    if (spec.elite or spec.revenant or spec.guardian) and epicFlags.bloodpact then
       PartyStats(2, 0, 0)
       PartyHealPct(0.25)
       AnnounceAll("|cffff8888Bloodtithe Pact: the kill pays (+2 Strength, 25% healed).|r")
@@ -1968,6 +2425,10 @@ function HandleDeath()
         LogRun("reliquary|looted")
         GrantRelic(DrawRelicFromDeck(), cx, cy + 256.0)
       end
+      ClearRoom()
+    elseif obj == "survive" and activeRoom ~= nil and activeRoom.surviveDone
+      and spec.guardian then
+      -- the Guardian standoff breaks: the survive room clears at last
       ClearRoom()
     end
   end
@@ -2048,6 +2509,14 @@ function RegisterTriggers()
       SwearCovenant(pid, key)
     end)
   end
+
+  -- hero pedestals (phase 3): pick a torchbearer kit before the first door
+  for _, ped in ipairs(PEDESTAL_REGIONS) do
+    local key = ped.key
+    RegisterRegionTrigger(ped.region, function(_, pid)
+      PickHero(pid, key)
+    end)
+  end
 end
 
 -- --------------------------------------------------------- chat commands
@@ -2056,13 +2525,14 @@ function ShowHelp(pid)
   Tell(pid, "|cffaaddffVaults of Ash commands:|r")
   Tell(pid, "-help : this list. -sigils : your sigil counts + set bonuses. -seed N : reseed (only before any covenant or door; current seed " .. RunSeed .. ").")
   Tell(pid, "-vow <word> : speak an earned vow (before the first door) to open the fourth altar.")
-  Tell(pid, "|cff888888The run: swear a covenant at the altars (optional, explicit terms), pick omen-read doors (a 4th TRIAL door on 1-2 floors), watch Wrath at 50/75/100%, spend Embers before the Heart's final phase feeds on them. Fallen torches rekindle on the next cleared room; a full wipe ends the run.|r")
+  Tell(pid, "|cff888888The run: pick a torchbearer at the hero pedestals (Torchbearer / Ashblade / Chorister -- before the first door; Torchbearer by default), swear a covenant at the altars (optional, explicit terms), pick omen-read doors (a 4th TRIAL door on 1-2 floors). Every floor's room is warded by a FLOOR GUARDIAN -- the descent door opens at its corpse. Watch Wrath at 50/75/100%, spend Embers before the Heart's final phase feeds on them. Fallen torches rekindle on the next cleared room; a full wipe ends the run.|r")
   Tell(pid, "-test : toggle debug mode (required for the rest).")
   Tell(pid, "-floor N : jump to floor N. -room <killall|survive|reliquary> [danger] : force a room. -trial : force a trial offer.")
   Tell(pid, "-embers N : set Embers. -boon : force a draft. -grant <key> : grant a boon by key. -clear : clear the active room.")
   Tell(pid, "-wrath N : set the Wrath meter. -insight N : set Insight. -covenant <cinders|stillness|sealed|unbound> : force a pact.")
+  Tell(pid, "-hero <torch|ashblade|chorister> : force a torchbearer kit.")
   Tell(pid, "-boss : jump to the Vault Heart. -god : invulnerable. -ff : " .. FF_SCALE .. "x clock. -runlog : print the run log.")
-  Tell(pid, "|cff888888Design inspirations, credited: Roguelike (DeathdruidX), Ulfsire's Roguelike, Just Another Roguelike (PortusM).|r")
+  Tell(pid, "|cff888888Design inspirations, credited: Roguelike (DeathdruidX), Ulfsire's Roguelike (incl. its Guardians and exit-from-corpse), Just Another Roguelike (PortusM).|r")
 end
 
 function HandleSeed(pid, n)
@@ -2078,6 +2548,8 @@ function HandleSeed(pid, n)
   pendingDrafts = {}
   boonSeen = {}
   relicDrawn = {}
+  guardianOrder = nil
+  guardian = nil
   LogRun("seed=" .. n)
   AnnounceAll("|cffaaddffThe vault reshuffles its bones: seed " .. n .. ".|r")
   DealFloor(1)
@@ -2170,8 +2642,10 @@ function HandleChat(pid, msgRaw)
   local insightArg = string.match(msg, "^%-insight%s+(%d+)$")
   local grantArg = string.match(msg, "^%-grant%s+([%w_]+)$")
   local covArg = string.match(msg, "^%-covenant%s+(%a+)$")
+  local heroArg = string.match(msg, "^%-hero%s+(%a+)$")
   local known = floorArg ~= nil or roomObj ~= nil or embersArg ~= nil
     or wrathArg ~= nil or insightArg ~= nil or grantArg ~= nil or covArg ~= nil
+    or heroArg ~= nil
     or msg == "-boon" or msg == "-clear" or msg == "-boss" or msg == "-god"
     or msg == "-ff" or msg == "-runlog" or msg == "-trial"
   if not known then return end
@@ -2247,6 +2721,15 @@ function HandleChat(pid, msgRaw)
       local wasFirst = firstDoor
       firstDoor = false
       SwearCovenant(pid, covArg)
+      firstDoor = wasFirst
+    end
+  elseif heroArg ~= nil then
+    if HERO_KINDS[heroArg] == nil then
+      Tell(pid, "|cffaaaaaa-hero wants torch, ashblade or chorister.|r")
+    else
+      local wasFirst = firstDoor
+      firstDoor = false
+      PickHero(pid, heroArg)
       firstDoor = wasFirst
     end
   elseif msg == "-trial" then
@@ -2328,7 +2811,7 @@ function ShowCredits()
   QuestSetTitle(q, "Credits & Inspirations")
   QuestSetDescription(q, "The Vaults of Ash (wc3-map-toolkit). Design inspirations, adapted with credit:"
     .. " Roguelike by DeathdruidX (the Sin ambush -> our telegraphed Wrath; the shopkeeper's greed -> the Heart's ember feast; the knowledge-code meta -> the vow of the fourth altar);"
-    .. " Ulfsire's Roguelike (structure synergies -> our LEGIBLE sigil sets; god pacts -> covenants with printed terms; prime monsters -> elite affixes; escape-revive -> rekindling);"
+    .. " Ulfsire's Roguelike (structure synergies -> our LEGIBLE sigil sets; god pacts -> covenants with printed terms; prime monsters -> elite affixes; escape-revive -> rekindling; Guardian promotion + exit-from-corpse -> our Floor Guardians and their corpse-door descent);"
     .. " Just Another Roguelike by PortusM (risk contracts -> trial doors; the looting stat -> Insight).")
   QuestSetIconPath(q, "ReplaceableTextures\\CommandButtons\\BTNTome.blp")
   QuestSetDiscovered(q, true)
@@ -2340,7 +2823,7 @@ function PlayIntro()
   AnnounceTimedAll(9.0, "|cffaaddffThe Vaults of Ash. Your order burned sealing what sleeps below; you are the last torch it has left.|r")
   After(4.0, function()
     if gameOver then return end
-    AnnounceTimedAll(11.0, "|cffaaddffFour altars stand west of the spawn: swear ONE covenant each before the first door (its reward AND price are printed -- the fourth opens only to an earned vow). Three doors north, omens on the obelisks; sometimes a fourth TRIAL door. The shrine lights after every third room.|r")
+    AnnounceTimedAll(11.0, "|cffaaddffThree HERO PEDESTALS stand west of the spawn: step one BEFORE the first door to take up the Ashblade (a blinking glass cannon) or the Chorister (a mending voice) -- or stay the Torchbearer. Four covenant altars below them: swear ONE covenant each (reward AND price printed; the fourth opens only to an earned vow). Three doors north, omens on the obelisks; sometimes a fourth TRIAL door. Every floor's room is warded by a FLOOR GUARDIAN: the descent door opens at its corpse. The shrine lights after every third room.|r")
   end)
   After(8.0, function()
     if gameOver then return end
@@ -2443,14 +2926,11 @@ function main()
   -- editor-only). Runs before anything enumerates preplaced units.
   CreateAllUnits()
 
-  -- one Torchbearer per seated player, at the hub landing
+  -- one hero per seated player, at the hub landing: everyone starts as the
+  -- default Torchbearer; the hero pedestals swap kits before the first door
   local spawnX = { -320.0, 0.0, 320.0 }
   for slot, pid in ipairs(users) do
-    local h = CreateUnit(Player(pid), UNIT_TORCHBEARER, spawnX[slot] or 0.0, -6912.0, 90.0)
-    SetHeroStr(h, START_STR, true)
-    SetHeroAgi(h, START_AGI, true)
-    SetHeroInt(h, START_INT, true)
-    heroes[pid] = h
+    SpawnHero(pid, "torch", spawnX[slot] or 0.0, -6912.0, 90.0)
   end
 
   SeedRNG(DEFAULT_SEED)

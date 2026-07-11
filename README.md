@@ -74,8 +74,9 @@ A map source directory (see `maps/demo/` for a minimal working example and
 MDX import and a complete Lua game mode; `maps/tidewatch-arena/` is the
 custom-forces lobby reference, `maps/northreach/` the economy /
 custom-models reference and `maps/vaults-of-ash/` the flagship: a seeded
-co-op roguelike with a machine-verified golden-run replay and 52 headless
-logic tests — each has its own README):
+co-op roguelike — 3 playable heroes, rotating affixed Floor Guardians,
+seeded room-interior variants — with a machine-verified golden-run replay
+and 70 headless logic tests — each has its own README):
 
 ```
 maps/mymap/

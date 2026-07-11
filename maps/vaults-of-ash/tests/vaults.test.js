@@ -35,6 +35,8 @@ for (let i = 11; i <= 32; i++) BOON_ITEM_TYPES.push('I0' + i);
 
 const hero = (sim, pid) => sim.findUnit('H000', pid || 0);
 const creeps = (sim) => sim.unitsOf(24).filter((u) => u.alive);
+// the six Floor Guardian unit types (phase 3)
+const GUARDIAN_TYPES = ['u030', 'u031', 'u032', 'u033', 'u034', 'u035'];
 const runlog = (sim) => sim.global('RUNLOG');
 const draftItemCount = (sim) =>
   BOON_ITEM_TYPES.reduce((n, t) => n + sim.itemsByType(t).length, 0);
@@ -98,18 +100,21 @@ test('door enter: party teleports into the dealt room, room goes ACTIVE, camera 
   assert.ok(sim.messagesTo(0).some((m) => /the seal breaks/.test(m.text)), 'activation announced');
 });
 
-test('kill-all: clearing pays EXACTLY 20+20*danger embers, and only when the last creep falls', () => {
+test('kill-all: clearing pays EXACTLY 20+20*danger embers, and only when the LAST hostile (incl. the Guardian) falls', () => {
   const sim = loadMap(MAP, { users: [0] });
   const h = hero(sim);
   sim.moveUnit(h, ...DOOR.A); // F1D Bone Gallery, kill-all danger 2 (pinned by the default seed)
-  const pack = creeps(sim);
+  const all = creeps(sim);
+  const pack = all.filter((u) => !GUARDIAN_TYPES.includes(u.typeStr));
+  const guardian = all.find((u) => GUARDIAN_TYPES.includes(u.typeStr));
   assert.strictEqual(pack.length, 5, 'solo Bone Gallery d2: 3 Vaultbone Archers + 2 Vault Kobolds');
+  assert.ok(guardian, 'plus the Floor Guardian (phase 3)');
   assert.strictEqual(pack.filter((u) => u.typeStr === 'u014').length, 3, '3 Vaultbone Archers');
   assert.strictEqual(pack.filter((u) => u.typeStr === 'u001').length, 2, '2 Vault Kobolds');
-  for (const u of pack.slice(0, -1)) sim.kill(u, h);
-  assert.strictEqual(sim.player(0).gold, 0, 'no payout while one creep still stands');
+  for (const u of pack) sim.kill(u, h);
+  assert.strictEqual(sim.player(0).gold, 0, 'no payout while the Guardian still stands');
   assert.ok(!runlog(sim).includes('clear|'), 'not cleared yet');
-  sim.kill(pack[pack.length - 1], h);
+  sim.kill(guardian, h);
   assert.strictEqual(sim.player(0).gold, 100, 'danger 2 pays exactly 60 (+40 ember-cache reward)');
   assert.match(runlog(sim), /clear\|room=F1D\|t=\d+\|embers=60\|total=60/);
   sim.advance(3);
@@ -352,14 +357,17 @@ test('boss death is victory, with the full run summary', () => {
   assert.match(runlog(sim), /boss\|dead/);
 });
 
-test('co-op scaling: spawn counts multiply by 1.6 per extra player, rounded up per pack', () => {
+test('co-op scaling: spawn counts multiply by 1.6 per extra player, rounded up per pack (plus ONE unscaled Guardian)', () => {
   const counts = {};
   for (const users of [[0], [0, 1], [0, 1, 2]]) {
     const sim = loadMap(MAP, { users });
     assert.strictEqual(sim.allUnits('H000').length, users.length,
       'one Torchbearer per seated player');
     sim.moveUnit(sim.findUnit('H000', 0), ...DOOR.A); // same seed -> same door/room
-    counts[users.length] = creeps(sim).length;
+    const all = creeps(sim);
+    assert.strictEqual(all.filter((u) => GUARDIAN_TYPES.includes(u.typeStr)).length, 1,
+      `${users.length}p: exactly one Floor Guardian (count never scales, only its stats)`);
+    counts[users.length] = all.filter((u) => !GUARDIAN_TYPES.includes(u.typeStr)).length;
   }
   // Bone Gallery d2 = packs of 3 archers + 2 kobolds, scaled per pack
   assert.strictEqual(counts[1], 5, 'solo baseline: 3 + 2 = 5');

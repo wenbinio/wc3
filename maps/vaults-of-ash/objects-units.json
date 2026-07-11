@@ -1390,6 +1390,656 @@
         "column": 0,
         "value": 255
       }
+    ],
+    "H001:Obla": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Ashblade"
+      },
+      {
+        "id": "upro",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "The Ashblade"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Ashblade"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A duel-scarred blade of the burned order: a glass cannon. Faster and far deadlier than the Torchbearer, but only 520 life. Innate: CINDER STEP, a short blink through the ash (600 range, 9s cooldown). Chosen at the hub hero pedestals before the first door."
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNHeroBlademaster.blp"
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "units\\orc\\HeroBlademaster\\HeroBlademaster.mdl"
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "AInv"
+      },
+      {
+        "id": "umvs",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 350
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 520
+      },
+      {
+        "id": "ua1b",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 34
+      },
+      {
+        "id": "ua1c",
+        "type": "unreal",
+        "level": 0,
+        "column": 0,
+        "value": 1.5
+      }
+    ],
+    "H002:Hblm": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Chorister"
+      },
+      {
+        "id": "upro",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "The Chorister"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Chorister"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "The last voice of the order's choir: a support and controller. Tougher (780 life) but slower and far weaker in arms than the Torchbearer. Innate: KINDLED CHORUS, a song that mends every nearby torchbearer for 20 life every 10 seconds (announced each tick). Chosen at the hub hero pedestals before the first door."
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNPriest.blp"
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "units\\human\\Priest\\Priest.mdl"
+      },
+      {
+        "id": "usca",
+        "type": "unreal",
+        "level": 0,
+        "column": 0,
+        "value": 1.4
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "AInv"
+      },
+      {
+        "id": "umvs",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 300
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 780
+      },
+      {
+        "id": "ua1b",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 13
+      }
+    ],
+    "u030:nske": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Bone Warden"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Bone Warden"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A Floor Guardian of the shallow ossuaries. Wards the final room of a floor; at half life it calls 2 vault-born from the ossuary. The descent door rises from its corpse."
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 1600
+      },
+      {
+        "id": "usca",
+        "type": "unreal",
+        "level": 0,
+        "column": 0,
+        "value": 1.6
+      },
+      {
+        "id": "uclr",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 210
+      },
+      {
+        "id": "uclg",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 230
+      },
+      {
+        "id": "uclb",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 255
+      }
+    ],
+    "u031:nhar": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Gale Matriarch"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Gale Matriarch"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A Floor Guardian of the wind shafts. Wards the final room of a floor; every 15 seconds her shriek tears 25 life from every torchbearer in the room (never below 1). The descent door rises from her corpse."
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 1400
+      },
+      {
+        "id": "usca",
+        "type": "unreal",
+        "level": 0,
+        "column": 0,
+        "value": 1.6
+      },
+      {
+        "id": "uclr",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 180
+      },
+      {
+        "id": "uclg",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 255
+      },
+      {
+        "id": "uclb",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 220
+      }
+    ],
+    "u032:nban": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Blood Provost"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Blood Provost"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A Floor Guardian, tithe-keeper of the burned order. Wards the final room of a floor; every 20 seconds it tithes 20 life from each torchbearer and drinks the sum. The descent door rises from its corpse."
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 1700
+      },
+      {
+        "id": "usca",
+        "type": "unreal",
+        "level": 0,
+        "column": 0,
+        "value": 1.5
+      },
+      {
+        "id": "uclr",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 255
+      },
+      {
+        "id": "uclg",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 140
+      },
+      {
+        "id": "uclb",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 140
+      }
+    ],
+    "u033:nkog": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Void Curator"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Void Curator"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A Floor Guardian, keeper of the vault's hoard. Wards the final room of a floor; every 20 seconds it curates 15 Embers out of the party pool. The descent door rises from its corpse."
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 1500
+      },
+      {
+        "id": "usca",
+        "type": "unreal",
+        "level": 0,
+        "column": 0,
+        "value": 1.6
+      },
+      {
+        "id": "uclr",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 190
+      },
+      {
+        "id": "uclg",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 150
+      },
+      {
+        "id": "uclb",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 255
+      }
+    ],
+    "u034:nogm": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Pyre Sentinel"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Pyre Sentinel"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A Floor Guardian of the deep pyres. Wards the final room of a floor; below a quarter life it ignites for +60% damage. The descent door rises from its corpse."
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 1800
+      },
+      {
+        "id": "usca",
+        "type": "unreal",
+        "level": 0,
+        "column": 0,
+        "value": 1.7
+      },
+      {
+        "id": "uclr",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 255
+      },
+      {
+        "id": "uclg",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 180
+      },
+      {
+        "id": "uclb",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 110
+      }
+    ],
+    "u035:nogl": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Hollow King"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Hollow King"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A Floor Guardian, the crowned husk of the vault. Wards the final room of a floor; at half life it dons the wrathfire mantle (a heavier slam) and knits a quarter of its wounds. The descent door rises from its corpse."
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 2000
+      },
+      {
+        "id": "usca",
+        "type": "unreal",
+        "level": 0,
+        "column": 0,
+        "value": 1.8
+      },
+      {
+        "id": "uclr",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 200
+      },
+      {
+        "id": "uclg",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 200
+      },
+      {
+        "id": "uclb",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 210
+      }
+    ],
+    "n006:nech": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Torch Pedestal"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Torch Pedestal"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A pedestal of the order's armory. Step onto its plate BEFORE the first door to take up that torchbearer's kit (Torchbearer / Ashblade / Chorister); the party defaults to the Torchbearer."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\OmenObelisk.mdl"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 400
+      },
+      {
+        "id": "usca",
+        "type": "unreal",
+        "level": 0,
+        "column": 0,
+        "value": 0.7
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "uclr",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 255
+      },
+      {
+        "id": "uclg",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 200
+      },
+      {
+        "id": "uclb",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 120
+      }
+    ],
+    "n007:nech": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Vault Rubble"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Vault Rubble"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Fallen vault stone. Each room seals one of three seeded interior arrangements around its vault-born."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SealstoneDoor.mdl"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 300
+      },
+      {
+        "id": "usca",
+        "type": "unreal",
+        "level": 0,
+        "column": 0,
+        "value": 0.6
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "uclr",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 120
+      },
+      {
+        "id": "uclg",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 110
+      },
+      {
+        "id": "uclb",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 100
+      }
     ]
   }
 }

@@ -85,6 +85,12 @@ export const COVENANT_ALTARS = [                        // Cinders/Stillness/Sea
   { x: -1600, y: -7040 }, { x: -1280, y: -7040 }, { x: -960, y: -7040 }, { x: -640, y: -7040 },
 ];
 
+// phase 3 hub furniture: the three hero pedestals (west, between the altar
+// row and the boon pedestals) — Torchbearer / Ashblade / Chorister
+export const HERO_PEDESTALS = [
+  { x: -1600, y: -6496 }, { x: -1280, y: -6496 }, { x: -960, y: -6496 },
+];
+
 // per-room geometry (relative to room center)
 export const ROOM_ENTRY_DY = -704;   // party teleport target
 export const DAIS = { dy: 640, hx: 384, hy: 256 };  // raised reliquary dais
@@ -256,6 +262,8 @@ const mustBeIsland = [
   { ...TRIAL_OBELISK, tag: 'trial obelisk' },
   ...COVENANT_ALTARS.map((p, i) => ({ ...p, tag: `covenant altar ${i}` })),
   ...COVENANT_ALTARS.map((p, i) => ({ x: p.x, y: p.y + 224, tag: `covenant altar unit ${i}` })),
+  ...HERO_PEDESTALS.map((p, i) => ({ ...p, tag: `hero pedestal ${i}` })),
+  ...HERO_PEDESTALS.map((p, i) => ({ x: p.x, y: p.y + 224, tag: `hero pedestal unit ${i}` })),
   { ...BOSS_ENTRY, tag: 'boss entry' },
   { ...BOSS_SPAWN, tag: 'boss spawn' },
   ...roomRects.map((rr) => ({ x: rr.cx, y: rr.cy + ROOM_ENTRY_DY, tag: `room f${rr.floor} i${rr.idx} entry` })),
@@ -322,6 +330,10 @@ for (const rr of roomRects) {
 }
 addRegion('BossArena', BOSS.cx, BOSS.cy, BOSS.hx, BOSS.hy, [255, 32, 32]);
 addRegion('HubReturn', HUB_RETURN.x, HUB_RETURN.y, 192, 192, [200, 200, 200]);
+// phase 3: hero pedestal plates (appended so earlier region ids stay stable)
+addRegion('PedestalTorchbearer', HERO_PEDESTALS[0].x, HERO_PEDESTALS[0].y, PLATE_HALF, PLATE_HALF, [255, 220, 120]);
+addRegion('PedestalAshblade', HERO_PEDESTALS[1].x, HERO_PEDESTALS[1].y, PLATE_HALF, PLATE_HALF, [255, 160, 80]);
+addRegion('PedestalChorister', HERO_PEDESTALS[2].x, HERO_PEDESTALS[2].y, PLATE_HALF, PLATE_HALF, [160, 255, 200]);
 
 // ---------------------------------------------------------------- units ---
 // Preplaced NEUTRAL furniture only. Party heroes are spawned by
@@ -358,6 +370,9 @@ U('n000', TRIAL_FRAME.x, TRIAL_FRAME.y, 27);                      // Sealstone D
 U('n001', TRIAL_OBELISK.x, TRIAL_OBELISK.y, 27);                  // Omen Obelisk
 U('n002', SHRINE_REKINDLE.x, SHRINE_REKINDLE.y + 224, 27);        // Ember Brazier
 COVENANT_ALTARS.forEach((p) => U('n005', p.x, p.y + 224, 27));    // Covenant Altar
+
+// phase 3: the three hero pedestal markers (Torchbearer / Ashblade / Chorister)
+HERO_PEDESTALS.forEach((p) => U('n006', p.x, p.y + 224, 27));     // Torch Pedestal
 
 const doodads = { regular: [], special: [] };
 

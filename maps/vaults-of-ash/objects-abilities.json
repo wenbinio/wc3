@@ -133,6 +133,57 @@
         "column": 0,
         "value": 10
       }
+    ],
+    "A007:AEbl": [
+      {
+        "id": "anam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Cinder Step"
+      },
+      {
+        "id": "atp1",
+        "type": "string",
+        "level": 1,
+        "column": 0,
+        "value": "Cinder Step"
+      },
+      {
+        "id": "aub1",
+        "type": "string",
+        "level": 1,
+        "column": 0,
+        "value": "The Ashblade steps through the ash: a short blink of up to 600 range. 9 second cooldown, 25 mana."
+      },
+      {
+        "id": "Ebl1",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 600
+      },
+      {
+        "id": "Ebl2",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "acdn",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 9
+      },
+      {
+        "id": "amcs",
+        "type": "int",
+        "level": 1,
+        "column": 0,
+        "value": 25
+      }
     ]
   }
 }
