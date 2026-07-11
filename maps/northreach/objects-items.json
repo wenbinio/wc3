@@ -29,6 +29,34 @@
         "level": 0,
         "column": 0,
         "value": 1
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Deer Hide"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "The warm hide of a northern deer. Pawn it at the Northreach Market for its full value."
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNStag.blp"
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
       }
     ],
     "I001:ches": [
@@ -59,6 +87,34 @@
         "level": 0,
         "column": 0,
         "value": 1
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Wolf Pelt"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A thick wolf pelt, prized in the cold north. Pawn it at the Northreach Market for its full value."
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNTimberWolf.blp"
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
       }
     ],
     "I002:ches": [
@@ -89,6 +145,34 @@
         "level": 0,
         "column": 0,
         "value": 1
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Coastal Catch"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A haul of cold-water fish from a coastal shoal. Pawn it at the Northreach Market for its full value."
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNEnsnare.blp"
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Buildings\\Other\\BarrelsUnit0\\BarrelsUnit0.mdl"
       }
     ],
     "I003:ches": [
@@ -126,6 +210,34 @@
         "level": 0,
         "column": 0,
         "value": 1
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Purchase Trade Coin (100)"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Minted trade coin worth 100 gold. Corruption cannot tax coined wealth; pawn it back at the Market for full value."
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNChestOfGold.blp"
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\PotofGold\\PotofGold.mdl"
       }
     ],
     "I004:ches": [
@@ -163,6 +275,34 @@
         "level": 0,
         "column": 0,
         "value": 1
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Purchase Trade Coin (500)"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Minted trade coin worth 500 gold. Corruption cannot tax coined wealth; pawn it back at the Market for full value."
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNChestOfGold.blp"
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\PotofGold\\PotofGold.mdl"
       }
     ],
     "I005:ches": [
@@ -200,6 +340,34 @@
         "level": 0,
         "column": 0,
         "value": 1
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Purchase Trade Coin (1000)"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Minted trade coin worth 1000 gold. Corruption cannot tax coined wealth; pawn it back at the Market for full value."
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNChestOfGold.blp"
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\PotofGold\\PotofGold.mdl"
       }
     ]
   }

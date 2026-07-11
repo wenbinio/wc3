@@ -22,7 +22,9 @@
 --     CARRIED gold. Counter: buy Trade Coins (100/500/1000) at the Market;
 --     they pawn back at full value (trigger top-up), exactly FoTN's
 --     anti-hoarding coin system.
---   * Grace period: 300s peace timer. PvP announcements only; wolves stay
+--   * Grace period: 300s peace timer ENFORCED by alliance state: every user
+--     pair is set mutually passive (SetPlayerAlliance ALLIANCE_PASSIVE) for
+--     the duration, then reset to enemies (FFA) when it expires; wolves stay
 --     docile until it ends.
 --   * Night threat: at night wolves speed up and their acquire range grows
 --     (a "wolf surge" also spawns a small pack at the two dens); day calms
@@ -694,9 +696,26 @@ end
 
 -- ------------------------------------------------------------ grace period
 
+-- The truce is real alliance state, not an announcement: while the grace
+-- period runs, every pair of user players is mutually ALLIANCE_PASSIVE
+-- (cannot attack or be attacked); when it ends the pairs become enemies
+-- again (FFA). Plain native, both directions of every pair. No vision or
+-- control is ever shared, and computer/neutral slots are untouched (all
+-- four slots are MAP_CONTROL_USER, see InitCustomPlayerSlots).
+local function SetFounderTruce(peace)
+  for i = 0, NUM_PLAYERS - 1 do
+    for j = 0, NUM_PLAYERS - 1 do
+      if i ~= j then
+        SetPlayerAlliance(Player(i), Player(j), ALLIANCE_PASSIVE, peace)
+      end
+    end
+  end
+end
+
 local function GraceEnds()
   if graceOver then return end
   graceOver = true
+  SetFounderTruce(false) -- back to all-pairs enemies: the FFA begins
   if graceDialog ~= nil then
     TimerDialogDisplay(graceDialog, false)
     DestroyTimerDialog(graceDialog)
@@ -708,6 +727,7 @@ local function GraceEnds()
 end
 
 local function StartGrace()
+  SetFounderTruce(true) -- mutual passive alliance between all user pairs
   graceTimer = CreateTimer()
   TimerStart(graceTimer, GRACE_PERIOD, false, GraceEnds)
   graceDialog = CreateTimerDialog(graceTimer)

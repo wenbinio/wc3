@@ -128,10 +128,17 @@ test('northreach source has the advertised moving parts', () => {
     assert.match(v.value, /^[\x20-\x7e]*$/, `strings.json entry ${k} is ASCII-only`);
   }
 
-  // custom units reference all three generated models; binaries committed
+  // custom units reference all three generated models; binaries committed.
+  // Model FIELDS must use the .mdl extension (the engine swaps it for .mdx
+  // at load; a literal .mdx path fails to resolve and the unit is invisible
+  // in-game — FoTN's w3u uses .mdl for every one of its imported .mdx files).
   const unitBlob = JSON.stringify(objUnits.custom);
   for (const m of MODELS) {
-    assert.ok(unitBlob.includes(`war3mapImported\\\\${m}`), `a custom unit references ${m}`);
+    const ref = m.replace(/\.mdx$/, '.mdl');
+    assert.ok(unitBlob.includes(`war3mapImported\\\\${ref}`),
+      `a custom unit references ${ref} (.mdl form of ${m})`);
+    assert.ok(!unitBlob.includes(m),
+      `no umdl references the literal .mdx path for ${m}`);
     assert.ok(fs.existsSync(path.join(SRC, 'imports', 'war3mapImported', m)), `${m} committed`);
   }
   // the founding chain and the market wiring live in object data
@@ -143,6 +150,8 @@ test('northreach source has the advertised moving parts', () => {
   assert.strictEqual(flat.h005.uupt, 'h003', 'Homestead upgrades to Town Hall');
   assert.ok(flat.H000.ubui.includes('h004'), 'the Founder himself builds the Shelter');
   assert.ok(flat.H000.uabi.includes('AHbu'), 'Founder carries the human build ability');
+  assert.ok(flat.H000.uabi.includes('Ahrp'),
+    'Founder carries human Repair (Ahrp) -- human-style construction never completes without it');
   assert.strictEqual(flat.h006.utra, 'h001', 'the Longship trains at the coastal Dock');
   assert.strictEqual(flat.n002.usei, 'I003,I004,I005', 'Market sells the three Trade Coins');
   // hunt drops and coins: every custom item is pawnable with a gold value
@@ -152,6 +161,16 @@ test('northreach source has the advertised moving parts', () => {
     const byId = Object.fromEntries(mods.map((m) => [m.id, m.value]));
     assert.ok(byId.igol > 0, `${k} has a gold value`);
     assert.strictEqual(byId.ipaw, 1, `${k} is pawnable at the Market`);
+    // every item must carry its FULL visible identity, or the ches base's
+    // cheese art/tooltip leaks through in-game (field ids verified against
+    // FoTN's own working ches-based trade goods): name, description, shop
+    // tooltip + extended tooltip, icon, ground model.
+    for (const id of ['unam', 'ides', 'utip', 'utub', 'iico', 'ifil']) {
+      assert.ok(byId[id], `${k} sets ${id}`);
+    }
+    assert.match(byId.iico, /^ReplaceableTextures\\CommandButtons\\BTN[\w]+\.blp$/,
+      `${k} iico is a stock command-button path`);
+    assert.match(byId.ifil, /\.mdl$/, `${k} ifil uses the .mdl extension (model-field convention)`);
   }
 
   // the map script drives the FoTN loop and the '-test' debug mode
@@ -162,6 +181,7 @@ test('northreach source has the advertised moving parts', () => {
     'EVENT_PLAYER_UNIT_PAWN_ITEM',           // market sale top-up wiring
     'DoCorruptionTick', 'TAX_PERIOD',        // corruption tax wiring
     'GRACE_PERIOD', 'WolfSurge',             // grace period + night threat
+    'SetFounderTruce', 'SetPlayerAlliance', 'ALLIANCE_PASSIVE', // real truce state
     'CreateMultiboard', 'CustomVictoryBJ', 'ReviveHero',
     '"-test"', '"-endgame"', '"-town"', '-gold', '"-found"', '"-tax"',
     '"-wolves"', '"-grace"', '"-reveal"', '"-victory"', '"-ff"', '-help']) {
@@ -256,7 +276,9 @@ test('w3x-extract + map-to-json reproduce the northreach source JSON', () => {
     '"-reveal"', '"-victory"', '"-ff"', '"-help"',
     'EVENT_PLAYER_UNIT_PAWN_ITEM', 'DoCorruptionTick',       // tax + market top-up
     'DROPS', 'HandleHuntDeath', 'ScheduleRespawn',           // hunt-drop loop
-    'GRACE_PERIOD', 'WolfSurge', 'EliminationSweep']) {      // grace/night/purge
+    'GRACE_PERIOD', 'WolfSurge', 'EliminationSweep',         // grace/night/purge
+    'SetPlayerAlliance(Player(i), Player(j), ALLIANCE_PASSIVE, peace)', // grace truce
+    'SetFounderTruce(true)', 'SetFounderTruce(false)']) {    // ...set AND torn down
     assert.ok(packedLua.includes(needle), `packed war3map.lua contains ${needle}`);
   }
   // creep camps get WE "camp" acquisition from units.json targetAcquisition -2

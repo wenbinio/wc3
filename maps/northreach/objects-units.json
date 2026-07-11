@@ -38,7 +38,7 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "AInv,AHbu"
+        "value": "AInv,AHbu,Ahrp"
       },
       {
         "id": "ubui",
@@ -61,7 +61,7 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "war3mapImported\\NorthLongship.mdx"
+        "value": "war3mapImported\\NorthLongship.mdl"
       },
       {
         "id": "umvt",
@@ -295,7 +295,7 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "war3mapImported\\FounderBanner.mdx"
+        "value": "war3mapImported\\FounderBanner.mdl"
       },
       {
         "id": "uhpm",
@@ -332,7 +332,7 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "war3mapImported\\WaystoneCairn.mdx"
+        "value": "war3mapImported\\WaystoneCairn.mdl"
       },
       {
         "id": "uhpm",
