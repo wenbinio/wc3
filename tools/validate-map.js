@@ -9,7 +9,10 @@
 // wpm/shd/mmp/wct which wc3maptranslator can't), and every imported
 // .mdx/.mdl must pass its sanity test with 0 errors AND 0 severe issues
 // (a malformed MDX hard-crashes the game on map load — same bar as
-// test/fixes.test.js). Prints a pass/fail summary; exit code 0 = all passed.
+// test/fixes.test.js). Object data additionally gets a semantic lint
+// (lib/objectlint.js — gotchas 22/23/25) whose findings print as WARN
+// lines and never fail the map. Prints a pass/fail summary; exit code
+// 0 = all PASS (warnings allowed).
 
 const fs = require('fs');
 const os = require('os');
@@ -20,12 +23,15 @@ const { extractAll } = require('../lib/mpq');
 const { byWar, CONSUMED_AS_SKIN, warToJson, jsonToWar } = require('../lib/filemap');
 const { walk } = require('../lib/source');
 const { checkLuaSyntax } = require('../lib/luacheck');
+const { lintObjectData } = require('../lib/objectlint');
 const viewer = require('../lib/viewer');
 
 function validate(mapPath) {
   const results = [];
   const ok = (name, detail) => results.push({ name, pass: true, detail });
   const fail = (name, detail) => results.push({ name, pass: false, detail });
+  // warnings never fail the map (semantic heuristics, gotchas 22/23/25)
+  const warn = (name, detail) => results.push({ name, pass: true, warn: true, detail });
 
   const buf = fs.readFileSync(mapPath);
 
@@ -72,6 +78,7 @@ function validate(mapPath) {
     }
 
     // 4. Parse every translatable file + stability cycle
+    const objectFiles = []; // successfully translated object data, for 4b
     for (const rel of walk(tmp).sort()) {
       if (CONSUMED_AS_SKIN.has(rel)) continue;
       const entry = byWar.get(rel);
@@ -86,9 +93,18 @@ function validate(mapPath) {
         const json2 = warToJson(entry, back.buffer, back.skinBuffer);
         assert.deepStrictEqual(json2, json1);
         ok(`translate ${rel}`, `${entry.json}, round-trip stable`);
+        if (entry.objectType) objectFiles.push({ war: rel, objectType: entry.objectType, json: json1 });
       } catch (e) {
         fail(`translate ${rel}`, String(e.message || e).split('\n')[0]);
       }
+    }
+
+    // 4b. Semantic lint of the object data — WARN lines only, never
+    // failures (playtest heuristics, CLAUDE.md gotchas 22/23/25):
+    // .mdx model-field values / unresolved war3mapImported model paths,
+    // items renamed without re-arting, builders without a repair ability.
+    for (const w of lintObjectData(objectFiles, walk(tmp))) {
+      warn(`lint ${w.file} ${w.objectId}`, w.message);
     }
 
     // 5. Second opinion: mdx-m3-viewer-th (independent MPQ + format parsers).
@@ -163,11 +179,14 @@ function main(argv) {
   try {
     const results = validate(mapPath);
     let failures = 0;
+    let warnings = 0;
     for (const r of results) {
-      console.log(`${r.pass ? 'PASS' : 'FAIL'}  ${r.name}${r.detail ? '  (' + r.detail + ')' : ''}`);
-      if (!r.pass) failures++;
+      console.log(`${r.warn ? 'WARN' : r.pass ? 'PASS' : 'FAIL'}  ${r.name}${r.detail ? '  (' + r.detail + ')' : ''}`);
+      if (r.warn) warnings++;
+      else if (!r.pass) failures++;
     }
-    console.log(`\n${results.length - failures}/${results.length} checks passed`);
+    const checks = results.length - warnings;
+    console.log(`\n${checks - failures}/${checks} checks passed${warnings ? `, ${warnings} warning(s) — warnings don't fail the map` : ''}`);
     process.exit(failures === 0 ? 0 : 1);
   } catch (e) {
     console.error('validate failed: ' + (e.message || e));

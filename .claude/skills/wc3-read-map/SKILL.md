@@ -49,7 +49,21 @@ Validate any map: `node tools/validate-map.js <map.w3x>` (exit 0 = healthy).
 Besides the wc3maptranslator round-trip checks, this cross-validates with
 mdx-m3-viewer-th (`viewer ...` lines): its independent MPQ reader, parsers
 for wpm/shd/mmp that the translator lacks, and an MDX sanity test on every
-imported model (0 errors + 0 severes required — crash bar).
+imported model (0 errors + 0 severes required — crash bar). Object data is
+also semantically linted: `WARN lint ...` lines (CLAUDE.md gotchas
+22/23/25) flag in-game bug classes without failing the map.
+
+## Debugging with a known-working reference
+
+When custom object data misbehaves in-game (invisible models, base art or
+tooltips leaking through a clone, abilities that do nothing), don't guess
+field IDs — decompose a map where the mechanic PROVABLY works and copy its
+exact field IDs and art paths. Read the proven map with this skill, then
+diff its `objects-*.json` (or, for classic/protected maps, the `_viewer/`
+dumps) against yours. Worked example: docs/reference/fotn-analysis.md — the
+decomposed FoTN's working w3u/w3t entries are what exposed the Northreach
+playtest bugs (`.mdl` model-field extensions, the full item identity field
+set, the AHbu+Ahrp builder pair; CLAUDE.md gotchas 22, 23, 25).
 
 If you script against mdx-m3-viewer-th yourself, go through `lib/viewer.js`
 and always pass `new Uint8Array(fs.readFileSync(p))`, never a Node Buffer —

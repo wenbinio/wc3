@@ -10,7 +10,7 @@ in docs/ and .claude/skills/; follow the pointers.
 
 ```bash
 bash scripts/setup.sh   # idempotent: npm install + optional apt-get smpq fallback
-npm test                # 60 tests; all must pass before you change anything
+npm test                # 69 tests; all must pass before you change anything
 ```
 
 If you touch `lib/mpq.js` or anything archive-related, the suite must be
@@ -204,18 +204,49 @@ never third-party maps, gotcha 9).
     mines; `SetUnitAcquireRange(u, 200)` for camp creeps
     (`targetAcquisition: -2`); `sloc` entries skipped — start locations
     belong in `config()`'s `DefineStartLocation` calls.
+22. **Object-data model FIELDS always use the `.mdl` extension** (`umdl`
+    units, `dfil` doodads, `bfil` destructables, `ifil` items), even when
+    the imported archive member is `.mdx` — the engine swaps the extension
+    at load, and a literal `.mdx` field value renders NOTHING (invisible
+    unit, no error). Only field VALUES take `.mdl`; the file under
+    `imports/`, its archive path and war3map.imp keep the real `.mdx`.
+    validate-map WARNs on `.mdx` field values and on `war3mapImported\`
+    references with no archive member after `.mdl`↔`.mdx` normalization.
+23. **Cloning a unit/item and overriding only `unam` leaks the base's
+    visible identity in-game** (the "deer drops cheese" bug: a renamed
+    `ches` still looked and read as Cheese). Override the full
+    visible-identity set — items: `unam` (name) + `ifil` (model) + `iico`
+    (icon) + `utip`/`utub` (tooltip/extended); units: `unam` + `umdl`
+    (model) + `uico` (icon) + `utip`/`utub`. validate-map WARNs on items
+    overriding `unam` with neither `ifil` nor `iico`.
+24. **w3i forces/alliance flags configure the LOBBY only** — they set the
+    starting teams, not an unbreakable in-game state. A truce/grace/peace
+    phase must be enforced at runtime: `SetPlayerAlliance(a, b,
+    ALLIANCE_PASSIVE, true)` on BOTH directions of every player pair, AND
+    explicitly torn down (`..., false`) when it expires — announcing the
+    truce doesn't enforce it. Worked pattern: `SetFounderTruce` in
+    maps/northreach/war3map.lua.
+25. **A custom human-style builder needs `AHbu` AND `Ahrp` together** in
+    `uabi`: human construction only progresses via the Repair ability, so
+    a builder with build-but-no-repair starts buildings that never finish.
+    validate-map WARNs when a unit has a non-empty `ubui` but its
+    overridden `uabi` contains no repair-family ability (Ahrp human /
+    Arep orc / Aetr night elf / Awha undead — only the human pair is
+    playtest-verified; the others are accepted as equivalents).
 
 ## Testing & validation doctrine
 
-- `npm test` = 60 tests, 11 files: source⇄binary fixed points for all four
+- `npm test` = 69 tests, 12 files: source⇄binary fixed points for all four
   bundled maps, build+validate end-to-end, MPQ backends, classic/protected
   fallbacks (`_viewer/`, `_unknown/`, classicw3i), luacheck, gotcha
   regressions. Both backends when touching archive code (`npm run test:smpq`).
 - `validate-map` layers: HM3W header + MPQ magic at 512 → extraction →
   required files (w3i/w3e) + script presence → luaparse gate → per-file
-  translator parse PLUS JSON→binary→JSON stability → mdx-m3-viewer-th second
-  opinion (independent MPQ open; parses wpm/shd/mmp/wct which the translator
-  can't; MDX sanityTest 0 errors/0 severes on every packed model).
+  translator parse PLUS JSON→binary→JSON stability → object-data semantic
+  lint (lib/objectlint.js — WARN lines for gotchas 22/23/25, never failures;
+  exit stays 0) → mdx-m3-viewer-th second opinion (independent MPQ open;
+  parses wpm/shd/mmp/wct which the translator can't; MDX sanityTest
+  0 errors/0 severes on every packed model).
 - Third opinion for disputed layouts: `scripts/crossvalidate-war3net.sh`
   (War3Net handles classic AND Reforged; the tie-breaker).
 - **Honest limit: structural validity ≠ game acceptance.** Only the game
@@ -246,7 +277,8 @@ or CC0-converted content. Details: docs/ASSETS.md.
 - `lib/viewer.js` — mdx-m3-viewer-th second-opinion parsers (read-only);
   `lib/classicw3i.js` — tolerant truncated-classic-w3i reader
 - `lib/luacheck.js` — luaparse Lua 5.3 gate; `lib/minimap.js` — minimap
-  tga/mmp generation; `lib/unitscript.js` — CreateAllUnits() generation
+  tga/mmp generation; `lib/unitscript.js` — CreateAllUnits() generation;
+  `lib/objectlint.js` — object-data semantic WARNings (gotchas 22/23/25)
 - `docs/PIPELINE.md` — workflows §1–7 (read/edit/new/import/validate/War3Net/
   A-B naming); `docs/FORMATS.md` — format knowledge, tileset FourCC tables,
   references; `docs/ASSETS.md` — asset sourcing/conversion + legal;

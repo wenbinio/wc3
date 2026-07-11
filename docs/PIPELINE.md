@@ -170,7 +170,12 @@ maps/mymap/imports/war3mapImported/MyTexture.blp
 `"war3mapImported\\MyModel.mdx"`).
 
 Reference the assets from object data, e.g. in `objects-units.json` set a
-custom unit's model field (`umdl`) to `war3mapImported\MyModel.mdx`.
+custom unit's model field (`umdl`) to `war3mapImported\MyModel.mdl` — model
+FIELD values always use the `.mdl` extension even for an `.mdx` archive
+member (the engine swaps the extension at load; a literal `.mdx` value
+renders an invisible unit — CLAUDE.md gotcha 22). Archive paths and
+imports.json entries keep the real `.mdx`; only object-data model fields
+(`umdl`/`dfil`/`bfil`/`ifil`) take `.mdl`.
 
 Working with models/textures programmatically — use `war3-model`:
 
@@ -195,6 +200,16 @@ Checks: HM3W pre-header, MPQ magic at offset 512, extraction, presence of
 (luaparse, Lua 5.3 grammar — a broken script loads as a silently dead map),
 and for every translatable file a parse **plus** a JSON→binary→JSON
 stability cycle. Exit code 0 = all pass.
+
+Object data additionally gets a **semantic lint** (lib/objectlint.js) whose
+findings print as `WARN` lines and never fail the map (exit stays 0): model
+fields ending in `.mdx` or `war3mapImported` model references with no
+matching archive member after `.mdl`↔`.mdx` normalization (gotcha 22),
+items overriding `unam` with neither `ifil` nor `iico` (gotcha 23), and
+units with a build list whose overridden `uabi` lacks a repair ability
+(Ahrp/Arep/Aetr/Awha; only the human AHbu+Ahrp pair is playtest-verified —
+gotcha 25). These encode in-game playtest bugs that are structurally valid,
+so they warn instead of failing.
 
 Then a **second-opinion cross-validation** via mdx-m3-viewer-th's independent
 parser stack (`viewer ...` lines in the report):
@@ -235,3 +250,11 @@ the map name in the source (the TRIGSTR entry in `strings.json` that
 `info.json` `name` points to, or `name` directly) AND `_header.json`
 `name`, e.g. "Siege DIAG-1 no-objabil". Renaming the `.w3x` alone is
 invisible in-game.
+
+**Known-working-reference debugging**: before (or instead of) in-game
+bisection, decompose a map where the misbehaving mechanic provably works
+(§1; for classic/protected maps use the `_viewer/` dumps) and copy its
+exact object-data field IDs and art paths. The decomposed FoTN
+(docs/reference/fotn-analysis.md) is the worked example — its live w3u/w3t
+entries exposed the `.mdl` model-field rule, the item identity field set
+and the AHbu+Ahrp builder pair (CLAUDE.md gotchas 22, 23, 25).

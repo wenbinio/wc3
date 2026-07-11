@@ -96,8 +96,14 @@ active 2026; the Twilac fork adds FBX import).
    from the imports tree (backslash-separated paths) — unless the source has
    its own `imports.json`, in which case that is used instead.
 3. Reference it from object data, e.g. in `objects-units.json` set a custom
-   unit's model field (`umdl`) to `war3mapImported\MyModel.mdx`; doodads use
-   `dfil`, destructables `bfil`. Textures referenced *inside* an MDX must be
+   unit's model field (`umdl`) to `war3mapImported\MyModel.mdl`; doodads use
+   `dfil`, destructables `bfil`, items `ifil`. **Model FIELD values always
+   use the `.mdl` extension, even though the archive member is
+   `MyModel.mdx`** — the engine swaps the extension at load, and a literal
+   `.mdx` field value renders NOTHING (invisible unit, no error; CLAUDE.md
+   gotcha 22). Only object-data model fields follow this rule: the file
+   under `imports/`, its archive path and the war3map.imp entry all keep
+   the real `.mdx` extension. Textures referenced *inside* an MDX must be
    imported at exactly the path the MDX's `Textures` entries name.
 4. Rebuild and check: `node tools/build-map.js maps/<name> _build/<name>.w3x`
    then `node tools/validate-map.js _build/<name>.w3x`.

@@ -15,6 +15,11 @@ node tools/build-map.js <map-source-dir> _build/out.w3x
 node tools/validate-map.js _build/out.w3x        # must exit 0
 ```
 
+validate-map may also print `WARN lint ...` lines (object-data semantic
+heuristics — CLAUDE.md gotchas 22/23/25). They don't fail the map, but each
+one is a playtest bug class actually hit in-game — fix them unless you can
+say why the warning doesn't apply.
+
 Common edits:
 
 - Map name: `_header.json` (lobby) AND `info.json` `map.name` (+ `SetMapName` in war3map.lua)
@@ -38,11 +43,16 @@ Common edits:
 - Custom assets: drop under `imports/war3mapImported/...` — war3map.imp is
   auto-generated on build. Custom MDX must pass mdx-m3-viewer's sanityTest
   with 0 errors/severes (CLAUDE.md gotcha 14) or the game crashes on load.
+  Object-data model FIELDS referencing the import use the `.mdl` extension
+  (`war3mapImported\X.mdl` even for an `.mdx` file — CLAUDE.md gotcha 22).
 - Strings (`strings.json` / TRIGSTR values): **ASCII-only** — the wts
   translator mangles non-ASCII (em dash → control byte; CLAUDE.md gotcha 16).
   Write `--`, straight quotes, `...` instead.
 - Object data tweaks: `objects-units.json` etc. — shape is
-  `{original: {"hfoo": [{id:"umvs", type:"int", value:350, level:0, column:0}]}, custom: {"x000:hfoo": [...]}}`
+  `{original: {"hfoo": [{id:"umvs", type:"int", value:350, level:0, column:0}]}, custom: {"x000:hfoo": [...]}}`.
+  When cloning, override the full visible-identity set (items:
+  unam+ifil+iico+utip/utub; units: unam+umdl+uico+utip/utub) or the base's
+  art/tooltips leak through in-game (CLAUDE.md gotcha 23)
 - Minimap preview: auto-generated (`war3mapMap.tga` from terrain.json +
   `war3map.mmp` start-location icons); override via `files/war3mapMap.tga|blp`
   / `files/war3map.mmp`

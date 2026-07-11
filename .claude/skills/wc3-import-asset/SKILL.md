@@ -71,10 +71,14 @@ accepts `.blp`/`.tga`; Reforged also `.dds`.
    node tools/validate-map.js _build/<name>.w3x   # must exit 0
    ```
 3. Reference from object data (`objects-*.json`), e.g. give a custom unit the
-   model: field `umdl`, type `string`, value `war3mapImported\MyModel.mdx`
-   (doodads `dfil`, destructables `bfil`). Referencing Blizzard's built-in
-   assets needs NO import — just use the in-game path
-   (`units\human\Footman\Footman.mdl`).
+   model: field `umdl`, type `string`, value `war3mapImported\MyModel.mdl`
+   (doodads `dfil`, destructables `bfil`, items `ifil`). **Model field values
+   ALWAYS use the `.mdl` extension** even though the archive member is
+   `.mdx` — the engine swaps the extension at load; a literal `.mdx` value
+   renders an invisible unit with no error (CLAUDE.md gotcha 22). Only the
+   field value takes `.mdl`; the file under `imports/` and its archive path
+   keep `.mdx`. Referencing Blizzard's built-in assets needs NO import —
+   just use the in-game path (`units\human\Footman\Footman.mdl`).
 
 ## Legal rules (non-negotiable)
 
