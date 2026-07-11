@@ -109,6 +109,10 @@ to the **packed** `war3map.lua` (the source file is never modified):
   repack cleanly. Edit units.json, not the generated Lua — units.json stays
   the single source of truth. JASS sources (`war3map.j`) are copied
   untouched; write your own `CreateAllUnits` there.
+- **Stabilization-cycle trap**: after a build → extract → map-to-json cycle
+  (run to stabilize float rotations, CLAUDE.md gotcha 6), commit the `*.json`
+  files ONLY. Never copy the extracted `war3map.lua` back into the source —
+  it contains this generated block.
 
 ### Minimap preview (generated)
 
@@ -122,6 +126,11 @@ them. When the source provides neither, build-map generates:
 
 Override by shipping your own `files/war3mapMap.blp` (or `.tga`) and/or
 `files/war3map.mmp`.
+
+Script syntax gate: build-map parses the **packed** `war3map.lua` (source
+script + generated blocks) with luaparse in Lua 5.3 mode and fails the build
+on a syntax error, reporting the line in the packed script. validate-map
+runs the same check on any packed map (`lua syntax war3map.lua` line).
 
 JASS note: if you write `war3map.j`, you can optionally syntax-check it with
 pjass (https://github.com/lep/pjass, builds with `make`); it needs the
@@ -164,8 +173,10 @@ node tools/validate-map.js somemap.w3x
 ```
 
 Checks: HM3W pre-header, MPQ magic at offset 512, extraction, presence of
-`war3map.w3i`/`w3e` and a map script, and for every translatable file a
-parse **plus** a JSON→binary→JSON stability cycle. Exit code 0 = all pass.
+`war3map.w3i`/`w3e` and a map script, a Lua syntax check on `war3map.lua`
+(luaparse, Lua 5.3 grammar — a broken script loads as a silently dead map),
+and for every translatable file a parse **plus** a JSON→binary→JSON
+stability cycle. Exit code 0 = all pass.
 
 Then a **second-opinion cross-validation** via mdx-m3-viewer-th's independent
 parser stack (`viewer ...` lines in the report):

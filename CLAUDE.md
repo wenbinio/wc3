@@ -8,7 +8,7 @@ stormlib-node native module (primary) or the smpq CLI (fallback).
 
 ```bash
 bash scripts/setup.sh   # idempotent: npm install + optional apt-get smpq fallback
-npm test                # 37 tests; should all pass before you change anything
+npm test                # 45 tests; should all pass before you change anything
 ```
 
 If you touch `lib/mpq.js` or anything archive-related, run the suite under
@@ -76,8 +76,14 @@ third-party maps, see gotcha 9).
    Always compare warToJson(jsonToWar(x)) against x, not bytes. The demo
    source JSON is a translator fixed point — keep it that way (build once,
    re-extract, and commit the stabilized JSON if you edit values).
+   **Stabilization-cycle trap**: when committing the stabilized source,
+   copy the `*.json` files ONLY — never the extracted `war3map.lua`, which
+   contains the generated CreateAllUnits block (gotcha 10) that must not
+   re-enter the source.
 7. **Lua maps**: set `info.json` `scriptLanguage: 1` AND ship `war3map.lua`
-   defining `config()` and `main()`. JASS = 0 + `war3map.j`.
+   defining `config()` and `main()`. JASS = 0 + `war3map.j`. build-map and
+   validate-map syntax-check the packed war3map.lua with luaparse (Lua 5.3
+   grammar) — a script that doesn't parse fails the build with the error+line.
 8. If you resize terrain, regenerate `files/war3map.wpm` and `war3map.shd`
    (sizes depend on terrain dimensions — see docs/PIPELINE.md §3).
 9. **Copyright**: never commit Blizzard-authored or downloaded third-party
@@ -120,6 +126,12 @@ third-party maps, see gotcha 9).
     enforces both rules). Its w3c parser disagrees with wc3maptranslator /
     War3Net on the 1.32 camera layout (name before vs after localPitch/Yaw/
     Roll) — w3c is excluded from the second opinion.
+16. **wts strings (strings.json values) must stay ASCII-only**:
+    wc3maptranslator's HexBuffer truncates every char to one byte on write
+    but decodes UTF-8 on read, so any non-ASCII char is mangled (em dash
+    `—` → control byte 0x14; `é` → invalid UTF-8). Until an upstream fix,
+    the workaround is to spell it in ASCII: `--` for dashes, straight
+    quotes, `...` for ellipses.
 
 ## Where things live
 

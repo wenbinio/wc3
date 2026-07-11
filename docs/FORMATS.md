@@ -116,6 +116,80 @@ Also note: **do not use unpinned `wc3maptranslator`** — npm resolves it to
 4.0.4, which has a different (instance-method) API and broken behavior.
 5.0.0 exposes static `warToJson(buffer)` / `jsonToWar(json)` per translator.
 
+## Terrain: tileset & tile FourCCs (w3e `tilePalette` / `cliffTilePalette`)
+
+Ground-tile ids are `<tileset letter><3-char type>` (e.g. `Ldrt`); cliff-tile
+ids are `C<tileset letter><2-char type>` (e.g. `CLdi`). The tileset letter is
+the w3e `tileset` field. **Do not invent FourCCs** — a tile id that isn't in
+the game's `TerrainArt\Terrain.slk` / `CliffTypes.slk` renders wrong or not
+at all. Values below were read from World-Editor-generated default `.w3e`
+files (War3Net test data) and cross-checked against War3Net's
+`TerrainType` enum; they match this repo's committed maps.
+
+Lordaeron Summer (`L`) ground tiles and cliffs:
+
+| FourCC | Tile |
+| --- | --- |
+| `Ldrt` | Dirt |
+| `Ldro` | Rough Dirt |
+| `Ldrg` | Grassy Dirt |
+| `Lrok` | Rock |
+| `Lgrs` | Grass |
+| `Lgrd` | Dark Grass |
+| `CLdi` / `CLgr` | Dirt Cliff / Grass Cliff |
+
+Northrend (`N`) ground tiles and cliffs:
+
+| FourCC | Tile |
+| --- | --- |
+| `Ndrt` | Dirt |
+| `Ndrd` | Dark Dirt |
+| `Nrck` | Rock |
+| `Ngrs` | Grass |
+| `Nice` | Ice |
+| `Nsnw` | Snow |
+| `Nsnr` | Rocky Snow |
+| `CNdi` / `CNsn` | Dirt Cliff / Snow Cliff |
+
+WE default palettes for all tilesets (ground tiles | cliff tiles):
+
+| Letter | Tileset | Default tilePalette | Default cliffTilePalette |
+| --- | --- | --- | --- |
+| `A` | Ashenvale | Adrt Adrd Agrs Arck Agrd Avin Adrg Alvd | CAgr CAdi |
+| `B` | Barrens | Bdrt Bdrh Bdrr Bdrg Bdsr Bdsd Bflr Bgrr | CBde CBgr |
+| `C` | Felwood | Cdrt Cdrd Cpos Crck Cvin Cgrs Clvg | CCgr CCdi |
+| `D` | Dungeon | Ddrt Dbrk Drds Dlvc Dlav Ddkr Dgrs Dsqd | CDdi CDsq |
+| `F` | Lordaeron Fall | Fdrt Fdro Fdrg Frok Fgrs Fgrd | CFdi CFgr |
+| `G` | Underground | Gdrt Gbrk Grds Glvc Glav Gdkr Ggrs Gsqd | CGdi CGsq |
+| `I` | Icecrown Glacier | Idrt Idtr Idki Ibkb Irbk Itbk Iice Ibsq Isnw | CIsn CIrb |
+| `J` | Dalaran Ruins | Jdrt Jdtr Jblm Jbtl Jsqd Jrtl Jgsb Jhdg Jwmb | CJdi CJsq |
+| `K` | Black Citadel | Kdrt Kfsl Kdtr Kfst Ksmb Klgb Ksqt Kdkt | CKdi CKdt |
+| `L` | Lordaeron Summer | Ldrt Ldro Ldrg Lrok Lgrs Lgrd | CLdi CLgr |
+| `N` | Northrend | Ndrt Ndrd Nrck Ngrs Nice Nsnw Nsnr | CNdi CNsn |
+| `O` | Outland | Odrt Odtr Osmb Ofst Olgb Orok Ofsl Oaby | COdi COrd |
+| `Q` | Village Fall | Qdrt Qdrr Qcrp Qcbp Qstp Qgrs Qrck Qgrt | CQdi CQgr |
+| `V` | Village | Vdrt Vdrr Vcrp Vcbp Vstp Vgrs Vrck Vgrt | CVdi CVgr |
+| `W` | Lordaeron Winter | Wdrt Wdro Wsng Wrok Wgrs Wsnw | CWgr CWsn |
+| `X` | Dalaran | Xdrt Xdtr Xblm Xbtl Xsqd Xrtl Xgsb Xhdg Xwmb | CXdi CXsq |
+| `Y` | Cityscape | Ydrt Ydtr Yblm Ybtl Ysqd Yrtl Ygsb Yhdg Ywmb | CYdi CYsq |
+| `Z` | Sunken Ruins | Zdrt Zdtr Zdrg Zbks Zsan Zbkl Ztil Zgrs Zvin | CZdi CZlb |
+
+Where to find more (per-tile display names, non-default combinations):
+wc3maptranslator's `TerrainTranslator` source has the tileset-letter enum
+(`node_modules/wc3maptranslator/dist/src/translators/TerrainTranslator.js`);
+War3Net's `War3Net.Build.Core/Environment/TerrainType.cs` names every ground
+and cliff tile; the authoritative in-game lists are the
+`TerrainArt\Terrain.slk` and `TerrainArt\CliffTypes.slk` game data files
+(see the WC3MapSpecification Terrain docs for the w3e layout itself).
+
+**Terrain JSON orientation**: terrain.json's per-vertex arrays are row-major
+`(width+1)×(height+1)` with **row 0 = map NORTH (top)**; index =
+`row*(width+1)+col`, col 0 = map west. The w3e file itself stores rows
+bottom-up (south first) — wc3maptranslator reverses row order on read/write,
+so JSON row 0 is the top row you'd see in the World Editor and on the
+generated minimap (lib/minimap.js relies on this). World y DEcreases as the
+row index grows; world x increases with col.
+
 ## Misc format facts learned the hard way
 
 - w3e ground height `8192` = ground level zero; `layerHeight` 2 = default

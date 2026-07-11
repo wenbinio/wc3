@@ -36,6 +36,7 @@ test('validate-map passes on the built demo map', () => {
   const out = run('validate-map.js', DEMO_W3X); // non-zero exit -> throws
   assert.doesNotMatch(out, /^FAIL/m);
   assert.match(out, /map script present/);
+  assert.match(out, /PASS {2}lua syntax war3map\.lua/);
   assert.match(out, /translate war3map\.w3i/);
   // cross-validation section: the independent mdx-m3-viewer-th parser stack
   assert.match(out, /PASS {2}viewer opens archive/);

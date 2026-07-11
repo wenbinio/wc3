@@ -14,6 +14,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { sourceToExtracted, writeJson } = require('../lib/source');
+const { checkLuaSyntax } = require('../lib/luacheck');
 const { packDir } = require('./w3x-pack');
 
 function buildMap(sourceDir, outW3x) {
@@ -31,6 +32,18 @@ function buildMap(sourceDir, outW3x) {
   try {
     const { written, header } = sourceToExtracted(sourceDir, tmp);
     if (header) writeJson(path.join(tmp, '_header.json'), header);
+    // The packed war3map.lua (source + generated blocks) must be valid Lua —
+    // a script that doesn't parse loads as a silently dead map.
+    const luaPath = path.join(tmp, 'war3map.lua');
+    if (fs.existsSync(luaPath)) {
+      const err = checkLuaSyntax(fs.readFileSync(luaPath, 'utf8'));
+      if (err) {
+        throw new Error(
+          `war3map.lua: Lua syntax error at line ${err.line ?? '?'}: ${err.message}` +
+          ' (line refers to the packed script: source war3map.lua + generated blocks)'
+        );
+      }
+    }
     const res = packDir(tmp, outW3x);
     return { members: written, ...res };
   } finally {

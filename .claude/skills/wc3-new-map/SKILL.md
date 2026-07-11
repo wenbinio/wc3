@@ -32,6 +32,14 @@ to `-(w*128)/2`, fix `info.json` camera bounds, and regenerate
 `files/war3map.wpm` (16-byte header + w*4*h*4 zero bytes) and
 `files/war3map.shd` (w*4*h*4 zero bytes) — see docs/PIPELINE.md §3.
 
+- Orientation: terrain.json per-vertex arrays are row-major with
+  **row 0 = map NORTH (top)**, col 0 = west (index = `row*(w+1)+col`) —
+  what you write is what the minimap/World Editor shows top-down.
+- Tiles/tileset: take `tilePalette`/`cliffTilePalette` FourCCs from the
+  per-tileset tables in docs/FORMATS.md ("Terrain: tileset & tile
+  FourCCs") — never invent ids (unknown tiles render wrong or not at
+  all), and keep `terrain.json` `tileset` set to the matching letter.
+
 Build and check:
 
 ```bash

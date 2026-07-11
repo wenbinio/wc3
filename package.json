@@ -11,6 +11,7 @@
     "setup": "bash scripts/setup.sh"
   },
   "dependencies": {
+    "luaparse": "^0.3.1",
     "mdx-m3-viewer-th": "^5.13.4",
     "war3-model": "^4.0.1",
     "wc3maptranslator": "5.0.0"

@@ -19,6 +19,7 @@ const { hasHM3W, parseHeader, HEADER_SIZE } = require('../lib/header');
 const { extractAll } = require('../lib/mpq');
 const { byWar, CONSUMED_AS_SKIN, warToJson, jsonToWar } = require('../lib/filemap');
 const { walk } = require('../lib/source');
+const { checkLuaSyntax } = require('../lib/luacheck');
 const viewer = require('../lib/viewer');
 
 function validate(mapPath) {
@@ -61,6 +62,14 @@ function validate(mapPath) {
       .filter((s) => fs.existsSync(path.join(tmp, s)));
     if (scripts.length > 0) ok('map script present', scripts.join(', '));
     else fail('map script present', 'no war3map.lua or war3map.j in archive');
+
+    // 3b. Lua scripts must actually parse (Lua 5.3 grammar via luaparse) —
+    // a syntactically broken war3map.lua loads as a silently dead map.
+    for (const s of scripts.filter((n) => n.endsWith('.lua'))) {
+      const err = checkLuaSyntax(fs.readFileSync(path.join(tmp, s), 'utf8'));
+      if (err) fail(`lua syntax ${s}`, `line ${err.line ?? '?'}: ${err.message}`);
+      else ok(`lua syntax ${s}`, 'parses as Lua 5.3 (luaparse)');
+    }
 
     // 4. Parse every translatable file + stability cycle
     for (const rel of walk(tmp).sort()) {
