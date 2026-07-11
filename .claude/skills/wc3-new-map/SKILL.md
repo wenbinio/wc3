@@ -21,7 +21,9 @@ melee-ish Lua map — it builds as-is):
    `players[].startingPos`, plus starting units (rawcodes: htow/hfoo/hpea...,
    gold mine `ngol`)
 4. `war3map.lua` — update `SetPlayers/SetTeams/DefineStartLocation/
-   SetPlayerStartLocation` to match; put gameplay logic in `main()`
+   SetPlayerStartLocation` to match; put gameplay logic in `main()`.
+   For a "Use Custom Forces" lobby copy the maps/tidewatch-arena `config()`
+   pattern and keep team indexes == force indexes (CLAUDE.md gotcha 18)
 5. Optional: `doodads.json` (trees `LTlt`), `strings.json`,
    `objects-*.json` (custom units), `imports/` (custom MDX/BLP assets)
 

@@ -1,166 +1,255 @@
 # wc3-map-toolkit — agent instructions
 
-Headless Warcraft III `.w3x` map toolkit (read / translate / edit / build).
-No game install needed. Everything runs on Linux with node; MPQ I/O uses the
-stormlib-node native module (primary) or the smpq CLI (fallback).
+Headless, agent-operated Warcraft III `.w3x` map toolkit (read / translate /
+edit / build / validate). No game install needed; everything runs on Linux
+with node. MPQ I/O: stormlib-node native module (primary) or smpq CLI
+(fallback). This file is the router — hard-won rules live here, deep detail
+in docs/ and .claude/skills/; follow the pointers.
 
 ## First step in any session
 
 ```bash
 bash scripts/setup.sh   # idempotent: npm install + optional apt-get smpq fallback
-npm test                # 45 tests; should all pass before you change anything
+npm test                # 60 tests; all must pass before you change anything
 ```
 
-If you touch `lib/mpq.js` or anything archive-related, run the suite under
-BOTH MPQ backends — both must be green:
+If you touch `lib/mpq.js` or anything archive-related, the suite must be
+green under BOTH MPQ backends: `npm test` (stormlib-node when loadable)
+AND `npm run test:smpq` (forces the smpq CLI fallback).
+
+## Command surface
 
 ```bash
-npm test                # default backend (stormlib-node when loadable)
-npm run test:smpq       # WC3_MPQ_BACKEND=smpq forces the smpq CLI fallback
+node tools/w3x-extract.js  [--dump-unknown] <map.w3x> <outdir>  # header -> _header.json, extract MPQ
+node tools/map-to-json.js  <extracted-dir> <json-dir>  # binaries -> editable map source
+node tools/json-to-map.js  <json-dir> <out-dir>        # map source -> binaries
+node tools/w3x-pack.js     <dir> <out.w3x>             # binaries -> MPQ v1 + HM3W header
+node tools/build-map.js    <map-source-dir> <out.w3x>  # one-step: source -> .w3x
+node tools/validate-map.js <map.w3x>                   # layered pass/fail report, exit 0 = good
+
+bash scripts/crossvalidate-war3net.sh <extracted-dir>  # optional War3Net (C#) third opinion; needs dotnet
 ```
 
-## Commands
+npm scripts: `npm test`, `npm run test:smpq`, `npm run setup`. Env vars:
+`WC3_MPQ_BACKEND=smpq|stormlib` (force a backend; stormlib errors if the
+native module won't load), `WC3_EXTRACT_UNKNOWN=1` (= `--dump-unknown`).
 
-```bash
-node tools/w3x-extract.js  <map.w3x> <outdir>        # header -> _header.json, extract MPQ
-node tools/map-to-json.js  <extracted-dir> <json-dir> # binaries -> editable map source
-node tools/json-to-map.js  <json-dir> <out-dir>       # map source -> binaries
-node tools/w3x-pack.js     <dir> <out.w3x>            # binaries -> MPQ v1 + HM3W header
-node tools/build-map.js    <map-source-dir> <out.w3x> # one-step: source -> .w3x
-node tools/validate-map.js <map.w3x>                  # pass/fail report, exit 0 = good
+## Map source anatomy
+
+```
+maps/mymap/
+├── info.json          map settings/players/forces (w3i); terrain.json (w3e)
+├── units.json         preplaced units + slocs -> generated CreateAllUnits()
+├── doodads.json       + regions/cameras/sounds/strings.json
+├── objects-*.json     object data: units/items/destructables/doodads/
+│                      abilities/buffs/upgrades (+ -skin) — see lib/filemap.js
+├── war3map.lua        map script: config() + main()   (JASS: war3map.j)
+├── files/             opaque binaries copied verbatim (wpm/shd/mmp/tga...);
+│                      minimap tga+mmp auto-generated unless provided here
+├── imports/           custom assets; path under imports/ IS the archive path;
+│                      war3map.imp auto-generated (unless imports.json exists)
+├── assets/            committed generator scripts (*.mjs) that reproduce all
+│                      generated imports/terrain data — regen, don't hand-edit
+└── _header.json       HM3W pre-header {name, flags, maxPlayers}
 ```
 
-Map source layout (editable form): see README.md and `maps/demo/` (a working
-template — copy it to start a new map); `maps/crossroads-siege/` is the
-full-featured reference (terrain/regions/cameras/sounds/object data/imports).
-Scratch build outputs go to `_build/` (gitignored). Exception: `maps/builds/`
-holds the committed compiled `.w3x` artifacts of the bundled map sources —
-regenerate them with `node tools/build-map.js maps/<name> maps/builds/<name>.w3x`
-whenever a map source changes. Never commit any other `.w3x` (and never
-third-party maps, see gotcha 9).
+Reference sources (each README documents its own invariants):
+- `maps/demo/` — minimal 2-player template; copy it to start a new map.
+- `maps/crossroads-siege/` — every subsystem: terrain/cliffs/water, regions,
+  cameras, sounds, custom object data, generated MDX import, full Lua mode.
+- `maps/tidewatch-arena/` — lobby-config reference: the WE-exact
+  "Use Custom Forces + Fixed Player Settings" `config()` pattern (gotcha 18).
+- `maps/northreach/` — economy/systems map: 3 generated custom models
+  (assets/mdl-lib.mjs), chat-command `-test` debug mode, FoTN-derived design.
 
-## Gotchas (each of these cost real debugging time)
+Scratch builds go to `_build/` (gitignored). Exception: `maps/builds/` holds
+the committed compiled `.w3x` of each bundled source — regenerate via
+build-map whenever a source changes. Never commit any other `.w3x` (and
+never third-party maps, gotcha 9).
+
+## Workflows (one line each — follow the pointer)
+
+- **Read/decompose any map** (incl. classic + protected: `_viewer/`,
+  `_unknown/`, classicw3i) — PIPELINE §1, skill wc3-read-map.
+- **Edit + rebuild**: source → build-map → validate-map; stabilization cycle
+  after value edits (gotcha 6) — PIPELINE §2, skill wc3-build-map.
+- **New map**: `cp -r maps/demo maps/<name>`, keep terrain/wpm/shd/slocs
+  consistent — PIPELINE §3, skill wc3-new-map.
+- **Asset generation/import**: MDL → war3-model → MDX chain, PNG → BLP1 via
+  Pillow, sanityTest bar (gotchas 14, 19) — PIPELINE §4, docs/ASSETS.md,
+  skill wc3-import-asset.
+- **Validate**: validate-map layers + War3Net third opinion — PIPELINE §5–6.
+- **In-game A/B diagnostics**: variants need distinct INTERNAL names
+  (gotcha 17) — PIPELINE §7.
+- **Decomposition-driven design**: before cloning/adapting a real map,
+  decompose the actual artifact — forum lore got nearly every FoTN mechanic
+  wrong; worked example: docs/reference/fotn-analysis.md.
+
+## Gotchas (each cost real debugging time; numbers are stable — docs/READMEs cite them)
 
 1. **Pin `wc3maptranslator@5.0.0`.** Unpinned resolves to 4.0.4 which has a
    different, broken API. v5 API is static methods:
    `InfoTranslator.warToJson(buffer)` → `{json}`,
    `InfoTranslator.jsonToWar(json)` → `{buffer}`.
-2. **Reforged formats only** in wc3maptranslator: classic maps' w3i/w3e/object
-   files throw `VersionError`-style messages. The tools catch this, copy such
-   files raw (check `manifest.json` → `errors`), and additionally emit a
-   READ-ONLY mdx-m3-viewer-th parse under `_viewer/` (diagnostics schema,
-   never repacked — not build-source). Don't "fix" the throw — it's upstream.
+2. **Reforged formats only** in wc3maptranslator (w3i v33, w3e v12, objects
+   v3): classic files throw — sometimes a version message, often a bare
+   `RangeError: offset out of range`. map-to-json catches ANY translator
+   throw: file copied raw (manifest.json → `errors`) plus a READ-ONLY
+   mdx-m3-viewer-th parse under `_viewer/` (viewer schema, never repacked —
+   not build-source); viewer failures land in `viewerFallbackErrors`; a
+   truncated classic w3i gets a tolerant read via lib/classicw3i.js.
+   Don't "fix" the throw — it's upstream.
 3. **512-byte HM3W pre-header**: StormLib reads `.w3x` directly but creates
    bare MPQs. w3x-pack builds the header from `_header.json` (or synthesizes
-   one); with stormlib-node the header file is pre-written and
-   `SFileCreateArchive` converts it (the MPQ lands at offset 512 — no concat
-   step), with smpq the header is prepended to the bare MPQ. MPQ must be
+   one); stormlib-node pre-writes it and `SFileCreateArchive` converts it
+   (MPQ lands at offset 512), smpq gets it prepended afterwards. MPQ must be
    **v1** (`MPQ_CREATE.ARCHIVE_V1` / `smpq -M 1`) for the game.
 4. **Protected maps have no `(listfile)`** — named extraction falls back to
-   probing known names (`lib/mpq.js` KNOWN_FILES). Unresolved members
-   enumerate as `FileNNNNNNNN` pseudo-names on BOTH backends (smpq is
-   StormLib-based too). `extractAll` returns
-   `{ extracted, total, unresolved, unknown }` — always report the counts so
-   anonymous imports aren't silently dropped (w3x-extract prints them). Custom
-   imports whose names are stripped can't be recovered by path, but their
-   CONTENT can: `extractAll(archive, out, { dumpUnknown: true })` (env
-   `WC3_EXTRACT_UNKNOWN=1` / `w3x-extract --dump-unknown`) writes them under
-   `_unknown/FileNNNNNNNN.<ext>` with a content-sniffed extension (MDLX→mdx,
-   BLP1/2→blp, text→txt, else bin). `_unknown/` is diagnostics only —
-   map-to-json skips underscore paths (manifest.skipped); never repacked (the
-   real member name is genuinely lost). Always verify extraction ON DISK:
-   smpq exits 0 even when a name misses.
-5. **stormlib-node sharp edges** (it's the primary MPQ backend — lib/mpq.js
-   encapsulates all of this; don't call it directly elsewhere):
+   probing known names (`lib/mpq.js` KNOWN_FILES); unresolved members
+   enumerate as `FileNNNNNNNN` pseudo-names on BOTH backends. `extractAll`
+   returns `{ extracted, total, unresolved, unknown }` — always report the
+   counts so anonymous imports aren't silently dropped (w3x-extract prints
+   them). Names are genuinely lost, but CONTENT is recoverable:
+   `--dump-unknown` / `WC3_EXTRACT_UNKNOWN=1` writes them under
+   `_unknown/FileNNNNNNNN.<ext>` with a content-sniffed extension.
+   `_unknown/` is diagnostics only — map-to-json skips underscore paths,
+   nothing repacks them. Always verify extraction ON DISK: smpq exits 0
+   even when a name misses.
+5. **stormlib-node sharp edges** (primary MPQ backend — lib/mpq.js
+   encapsulates all of this; never call it directly elsewhere):
    `SFileReadFile` wants an **ArrayBuffer** — a Node Buffer SIGABRTs the
-   whole process; `SFileGetFileSize` returns **BigInt** (wrap in `Number()`);
+   process; `SFileGetFileSize` returns **BigInt** (wrap in `Number()`);
    **NEVER pass `MPQ_FILE.REPLACEEXISTING`** to `SFileAddFileEx` — a
-   signed-int coercion bug silently disables compression (files stored raw);
-   `SFileRemoveFile` on `(listfile)`/`(attributes)` fails ERR:10003 — don't
-   try. war3-model also wants ArrayBuffer:
+   signed-int coercion bug silently disables compression; `SFileRemoveFile`
+   on `(listfile)`/`(attributes)` fails ERR:10003 — don't try. war3-model
+   also wants ArrayBuffer:
    `buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength)`.
-   Force the smpq fallback with `WC3_MPQ_BACKEND=smpq`.
 6. **JSON round-trips are stable, not byte-identical**: rotations go through
    float32 radians (270° → 269.977…°), null FourCCs read as `'0000'`.
-   Always compare warToJson(jsonToWar(x)) against x, not bytes. The demo
-   source JSON is a translator fixed point — keep it that way (build once,
-   re-extract, and commit the stabilized JSON if you edit values).
-   **Stabilization-cycle trap**: when committing the stabilized source,
-   copy the `*.json` files ONLY — never the extracted `war3map.lua`, which
-   contains the generated CreateAllUnits block (gotcha 10) that must not
-   re-enter the source.
+   Compare warToJson(jsonToWar(x)) against x, not bytes. Committed map-source
+   JSON is a translator fixed point — keep it that way: after editing values,
+   build once, re-extract, commit the stabilized JSON. **Trap**: copy the
+   `*.json` files ONLY — never the extracted `war3map.lua`, which contains
+   the generated CreateAllUnits block (gotcha 10).
 7. **Lua maps**: set `info.json` `scriptLanguage: 1` AND ship `war3map.lua`
    defining `config()` and `main()`. JASS = 0 + `war3map.j`. build-map and
    validate-map syntax-check the packed war3map.lua with luaparse (Lua 5.3
-   grammar) — a script that doesn't parse fails the build with the error+line.
+   grammar) — a script that doesn't parse fails the build with error+line
+   (line numbers refer to the PACKED script, source + generated blocks).
 8. If you resize terrain, regenerate `files/war3map.wpm` and `war3map.shd`
    (sizes depend on terrain dimensions — see docs/PIPELINE.md §3).
 9. **Copyright**: never commit Blizzard-authored or downloaded third-party
    maps. Fixtures here are MIT (see fixtures/ATTRIBUTION.md).
 10. **war3mapUnits.doo is EDITOR-ONLY** — the game never reads it; WE compiles
-    placements into `CreateAllUnits()` in the map script. build-map therefore
-    generates a marker-delimited `CreateAllUnits()` Lua block from units.json
-    and appends it to the packed war3map.lua (`lib/unitscript.js`). Map
-    scripts should call `CreateAllUnits()` from `main()` (before any code
-    that enumerates preplaced units); if they never mention it, main() is
-    auto-wrapped to call it last. units.json stays the single source of truth.
+    placements into `CreateAllUnits()` in the map script. build-map generates
+    a marker-delimited `CreateAllUnits()` block from units.json and appends
+    it to the packed war3map.lua (`lib/unitscript.js`). Call it from `main()`
+    (before code that enumerates preplaced units); if the script never
+    mentions it, main() is auto-wrapped to call it last. units.json stays
+    the single source of truth.
 11. **The `'0000'` FourCC dialect must NOT reach the binary**: jsonToWar
-    writes `globalWeather: '0000'` as the literal ASCII bytes `30303030`,
-    which the map picker rejects as an invalid weather id (WE writes four
-    ZERO bytes). `lib/source.js` normalizes `'0000'`/null → `''` before
-    translating (translator then emits int 0). Keep `'0000'` in source JSON
-    (gotcha 6); never bypass sourceToExtracted for info.json.
+    writes `globalWeather: '0000'` as literal ASCII `30303030`, which the
+    map picker rejects (WE writes four ZERO bytes). `lib/source.js`
+    normalizes `'0000'`/null → `''` before translating. Keep `'0000'` in
+    source JSON (gotcha 6); never bypass sourceToExtracted for info.json.
 12. **Maps need a minimap preview or the picker shows nothing** (and older
     clients can crash): every real map ships `war3mapMap.blp/.tga` + a
-    populated `war3map.mmp`. build-map auto-generates a 256x256 TGA from
-    terrain.json and an mmp (one colored entry per `sloc`, entries for gold
-    mines/neutral buildings — `lib/minimap.js`); drop your own files under
-    `files/` to override. mmp entry: i32 type (0 mine, 1 neutral bldg,
-    2 start loc), i32 x, i32 y (0-255, y flipped), u8[4] BGRA.
+    populated `war3map.mmp`. build-map auto-generates both from terrain.json
+    and units.json (`lib/minimap.js`; byte layout in docs/FORMATS.md); drop
+    your own files under `files/` to override.
 13. **HM3W header flags mirror the w3i flags dword** (WE writes the same
     value in both places). w3x-pack derives flags from the packed
     war3map.w3i when `_header.json` has flags 0 (`readW3iFlags` in
     lib/header.js). Flags 0 is a pick-time divergence every tool notices.
 14. **Custom MDX must pass mdx-m3-viewer's sanityTest (0 errors/severes)** or
-    the game hard-crashes at load. Classic traps: a Bone with unspecified
-    GeosetAnimId defaults to 0 → "invalid geoset animation 0" when there is
-    no GeosetAnim chunk (write `GeosetAnimId None` or add a GeosetAnim);
-    missing "Death" sequence; missing "Origin Ref" attachment.
-    validate-map enforces this bar on every packed .mdx/.mdl.
+    the game hard-crashes at load. Classic traps: an unspecified Bone
+    GeosetAnimId defaults to 0 — invalid with no GeosetAnim chunk (write
+    `GeosetAnimId None` or add a GeosetAnim); missing "Death" sequence;
+    missing "Origin Ref" attachment. validate-map enforces this bar on
+    every packed .mdx/.mdl.
 15. **mdx-m3-viewer-th must be fed `new Uint8Array(fs.readFileSync(p))`,
     NEVER a Node Buffer** — its MPQ code mutates the input in place and
-    misparses (and the MDX parser slices `.buffer`). Also NEVER use its MPQ
-    save/write path (known locale/platform field swap → broken archives):
-    open maps readonly, treat all output as diagnostics (`lib/viewer.js`
-    enforces both rules). Its w3c parser disagrees with wc3maptranslator /
-    War3Net on the 1.32 camera layout (name before vs after localPitch/Yaw/
-    Roll) — w3c is excluded from the second opinion.
+    misparses. NEVER use its MPQ save/write path (locale/platform field
+    swap → broken archives): open readonly, output is diagnostics only
+    (`lib/viewer.js` enforces both). Its w3c parser disagrees with the
+    other stacks on the 1.32 camera layout — w3c is excluded from the
+    second opinion (docs/FORMATS.md).
 16. **wts strings (strings.json values) must stay ASCII-only**:
-    wc3maptranslator's HexBuffer truncates every char to one byte on write
-    but decodes UTF-8 on read, so any non-ASCII char is mangled (em dash
-    `—` → control byte 0x14; `é` → invalid UTF-8). Until an upstream fix,
-    the workaround is to spell it in ASCII: `--` for dashes, straight
-    quotes, `...` for ellipses.
-17. **The in-game map list shows the INTERNAL map name** (HM3W header +
-    w3i name), never the filename — variant builds for in-game A-B testing
-    all look identical unless each gets a distinct name in the source's
-    strings/info (TRIGSTR name) AND `_header.json` (docs/PIPELINE.md §7).
+    wc3maptranslator truncates every char to one byte on write but decodes
+    UTF-8 on read — any non-ASCII char is mangled (em dash → control byte).
+    Spell it in ASCII: `--`, straight quotes, `...`.
+17. **The in-game map list shows the INTERNAL map name** (HM3W header + w3i
+    name), never the filename — A-B variants look identical unless each gets
+    a distinct name in strings/info (TRIGSTR name) AND `_header.json`
+    (docs/PIPELINE.md §7).
+18. **Lobby "Create" button greyed out** = broken force layout. With
+    "Use Custom Forces" + "Fixed Player Settings", every `SetPlayerTeam`
+    team index in `config()` must equal the index of a w3i force containing
+    that player — a team with no matching force leaves the locked lobby with
+    no valid arrangement. `forces: []` is also a pick-time divergence.
+    WE-exact pattern: maps/tidewatch-arena (its original hosting bug).
+19. **war3-model MDL dialect quirks** (authoring models as MDL text):
+    `static Color { R, G, B }` takes plain RGB — generateMDX reverses the
+    floats into the B,G,R order the game expects, so do NOT pre-swap; and
+    parseMDL REJECTS a comma after the `Triangles { ... }` closing brace
+    (WE/Magos-style MDL writes one — strip it). Start new generators from
+    maps/northreach/assets/mdl-lib.mjs (known-good, sanity-self-checking).
+20. **Tile/cliff FourCCs only from the tables in docs/FORMATS.md** ("Terrain:
+    tileset & tile FourCCs") — an invented id that isn't in the game's SLKs
+    renders wrong or not at all, and `terrain.json` `tileset` letter must
+    match the ids' prefix.
+21. **Generated CreateAllUnits nuances** (lib/unitscript.js): emits
+    `SetHeroLevel` only when `hero.level > 1`, Str/Agi/Int only when > 0
+    (a level-1 hero correctly gets no call); `SetResourceAmount` for gold
+    mines; `SetUnitAcquireRange(u, 200)` for camp creeps
+    (`targetAcquisition: -2`); `sloc` entries skipped — start locations
+    belong in `config()`'s `DefineStartLocation` calls.
+
+## Testing & validation doctrine
+
+- `npm test` = 60 tests, 11 files: source⇄binary fixed points for all four
+  bundled maps, build+validate end-to-end, MPQ backends, classic/protected
+  fallbacks (`_viewer/`, `_unknown/`, classicw3i), luacheck, gotcha
+  regressions. Both backends when touching archive code (`npm run test:smpq`).
+- `validate-map` layers: HM3W header + MPQ magic at 512 → extraction →
+  required files (w3i/w3e) + script presence → luaparse gate → per-file
+  translator parse PLUS JSON→binary→JSON stability → mdx-m3-viewer-th second
+  opinion (independent MPQ open; parses wpm/shd/mmp/wct which the translator
+  can't; MDX sanityTest 0 errors/0 severes on every packed model).
+- Third opinion for disputed layouts: `scripts/crossvalidate-war3net.sh`
+  (War3Net handles classic AND Reforged; the tie-breaker).
+- **Honest limit: structural validity ≠ game acceptance.** Only the game
+  proves a map. In-game protocol: build variants with distinct internal
+  names (gotcha 17) and bisect. Failure classes from our crash postmortems:
+  **pick-time** (missing/crashing in the picker) → w3i/header divergence:
+  weather `30303030` bytes, header flags 0, empty/mismatched forces, missing
+  minimap (gotchas 11–13, 18); **load-time** (crash after start) → malformed
+  MDX (gotcha 14); **runtime** (black/dead/empty map) → Lua that doesn't
+  parse or `CreateAllUnits` never running (gotchas 7, 10).
+
+## Legal (non-negotiable)
+
+Never commit Blizzard-authored or third-party maps/assets (models, textures,
+SLKs). Reference Blizzard assets by in-game path (`units\human\Footman\...`)
+— nothing is redistributed. Hive Workshop: inspiration + per-author credit
+only; no re-hosting, no scraping. Ship only generated (see maps/*/assets/)
+or CC0-converted content. Details: docs/ASSETS.md.
 
 ## Where things live
 
-- `lib/filemap.js` — the war3-file ⇄ translator ⇄ JSON-name table (add new
+- `lib/filemap.js` — war3-file ⇄ translator ⇄ JSON-name table (add new
   formats here; tools pick them up automatically)
-- `lib/header.js` / `lib/mpq.js` — HM3W header (+ w3i flags reader); MPQ I/O
-  with two backends: stormlib-node (primary) / smpq CLI (fallback,
-  `WC3_MPQ_BACKEND=smpq` forces it)
-- `lib/viewer.js` — mdx-m3-viewer-th second-opinion parsers (read-only:
-  cross-validation in validate-map, classic-format fallback in map-to-json)
-- `lib/source.js` — map-source ⇄ extracted-dir conversion (the core logic)
-- `lib/minimap.js` — war3mapMap.tga + war3map.mmp generation (gotcha 12)
-- `lib/unitscript.js` — CreateAllUnits() Lua generation/injection (gotcha 10)
-- `docs/FORMATS.md` — format knowledge + external references
-- `docs/PIPELINE.md` — step-by-step workflows incl. asset imports
-- `docs/ASSETS.md` — sourcing/converting models & textures (MDX/MDL, BLP1
-  encoding, glTF→MDX chain, legal rules)
+- `lib/header.js` / `lib/mpq.js` — HM3W header (+ w3i flags reader); MPQ I/O,
+  two backends (stormlib-node primary / smpq CLI fallback)
+- `lib/source.js` — map-source ⇄ extracted-dir conversion (the core logic,
+  incl. weather normalization + viewer/classic fallback wiring)
+- `lib/viewer.js` — mdx-m3-viewer-th second-opinion parsers (read-only);
+  `lib/classicw3i.js` — tolerant truncated-classic-w3i reader
+- `lib/luacheck.js` — luaparse Lua 5.3 gate; `lib/minimap.js` — minimap
+  tga/mmp generation; `lib/unitscript.js` — CreateAllUnits() generation
+- `docs/PIPELINE.md` — workflows §1–7 (read/edit/new/import/validate/War3Net/
+  A-B naming); `docs/FORMATS.md` — format knowledge, tileset FourCC tables,
+  references; `docs/ASSETS.md` — asset sourcing/conversion + legal;
+  `docs/reference/fotn-analysis.md` — worked decomposition example
 - `.claude/skills/` — wc3-read-map, wc3-build-map, wc3-new-map,
-  wc3-import-asset (asset inspect/convert/import recipe)
+  wc3-import-asset (operational recipes)

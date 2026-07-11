@@ -34,8 +34,8 @@ other build output, e.g. `_build/`, stays ignored). They are regenerated
 from source with build-map — rebuild them whenever a map source changes:
 
 ```bash
-node tools/build-map.js maps/demo maps/builds/demo.w3x
-node tools/build-map.js maps/crossroads-siege maps/builds/crossroads-siege.w3x
+node tools/build-map.js maps/<name> maps/builds/<name>.w3x
+# bundled sources: demo, crossroads-siege, tidewatch-arena, northreach
 ```
 
 ## Pipeline
@@ -59,7 +59,7 @@ All tools are plain Node scripts: `node tools/<name>.js ...`
 
 | Tool | Usage | Purpose |
 | --- | --- | --- |
-| `w3x-extract.js` | `<map.w3x> <outdir>` | Save the 512-byte HM3W pre-header (`_header.json`) and extract all MPQ contents |
+| `w3x-extract.js` | `[--dump-unknown] <map.w3x> <outdir>` | Save the 512-byte HM3W pre-header (`_header.json`) and extract all MPQ contents; `--dump-unknown` also dumps anonymous members of protected maps under `_unknown/` |
 | `w3x-pack.js` | `<dir> <out.w3x>` | Pack a directory into an MPQ v1 and prepend the preserved/synthesized HM3W header |
 | `map-to-json.js` | `<extracted-dir> <json-dir>` | Translate every known `war3map.*` file to JSON; copy opaque files through with a manifest |
 | `json-to-map.js` | `<json-dir> <out-dir>` | Inverse: JSON map source back to raw archive members |
@@ -71,7 +71,9 @@ All tools are plain Node scripts: `node tools/<name>.js ...`
 A map source directory (see `maps/demo/` for a minimal working example and
 `maps/crossroads-siege/` for a full-featured one — non-flat 64x64 terrain,
 5 players/2 forces, regions/cameras/sounds, custom object data, a generated
-MDX import and a complete Lua game mode):
+MDX import and a complete Lua game mode; `maps/tidewatch-arena/` is the
+custom-forces lobby reference and `maps/northreach/` the economy /
+custom-models reference — each has its own README):
 
 ```
 maps/mymap/
@@ -87,6 +89,8 @@ maps/mymap/
 │                       minimap (war3mapMap.tga + war3map.mmp) is generated
 │                       at build time unless provided here
 ├── imports/            custom assets (MDX/BLP/...); war3map.imp auto-generated
+├── assets/             committed generator scripts (*.mjs) that reproduce
+│                       generated imports/terrain data (regen, don't hand-edit)
 └── _header.json        HM3W pre-header fields {name, flags, maxPlayers}
 ```
 

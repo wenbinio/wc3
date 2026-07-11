@@ -38,6 +38,13 @@ From glTF/OBJ/FBX there is NO direct converter — chain: headless Blender 3.x
 + khalv/mdl-exporter (tw1lac fork for 3.x) → MDL → MDX as above. See
 docs/ASSETS.md.
 
+Authoring MDL text for war3-model (generating original models): start from
+`maps/northreach/assets/mdl-lib.mjs` (known-good, sanity-self-checking) and
+mind CLAUDE.md gotcha 19 — `static Color { R, G, B }` takes plain RGB
+(generateMDX writes the game's B,G,R order itself), and parseMDL rejects a
+comma after the `Triangles { ... }` closing brace (WE-style MDL has one).
+Sanity bar for the result: CLAUDE.md gotcha 14 (0 errors / 0 severes).
+
 ## PNG → BLP1 texture (Pillow)
 
 ```bash

@@ -22,6 +22,9 @@ Then read `/tmp/work/src/`:
 - `_viewer/` — read-only mdx-m3-viewer-th parses of classic-format files the
   translator rejected (diagnostics only, NOT build-source — never edit/repack)
 - `_header.json` — the .w3x HM3W pre-header (lobby name, maxPlayers)
+- `_unknown/` (extraction dir, only with `w3x-extract --dump-unknown` or
+  `WC3_EXTRACT_UNKNOWN=1`) — content of anonymous members of protected maps,
+  content-sniffed extensions; diagnostics only, real names are lost
 
 Quick summary one-liner:
 
@@ -32,11 +35,14 @@ node -e "const i=require('/tmp/work/src/info.json');console.log(i.map.name, i.pl
 Interpreting problems:
 
 - `manifest.json.errors` mentioning "cannot currently parse this version"
-  → classic-format map; those files are copied raw (everything else still
-  works) and, where possible, parsed read-only into `_viewer/<name>.json`
-  (`manifest.json` → `viewerFallback`) for inspection.
-- Extraction found only standard files on a map known to have imports
-  → protected map (no listfile); see docs/FORMATS.md.
+  (or a bare `RangeError: offset out of range`) → classic-format map; those
+  files are copied raw (everything else still works) and, where possible,
+  parsed read-only into `_viewer/<name>.json` (`manifest.json` →
+  `viewerFallback`; viewer failures in `viewerFallbackErrors`; a truncated
+  classic w3i gets a tolerant lib/classicw3i.js read).
+- w3x-extract reporting unresolved (anonymous) entries → protected map
+  (no listfile); rerun with `--dump-unknown` to recover their content
+  under `_unknown/`; see docs/FORMATS.md.
 - `TRIGSTR_123` values in info.json resolve via `strings.json` key `123`.
 
 Validate any map: `node tools/validate-map.js <map.w3x>` (exit 0 = healthy).

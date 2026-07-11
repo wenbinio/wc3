@@ -21,6 +21,10 @@ Common edits:
 - Players/start locations: keep `info.json players[].startingPos`,
   `units.json` `sloc` entries, and `DefineStartLocation()` calls in
   war3map.lua consistent with each other
+- Lobby/forces: with "Use Custom Forces" + "Fixed Player Settings", every
+  `SetPlayerTeam` team index in `config()` must equal the index of a w3i
+  force containing that player, or the multiplayer Create button greys out
+  (CLAUDE.md gotcha 18; WE-exact pattern: maps/tidewatch-arena)
 - Gameplay logic: `war3map.lua` — game calls `config()` then `main()`;
   `scriptLanguage` in info.json must be 1 for Lua (0 for JASS + war3map.j)
 - Units: append to `units.json` (copy an existing entry; `type` is the
