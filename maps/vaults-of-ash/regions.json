@@ -1,0 +1,410 @@
+[
+  {
+    "name": "DoorA",
+    "id": 0,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      255,
+      64,
+      64
+    ],
+    "position": {
+      "left": -1488,
+      "bottom": -5648,
+      "right": -1200,
+      "top": -5360
+    }
+  },
+  {
+    "name": "DoorB",
+    "id": 1,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      255,
+      128,
+      64
+    ],
+    "position": {
+      "left": -592,
+      "bottom": -5648,
+      "right": -304,
+      "top": -5360
+    }
+  },
+  {
+    "name": "DoorC",
+    "id": 2,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      255,
+      192,
+      64
+    ],
+    "position": {
+      "left": 304,
+      "bottom": -5648,
+      "right": 592,
+      "top": -5360
+    }
+  },
+  {
+    "name": "VaultGate",
+    "id": 3,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      255,
+      0,
+      0
+    ],
+    "position": {
+      "left": 1200,
+      "bottom": -5648,
+      "right": 1488,
+      "top": -5360
+    }
+  },
+  {
+    "name": "BoonPlateA",
+    "id": 4,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      64,
+      255,
+      128
+    ],
+    "position": {
+      "left": -720,
+      "bottom": -6352,
+      "right": -432,
+      "top": -6064
+    }
+  },
+  {
+    "name": "BoonPlateB",
+    "id": 5,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      64,
+      255,
+      160
+    ],
+    "position": {
+      "left": -144,
+      "bottom": -6352,
+      "right": 144,
+      "top": -6064
+    }
+  },
+  {
+    "name": "BoonPlateC",
+    "id": 6,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      64,
+      255,
+      192
+    ],
+    "position": {
+      "left": 432,
+      "bottom": -6352,
+      "right": 720,
+      "top": -6064
+    }
+  },
+  {
+    "name": "ShrineHeal",
+    "id": 7,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      64,
+      128,
+      255
+    ],
+    "position": {
+      "left": 752,
+      "bottom": -7184,
+      "right": 1040,
+      "top": -6896
+    }
+  },
+  {
+    "name": "ShrineReroll",
+    "id": 8,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      96,
+      128,
+      255
+    ],
+    "position": {
+      "left": 1072,
+      "bottom": -7184,
+      "right": 1360,
+      "top": -6896
+    }
+  },
+  {
+    "name": "ShrineFortify",
+    "id": 9,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      128,
+      128,
+      255
+    ],
+    "position": {
+      "left": 1392,
+      "bottom": -7184,
+      "right": 1680,
+      "top": -6896
+    }
+  },
+  {
+    "name": "RoomF1A",
+    "id": 10,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      120,
+      80,
+      200
+    ],
+    "position": {
+      "left": -7232,
+      "bottom": -3968,
+      "right": -4672,
+      "top": -1920
+    }
+  },
+  {
+    "name": "RoomF1B",
+    "id": 11,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      120,
+      80,
+      170
+    ],
+    "position": {
+      "left": -3264,
+      "bottom": -3968,
+      "right": -704,
+      "top": -1920
+    }
+  },
+  {
+    "name": "RoomF1C",
+    "id": 12,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      120,
+      80,
+      140
+    ],
+    "position": {
+      "left": 704,
+      "bottom": -3968,
+      "right": 3264,
+      "top": -1920
+    }
+  },
+  {
+    "name": "RoomF1D",
+    "id": 13,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      120,
+      80,
+      110
+    ],
+    "position": {
+      "left": 4672,
+      "bottom": -3968,
+      "right": 7232,
+      "top": -1920
+    }
+  },
+  {
+    "name": "RoomF2A",
+    "id": 14,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      160,
+      80,
+      200
+    ],
+    "position": {
+      "left": -7232,
+      "bottom": -768,
+      "right": -4672,
+      "top": 1280
+    }
+  },
+  {
+    "name": "RoomF2B",
+    "id": 15,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      160,
+      80,
+      170
+    ],
+    "position": {
+      "left": -3264,
+      "bottom": -768,
+      "right": -704,
+      "top": 1280
+    }
+  },
+  {
+    "name": "RoomF2C",
+    "id": 16,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      160,
+      80,
+      140
+    ],
+    "position": {
+      "left": 704,
+      "bottom": -768,
+      "right": 3264,
+      "top": 1280
+    }
+  },
+  {
+    "name": "RoomF2D",
+    "id": 17,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      160,
+      80,
+      110
+    ],
+    "position": {
+      "left": 4672,
+      "bottom": -768,
+      "right": 7232,
+      "top": 1280
+    }
+  },
+  {
+    "name": "RoomF3A",
+    "id": 18,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      200,
+      80,
+      200
+    ],
+    "position": {
+      "left": -7232,
+      "bottom": 2432,
+      "right": -4672,
+      "top": 4480
+    }
+  },
+  {
+    "name": "RoomF3B",
+    "id": 19,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      200,
+      80,
+      170
+    ],
+    "position": {
+      "left": -3264,
+      "bottom": 2432,
+      "right": -704,
+      "top": 4480
+    }
+  },
+  {
+    "name": "RoomF3C",
+    "id": 20,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      200,
+      80,
+      140
+    ],
+    "position": {
+      "left": 704,
+      "bottom": 2432,
+      "right": 3264,
+      "top": 4480
+    }
+  },
+  {
+    "name": "RoomF3D",
+    "id": 21,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      200,
+      80,
+      110
+    ],
+    "position": {
+      "left": 4672,
+      "bottom": 2432,
+      "right": 7232,
+      "top": 4480
+    }
+  },
+  {
+    "name": "BossArena",
+    "id": 22,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      255,
+      32,
+      32
+    ],
+    "position": {
+      "left": -1792,
+      "bottom": 5248,
+      "right": 1792,
+      "top": 7296
+    }
+  },
+  {
+    "name": "HubReturn",
+    "id": 23,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      200,
+      200,
+      200
+    ],
+    "position": {
+      "left": -192,
+      "bottom": -6784,
+      "right": 192,
+      "top": -6400
+    }
+  }
+]

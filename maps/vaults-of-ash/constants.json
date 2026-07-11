@@ -1,0 +1,374 @@
+{
+  "_generated": "wc3-map-toolkit: derived from the map source JSON by build-map — regenerated every build, do not hand-edit",
+  "constants": {
+    "UNIT_ASHEN_CHAMPION": {
+      "kind": "unit",
+      "rawcode": "u007",
+      "base": "ngnb",
+      "name": "Ashen Champion",
+      "source": "objects-units.json"
+    },
+    "UNIT_ASHEN_SHRINE": {
+      "kind": "unit",
+      "rawcode": "n003",
+      "base": "nech",
+      "name": "Ashen Shrine",
+      "source": "objects-units.json"
+    },
+    "UNIT_ASHSPAWN_ACOLYTE": {
+      "kind": "unit",
+      "rawcode": "u000",
+      "base": "ngno",
+      "name": "Ashspawn Acolyte",
+      "source": "objects-units.json"
+    },
+    "UNIT_ASH_TIDE_CRAWLER": {
+      "kind": "unit",
+      "rawcode": "u003",
+      "base": "nmrl",
+      "name": "Ash Tide Crawler",
+      "source": "objects-units.json"
+    },
+    "UNIT_CINDER_BRUTE": {
+      "kind": "unit",
+      "rawcode": "u002",
+      "base": "ngnb",
+      "name": "Cinder Brute",
+      "source": "objects-units.json"
+    },
+    "UNIT_EMBERFANG_ALPHA": {
+      "kind": "unit",
+      "rawcode": "u005",
+      "base": "nwlg",
+      "name": "Emberfang Alpha",
+      "source": "objects-units.json"
+    },
+    "UNIT_EMBER_BRAZIER": {
+      "kind": "unit",
+      "rawcode": "n002",
+      "base": "nech",
+      "name": "Ember Brazier",
+      "source": "objects-units.json"
+    },
+    "UNIT_HEART_SPARK": {
+      "kind": "unit",
+      "rawcode": "u009",
+      "base": "nkob",
+      "name": "Heart Spark",
+      "source": "objects-units.json"
+    },
+    "UNIT_MOLTEN_SHARD": {
+      "kind": "unit",
+      "rawcode": "u010",
+      "base": "ngno",
+      "name": "Molten Shard",
+      "source": "objects-units.json"
+    },
+    "UNIT_OMEN_OBELISK": {
+      "kind": "unit",
+      "rawcode": "n001",
+      "base": "nech",
+      "name": "Omen Obelisk",
+      "source": "objects-units.json"
+    },
+    "UNIT_PYRE_WARDEN": {
+      "kind": "unit",
+      "rawcode": "u006",
+      "base": "nogm",
+      "name": "Pyre Warden",
+      "source": "objects-units.json"
+    },
+    "UNIT_SEALED_RELIQUARY": {
+      "kind": "unit",
+      "rawcode": "n004",
+      "base": "nech",
+      "name": "Sealed Reliquary",
+      "source": "objects-units.json"
+    },
+    "UNIT_SEALSTONE_DOOR": {
+      "kind": "unit",
+      "rawcode": "n000",
+      "base": "nech",
+      "name": "Sealstone Door",
+      "source": "objects-units.json"
+    },
+    "UNIT_TORCHBEARER": {
+      "kind": "unit",
+      "rawcode": "H000",
+      "base": "Hpal",
+      "name": "Torchbearer",
+      "source": "objects-units.json"
+    },
+    "UNIT_VAULTBOUND_OGRE": {
+      "kind": "unit",
+      "rawcode": "u004",
+      "base": "nogr",
+      "name": "Vaultbound Ogre",
+      "source": "objects-units.json"
+    },
+    "UNIT_VAULT_HEART": {
+      "kind": "unit",
+      "rawcode": "u008",
+      "base": "nogm",
+      "name": "Vault Heart",
+      "source": "objects-units.json"
+    },
+    "UNIT_VAULT_KOBOLD": {
+      "kind": "unit",
+      "rawcode": "u001",
+      "base": "nkob",
+      "name": "Vault Kobold",
+      "source": "objects-units.json"
+    },
+    "ITEM_ASHBREAKER": {
+      "kind": "item",
+      "rawcode": "I006",
+      "base": "ches",
+      "name": "Ashbreaker",
+      "source": "objects-items.json"
+    },
+    "ITEM_ASHEN_GRACE": {
+      "kind": "item",
+      "rawcode": "I001",
+      "base": "ches",
+      "name": "Ashen Grace",
+      "source": "objects-items.json"
+    },
+    "ITEM_CINDERGUARD": {
+      "kind": "item",
+      "rawcode": "I004",
+      "base": "ches",
+      "name": "Cinderguard",
+      "source": "objects-items.json"
+    },
+    "ITEM_EMBEREDGE": {
+      "kind": "item",
+      "rawcode": "I005",
+      "base": "ches",
+      "name": "Emberedge",
+      "source": "objects-items.json"
+    },
+    "ITEM_EMBER_DRAUGHT": {
+      "kind": "item",
+      "rawcode": "I009",
+      "base": "phea",
+      "name": "Ember Draught",
+      "source": "objects-items.json"
+    },
+    "ITEM_EMBER_SINEW": {
+      "kind": "item",
+      "rawcode": "I000",
+      "base": "ches",
+      "name": "Ember Sinew",
+      "source": "objects-items.json"
+    },
+    "ITEM_KINDLED_MIND": {
+      "kind": "item",
+      "rawcode": "I002",
+      "base": "ches",
+      "name": "Kindled Mind",
+      "source": "objects-items.json"
+    },
+    "ITEM_MONASTIC_RELIC": {
+      "kind": "item",
+      "rawcode": "I008",
+      "base": "ches",
+      "name": "Monastic Relic",
+      "source": "objects-items.json"
+    },
+    "ITEM_PYRE_WARD": {
+      "kind": "item",
+      "rawcode": "I007",
+      "base": "ches",
+      "name": "Pyre Ward",
+      "source": "objects-items.json"
+    },
+    "ITEM_TORCHBEARER_VIGOR": {
+      "kind": "item",
+      "rawcode": "I003",
+      "base": "ches",
+      "name": "Torchbearer Vigor",
+      "source": "objects-items.json"
+    },
+    "ITEM_TORCH_OIL": {
+      "kind": "item",
+      "rawcode": "I010",
+      "base": "pman",
+      "name": "Torch Oil",
+      "source": "objects-items.json"
+    },
+    "ABIL_ASHBREAKER_BASH": {
+      "kind": "ability",
+      "rawcode": "A002",
+      "base": "ACbh",
+      "name": "Ashbreaker Bash",
+      "source": "objects-abilities.json"
+    },
+    "ABIL_CINDERGUARD_EVASION": {
+      "kind": "ability",
+      "rawcode": "A000",
+      "base": "ACev",
+      "name": "Cinderguard Evasion",
+      "source": "objects-abilities.json"
+    },
+    "ABIL_EMBEREDGE_STRIKE": {
+      "kind": "ability",
+      "rawcode": "A001",
+      "base": "ACct",
+      "name": "Emberedge Strike",
+      "source": "objects-abilities.json"
+    },
+    "ABIL_HEARTSHATTER_SLAM": {
+      "kind": "ability",
+      "rawcode": "A004",
+      "base": "ACtc",
+      "name": "Heartshatter Slam",
+      "source": "objects-abilities.json"
+    },
+    "ABIL_VAULT_SLAM": {
+      "kind": "ability",
+      "rawcode": "A003",
+      "base": "ACtc",
+      "name": "Vault Slam",
+      "source": "objects-abilities.json"
+    },
+    "REGION_BOON_PLATE_A": {
+      "kind": "region",
+      "name": "BoonPlateA",
+      "source": "regions.json"
+    },
+    "REGION_BOON_PLATE_B": {
+      "kind": "region",
+      "name": "BoonPlateB",
+      "source": "regions.json"
+    },
+    "REGION_BOON_PLATE_C": {
+      "kind": "region",
+      "name": "BoonPlateC",
+      "source": "regions.json"
+    },
+    "REGION_BOSS_ARENA": {
+      "kind": "region",
+      "name": "BossArena",
+      "source": "regions.json"
+    },
+    "REGION_DOOR_A": {
+      "kind": "region",
+      "name": "DoorA",
+      "source": "regions.json"
+    },
+    "REGION_DOOR_B": {
+      "kind": "region",
+      "name": "DoorB",
+      "source": "regions.json"
+    },
+    "REGION_DOOR_C": {
+      "kind": "region",
+      "name": "DoorC",
+      "source": "regions.json"
+    },
+    "REGION_HUB_RETURN": {
+      "kind": "region",
+      "name": "HubReturn",
+      "source": "regions.json"
+    },
+    "REGION_ROOM_F1_A": {
+      "kind": "region",
+      "name": "RoomF1A",
+      "source": "regions.json"
+    },
+    "REGION_ROOM_F1_B": {
+      "kind": "region",
+      "name": "RoomF1B",
+      "source": "regions.json"
+    },
+    "REGION_ROOM_F1_C": {
+      "kind": "region",
+      "name": "RoomF1C",
+      "source": "regions.json"
+    },
+    "REGION_ROOM_F1_D": {
+      "kind": "region",
+      "name": "RoomF1D",
+      "source": "regions.json"
+    },
+    "REGION_ROOM_F2_A": {
+      "kind": "region",
+      "name": "RoomF2A",
+      "source": "regions.json"
+    },
+    "REGION_ROOM_F2_B": {
+      "kind": "region",
+      "name": "RoomF2B",
+      "source": "regions.json"
+    },
+    "REGION_ROOM_F2_C": {
+      "kind": "region",
+      "name": "RoomF2C",
+      "source": "regions.json"
+    },
+    "REGION_ROOM_F2_D": {
+      "kind": "region",
+      "name": "RoomF2D",
+      "source": "regions.json"
+    },
+    "REGION_ROOM_F3_A": {
+      "kind": "region",
+      "name": "RoomF3A",
+      "source": "regions.json"
+    },
+    "REGION_ROOM_F3_B": {
+      "kind": "region",
+      "name": "RoomF3B",
+      "source": "regions.json"
+    },
+    "REGION_ROOM_F3_C": {
+      "kind": "region",
+      "name": "RoomF3C",
+      "source": "regions.json"
+    },
+    "REGION_ROOM_F3_D": {
+      "kind": "region",
+      "name": "RoomF3D",
+      "source": "regions.json"
+    },
+    "REGION_SHRINE_FORTIFY": {
+      "kind": "region",
+      "name": "ShrineFortify",
+      "source": "regions.json"
+    },
+    "REGION_SHRINE_HEAL": {
+      "kind": "region",
+      "name": "ShrineHeal",
+      "source": "regions.json"
+    },
+    "REGION_SHRINE_REROLL": {
+      "kind": "region",
+      "name": "ShrineReroll",
+      "source": "regions.json"
+    },
+    "REGION_VAULT_GATE": {
+      "kind": "region",
+      "name": "VaultGate",
+      "source": "regions.json"
+    },
+    "SOUND_BREATH_HORN": {
+      "kind": "sound",
+      "name": "BreathHorn",
+      "path": "Sound\\Music\\mp3Music\\Doom.flac",
+      "source": "sounds.json"
+    },
+    "SOUND_SEAL_CHIME": {
+      "kind": "sound",
+      "name": "SealChime",
+      "path": "Abilities\\Spells\\Items\\AIam\\Tomes.flac",
+      "source": "sounds.json"
+    },
+    "SOUND_VICTORY_HORN": {
+      "kind": "sound",
+      "name": "VictoryHorn",
+      "path": "Sound\\Music\\mp3Music\\Comradeship.flac",
+      "source": "sounds.json"
+    }
+  }
+}

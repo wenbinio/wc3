@@ -1,0 +1,92 @@
+{
+  "original": {},
+  "custom": {
+    "A000:ACev": [
+      {
+        "id": "anam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Cinderguard Evasion"
+      }
+    ],
+    "A001:ACct": [
+      {
+        "id": "anam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Emberedge Strike"
+      }
+    ],
+    "A002:ACbh": [
+      {
+        "id": "anam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Ashbreaker Bash"
+      }
+    ],
+    "A003:ACtc": [
+      {
+        "id": "anam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Vault Slam"
+      },
+      {
+        "id": "Ctc1",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 40
+      },
+      {
+        "id": "aare",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 300
+      },
+      {
+        "id": "acdn",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 12
+      }
+    ],
+    "A004:ACtc": [
+      {
+        "id": "anam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Heartshatter Slam"
+      },
+      {
+        "id": "Ctc1",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 90
+      },
+      {
+        "id": "aare",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 450
+      },
+      {
+        "id": "acdn",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 8
+      }
+    ]
+  }
+}

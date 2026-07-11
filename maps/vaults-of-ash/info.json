@@ -1,0 +1,168 @@
+{
+  "map": {
+    "name": "TRIGSTR_001",
+    "author": "TRIGSTR_003",
+    "description": "TRIGSTR_002",
+    "recommendedPlayers": "TRIGSTR_004",
+    "playableArea": {
+      "width": 120,
+      "height": 120
+    },
+    "mainTileType": "D",
+    "flags": {
+      "hideMinimapInPreview": false,
+      "modifyAllyPriorities": false,
+      "isMeleeMap": false,
+      "maskedPartiallyVisible": true,
+      "fixedPlayerSetting": true,
+      "useCustomForces": true,
+      "useCustomTechtree": false,
+      "useCustomAbilities": false,
+      "useCustomUpgrades": false,
+      "waterWavesOnCliffShores": true,
+      "waterWavesOnRollingShores": true,
+      "useTerrainFog": false,
+      "useItemClassificationSystem": true,
+      "enableWaterTinting": true,
+      "useAccurateProbabilityForCalculations": false,
+      "useCustomAbilitySkins": false,
+      "disableDenyIcon": true,
+      "forceDefaultCameraZoom": false,
+      "forceMaxCameraZoom": false,
+      "forceMinCameraZoom": false
+    }
+  },
+  "loadingScreen": {
+    "background": -1,
+    "path": "",
+    "text": "TRIGSTR_002",
+    "title": "TRIGSTR_001",
+    "subtitle": "TRIGSTR_004"
+  },
+  "prologue": {
+    "path": "",
+    "text": "",
+    "title": "",
+    "subtitle": ""
+  },
+  "fog": {
+    "type": 0,
+    "startHeight": 3000,
+    "endHeight": 5000,
+    "density": 0.5,
+    "color": [
+      0,
+      0,
+      0
+    ]
+  },
+  "camera": {
+    "bounds": [
+      -7680,
+      -7680,
+      7680,
+      7680,
+      -7680,
+      7680,
+      7680,
+      -7680
+    ],
+    "complements": [
+      4,
+      4,
+      4,
+      4
+    ]
+  },
+  "players": [
+    {
+      "name": "TRIGSTR_005",
+      "startingPos": {
+        "x": -320,
+        "y": -6912,
+        "fixed": true
+      },
+      "playerNum": 0,
+      "type": 1,
+      "race": 1,
+      "allyLowPriorityFlags": [],
+      "allyHighPriorityFlags": [],
+      "enemyLowPriorityFlags": [],
+      "enemyHighPriorityFlags": []
+    },
+    {
+      "name": "TRIGSTR_006",
+      "startingPos": {
+        "x": 0,
+        "y": -6912,
+        "fixed": true
+      },
+      "playerNum": 1,
+      "type": 1,
+      "race": 1,
+      "allyLowPriorityFlags": [],
+      "allyHighPriorityFlags": [],
+      "enemyLowPriorityFlags": [],
+      "enemyHighPriorityFlags": []
+    },
+    {
+      "name": "TRIGSTR_007",
+      "startingPos": {
+        "x": 320,
+        "y": -6912,
+        "fixed": true
+      },
+      "playerNum": 2,
+      "type": 1,
+      "race": 1,
+      "allyLowPriorityFlags": [],
+      "allyHighPriorityFlags": [],
+      "enemyLowPriorityFlags": [],
+      "enemyHighPriorityFlags": []
+    }
+  ],
+  "forces": [
+    {
+      "name": "TRIGSTR_008",
+      "flags": {
+        "allied": true,
+        "alliedVictory": true,
+        "shareVision": true,
+        "shareUnitControl": false,
+        "shareAdvUnitControl": false
+      },
+      "players": [
+        "red",
+        "blue",
+        "teal"
+      ]
+    }
+  ],
+  "upgrades": [],
+  "techtree": [],
+  "randomGroupTable": [],
+  "randomItemTable": [],
+  "saves": 1,
+  "editorVersion": 6116,
+  "gameDataVersion": 1,
+  "gameDataSet": 2,
+  "scriptLanguage": 1,
+  "supportedModes": 3,
+  "gameVersion": {
+    "major": 2,
+    "minor": 0,
+    "patch": 3,
+    "build": 23175
+  },
+  "globalWeather": "0000",
+  "customSoundEnvironment": "",
+  "customLightEnv": "D",
+  "water": [
+    255,
+    255,
+    255
+  ],
+  "forceDefaultCameraZoom": 0,
+  "forceMaxCameraZoom": 0,
+  "forceMinCameraZoom": 0
+}

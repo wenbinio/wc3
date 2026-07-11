@@ -1,0 +1,38 @@
+[
+  {
+    "target": {
+      "x": 0,
+      "y": -6272
+    },
+    "offsetZ": 0,
+    "rotation": 90,
+    "aoa": 330,
+    "distance": 4200,
+    "roll": 0,
+    "fov": 70,
+    "farClipping": 10000,
+    "nearClipping": 16,
+    "name": "HubOverlook",
+    "localPitch": 0,
+    "localYaw": 0,
+    "localRoll": 0
+  },
+  {
+    "target": {
+      "x": 0,
+      "y": 6272
+    },
+    "offsetZ": 0,
+    "rotation": 90,
+    "aoa": 320,
+    "distance": 4800,
+    "roll": 0,
+    "fov": 70,
+    "farClipping": 10000,
+    "nearClipping": 16,
+    "name": "HeartOverlook",
+    "localPitch": 0,
+    "localYaw": 0,
+    "localRoll": 0
+  }
+]

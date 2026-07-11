@@ -1,0 +1,615 @@
+{
+  "original": {},
+  "custom": {
+    "I000:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Ember Sinew"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Ember Sinew"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon: +6 Strength to the torchbearer who claims it."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon: +6 Strength to the torchbearer who claims it."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNGauntletsOfOgrePower.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I001:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Ashen Grace"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Ashen Grace"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon: +6 Agility to the torchbearer who claims it."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon: +6 Agility to the torchbearer who claims it."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNSlippersOfAgility.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I002:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Kindled Mind"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Kindled Mind"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon: +6 Intelligence to the torchbearer who claims it."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon: +6 Intelligence to the torchbearer who claims it."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNMantleOfIntelligence.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I003:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Torchbearer Vigor"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Torchbearer Vigor"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon: +150 maximum life to the torchbearer who claims it."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon: +150 maximum life to the torchbearer who claims it."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNPeriapt.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I004:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Cinderguard"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Cinderguard"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon: grants Cinderguard Evasion to the torchbearer who claims it."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon: grants Cinderguard Evasion to the torchbearer who claims it."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNEvasion.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I005:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Emberedge"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Emberedge"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon: grants Emberedge Strike (critical hits) to the torchbearer who claims it."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon: grants Emberedge Strike (critical hits) to the torchbearer who claims it."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNCriticalStrike.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I006:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Ashbreaker"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Ashbreaker"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon: grants Ashbreaker Bash to the torchbearer who claims it."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon: grants Ashbreaker Bash to the torchbearer who claims it."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNStormBolt.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I007:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Pyre Ward"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Pyre Ward"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon: +4 to all attributes of the torchbearer who claims it."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Boon: +4 to all attributes of the torchbearer who claims it."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNTome.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I008:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Monastic Relic"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Monastic Relic"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A relic of the burned order. Claiming a relic reward steels the whole party: +2 to all attributes of every torchbearer."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A relic of the burned order. Claiming a relic reward steels the whole party: +2 to all attributes of every torchbearer."
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\Rune\\Rune.mdl"
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNPendantOfEnergy.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 150
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I009:phea": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Ember Draught"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Ember Draught"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A draught of liquid ember. Restores life when drunk. Dropped by elite wardens."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Restores life when drunk."
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNHealingSalve.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 25
+      }
+    ],
+    "I010:pman": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Torch Oil"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Torch Oil"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Oil for a guttering torch. Restores mana when drunk. Dropped by elite wardens."
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Restores mana when drunk."
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNVialFull.blp"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 25
+      }
+    ]
+  }
+}
