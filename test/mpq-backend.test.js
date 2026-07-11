@@ -60,8 +60,11 @@ for (const writer of BACKENDS) {
 
     for (const reader of BACKENDS) {
       const outDir = path.join(WORK, `${writer}-read-by-${reader}`);
-      const extracted = withBackend(reader, () => extractAll(out, outDir));
-      assert.deepStrictEqual(extracted.sort(), [...MEMBERS].sort(), `${reader} extracts every member`);
+      const result = withBackend(reader, () => extractAll(out, outDir));
+      assert.deepStrictEqual(result.extracted.sort(), [...MEMBERS].sort(), `${reader} extracts every member`);
+      assert.strictEqual(result.total, MEMBERS.length, `${reader} reports total entries (internal files excluded)`);
+      assert.strictEqual(result.unresolved, 0, `${reader} reports no anonymous entries on a listfile'd archive`);
+      assert.deepStrictEqual(result.unknown, [], `${reader} dumps nothing without dumpUnknown`);
       for (const m of MEMBERS) {
         assert.ok(
           fs.readFileSync(path.join(outDir, m)).equals(fs.readFileSync(path.join(FIXTURES, m))),

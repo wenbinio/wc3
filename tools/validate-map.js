@@ -46,12 +46,12 @@ function validate(mapPath) {
   // 2. Extract
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'w3xvalidate-'));
   try {
-    const extracted = extractAll(mapPath, tmp);
+    const { extracted, unresolved } = extractAll(mapPath, tmp);
     if (extracted.length === 0) {
       fail('extract archive', 'nothing extracted');
       return results;
     }
-    ok('extract archive', `${extracted.length} file(s)`);
+    ok('extract archive', `${extracted.length} file(s)${unresolved ? `, ${unresolved} unresolved (anonymous) entr${unresolved === 1 ? 'y' : 'ies'} skipped` : ''}`);
 
     // 3. Required files + script presence
     for (const req of ['war3map.w3i', 'war3map.w3e']) {

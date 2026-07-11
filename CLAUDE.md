@@ -56,11 +56,20 @@ third-party maps, see gotcha 9).
    `SFileCreateArchive` converts it (the MPQ lands at offset 512 — no concat
    step), with smpq the header is prepended to the bare MPQ. MPQ must be
    **v1** (`MPQ_CREATE.ARCHIVE_V1` / `smpq -M 1`) for the game.
-4. **Protected maps have no `(listfile)`** — extraction falls back to probing
-   known names (`lib/mpq.js` KNOWN_FILES). Unknown custom imports are lost.
-   Always verify extraction ON DISK: smpq exits 0 even when a name misses,
-   and stormlib reports unresolved members as `FileNNNNNNNN` pseudo-names
-   (lib/mpq.js handles both).
+4. **Protected maps have no `(listfile)`** — named extraction falls back to
+   probing known names (`lib/mpq.js` KNOWN_FILES). Unresolved members
+   enumerate as `FileNNNNNNNN` pseudo-names on BOTH backends (smpq is
+   StormLib-based too). `extractAll` returns
+   `{ extracted, total, unresolved, unknown }` — always report the counts so
+   anonymous imports aren't silently dropped (w3x-extract prints them). Custom
+   imports whose names are stripped can't be recovered by path, but their
+   CONTENT can: `extractAll(archive, out, { dumpUnknown: true })` (env
+   `WC3_EXTRACT_UNKNOWN=1` / `w3x-extract --dump-unknown`) writes them under
+   `_unknown/FileNNNNNNNN.<ext>` with a content-sniffed extension (MDLX→mdx,
+   BLP1/2→blp, text→txt, else bin). `_unknown/` is diagnostics only —
+   map-to-json skips underscore paths (manifest.skipped); never repacked (the
+   real member name is genuinely lost). Always verify extraction ON DISK:
+   smpq exits 0 even when a name misses.
 5. **stormlib-node sharp edges** (it's the primary MPQ backend — lib/mpq.js
    encapsulates all of this; don't call it directly elsewhere):
    `SFileReadFile` wants an **ArrayBuffer** — a Node Buffer SIGABRTs the

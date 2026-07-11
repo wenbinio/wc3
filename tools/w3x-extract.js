@@ -1,9 +1,15 @@
 #!/usr/bin/env node
 'use strict';
-// w3x-extract.js <map.w3x> <outdir>
+// w3x-extract.js [--dump-unknown] <map.w3x> <outdir>
 // Detects and saves the 512-byte HM3W pre-header (as <outdir>/_header.json),
 // then extracts all MPQ contents into <outdir>.
 // Works on bare MPQs too (no pre-header -> no _header.json written).
+// Protected maps (stripped listfile): named extraction probes known names;
+// the summary always reports how many anonymous (unresolved) entries remain.
+// --dump-unknown (or WC3_EXTRACT_UNKNOWN=1) additionally dumps those under
+// <outdir>/_unknown/ with their FileNNNNNNNN pseudo-names and content-sniffed
+// extensions (MDLX -> .mdx, BLP1/BLP2 -> .blp, ...). _unknown/ is diagnostics
+// only — map-to-json ignores it and it never enters a rebuilt archive.
 
 const fs = require('fs');
 const path = require('path');
@@ -12,9 +18,10 @@ const { extractAll } = require('../lib/mpq');
 const { writeJson } = require('../lib/source');
 
 function main(argv) {
-  const [mapPath, outDir] = argv;
+  const dumpUnknown = argv.includes('--dump-unknown');
+  const [mapPath, outDir] = argv.filter((a) => a !== '--dump-unknown');
   if (!mapPath || !outDir) {
-    console.error('usage: node tools/w3x-extract.js <map.w3x> <outdir>');
+    console.error('usage: node tools/w3x-extract.js [--dump-unknown] <map.w3x> <outdir>');
     process.exit(2);
   }
   try {
@@ -31,13 +38,22 @@ function main(argv) {
       console.error('warning: neither HM3W nor MPQ magic at offset 0; trying smpq anyway');
     }
 
-    const extracted = extractAll(mapPath, outDir);
-    if (extracted.length === 0) {
+    const result = dumpUnknown ? extractAll(mapPath, outDir, { dumpUnknown: true })
+      : extractAll(mapPath, outDir);
+    const { extracted, total, unresolved, unknown } = result;
+    if (extracted.length === 0 && unknown.length === 0) {
       console.error('error: nothing extracted (no listfile and no known file names matched)');
       process.exit(1);
     }
+    console.log(`archive entries: ${total ?? 'unknown'} — named extracted: ${extracted.length}, unresolved (anonymous): ${unresolved ?? 'unknown'}`);
     console.log(`extracted ${extracted.length} file(s) to ${outDir}:`);
     for (const f of extracted) console.log('  ' + f);
+    if (unknown.length > 0) {
+      console.log(`dumped ${unknown.length} anonymous member(s) under ${outDir}/_unknown/ (pseudo-names + sniffed extensions; diagnostics only, never repacked):`);
+      for (const f of unknown) console.log('  ' + f);
+    } else if (unresolved > 0) {
+      console.log(`note: ${unresolved} anonymous member(s) were NOT extracted (listfile stripped?) — rerun with --dump-unknown (or WC3_EXTRACT_UNKNOWN=1) to dump them under _unknown/`);
+    }
   } catch (e) {
     console.error('extract failed: ' + (e.message || e));
     process.exit(1);

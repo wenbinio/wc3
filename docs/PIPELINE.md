@@ -24,21 +24,39 @@ node -e "const i=require('/tmp/work/src/info.json'); console.log(i.map.name, i.p
 
 Gotchas:
 
-- **Classic (pre-Reforged) maps**: `war3map.w3i`/`w3e`/object files throw a
-  version error in wc3maptranslator@5. `map-to-json.js` handles this: the file
-  is copied through raw under `files/` and the error is recorded in
-  `manifest.json` → `errors`. You can still edit scripts/assets and repack.
-  Additionally, each version-rejected file gets a fallback parse via
-  mdx-m3-viewer-th written to `_viewer/<name>.json` (listed in
-  `manifest.json` → `viewerFallback`). **`_viewer/` is read-only
-  diagnostics** in the viewer's own object schema — it is *not* the
-  build-source dialect: json-to-map/build-map ignore it entirely (underscore
-  paths never enter an archive), so use it to inspect classic maps, never to
-  edit them.
-- **Protected maps**: the MPQ `(listfile)` is stripped. `w3x-extract.js`
-  falls back to probing a built-in list of known `war3map.*` names, so you
-  still get the standard files, but custom imports with unknown names cannot
-  be recovered.
+- **Classic (pre-Reforged) maps**: `war3map.w3i`/`w3e`/object files fail in
+  wc3maptranslator@5 — sometimes with its version message, but often with a
+  plain `RangeError: offset out of range` (e.g. classic `war3map.doo` v8).
+  `map-to-json.js` handles ANY such throw: the file is copied through raw
+  under `files/` and the error is recorded in `manifest.json` → `errors`. You
+  can still edit scripts/assets and repack. Additionally, on any translator
+  failure a fallback parse via mdx-m3-viewer-th is attempted for every file
+  the viewer has a parser for, written to `_viewer/<name>.json` (listed in
+  `manifest.json` → `viewerFallback`). **`_viewer/` is read-only diagnostics**
+  in the viewer's own object schema — it is *not* the build-source dialect:
+  json-to-map/build-map ignore it entirely (underscore paths never enter an
+  archive), so use it to inspect classic maps, never to edit them.
+  - When even the viewer's own parser throws (common with protector-truncated
+    files), the failure is recorded in `manifest.json` →
+    `viewerFallbackErrors` and warned about on stderr — never swallowed. A
+    truncated **classic** `war3map.w3i` additionally gets a tolerant
+    second-tier read via `lib/classicw3i.js` (header through forces, tolerant
+    of a chopped tail; output tagged `_schema: wc3-map-toolkit-classic-w3i`
+    with `_truncated`/`_truncatedAt`).
+- **Protected maps**: the MPQ `(listfile)` is stripped, so member names are
+  unrecoverable and every entry enumerates as a `FileNNNNNNNN` pseudo-name
+  (both backends). `w3x-extract.js` falls back to probing a built-in list of
+  known `war3map.*` names — you still get the standard files. It **always
+  prints entry counts** (`archive entries: N — named extracted: X,
+  unresolved (anonymous): Y`) so you can see how many custom imports remain
+  hidden. To recover those anonymous members, rerun with `--dump-unknown`
+  (or `WC3_EXTRACT_UNKNOWN=1`): each unresolved member is written under
+  `_unknown/FileNNNNNNNN.<ext>` with a content-sniffed extension (`MDLX`→
+  `.mdx`, `BLP1`/`BLP2`→`.blp`, text→`.txt`, else `.bin`; duplicates of
+  named extractions are skipped). **`_unknown/` is diagnostics only** —
+  map-to-json skips it (recorded in `manifest.json` → `skipped`) and it never
+  re-enters a rebuilt archive; the original archive path is genuinely lost, so
+  a repacked map won't reference these files.
 - **MPQ backends**: archive I/O uses the stormlib-node native module when
   loadable and the smpq CLI otherwise. Force the fallback with
   `WC3_MPQ_BACKEND=smpq` (e.g. `npm run test:smpq` runs the whole test suite

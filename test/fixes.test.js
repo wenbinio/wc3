@@ -37,7 +37,7 @@ test.before(() => {
     buildMap(m.src, m.w3x);
     m.extracted = path.join(WORK, `${name}-extracted`);
     fs.mkdirSync(m.extracted, { recursive: true });
-    m.members = extractAll(m.w3x, m.extracted);
+    m.members = extractAll(m.w3x, m.extracted).extracted;
     m.units = readJson(path.join(m.src, 'units.json'));
   }
 });

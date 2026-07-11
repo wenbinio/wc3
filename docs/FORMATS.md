@@ -41,9 +41,20 @@ the packed `war3map.w3i` (`readW3iFlags` in lib/header.js) whenever
 - Both backends automatically maintain a `(listfile)`. **Protected maps**
   strip it; files can then only be extracted by exact name (hash lookup still
   works) — `lib/mpq.js` probes a built-in KNOWN_FILES list as a fallback.
-  Enumeration without a listfile yields nothing (smpq) or `FileNNNNNNNN`
-  pseudo-names (stormlib); extraction success is always verified on disk
-  because smpq exits 0 even on a miss.
+  Enumeration without a listfile yields `FileNNNNNNNN` pseudo-names on BOTH
+  backends (smpq is StormLib-based too), never the real paths; extraction
+  success is always verified on disk because smpq exits 0 even on a miss.
+  `extractAll` returns `{ extracted, total, unresolved, unknown }` so callers
+  can report how many anonymous members exist rather than silently dropping
+  them (`w3x-extract.js` prints the counts). Pass `{ dumpUnknown: true }` (or
+  set `WC3_EXTRACT_UNKNOWN=1`, or `w3x-extract --dump-unknown`) to also dump
+  the unresolved members under `_unknown/FileNNNNNNNN.<ext>` with a
+  content-sniffed extension (`MDLX`→`.mdx`, `BLP1`/`BLP2`→`.blp`, printable
+  text→`.txt`, else `.bin`); StormLib opens pseudo-names by their encoded
+  block index, and dumps that duplicate a name-probed extraction are skipped.
+  The `_unknown/` dump is diagnostics only (map-to-json skips underscore
+  paths) — the true archive path is unrecoverable, so it can never be
+  repacked to the right member name.
 - Reforged also reads loose directories named `*.w3x/` (an "extracted map
   folder", e.g. wc3-ts-template's `maps/map.w3x/`) — handy for reference.
 
@@ -276,7 +287,11 @@ fallback; `WC3_MPQ_BACKEND=stormlib` requires the native module). Sharp edges
   is appended at the next 512-byte boundary. Pre-writing the HM3W header
   therefore yields a finished `.w3x` in one pass.
 - Members with no listfile entry enumerate as `File%08u.xxx` pseudo-names;
-  exact-name lookups (`SFileHasFile`/`SFileOpenFileEx`) still work.
+  exact-name lookups (`SFileHasFile`/`SFileOpenFileEx`) still work, AND
+  `SFileOpenFileEx` opens the pseudo-name itself (it encodes the block
+  index) — which is how `extractAll`'s `_unknown/` dump recovers content
+  from members whose real path is lost. `SFileHasFile` on a pseudo-name
+  returns false (it hashes the name), so open it directly.
 - Same ArrayBuffer rule applies to war3-model's `parseMDX`:
   `buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength)`.
 
