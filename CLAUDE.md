@@ -10,7 +10,7 @@ in docs/ and .claude/skills/; follow the pointers.
 
 ```bash
 bash scripts/setup.sh   # idempotent: npm install + optional apt-get smpq fallback
-npm test                # 354 tests; all must pass before you change anything
+npm test                # 364 tests; all must pass before you change anything
 ```
 
 If you touch `lib/mpq.js` or anything archive-related, the suite must be
@@ -26,7 +26,7 @@ node tools/json-to-map.js  <json-dir> <out-dir>        # map source -> binaries
 node tools/w3x-pack.js     [--bare] <dir> <out.w3x>    # binaries -> MPQ v1 + HM3W header (--bare: no pre-header)
 node tools/build-map.js    [--bare] [--stabilize] [--variant-name <name>] <map-source-dir> <out.w3x>  # one-step: source -> .w3x (--bare: no HM3W pre-header, 1.31+ container); also injects the generated named-constants + CreateAllUnits Lua blocks, rewrites <map-source>/constants.json, FAILS on stale/squatted reserved-prefix identifiers, and auto-generates wpm/shd/minimap when files/ has none (gotchas 8, 10, 27). --stabilize: run the gotcha-6 cycle after the build (rewrites only changed translatable source *.json). --variant-name: pack-time internal-name overlay for A/B variants (gotcha 17; source untouched; excludes --stabilize)
 node tools/validate-map.js <map.w3x>                   # layered pass/fail report, exit 0 = good
-node tools/test-map-logic.js [--coverage] [<map-source-dir> ...]  # EXECUTE the packed war3map.lua headlessly (lib/sim: fengari Lua 5.3 + mocked natives) and run maps/<name>/tests/*.test.js; no args = every map with tests/
+node tools/test-map-logic.js [--coverage] [<map-source-dir> ...]  # EXECUTE the packed war3map.lua headlessly (lib/sim: fengari Lua 5.3 + mocked natives) and run maps/<name>/tests/*.test.js; no args = every map with tests/; --coverage = per-map natives real-vs-stubbed PLUS script LINE coverage aggregated from the test run (never-executed SOURCE ranges collapsed to whole functions — "which mechanics no test walks"; PIPELINE §8)
 
 bash scripts/crossvalidate-war3net.sh <extracted-dir>  # optional War3Net (C#) third opinion; needs dotnet
 ```
@@ -399,7 +399,7 @@ never third-party maps, gotcha 9).
 
 ## Testing & validation doctrine
 
-- `npm test` = 354 tests, 31 files (25 under test/ + 6 map suites under
+- `npm test` = 364 tests, 32 files (26 under test/ + 6 map suites under
   maps/*/tests/, all auto-discovered by `node --test`): source⇄binary fixed
   points for the demo/siege/tidewatch/northreach sources (vaults-of-ash is
   covered by its 70-test logic suite), build+validate end-to-end, MPQ
@@ -524,8 +524,13 @@ or CC0-converted content. Details: docs/ASSETS.md.
   API), vm.js (fengari Lua 5.3 wrapper), natives.js (mocked WC3 natives:
   real-semantics tier + recording auto-stub tier), data/jass-constants.json
   (875 API constants + 2533 native/BJ names, regenerate with
-  scripts/gen-jass-constants.js); tools/test-map-logic.js — map logic-test
-  runner + `--coverage` report
+  scripts/gen-jass-constants.js), coverage.js (opt-in script LINE coverage:
+  fengari line hook on the packed chunk only, luaparse statement-start
+  executable-line baseline, gotcha-27d offset mapping back to source lines,
+  generated blocks reported separately; `loadMap(dir, {lineCoverage: true})`
+  → `sim.coverage().lines` — default OFF, no hook installed, provably
+  non-perturbing); tools/test-map-logic.js — map logic-test
+  runner + `--coverage` native + line-coverage report
 - `docs/PIPELINE.md` — workflows §1–8 (read/edit/new/import/validate/War3Net/
   A-B naming/logic tests); `docs/FORMATS.md` — format knowledge, tileset FourCC tables,
   references; `docs/ASSETS.md` — asset sourcing/conversion + legal;

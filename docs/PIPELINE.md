@@ -369,7 +369,7 @@ wired to the wrong slot). The logic-sim tier actually EXECUTES the map:
 ```bash
 node tools/test-map-logic.js maps/<name>          # run maps/<name>/tests/*.test.js
 node tools/test-map-logic.js                      # every map with a tests/ dir
-node tools/test-map-logic.js --coverage maps/<name>  # real vs auto-stubbed natives
+node tools/test-map-logic.js --coverage maps/<name>  # natives real-vs-stubbed + script LINE coverage
 npm run test:logic                                # same as the no-args form
 ```
 
@@ -493,6 +493,57 @@ Mock tiers and their honesty rules (details in lib/sim/natives.js):
   `SetItemCharges` explicitly), construction from `ubui` build lists
   (queryable only), `TriggerSleepAction`/`PolledWait` (recorded no-ops).
   The sim complements the in-game protocol (§7); it never replaces it.
+
+**Coverage: two lenses** (`--coverage` prints both per map, AFTER the test
+run):
+
+1. **Native-call coverage** — a probe run (config() + main() + 30 virtual
+   seconds) reports which natives ran with real semantics vs fell through
+   to the recording auto-stub tier. Stubs are inert: anything
+   logic-relevant in the stubbed list means the sim is silently not
+   simulating it.
+2. **Script LINE coverage** (lib/sim/coverage.js) — the spawned test
+   processes collect the line numbers the VM actually executed in the
+   PACKED map chunk (a fengari `LUA_MASKLINE` hook filtered to that chunk;
+   harness/test Lua is never counted), merged per map across every
+   `loadMap` in the map's own `tests/*.test.js`. Native coverage says
+   "which natives ran"; line coverage says "which BEATS of the script no
+   test walks" — the five-boss bug class. A map with no tests gets line
+   coverage of the probe run instead, clearly labeled.
+
+How to read the line report:
+
+- **Executable-line definition** (pragmatic; LINE coverage only, no branch
+  instrumentation): an executable line is the START line of every luaparse
+  statement — `if`/`elseif` headers count (an unreached `elseif` arm is a
+  visible miss); `do`/`else`/label keyword lines, blank lines, comments and
+  `end` do not. A raw VM line event is attributed to the INNERMOST
+  statement containing it, so a multi-line statement (or a big data table)
+  counts once, at its start line.
+- All reported numbers are **SOURCE war3map.lua lines**: packed-script hits
+  map back through the generated-block offsets (constants block above,
+  CreateAllUnits below — gotcha 27d). Generated-block lines are excluded
+  from the source denominator and summarized on their own one-liner.
+- **`never executed`** collapses misses into human-useful units: a whole
+  function that no test ever entered is reported by name
+  (`function ShowHelp (lines 784-793)`); partial misses fall back to bare
+  ranges annotated with the enclosing function
+  (`lines 814-815 (in HandleChat)`). A missed FUNCTION is usually an
+  untested mechanic; scattered 1-2 line ranges are usually defensive
+  branches — judge them, don't chase 100%.
+- Programmatic access: `loadMap(dir, { lineCoverage: true })`, then
+  `sim.coverage().lines` = `{ source: { executable, hit, pct,
+  missedRanges }, generated: { executable, hit } }` — a map suite COULD
+  assert a coverage floor (no bundled suite pins one yet; that is a policy
+  decision, not a limitation).
+- **Observation guarantee**: coverage is default-OFF — a normal run (and
+  every golden run) installs NO debug hook; enabling it changes no sim
+  behavior (the full suite and the vaults golden run are byte-identical
+  with collection on, pinned by test/coverage.test.js).
+- Honesty limits: only `maps/<name>/tests/*.test.js` feeds the aggregate —
+  repo-level suites (e.g. test/maplogic.test.js playthroughs) do not, so
+  the report can undercount what the whole repo exercises; and a HIT line
+  only means the line ran, not that any test asserted on its effect.
 
 **Golden-run re-pin doctrine** (applies every time a stub is promoted to
 real semantics — this is how sim-fidelity tiers land): promoting a native

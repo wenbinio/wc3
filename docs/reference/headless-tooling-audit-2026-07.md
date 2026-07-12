@@ -116,8 +116,35 @@ nondeterminism across machines).
 > flow is unchanged (and now vacates the carrier slot). Per the
 > determinism rule, the vaults golden run did NOT shift: the promoted
 > return values are never consumed by bundled scripts, and no bundled
-> script registers spell/item events. Item 4 (line coverage) remains
-> assessment-only.
+> script registers spell/item events.
+
+> **Status update 2026-07-12 (later still): Tier 2 item 4 is IMPLEMENTED**
+> (work package WP-B3) — **Tier 2 is now FULLY implemented.**
+> **Item 4 (script LINE coverage)**: lib/sim/coverage.js + a vm.js
+> `lua_sethook(LUA_MASKLINE)` hook filtered to the packed map chunk
+> (harness/test Lua never counted). Executable-line baseline from luaparse
+> (locations: true): the start line of every statement node incl.
+> if/elseif headers; do/else/label keyword lines, blanks, comments and
+> `end` excluded; raw VM line events attribute to the INNERMOST enclosing
+> statement, so multi-line statements and closure-at-`end` events count
+> once at the statement start. LINE coverage only — no branch
+> instrumentation, per this item's scope. Packed lines map back to SOURCE
+> war3map.lua through the gotcha-27d block offsets (reusing
+> lib/constlint.js's blockOffset); generated blocks are excluded from the
+> source denominator and summarized separately.
+> `tools/test-map-logic.js --coverage` now aggregates hits across the
+> map's own tests/*.test.js sim runs (WC3_SIM_LINECOV_DIR env +
+> exit-time dumps + merge) and reports line-coverage % plus every
+> never-executed source range collapsed to whole functions where possible
+> (bare ranges annotated with the enclosing function otherwise).
+> Harness surface: `loadMap(dir, { lineCoverage: true })` →
+> `sim.coverage().lines`; no bundled suite pins a coverage floor (policy
+> decision deferred, as specified). Per the hooks-observe-don't-perturb
+> rule: coverage is default OFF (no hook installed at all), and the full
+> suite + vaults golden run are identical with collection enabled
+> (pinned by test/coverage.test.js). Landed numbers: vaults-of-ash 93.9%,
+> northreach 87.2%, crossroads-siege 86.8% source-line coverage from
+> their logic tests.
 
 1. **Damage-event skeleton + destructables** (recommended as one work
    package, ~150 lines + mirror-of-unit-table respectively):
