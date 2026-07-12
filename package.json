@@ -9,7 +9,8 @@
     "test": "node --test",
     "test:smpq": "WC3_MPQ_BACKEND=smpq node --test",
     "setup": "bash scripts/setup.sh",
-    "test:logic": "node tools/test-map-logic.js"
+    "test:logic": "node tools/test-map-logic.js",
+    "preflight": "node tools/preflight.js"
   },
   "dependencies": {
     "fengari": "^0.1.5",

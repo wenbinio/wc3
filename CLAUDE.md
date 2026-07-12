@@ -10,7 +10,7 @@ in docs/ and .claude/skills/; follow the pointers.
 
 ```bash
 bash scripts/setup.sh   # idempotent: npm install + optional smpq fallback + optional pjass build (vendor/pjass)
-npm test                # 387 tests; all must pass before you change anything
+npm test                # 393 tests; all must pass before you change anything
 ```
 
 If you touch `lib/mpq.js` or anything archive-related, the suite must be
@@ -27,12 +27,16 @@ node tools/w3x-pack.js     [--bare] <dir> <out.w3x>    # binaries -> MPQ v1 + HM
 node tools/build-map.js    [--bare] [--stabilize] [--variant-name <name>] <map-source-dir> <out.w3x>  # one-step: source -> .w3x (--bare: no HM3W pre-header, 1.31+ container); also injects the generated named-constants + CreateAllUnits Lua blocks, rewrites <map-source>/constants.json, FAILS on stale/squatted reserved-prefix identifiers, and auto-generates wpm/shd/minimap when files/ has none (gotchas 8, 10, 27). --stabilize: run the gotcha-6 cycle after the build (rewrites only changed translatable source *.json). --variant-name: pack-time internal-name overlay for A/B variants (gotcha 17; source untouched; excludes --stabilize)
 node tools/validate-map.js <map.w3x>                   # layered pass/fail report, exit 0 = good
 node tools/test-map-logic.js [--coverage] [<map-source-dir> ...]  # EXECUTE the packed war3map.lua headlessly (lib/sim: fengari Lua 5.3 + mocked natives) and run maps/<name>/tests/*.test.js; no args = every map with tests/; --coverage = per-map natives real-vs-stubbed PLUS script LINE coverage aggregated from the test run (never-executed SOURCE ranges collapsed to whole functions — "which mechanics no test walks"; PIPELINE §8)
+node tools/preflight.js    [--json[=file]] [--no-logic|--no-validate|--no-crossexec] [<map-source-dir> ...]  # ONE-SHOT pre-playtest gate (PIPELINE §9): build + validate + pick/load/runtime failure-class checks (weather bytes, header flags, forces + sim-executed config() lobby wiring, minimap/mmp, TRIGSTR closure, start locations, model fields/imports, CreateAllUnits, chunk-locals headroom) + 64-bit lua5.3 cross-execution incl. Schrage-PRNG bit-exactness (OPTIONAL tool, smpq pattern: absent = WARN "unchecked") + the map's logic tests w/ coverage floor; no args = all bundled maps (~13s); exit 0 = no FAILs; ends with the honest only-the-game-can-check list. Automates docs/reference/preflight-2026-07.md — run before ANY playtest handoff (npm run preflight)
 
 bash scripts/crossvalidate-war3net.sh [--dump-triggers] <extracted-dir>  # optional War3Net v6 (C#) third opinion; needs dotnet. --dump-triggers: wtg/wct -> READ-ONLY JSON under <dir>/_triggers/ (PIPELINE §6)
 ```
 
 npm scripts: `npm test`, `npm run test:smpq`, `npm run test:logic`,
-`npm run setup`. Env vars:
+`npm run preflight`, `npm run setup`. Env vars:
+`WC3_LUA53` (path to a native lua5.3 for preflight's cross-execution
+checks; an unusable value = "not installed", no PATH fallback — mirrors
+WC3_PJASS),
 `WC3_MPQ_BACKEND=smpq|stormlib` (force a backend; stormlib errors if the
 native module won't load), `WC3_EXTRACT_UNKNOWN=1` (= `--dump-unknown`);
 JASS gate (lib/jasscheck.js, PIPELINE §5): `WC3_PJASS` (pjass binary path;
@@ -404,7 +408,7 @@ never third-party maps, gotcha 9).
 
 ## Testing & validation doctrine
 
-- `npm test` = 387 tests, 37 files (29 under test/ + 8 map suites under
+- `npm test` = 393 tests, 38 files (30 under test/ + 8 map suites under
   maps/*/tests/, all auto-discovered by `node --test`): source⇄binary fixed
   points for the demo/siege/tidewatch/northreach sources (vaults-of-ash is
   covered by its 70-test logic suite), build+validate end-to-end, MPQ
@@ -489,6 +493,13 @@ never third-party maps, gotcha 9).
   (War3Net v6 handles classic AND Reforged; the tie-breaker). Its
   `--dump-triggers` mode is the only wtg/wct visibility in the toolkit
   (read-only `_triggers/` JSON dumps — PIPELINE §6).
+- **Pre-playtest gate is ONE command**: `npm run preflight`
+  (tools/preflight.js, PIPELINE §9) — codifies the whole failure-class +
+  64-bit cross-execution program of docs/reference/preflight-2026-07.md
+  (per-check catalog in the tool header); run it before ANY playtest
+  handoff. test/preflight.test.js keeps every bundled map preflighting
+  with zero FAILs as a standing suite gate (logic tier exercised there by
+  npm test itself, not re-run inside preflight's test).
 - **Honest limit: structural validity ≠ game acceptance.** Only the game
   proves a map. In-game protocol: build variants with distinct internal
   names (gotcha 17) and bisect. Failure classes from our crash postmortems:
@@ -496,7 +507,9 @@ never third-party maps, gotcha 9).
   weather `30303030` bytes, header flags 0, empty/mismatched forces, missing
   minimap (gotchas 11–13, 18); **load-time** (crash after start) → malformed
   MDX (gotcha 14); **runtime** (black/dead/empty map) → Lua that doesn't
-  parse or `CreateAllUnits` never running (gotchas 7, 10).
+  parse or `CreateAllUnits` never running (gotchas 7, 10). preflight
+  automates detection of every one of these classes (and prints the
+  residual only-the-game-can-check list so a PASS is never overread).
 
 ## Legal (non-negotiable)
 
@@ -582,7 +595,9 @@ or CC0-converted content. Details: docs/ASSETS.md.
   failure-class + 64-bit cross-execution audits condensed; -seed
   integer-width fix; consequential coverage gaps closed — vaults 96.1%,
   northreach 89.5% script lines) landed in the working tree —
-  suite green 387/387 on both MPQ backends.
+  suite green 387/387 on both MPQ backends; since 1863fd4 the preflight
+  checklist is **automated as `npm run preflight`** (tools/preflight.js +
+  test/preflight.test.js, 393 tests).
 - **Bundled maps: in-game playtest status** (the sim is not the game —
   doctrine above): demo, crossroads-siege, tidewatch-arena **verified
   working in the real game** by the user; northreach was fixed AFTER its
@@ -592,7 +607,9 @@ or CC0-converted content. Details: docs/ASSETS.md.
   tests + golden run). **Preflight DONE** (2026-07-12,
   docs/reference/preflight-2026-07.md: all checklist rows PASS, PRNG
   bit-exact over 720k+ states, residual-risk list + in-game protocol
-  there). Vaults-specific caution: its main chunk declares **169 of the
+  there) — **and now a one-shot command**: `npm run preflight` re-runs the
+  whole program in ~13s for all five maps (never re-derive it by hand).
+  Vaults-specific caution: its main chunk declares **169 of the
   200 allowed locals** (gotcha 28) — future edits add script-level state
   as globals only. Standing next step: playtest vaults-of-ash in-game
   (solo default-seed run, beat-for-beat vs the 61-beat golden run).

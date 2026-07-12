@@ -1,5 +1,15 @@
 # Pre-playtest preflight — 2026-07-12
 
+> **STATUS: this checklist is now AUTOMATED — `npm run preflight`
+> (tools/preflight.js, PIPELINE §9).** One invocation re-runs every row
+> below (build/validate, the failure-class checks, the locals-headroom
+> table, the lua5.3 cross-execution incl. a reduced PRNG bit-exactness
+> check) plus the maps' logic tests with a line-coverage floor, and prints
+> the residual-risk list at the end of every run. test/preflight.test.js
+> keeps all bundled maps at zero FAILs. Never re-derive this program by
+> hand; this document remains the rationale + the full 720k-state audit
+> record.
+
 The final gate before the two pending in-game playtests (vaults-of-ash:
 never loaded in the real game; northreach: re-verification after its
 post-playtest fixes). Two audits fed this program — a failure-class /

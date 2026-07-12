@@ -58,6 +58,23 @@ else
     fi
 fi
 
+# 1c. lua5.3 — OPTIONAL native 64-bit Lua 5.3 for tools/preflight.js's
+#     cross-execution checks (luac-compile + PRNG portability vs the 32-bit
+#     fengari sim). Same pattern as smpq/pjass: never fails setup; when
+#     absent, preflight degrades those checks to WARN "unchecked".
+if command -v lua5.3 >/dev/null 2>&1; then
+    echo "lua5.3 already installed: $(command -v lua5.3)"
+elif command -v apt-get >/dev/null 2>&1; then
+    echo "installing lua5.3 via apt-get (optional 64-bit cross-execution checker)..."
+    SUDO=""
+    if [ "$(id -u)" -ne 0 ]; then SUDO="sudo"; fi
+    if ! $SUDO apt-get install -y lua5.3; then
+        echo "WARN: lua5.3 install failed — preflight cross-execution checks will WARN 'unchecked'"
+    fi
+else
+    echo "WARN: no apt-get; skipping lua5.3 (preflight cross-execution checks will WARN 'unchecked')"
+fi
+
 # 2. node dependencies (wc3maptranslator pinned to 5.0.0 — see CLAUDE.md).
 #    stormlib-node is an optionalDependency (needs node-gyp); npm install
 #    won't fail if its native build is impossible in this environment —

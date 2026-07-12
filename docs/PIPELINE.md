@@ -620,3 +620,45 @@ wave 10 spawning FIVE Dreadflesh Colossi — the per-wave escalation bonus
 applied to the first-listed unit type, which on the boss wave was the boss
 itself (five loot drops included). Every parse-level gate passed that map
 for months (test/maplogic.test.js keeps the regression).
+
+## 9. Pre-playtest preflight: one command before any handoff
+
+```bash
+npm run preflight                       # every bundled map (~13s)
+node tools/preflight.js maps/<name>     # one map (seconds; ~11s if its logic suite is big)
+node tools/preflight.js --json maps/<name>   # machine-readable result on stdout
+```
+
+Runs the ENTIRE pre-playtest confidence program of
+docs/reference/preflight-2026-07.md as one cheap pass — never re-derive it
+by hand. Per map: a fresh build through the real build-map machinery (which
+already gates luaparse, the generated-constant lint, strict imports/ model
+sanity, pjass, and generates wpm/shd/minimap), the full validate-map layer
+stack, then the failure-class checks from §5's crash-postmortem taxonomy —
+pick-time (w3i weather bytes, HM3W↔w3i flag mirror, forces coverage, the
+gotcha-18 lobby-team check with SetPlayerTeam/DefineStartLocation calls
+harvested by EXECUTING config() in the sim, minimap TGA/BLP + mmp start
+icons, TRIGSTR closure incl. the header name, start-location triple
+agreement), load-time (model-field .mdl rule + war3mapImported resolution —
+FAILs here, unlike validate-map's WARN, because preflight runs on OUR
+sources), runtime (scriptLanguage agreement, CreateAllUnits presence +
+invocation, main-chunk locals headroom: WARN above 150 of Lua's 200,
+matching `luac -l` locvars exactly) — plus 64-bit cross-execution under
+native lua5.3 (OPTIONAL tool, smpq/pjass pattern: absent = WARN
+"unchecked"; scripts/setup.sh installs it): reference-compiler load of the
+packed script (real 200-locals enforcement) and, when a Park-Miller/Schrage
+PRNG block is detected (pattern-based on the 16807/127773/2836 constants),
+a reduced bit-exactness cross-check of 3 seeds x 10k draws + floor mappings
+between 32-bit fengari and 64-bit lua5.3 (integers compared — fengari's
+`%.17g` float formatting is not C-faithful); AST scans WARN on bitwise
+operators and math.random/os.time/GetLocalPlayer. Finally the map's own
+logic tests run with line coverage (WARN below the --coverage-floor,
+default 60% — it exists to catch maps with NO meaningful tests).
+
+Exit 0 = no FAILs (WARNs never fail a map). Every run ends with the honest
+"only the game can check these" residual-risk list from the preflight doc,
+so a PASS is never overread as game acceptance — §7's in-game protocol
+still applies. Slow tiers are opt-out-able, never cut: --no-logic,
+--no-validate, --no-crossexec. The stable check catalog lives in the
+tools/preflight.js header; test/preflight.test.js pins all bundled maps at
+zero FAILs.
