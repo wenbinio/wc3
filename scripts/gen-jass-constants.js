@@ -41,6 +41,13 @@ function fetch(url) {
   });
 }
 
+// jassdoc annotates declarations with /** ... */ doc comments whose example
+// code could otherwise satisfy the line-anchored regexes below — blank them
+// (newlines kept, so nothing else shifts) before parsing.
+function stripBlockComments(text) {
+  return text.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ''));
+}
+
 function parseConstants(text, out) {
   // constant <type> <NAME> = <expr>  (globals-block declarations)
   const re = /^\s*constant\s+(\w+)\s+(\w+)\s*=\s*(.+?)\s*(?:\/\/.*)?$/gm;
@@ -51,6 +58,17 @@ function parseConstants(text, out) {
     let mm;
     if ((mm = expr.match(/^(Convert\w+)\(\s*(-?\d+)\s*\)$/))) {
       out[name] = { conv: mm[1], arg: Number(mm[2]) };
+    } else if ((mm = expr.match(/^(Convert\w+)\(\s*'(.{4})'\s*\)$/))) {
+      // FourCC-argument handle constants — the object-field families
+      // (UNIT_RF_*/UNIT_IF_*/ABILITY_ILF_*/ITEM_IF_*/...) that the
+      // BlzGet/Set*Field natives take, e.g.
+      //   constant unitrealfield UNIT_RF_FLY_MAX_HEIGHT = ConvertUnitRealField('ufmh')
+      // The FourCC becomes the integer conv arg (same sentinel scheme as
+      // the plain-integer branch; also whitelists these names for
+      // lib/constlint.js's reserved-prefix lint).
+      let v = 0;
+      for (const ch of mm[2]) v = v * 256 + ch.charCodeAt(0);
+      out[name] = { conv: mm[1], arg: v };
     } else if ((mm = expr.match(/^(GetPlayerNeutralPassive|GetPlayerNeutralAggressive|GetBJMaxPlayers|GetBJPlayerNeutralVictim|GetBJPlayerNeutralExtra|GetBJMaxPlayerSlots)\(\)$/))) {
       out[name] = { call: mm[1] };
     } else if (/^-?\d+$/.test(expr)) {
@@ -86,7 +104,7 @@ async function main() {
   const fns = new Set();
   for (const url of SOURCES) {
     process.stderr.write(`fetching ${url} ...\n`);
-    const text = await fetch(url);
+    const text = stripBlockComments(await fetch(url));
     parseConstants(text, constants);
     parseFunctionNames(text, fns);
   }

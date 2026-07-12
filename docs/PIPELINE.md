@@ -284,8 +284,34 @@ node tools/validate-map.js somemap.w3x
 Checks: HM3W pre-header, MPQ magic at offset 512, extraction, presence of
 `war3map.w3i`/`w3e` and a map script, a Lua syntax check on `war3map.lua`
 (luaparse, Lua 5.3 grammar — a broken script loads as a silently dead map),
+a JASS syntax check on `war3map.j` (see below),
 and for every translatable file a parse **plus** a JSON→binary→JSON
 stability cycle. Exit code 0 = all pass.
+
+**JASS gate (OPTIONAL tool, lib/jasscheck.js)**: when the map packs a
+`war3map.j`, it is checked with [pjass](https://github.com/lep/pjass) — the
+community-standard JASS2 checker, the `.j` twin of the luaparse gate.
+build-map FAILS the build on pjass errors; validate-map reports the same
+layer as PASS/FAIL. pjass is **not a dependency** (the smpq-fallback
+pattern): `scripts/setup.sh` builds it from source into `vendor/pjass/`
+when a C toolchain (git/make/cc/flex/bison) is available, and when it is
+absent both tools degrade gracefully — build-map prints a warning and
+validate-map emits `WARN jass syntax war3map.j (war3map.j packed unchecked
+(pjass not installed))`. Two checking modes:
+
+- **grammar** (default): without the game's API files pjass runs with
+  `+nosemanticerror +noruntimeerror`, so undeclared natives/types are
+  ignored and only JASS grammar/syntax errors remain — the same coverage
+  tier luaparse gives Lua maps.
+- **full**: supply Blizzard's `common.j`/`Blizzard.j` YOURSELF (they are
+  Blizzard-authored and never shipped here — point at a local game install)
+  via `WC3_JASS_API_DIR=<dir containing both>` or
+  `WC3_COMMONJ=<path> WC3_BLIZZARDJ=<path>`; pjass then also checks
+  natives, types and call signatures.
+
+`WC3_PJASS=<path>` overrides binary discovery (an unusable value means
+"treat as not installed" — no PATH fallback; useful for testing the
+absence path).
 
 Object data additionally gets a **semantic lint** (lib/objectlint.js) whose
 findings print as `WARN` lines and never fail the map (exit stays 0): model
@@ -323,10 +349,34 @@ For gnarly cases (classic formats, campaign files, disputed field layouts),
 independent implementation. It is **not** a dependency of this toolkit —
 nothing here requires dotnet. `scripts/crossvalidate-war3net.sh` documents
 the recipe: it checks for `dotnet` (`apt-get install -y dotnet-sdk-8.0`),
-scaffolds a tiny console project referencing
-`War3Net.Build.Core`, and runs `MapInfo.Parse`/`MapEnvironment.Parse` over an
-extracted map directory, reporting per-file parse results. Use it when the
-two bundled parser stacks disagree and you need a tie-breaker.
+scaffolds a tiny console project referencing **War3Net.Build.Core 6.x**
+(v6 ships a net6.0 target, consumable from the net8.0 SDK; note the v5
+static `MapInfo.Parse` API is gone in v6 — reading is via the
+`BinaryReader.ReadMapInfo()`/`ReadMapEnvironment()` extension methods), and
+parses `war3map.w3i`/`w3e` from an extracted map directory, reporting
+per-file results. The compiled checker is cached under
+`${WC3_WAR3NET_CACHE:-~/.cache/wc3-war3net}` — the first run downloads
+NuGet packages, later runs rebuild incrementally. Use it when the two
+bundled parser stacks disagree and you need a tie-breaker.
+
+**wtg/wct trigger dump** (`--dump-triggers`): the same script can read
+`war3map.wtg` (WE trigger definitions) and `war3map.wct` (custom-text
+triggers) — the one format class the rest of the toolkit marks opaque —
+via War3Net's `ReadMapTriggers`/`ReadMapCustomTextTriggers` (trigger
+functions resolve against War3Net's built-in community `TriggerData`; no
+game files needed). Output is READ-ONLY JSON under
+`<extracted-dir>/_triggers/` (`war3map.wtg.json`, `war3map.wct.json`) —
+underscore path = diagnostics only, never repacked, same convention as
+`_viewer/` and `_unknown/`. Honest scope: protectors delete wtg/wct and the
+game never reads them, so this is unprotected-map ANALYSIS, not a build
+path (wtg authoring stays deferred —
+docs/reference/ambitious-maps-analysis.md §6).
+
+```bash
+node tools/w3x-extract.js somemap.w3x /tmp/somemap-x
+bash scripts/crossvalidate-war3net.sh --dump-triggers /tmp/somemap-x
+cat /tmp/somemap-x/_triggers/war3map.wtg.json
+```
 
 ## 7. Diagnostics / A-B testing maps in-game
 

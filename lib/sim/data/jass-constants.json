@@ -2295,6 +2295,3426 @@
    "conv": "ConvertFrameEventType",
    "arg": 16
   },
+  "ABILITY_IF_BUTTON_POSITION_NORMAL_X": {
+   "conv": "ConvertAbilityIntegerField",
+   "arg": 1633841272
+  },
+  "ABILITY_IF_BUTTON_POSITION_NORMAL_Y": {
+   "conv": "ConvertAbilityIntegerField",
+   "arg": 1633841273
+  },
+  "ABILITY_IF_BUTTON_POSITION_ACTIVATED_X": {
+   "conv": "ConvertAbilityIntegerField",
+   "arg": 1635082872
+  },
+  "ABILITY_IF_BUTTON_POSITION_ACTIVATED_Y": {
+   "conv": "ConvertAbilityIntegerField",
+   "arg": 1635082873
+  },
+  "ABILITY_IF_BUTTON_POSITION_RESEARCH_X": {
+   "conv": "ConvertAbilityIntegerField",
+   "arg": 1634889848
+  },
+  "ABILITY_IF_BUTTON_POSITION_RESEARCH_Y": {
+   "conv": "ConvertAbilityIntegerField",
+   "arg": 1634889849
+  },
+  "ABILITY_IF_MISSILE_SPEED": {
+   "conv": "ConvertAbilityIntegerField",
+   "arg": 1634562928
+  },
+  "ABILITY_IF_TARGET_ATTACHMENTS": {
+   "conv": "ConvertAbilityIntegerField",
+   "arg": 1635017059
+  },
+  "ABILITY_IF_CASTER_ATTACHMENTS": {
+   "conv": "ConvertAbilityIntegerField",
+   "arg": 1633902947
+  },
+  "ABILITY_IF_PRIORITY": {
+   "conv": "ConvertAbilityIntegerField",
+   "arg": 1634759273
+  },
+  "ABILITY_IF_LEVELS": {
+   "conv": "ConvertAbilityIntegerField",
+   "arg": 1634493814
+  },
+  "ABILITY_IF_REQUIRED_LEVEL": {
+   "conv": "ConvertAbilityIntegerField",
+   "arg": 1634888822
+  },
+  "ABILITY_IF_LEVEL_SKIP_REQUIREMENT": {
+   "conv": "ConvertAbilityIntegerField",
+   "arg": 1634497387
+  },
+  "ABILITY_BF_HERO_ABILITY": {
+   "conv": "ConvertAbilityBooleanField",
+   "arg": 1634231666
+  },
+  "ABILITY_BF_ITEM_ABILITY": {
+   "conv": "ConvertAbilityBooleanField",
+   "arg": 1634301029
+  },
+  "ABILITY_BF_CHECK_DEPENDENCIES": {
+   "conv": "ConvertAbilityBooleanField",
+   "arg": 1633904740
+  },
+  "ABILITY_RF_ARF_MISSILE_ARC": {
+   "conv": "ConvertAbilityRealField",
+   "arg": 1634558307
+  },
+  "ABILITY_SF_NAME": {
+   "conv": "ConvertAbilityStringField",
+   "arg": 1634623853
+  },
+  "ABILITY_SF_ICON_ACTIVATED": {
+   "conv": "ConvertAbilityStringField",
+   "arg": 1635082610
+  },
+  "ABILITY_SF_ICON_RESEARCH": {
+   "conv": "ConvertAbilityStringField",
+   "arg": 1634886002
+  },
+  "ABILITY_SF_EFFECT_SOUND": {
+   "conv": "ConvertAbilityStringField",
+   "arg": 1634035315
+  },
+  "ABILITY_SF_EFFECT_SOUND_LOOPING": {
+   "conv": "ConvertAbilityStringField",
+   "arg": 1634035308
+  },
+  "ABILITY_ILF_MANA_COST": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1634558835
+  },
+  "ABILITY_ILF_NUMBER_OF_WAVES": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1214413361
+  },
+  "ABILITY_ILF_NUMBER_OF_SHARDS": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1214413363
+  },
+  "ABILITY_ILF_NUMBER_OF_UNITS_TELEPORTED": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1215132721
+  },
+  "ABILITY_ILF_SUMMONED_UNIT_COUNT_HWE2": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1215784242
+  },
+  "ABILITY_ILF_NUMBER_OF_IMAGES": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1332570417
+  },
+  "ABILITY_ILF_NUMBER_OF_CORPSES_RAISED_UAN1": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1432448561
+  },
+  "ABILITY_ILF_MORPHING_FLAGS": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1164797234
+  },
+  "ABILITY_ILF_STRENGTH_BONUS_NRG5": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1316120373
+  },
+  "ABILITY_ILF_DEFENSE_BONUS_NRG6": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1316120374
+  },
+  "ABILITY_ILF_NUMBER_OF_TARGETS_HIT": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1331915826
+  },
+  "ABILITY_ILF_DETECTION_TYPE_OFS1": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1332114225
+  },
+  "ABILITY_ILF_NUMBER_OF_SUMMONED_UNITS_OSF2": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1332962866
+  },
+  "ABILITY_ILF_NUMBER_OF_SUMMONED_UNITS_EFN1": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1164340785
+  },
+  "ABILITY_ILF_NUMBER_OF_CORPSES_RAISED_HRE1": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1215456561
+  },
+  "ABILITY_ILF_STACK_FLAGS": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1214472500
+  },
+  "ABILITY_ILF_MINIMUM_NUMBER_OF_UNITS": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1315205170
+  },
+  "ABILITY_ILF_MAXIMUM_NUMBER_OF_UNITS_NDP3": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1315205171
+  },
+  "ABILITY_ILF_NUMBER_OF_UNITS_CREATED_NRC2": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1316119346
+  },
+  "ABILITY_ILF_SHIELD_LIFE": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1097691955
+  },
+  "ABILITY_ILF_MANA_LOSS_AMS4": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1097691956
+  },
+  "ABILITY_ILF_GOLD_PER_INTERVAL_BGM1": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1114074417
+  },
+  "ABILITY_ILF_MAX_NUMBER_OF_MINERS": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1114074419
+  },
+  "ABILITY_ILF_CARGO_CAPACITY": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1130459697
+  },
+  "ABILITY_ILF_MAXIMUM_CREEP_LEVEL_DEV3": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1147500083
+  },
+  "ABILITY_ILF_MAX_CREEP_LEVEL_DEV1": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1147500081
+  },
+  "ABILITY_ILF_GOLD_PER_INTERVAL_EGM1": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1164406065
+  },
+  "ABILITY_ILF_DEFENSE_REDUCTION": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1180788017
+  },
+  "ABILITY_ILF_DETECTION_TYPE_FLA1": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1181507889
+  },
+  "ABILITY_ILF_FLARE_COUNT": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1181507891
+  },
+  "ABILITY_ILF_MAX_GOLD": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1198285873
+  },
+  "ABILITY_ILF_MINING_CAPACITY": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1198285875
+  },
+  "ABILITY_ILF_MAXIMUM_NUMBER_OF_CORPSES_GYD1": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1199137841
+  },
+  "ABILITY_ILF_DAMAGE_TO_TREE": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1214345777
+  },
+  "ABILITY_ILF_LUMBER_CAPACITY": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1214345778
+  },
+  "ABILITY_ILF_GOLD_CAPACITY": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1214345779
+  },
+  "ABILITY_ILF_DEFENSE_INCREASE_INF2": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231971890
+  },
+  "ABILITY_ILF_INTERACTION_TYPE": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1315271986
+  },
+  "ABILITY_ILF_GOLD_COST_NDT1": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1315206193
+  },
+  "ABILITY_ILF_LUMBER_COST_NDT2": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1315206194
+  },
+  "ABILITY_ILF_DETECTION_TYPE_NDT3": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1315206195
+  },
+  "ABILITY_ILF_STACKING_TYPE_POI4": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1349478708
+  },
+  "ABILITY_ILF_STACKING_TYPE_POA5": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1349476661
+  },
+  "ABILITY_ILF_MAXIMUM_CREEP_LEVEL_PLY1": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1349286193
+  },
+  "ABILITY_ILF_MAXIMUM_CREEP_LEVEL_POS1": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1349481265
+  },
+  "ABILITY_ILF_MOVEMENT_UPDATE_FREQUENCY_PRG1": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1349674801
+  },
+  "ABILITY_ILF_ATTACK_UPDATE_FREQUENCY_PRG2": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1349674802
+  },
+  "ABILITY_ILF_MANA_LOSS_PRG6": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1349674806
+  },
+  "ABILITY_ILF_UNITS_SUMMONED_TYPE_ONE": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1382115633
+  },
+  "ABILITY_ILF_UNITS_SUMMONED_TYPE_TWO": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1382115634
+  },
+  "ABILITY_ILF_MAX_UNITS_SUMMONED": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1432576565
+  },
+  "ABILITY_ILF_ALLOW_WHEN_FULL_REJ3": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1382378035
+  },
+  "ABILITY_ILF_MAXIMUM_UNITS_CHARGED_TO_CASTER": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1383096885
+  },
+  "ABILITY_ILF_MAXIMUM_UNITS_AFFECTED": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1383096886
+  },
+  "ABILITY_ILF_DEFENSE_INCREASE_ROA2": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1383031090
+  },
+  "ABILITY_ILF_MAX_UNITS_ROA7": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1383031095
+  },
+  "ABILITY_ILF_ROOTED_WEAPONS": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1383034673
+  },
+  "ABILITY_ILF_UPROOTED_WEAPONS": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1383034674
+  },
+  "ABILITY_ILF_UPROOTED_DEFENSE_TYPE": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1383034676
+  },
+  "ABILITY_ILF_ACCUMULATION_STEP": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1398893618
+  },
+  "ABILITY_ILF_NUMBER_OF_OWLS": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1165192756
+  },
+  "ABILITY_ILF_STACKING_TYPE_SPO4": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1399877428
+  },
+  "ABILITY_ILF_NUMBER_OF_UNITS": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1399809073
+  },
+  "ABILITY_ILF_SPIDER_CAPACITY": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1399873841
+  },
+  "ABILITY_ILF_INTERVALS_BEFORE_CHANGING_TREES": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1466458418
+  },
+  "ABILITY_ILF_AGILITY_BONUS": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231120233
+  },
+  "ABILITY_ILF_INTELLIGENCE_BONUS": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231646324
+  },
+  "ABILITY_ILF_STRENGTH_BONUS_ISTR": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1232303218
+  },
+  "ABILITY_ILF_ATTACK_BONUS": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231123572
+  },
+  "ABILITY_ILF_DEFENSE_BONUS_IDEF": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231316326
+  },
+  "ABILITY_ILF_SUMMON_1_AMOUNT": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1232301617
+  },
+  "ABILITY_ILF_SUMMON_2_AMOUNT": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1232301618
+  },
+  "ABILITY_ILF_EXPERIENCE_GAINED": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1232629863
+  },
+  "ABILITY_ILF_HIT_POINTS_GAINED_IHPG": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231581287
+  },
+  "ABILITY_ILF_MANA_POINTS_GAINED_IMPG": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231908967
+  },
+  "ABILITY_ILF_HIT_POINTS_GAINED_IHP2": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231581234
+  },
+  "ABILITY_ILF_MANA_POINTS_GAINED_IMP2": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231908914
+  },
+  "ABILITY_ILF_DAMAGE_BONUS_DICE": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231317347
+  },
+  "ABILITY_ILF_ARMOR_PENALTY_IARP": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231123056
+  },
+  "ABILITY_ILF_ENABLED_ATTACK_INDEX_IOB5": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1232036405
+  },
+  "ABILITY_ILF_LEVELS_GAINED": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231840630
+  },
+  "ABILITY_ILF_MAX_LIFE_GAINED": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231841638
+  },
+  "ABILITY_ILF_MAX_MANA_GAINED": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231905134
+  },
+  "ABILITY_ILF_GOLD_GIVEN": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231515500
+  },
+  "ABILITY_ILF_LUMBER_GIVEN": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231844717
+  },
+  "ABILITY_ILF_DETECTION_TYPE_IFA1": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231446321
+  },
+  "ABILITY_ILF_MAXIMUM_CREEP_LEVEL_ICRE": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231254117
+  },
+  "ABILITY_ILF_MOVEMENT_SPEED_BONUS": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231910498
+  },
+  "ABILITY_ILF_HIT_POINTS_REGENERATED_PER_SECOND": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231581298
+  },
+  "ABILITY_ILF_SIGHT_RANGE_BONUS": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1232300386
+  },
+  "ABILITY_ILF_DAMAGE_PER_DURATION": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231251044
+  },
+  "ABILITY_ILF_MANA_USED_PER_SECOND": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231251053
+  },
+  "ABILITY_ILF_EXTRA_MANA_REQUIRED": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231251064
+  },
+  "ABILITY_ILF_DETECTION_RADIUS_IDET": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231316340
+  },
+  "ABILITY_ILF_MANA_LOSS_PER_UNIT_IDIM": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231317357
+  },
+  "ABILITY_ILF_DAMAGE_TO_SUMMONED_UNITS_IDID": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231317348
+  },
+  "ABILITY_ILF_MAXIMUM_NUMBER_OF_UNITS_IREC": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1232233827
+  },
+  "ABILITY_ILF_DELAY_AFTER_DEATH_SECONDS": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1232233316
+  },
+  "ABILITY_ILF_RESTORED_LIFE": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1769104178
+  },
+  "ABILITY_ILF_RESTORED_MANA__1_FOR_CURRENT": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1769104179
+  },
+  "ABILITY_ILF_HIT_POINTS_RESTORED": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231581299
+  },
+  "ABILITY_ILF_MANA_POINTS_RESTORED": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231908979
+  },
+  "ABILITY_ILF_MAXIMUM_NUMBER_OF_UNITS_ITPM": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1232367725
+  },
+  "ABILITY_ILF_NUMBER_OF_CORPSES_RAISED_CAD1": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1130456113
+  },
+  "ABILITY_ILF_TERRAIN_DEFORMATION_DURATION_MS": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1467118387
+  },
+  "ABILITY_ILF_MAXIMUM_UNITS": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1432646449
+  },
+  "ABILITY_ILF_DETECTION_TYPE_DET1": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1147499569
+  },
+  "ABILITY_ILF_GOLD_COST_PER_STRUCTURE": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1316188209
+  },
+  "ABILITY_ILF_LUMBER_COST_PER_USE": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1316188210
+  },
+  "ABILITY_ILF_DETECTION_TYPE_NSP3": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1316188211
+  },
+  "ABILITY_ILF_NUMBER_OF_SWARM_UNITS": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1433170737
+  },
+  "ABILITY_ILF_MAX_SWARM_UNITS_PER_TARGET": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1433170739
+  },
+  "ABILITY_ILF_NUMBER_OF_SUMMONED_UNITS_NBA2": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1315070258
+  },
+  "ABILITY_ILF_MAXIMUM_CREEP_LEVEL_NCH1": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1315137585
+  },
+  "ABILITY_ILF_ATTACKS_PREVENTED": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1316186417
+  },
+  "ABILITY_ILF_MAXIMUM_NUMBER_OF_TARGETS_EFK3": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1164340019
+  },
+  "ABILITY_ILF_NUMBER_OF_SUMMONED_UNITS_ESV1": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1165194801
+  },
+  "ABILITY_ILF_MAXIMUM_NUMBER_OF_CORPSES_EXH1": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1702389809
+  },
+  "ABILITY_ILF_ITEM_CAPACITY": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1768846897
+  },
+  "ABILITY_ILF_MAXIMUM_NUMBER_OF_TARGETS_SPL2": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1936747570
+  },
+  "ABILITY_ILF_ALLOW_WHEN_FULL_IRL3": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1769106483
+  },
+  "ABILITY_ILF_MAXIMUM_DISPELLED_UNITS": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1768186675
+  },
+  "ABILITY_ILF_NUMBER_OF_LURES": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1768779569
+  },
+  "ABILITY_ILF_NEW_TIME_OF_DAY_HOUR": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1768125489
+  },
+  "ABILITY_ILF_NEW_TIME_OF_DAY_MINUTE": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1768125490
+  },
+  "ABILITY_ILF_NUMBER_OF_UNITS_CREATED_MEC1": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1835361073
+  },
+  "ABILITY_ILF_MINIMUM_SPELLS": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1936745011
+  },
+  "ABILITY_ILF_MAXIMUM_SPELLS": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1936745012
+  },
+  "ABILITY_ILF_DISABLED_ATTACK_INDEX": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1735549235
+  },
+  "ABILITY_ILF_ENABLED_ATTACK_INDEX_GRA4": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1735549236
+  },
+  "ABILITY_ILF_MAXIMUM_ATTACKS": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1735549237
+  },
+  "ABILITY_ILF_BUILDING_TYPES_ALLOWED_NPR1": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1315992113
+  },
+  "ABILITY_ILF_BUILDING_TYPES_ALLOWED_NSA1": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1316184369
+  },
+  "ABILITY_ILF_ATTACK_MODIFICATION": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231118641
+  },
+  "ABILITY_ILF_SUMMONED_UNIT_COUNT_NPA5": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1315987765
+  },
+  "ABILITY_ILF_UPGRADE_LEVELS": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231514673
+  },
+  "ABILITY_ILF_NUMBER_OF_SUMMONED_UNITS_NDO2": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1315204914
+  },
+  "ABILITY_ILF_BEASTS_PER_SECOND": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1316189233
+  },
+  "ABILITY_ILF_TARGET_TYPE": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1315138610
+  },
+  "ABILITY_ILF_OPTIONS": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1315138611
+  },
+  "ABILITY_ILF_ARMOR_PENALTY_NAB3": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1315004979
+  },
+  "ABILITY_ILF_WAVE_COUNT_NHS6": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1315468086
+  },
+  "ABILITY_ILF_MAX_CREEP_LEVEL_NTM3": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1316252979
+  },
+  "ABILITY_ILF_MISSILE_COUNT": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1315140403
+  },
+  "ABILITY_ILF_SPLIT_ATTACK_COUNT": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1315728691
+  },
+  "ABILITY_ILF_GENERATION_COUNT": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1315728694
+  },
+  "ABILITY_ILF_ROCK_RING_COUNT": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1316381489
+  },
+  "ABILITY_ILF_WAVE_COUNT_NVC2": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1316381490
+  },
+  "ABILITY_ILF_PREFER_HOSTILES_TAU1": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1415673137
+  },
+  "ABILITY_ILF_PREFER_FRIENDLIES_TAU2": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1415673138
+  },
+  "ABILITY_ILF_MAX_UNITS_TAU3": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1415673139
+  },
+  "ABILITY_ILF_NUMBER_OF_PULSES": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1415673140
+  },
+  "ABILITY_ILF_SUMMONED_UNIT_TYPE_HWE1": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1215784241
+  },
+  "ABILITY_ILF_SUMMONED_UNIT_UIN4": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1432972852
+  },
+  "ABILITY_ILF_SUMMONED_UNIT_OSF1": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1332962865
+  },
+  "ABILITY_ILF_SUMMONED_UNIT_TYPE_EFNU": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1164340853
+  },
+  "ABILITY_ILF_SUMMONED_UNIT_TYPE_NBAU": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1315070325
+  },
+  "ABILITY_ILF_SUMMONED_UNIT_TYPE_NTOU": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1316253557
+  },
+  "ABILITY_ILF_SUMMONED_UNIT_TYPE_ESVU": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1165194869
+  },
+  "ABILITY_ILF_SUMMONED_UNIT_TYPES": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1315268145
+  },
+  "ABILITY_ILF_SUMMONED_UNIT_TYPE_NDOU": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1315204981
+  },
+  "ABILITY_ILF_ALTERNATE_FORM_UNIT_EMEU": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1164797301
+  },
+  "ABILITY_ILF_PLAGUE_WARD_UNIT_TYPE": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1097886837
+  },
+  "ABILITY_ILF_ALLOWED_UNIT_TYPE_BTL1": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1114926129
+  },
+  "ABILITY_ILF_NEW_UNIT_TYPE": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1130914097
+  },
+  "ABILITY_ILF_RESULTING_UNIT_TYPE_ENT1": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1701737521
+  },
+  "ABILITY_ILF_CORPSE_UNIT_TYPE": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1199137909
+  },
+  "ABILITY_ILF_ALLOWED_UNIT_TYPE_LOA1": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1282367793
+  },
+  "ABILITY_ILF_UNIT_TYPE_FOR_LIMIT_CHECK": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1382115701
+  },
+  "ABILITY_ILF_WARD_UNIT_TYPE_STAU": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1400136053
+  },
+  "ABILITY_ILF_EFFECT_ABILITY": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1232036469
+  },
+  "ABILITY_ILF_CONVERSION_UNIT": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1315201842
+  },
+  "ABILITY_ILF_UNIT_TO_PRESERVE": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1316187185
+  },
+  "ABILITY_ILF_UNIT_TYPE_ALLOWED": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1130916913
+  },
+  "ABILITY_ILF_SWARM_UNIT_TYPE": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1433170805
+  },
+  "ABILITY_ILF_RESULTING_UNIT_TYPE_COAU": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1668243829
+  },
+  "ABILITY_ILF_UNIT_TYPE_EXHU": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1702389877
+  },
+  "ABILITY_ILF_WARD_UNIT_TYPE_HWDU": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1752654965
+  },
+  "ABILITY_ILF_LURE_UNIT_TYPE": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1768779637
+  },
+  "ABILITY_ILF_UNIT_TYPE_IPMU": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1768975733
+  },
+  "ABILITY_ILF_FACTORY_UNIT_ID": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1316190581
+  },
+  "ABILITY_ILF_SPAWN_UNIT_ID_NFYU": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1315338613
+  },
+  "ABILITY_ILF_DESTRUCTIBLE_ID": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1316381557
+  },
+  "ABILITY_ILF_UPGRADE_TYPE": {
+   "conv": "ConvertAbilityIntegerLevelField",
+   "arg": 1231514741
+  },
+  "ABILITY_RLF_CASTING_TIME": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1633902963
+  },
+  "ABILITY_RLF_DURATION_NORMAL": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1633973618
+  },
+  "ABILITY_RLF_DURATION_HERO": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1634231413
+  },
+  "ABILITY_RLF_COOLDOWN": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1633903726
+  },
+  "ABILITY_RLF_AREA_OF_EFFECT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1633776229
+  },
+  "ABILITY_RLF_CAST_RANGE": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1634885998
+  },
+  "ABILITY_RLF_DAMAGE_HBZ2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1214413362
+  },
+  "ABILITY_RLF_BUILDING_REDUCTION_HBZ4": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1214413364
+  },
+  "ABILITY_RLF_DAMAGE_PER_SECOND_HBZ5": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1214413365
+  },
+  "ABILITY_RLF_MAXIMUM_DAMAGE_PER_WAVE": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1214413366
+  },
+  "ABILITY_RLF_MANA_REGENERATION_INCREASE": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1214341681
+  },
+  "ABILITY_RLF_CASTING_DELAY": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1215132722
+  },
+  "ABILITY_RLF_DAMAGE_PER_SECOND_OWW1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1333229361
+  },
+  "ABILITY_RLF_MAGIC_DAMAGE_REDUCTION_OWW2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1333229362
+  },
+  "ABILITY_RLF_CHANCE_TO_CRITICAL_STRIKE": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1331917361
+  },
+  "ABILITY_RLF_DAMAGE_MULTIPLIER_OCR2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1331917362
+  },
+  "ABILITY_RLF_DAMAGE_BONUS_OCR3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1331917363
+  },
+  "ABILITY_RLF_CHANCE_TO_EVADE_OCR4": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1331917364
+  },
+  "ABILITY_RLF_DAMAGE_DEALT_PERCENT_OMI2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1332570418
+  },
+  "ABILITY_RLF_DAMAGE_TAKEN_PERCENT_OMI3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1332570419
+  },
+  "ABILITY_RLF_ANIMATION_DELAY": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1332570420
+  },
+  "ABILITY_RLF_TRANSITION_TIME": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1333226289
+  },
+  "ABILITY_RLF_MOVEMENT_SPEED_INCREASE_PERCENT_OWK2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1333226290
+  },
+  "ABILITY_RLF_BACKSTAB_DAMAGE": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1333226291
+  },
+  "ABILITY_RLF_AMOUNT_HEALED_DAMAGED_UDC1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1432642353
+  },
+  "ABILITY_RLF_LIFE_CONVERTED_TO_MANA": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1432645681
+  },
+  "ABILITY_RLF_LIFE_CONVERTED_TO_LIFE": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1432645682
+  },
+  "ABILITY_RLF_MOVEMENT_SPEED_INCREASE_PERCENT_UAU1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1432450353
+  },
+  "ABILITY_RLF_LIFE_REGENERATION_INCREASE_PERCENT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1432450354
+  },
+  "ABILITY_RLF_CHANCE_TO_EVADE_EEV1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1164277297
+  },
+  "ABILITY_RLF_DAMAGE_PER_INTERVAL": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1164537137
+  },
+  "ABILITY_RLF_MANA_DRAINED_PER_SECOND_EIM2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1164537138
+  },
+  "ABILITY_RLF_BUFFER_MANA_REQUIRED": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1164537139
+  },
+  "ABILITY_RLF_MAX_MANA_DRAINED": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1164796465
+  },
+  "ABILITY_RLF_BOLT_DELAY": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1164796466
+  },
+  "ABILITY_RLF_BOLT_LIFETIME": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1164796467
+  },
+  "ABILITY_RLF_ALTITUDE_ADJUSTMENT_DURATION": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1164797235
+  },
+  "ABILITY_RLF_LANDING_DELAY_TIME": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1164797236
+  },
+  "ABILITY_RLF_ALTERNATE_FORM_HIT_POINT_BONUS": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1164797237
+  },
+  "ABILITY_RLF_MOVE_SPEED_BONUS_INFO_PANEL_ONLY": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315140149
+  },
+  "ABILITY_RLF_ATTACK_SPEED_BONUS_INFO_PANEL_ONLY": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315140150
+  },
+  "ABILITY_RLF_LIFE_REGENERATION_RATE_PER_SECOND": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1635149109
+  },
+  "ABILITY_RLF_STUN_DURATION_USL1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1433627697
+  },
+  "ABILITY_RLF_ATTACK_DAMAGE_STOLEN_PERCENT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1432450609
+  },
+  "ABILITY_RLF_DAMAGE_UCS1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1432580913
+  },
+  "ABILITY_RLF_MAX_DAMAGE_UCS2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1432580914
+  },
+  "ABILITY_RLF_DISTANCE_UCS3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1432580915
+  },
+  "ABILITY_RLF_FINAL_AREA_UCS4": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1432580916
+  },
+  "ABILITY_RLF_DAMAGE_UIN1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1432972849
+  },
+  "ABILITY_RLF_DURATION": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1432972850
+  },
+  "ABILITY_RLF_IMPACT_DELAY": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1432972851
+  },
+  "ABILITY_RLF_DAMAGE_PER_TARGET_OCL1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1331915825
+  },
+  "ABILITY_RLF_DAMAGE_REDUCTION_PER_TARGET": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1331915827
+  },
+  "ABILITY_RLF_EFFECT_DELAY_OEQ1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1332048177
+  },
+  "ABILITY_RLF_DAMAGE_PER_SECOND_TO_BUILDINGS": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1332048178
+  },
+  "ABILITY_RLF_UNITS_SLOWED_PERCENT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1332048179
+  },
+  "ABILITY_RLF_FINAL_AREA_OEQ4": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1332048180
+  },
+  "ABILITY_RLF_DAMAGE_PER_SECOND_EER1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1164276273
+  },
+  "ABILITY_RLF_DAMAGE_DEALT_TO_ATTACKERS": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1164011569
+  },
+  "ABILITY_RLF_LIFE_HEALED": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1165259057
+  },
+  "ABILITY_RLF_HEAL_INTERVAL": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1165259058
+  },
+  "ABILITY_RLF_BUILDING_REDUCTION_ETQ3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1165259059
+  },
+  "ABILITY_RLF_INITIAL_IMMUNITY_DURATION": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1165259060
+  },
+  "ABILITY_RLF_MAX_LIFE_DRAINED_PER_SECOND_PERCENT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1432642609
+  },
+  "ABILITY_RLF_BUILDING_REDUCTION_UDD2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1432642610
+  },
+  "ABILITY_RLF_ARMOR_DURATION": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1432772913
+  },
+  "ABILITY_RLF_ARMOR_BONUS_UFA2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1432772914
+  },
+  "ABILITY_RLF_AREA_OF_EFFECT_DAMAGE": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1432776241
+  },
+  "ABILITY_RLF_SPECIFIC_TARGET_DAMAGE_UFN2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1432776242
+  },
+  "ABILITY_RLF_DAMAGE_BONUS_HFA1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1214669105
+  },
+  "ABILITY_RLF_DAMAGE_DEALT_ESF1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1165190705
+  },
+  "ABILITY_RLF_DAMAGE_INTERVAL_ESF2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1165190706
+  },
+  "ABILITY_RLF_BUILDING_REDUCTION_ESF3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1165190707
+  },
+  "ABILITY_RLF_DAMAGE_BONUS_PERCENT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1164014129
+  },
+  "ABILITY_RLF_DEFENSE_BONUS_HAV1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1214346801
+  },
+  "ABILITY_RLF_HIT_POINT_BONUS": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1214346802
+  },
+  "ABILITY_RLF_DAMAGE_BONUS_HAV3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1214346803
+  },
+  "ABILITY_RLF_MAGIC_DAMAGE_REDUCTION_HAV4": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1214346804
+  },
+  "ABILITY_RLF_CHANCE_TO_BASH": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1214408753
+  },
+  "ABILITY_RLF_DAMAGE_MULTIPLIER_HBH2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1214408754
+  },
+  "ABILITY_RLF_DAMAGE_BONUS_HBH3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1214408755
+  },
+  "ABILITY_RLF_CHANCE_TO_MISS_HBH4": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1214408756
+  },
+  "ABILITY_RLF_DAMAGE_HTB1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1215586865
+  },
+  "ABILITY_RLF_AOE_DAMAGE": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1215587121
+  },
+  "ABILITY_RLF_SPECIFIC_TARGET_DAMAGE_HTC2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1215587122
+  },
+  "ABILITY_RLF_MOVEMENT_SPEED_REDUCTION_PERCENT_HTC3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1215587123
+  },
+  "ABILITY_RLF_ATTACK_SPEED_REDUCTION_PERCENT_HTC4": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1215587124
+  },
+  "ABILITY_RLF_ARMOR_BONUS_HAD1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1214342193
+  },
+  "ABILITY_RLF_AMOUNT_HEALED_DAMAGED_HHB1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1214800433
+  },
+  "ABILITY_RLF_EXTRA_DAMAGE_HCA1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1214472497
+  },
+  "ABILITY_RLF_MOVEMENT_SPEED_FACTOR_HCA2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1214472498
+  },
+  "ABILITY_RLF_ATTACK_SPEED_FACTOR_HCA3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1214472499
+  },
+  "ABILITY_RLF_MOVEMENT_SPEED_INCREASE_PERCENT_OAE1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1331782961
+  },
+  "ABILITY_RLF_ATTACK_SPEED_INCREASE_PERCENT_OAE2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1331782962
+  },
+  "ABILITY_RLF_REINCARNATION_DELAY": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1332897073
+  },
+  "ABILITY_RLF_DAMAGE_OSH1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1332963377
+  },
+  "ABILITY_RLF_MAXIMUM_DAMAGE_OSH2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1332963378
+  },
+  "ABILITY_RLF_DISTANCE_OSH3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1332963379
+  },
+  "ABILITY_RLF_FINAL_AREA_OSH4": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1332963380
+  },
+  "ABILITY_RLF_GRAPHIC_DELAY_NFD1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315333169
+  },
+  "ABILITY_RLF_GRAPHIC_DURATION_NFD2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315333170
+  },
+  "ABILITY_RLF_DAMAGE_NFD3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315333171
+  },
+  "ABILITY_RLF_SUMMONED_UNIT_DAMAGE_AMS1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1097691953
+  },
+  "ABILITY_RLF_MAGIC_DAMAGE_REDUCTION_AMS2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1097691954
+  },
+  "ABILITY_RLF_AURA_DURATION": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1097886769
+  },
+  "ABILITY_RLF_DAMAGE_PER_SECOND_APL2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1097886770
+  },
+  "ABILITY_RLF_DURATION_OF_PLAGUE_WARD": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1097886771
+  },
+  "ABILITY_RLF_AMOUNT_OF_HIT_POINTS_REGENERATED": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1331786289
+  },
+  "ABILITY_RLF_ATTACK_DAMAGE_INCREASE_AKB1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1097556529
+  },
+  "ABILITY_RLF_MANA_LOSS_ADM1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1097100593
+  },
+  "ABILITY_RLF_SUMMONED_UNIT_DAMAGE_ADM2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1097100594
+  },
+  "ABILITY_RLF_EXPANSION_AMOUNT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1114401073
+  },
+  "ABILITY_RLF_INTERVAL_DURATION_BGM2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1114074418
+  },
+  "ABILITY_RLF_RADIUS_OF_MINING_RING": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1114074420
+  },
+  "ABILITY_RLF_ATTACK_SPEED_INCREASE_PERCENT_BLO1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1114402609
+  },
+  "ABILITY_RLF_MOVEMENT_SPEED_INCREASE_PERCENT_BLO2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1114402610
+  },
+  "ABILITY_RLF_SCALING_FACTOR": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1114402611
+  },
+  "ABILITY_RLF_HIT_POINTS_PER_SECOND_CAN1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1130458673
+  },
+  "ABILITY_RLF_MAX_HIT_POINTS": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1130458674
+  },
+  "ABILITY_RLF_DAMAGE_PER_SECOND_DEV2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1147500082
+  },
+  "ABILITY_RLF_MOVEMENT_UPDATE_FREQUENCY_CHD1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1130914865
+  },
+  "ABILITY_RLF_ATTACK_UPDATE_FREQUENCY_CHD2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1130914866
+  },
+  "ABILITY_RLF_SUMMONED_UNIT_DAMAGE_CHD3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1130914867
+  },
+  "ABILITY_RLF_MOVEMENT_SPEED_REDUCTION_PERCENT_CRI1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1131571505
+  },
+  "ABILITY_RLF_ATTACK_SPEED_REDUCTION_PERCENT_CRI2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1131571506
+  },
+  "ABILITY_RLF_DAMAGE_REDUCTION_CRI3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1131571507
+  },
+  "ABILITY_RLF_CHANCE_TO_MISS_CRS": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1131574065
+  },
+  "ABILITY_RLF_FULL_DAMAGE_RADIUS_DDA1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1147429169
+  },
+  "ABILITY_RLF_FULL_DAMAGE_AMOUNT_DDA2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1147429170
+  },
+  "ABILITY_RLF_PARTIAL_DAMAGE_RADIUS": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1147429171
+  },
+  "ABILITY_RLF_PARTIAL_DAMAGE_AMOUNT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1147429172
+  },
+  "ABILITY_RLF_BUILDING_DAMAGE_FACTOR_SDS1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1399092017
+  },
+  "ABILITY_RLF_MAX_DAMAGE_UCO5": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1432579893
+  },
+  "ABILITY_RLF_MOVE_SPEED_BONUS_UCO6": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1432579894
+  },
+  "ABILITY_RLF_DAMAGE_TAKEN_PERCENT_DEF1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1147495985
+  },
+  "ABILITY_RLF_DAMAGE_DEALT_PERCENT_DEF2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1147495986
+  },
+  "ABILITY_RLF_MOVEMENT_SPEED_FACTOR_DEF3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1147495987
+  },
+  "ABILITY_RLF_ATTACK_SPEED_FACTOR_DEF4": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1147495988
+  },
+  "ABILITY_RLF_MAGIC_DAMAGE_REDUCTION_DEF5": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1147495989
+  },
+  "ABILITY_RLF_CHANCE_TO_DEFLECT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1147495990
+  },
+  "ABILITY_RLF_DEFLECT_DAMAGE_TAKEN_PIERCING": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1147495991
+  },
+  "ABILITY_RLF_DEFLECT_DAMAGE_TAKEN_SPELLS": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1147495992
+  },
+  "ABILITY_RLF_RIP_DELAY": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1164014641
+  },
+  "ABILITY_RLF_EAT_DELAY": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1164014642
+  },
+  "ABILITY_RLF_HIT_POINTS_GAINED_EAT3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1164014643
+  },
+  "ABILITY_RLF_AIR_UNIT_LOWER_DURATION": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1164866353
+  },
+  "ABILITY_RLF_AIR_UNIT_HEIGHT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1164866354
+  },
+  "ABILITY_RLF_MELEE_ATTACK_RANGE": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1164866355
+  },
+  "ABILITY_RLF_INTERVAL_DURATION_EGM2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1164406066
+  },
+  "ABILITY_RLF_EFFECT_DELAY_FLA2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1181507890
+  },
+  "ABILITY_RLF_MINING_DURATION": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1198285874
+  },
+  "ABILITY_RLF_RADIUS_OF_GRAVESTONES": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1199137842
+  },
+  "ABILITY_RLF_RADIUS_OF_CORPSES": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1199137843
+  },
+  "ABILITY_RLF_HIT_POINTS_GAINED_HEA1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1214603569
+  },
+  "ABILITY_RLF_DAMAGE_INCREASE_PERCENT_INF1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1231971889
+  },
+  "ABILITY_RLF_AUTOCAST_RANGE": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1231971891
+  },
+  "ABILITY_RLF_LIFE_REGEN_RATE": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1231971892
+  },
+  "ABILITY_RLF_GRAPHIC_DELAY_LIT1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1281979441
+  },
+  "ABILITY_RLF_GRAPHIC_DURATION_LIT2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1281979442
+  },
+  "ABILITY_RLF_DAMAGE_PER_SECOND_LSH1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1282631729
+  },
+  "ABILITY_RLF_MANA_GAINED": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1298297905
+  },
+  "ABILITY_RLF_HIT_POINTS_GAINED_MBT2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1298297906
+  },
+  "ABILITY_RLF_AUTOCAST_REQUIREMENT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1298297907
+  },
+  "ABILITY_RLF_WATER_HEIGHT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1298297908
+  },
+  "ABILITY_RLF_ACTIVATION_DELAY_MIN1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1298755121
+  },
+  "ABILITY_RLF_INVISIBILITY_TRANSITION_TIME": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1298755122
+  },
+  "ABILITY_RLF_ACTIVATION_RADIUS": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315271985
+  },
+  "ABILITY_RLF_AMOUNT_REGENERATED": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1098018097
+  },
+  "ABILITY_RLF_DAMAGE_PER_SECOND_POI1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1349478705
+  },
+  "ABILITY_RLF_ATTACK_SPEED_FACTOR_POI2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1349478706
+  },
+  "ABILITY_RLF_MOVEMENT_SPEED_FACTOR_POI3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1349478707
+  },
+  "ABILITY_RLF_EXTRA_DAMAGE_POA1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1349476657
+  },
+  "ABILITY_RLF_DAMAGE_PER_SECOND_POA2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1349476658
+  },
+  "ABILITY_RLF_ATTACK_SPEED_FACTOR_POA3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1349476659
+  },
+  "ABILITY_RLF_MOVEMENT_SPEED_FACTOR_POA4": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1349476660
+  },
+  "ABILITY_RLF_DAMAGE_AMPLIFICATION": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1349481266
+  },
+  "ABILITY_RLF_CHANCE_TO_STOMP_PERCENT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1466004017
+  },
+  "ABILITY_RLF_DAMAGE_DEALT_WAR2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1466004018
+  },
+  "ABILITY_RLF_FULL_DAMAGE_RADIUS_WAR3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1466004019
+  },
+  "ABILITY_RLF_HALF_DAMAGE_RADIUS_WAR4": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1466004020
+  },
+  "ABILITY_RLF_SUMMONED_UNIT_DAMAGE_PRG3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1349674803
+  },
+  "ABILITY_RLF_UNIT_PAUSE_DURATION": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1349674804
+  },
+  "ABILITY_RLF_HERO_PAUSE_DURATION": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1349674805
+  },
+  "ABILITY_RLF_HIT_POINTS_GAINED_REJ1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1382378033
+  },
+  "ABILITY_RLF_MANA_POINTS_GAINED_REJ2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1382378034
+  },
+  "ABILITY_RLF_MINIMUM_LIFE_REQUIRED": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1383096883
+  },
+  "ABILITY_RLF_MINIMUM_MANA_REQUIRED": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1383096884
+  },
+  "ABILITY_RLF_REPAIR_COST_RATIO": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1382379569
+  },
+  "ABILITY_RLF_REPAIR_TIME_RATIO": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1382379570
+  },
+  "ABILITY_RLF_POWERBUILD_COST": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1382379571
+  },
+  "ABILITY_RLF_POWERBUILD_RATE": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1382379572
+  },
+  "ABILITY_RLF_NAVAL_RANGE_BONUS": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1382379573
+  },
+  "ABILITY_RLF_DAMAGE_INCREASE_PERCENT_ROA1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1383031089
+  },
+  "ABILITY_RLF_LIFE_REGENERATION_RATE": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1383031091
+  },
+  "ABILITY_RLF_MANA_REGEN": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1383031092
+  },
+  "ABILITY_RLF_DAMAGE_INCREASE": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315074609
+  },
+  "ABILITY_RLF_SALVAGE_COST_RATIO": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1398893617
+  },
+  "ABILITY_RLF_IN_FLIGHT_SIGHT_RADIUS": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1165192753
+  },
+  "ABILITY_RLF_HOVERING_SIGHT_RADIUS": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1165192754
+  },
+  "ABILITY_RLF_HOVERING_HEIGHT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1165192755
+  },
+  "ABILITY_RLF_DURATION_OF_OWLS": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1165192757
+  },
+  "ABILITY_RLF_FADE_DURATION": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1399352625
+  },
+  "ABILITY_RLF_DAY_NIGHT_DURATION": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1399352626
+  },
+  "ABILITY_RLF_ACTION_DURATION": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1399352627
+  },
+  "ABILITY_RLF_MOVEMENT_SPEED_FACTOR_SLO1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1399615281
+  },
+  "ABILITY_RLF_ATTACK_SPEED_FACTOR_SLO2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1399615282
+  },
+  "ABILITY_RLF_DAMAGE_PER_SECOND_SPO1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1399877425
+  },
+  "ABILITY_RLF_MOVEMENT_SPEED_FACTOR_SPO2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1399877426
+  },
+  "ABILITY_RLF_ATTACK_SPEED_FACTOR_SPO3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1399877427
+  },
+  "ABILITY_RLF_ACTIVATION_DELAY_STA1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1400135985
+  },
+  "ABILITY_RLF_DETECTION_RADIUS_STA2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1400135986
+  },
+  "ABILITY_RLF_DETONATION_RADIUS": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1400135987
+  },
+  "ABILITY_RLF_STUN_DURATION_STA4": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1400135988
+  },
+  "ABILITY_RLF_ATTACK_SPEED_BONUS_PERCENT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1432905265
+  },
+  "ABILITY_RLF_DAMAGE_PER_SECOND_UHF2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1432905266
+  },
+  "ABILITY_RLF_LUMBER_PER_INTERVAL": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1466458417
+  },
+  "ABILITY_RLF_ART_ATTACHMENT_HEIGHT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1466458419
+  },
+  "ABILITY_RLF_TELEPORT_AREA_WIDTH": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1467117617
+  },
+  "ABILITY_RLF_TELEPORT_AREA_HEIGHT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1467117618
+  },
+  "ABILITY_RLF_LIFE_STOLEN_PER_ATTACK": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1232494957
+  },
+  "ABILITY_RLF_DAMAGE_BONUS_IDAM": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1231315309
+  },
+  "ABILITY_RLF_CHANCE_TO_HIT_UNITS_PERCENT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1232036402
+  },
+  "ABILITY_RLF_CHANCE_TO_HIT_HEROS_PERCENT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1232036403
+  },
+  "ABILITY_RLF_CHANCE_TO_HIT_SUMMONS_PERCENT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1232036404
+  },
+  "ABILITY_RLF_DELAY_FOR_TARGET_EFFECT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1231316332
+  },
+  "ABILITY_RLF_DAMAGE_DEALT_PERCENT_OF_NORMAL": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1231645796
+  },
+  "ABILITY_RLF_DAMAGE_RECEIVED_MULTIPLIER": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1231645815
+  },
+  "ABILITY_RLF_MANA_REGENERATION_BONUS_AS_FRACTION_OF_NORMAL": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1231909488
+  },
+  "ABILITY_RLF_MOVEMENT_SPEED_INCREASE_ISPI": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1232302185
+  },
+  "ABILITY_RLF_DAMAGE_PER_SECOND_IDPS": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1231319155
+  },
+  "ABILITY_RLF_ATTACK_DAMAGE_INCREASE_CAC1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1130455857
+  },
+  "ABILITY_RLF_DAMAGE_PER_SECOND_COR1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1131377201
+  },
+  "ABILITY_RLF_ATTACK_SPEED_INCREASE_ISX1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1232304177
+  },
+  "ABILITY_RLF_DAMAGE_WRS1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1467118385
+  },
+  "ABILITY_RLF_TERRAIN_DEFORMATION_AMPLITUDE": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1467118386
+  },
+  "ABILITY_RLF_DAMAGE_CTC1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1131701041
+  },
+  "ABILITY_RLF_EXTRA_DAMAGE_TO_TARGET": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1131701042
+  },
+  "ABILITY_RLF_MOVEMENT_SPEED_REDUCTION_CTC3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1131701043
+  },
+  "ABILITY_RLF_ATTACK_SPEED_REDUCTION_CTC4": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1131701044
+  },
+  "ABILITY_RLF_DAMAGE_CTB1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1131700785
+  },
+  "ABILITY_RLF_CASTING_DELAY_SECONDS": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1432646450
+  },
+  "ABILITY_RLF_MANA_LOSS_PER_UNIT_DTN1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1148481073
+  },
+  "ABILITY_RLF_DAMAGE_TO_SUMMONED_UNITS_DTN2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1148481074
+  },
+  "ABILITY_RLF_TRANSITION_TIME_SECONDS": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1232499505
+  },
+  "ABILITY_RLF_MANA_DRAINED_PER_SECOND_NMR1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315795505
+  },
+  "ABILITY_RLF_CHANCE_TO_REDUCE_DAMAGE_PERCENT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1400073009
+  },
+  "ABILITY_RLF_MINIMUM_DAMAGE": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1400073010
+  },
+  "ABILITY_RLF_IGNORED_DAMAGE": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1400073011
+  },
+  "ABILITY_RLF_FULL_DAMAGE_DEALT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1214673713
+  },
+  "ABILITY_RLF_FULL_DAMAGE_INTERVAL": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1214673714
+  },
+  "ABILITY_RLF_HALF_DAMAGE_DEALT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1214673715
+  },
+  "ABILITY_RLF_HALF_DAMAGE_INTERVAL": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1214673716
+  },
+  "ABILITY_RLF_BUILDING_REDUCTION_HFS5": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1214673717
+  },
+  "ABILITY_RLF_MAXIMUM_DAMAGE_HFS6": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1214673718
+  },
+  "ABILITY_RLF_MANA_PER_HIT_POINT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315795761
+  },
+  "ABILITY_RLF_DAMAGE_ABSORBED_PERCENT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315795762
+  },
+  "ABILITY_RLF_WAVE_DISTANCE": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1432972593
+  },
+  "ABILITY_RLF_WAVE_TIME_SECONDS": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1432972594
+  },
+  "ABILITY_RLF_DAMAGE_DEALT_UIM3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1432972595
+  },
+  "ABILITY_RLF_AIR_TIME_SECONDS_UIM4": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1432972596
+  },
+  "ABILITY_RLF_UNIT_RELEASE_INTERVAL_SECONDS": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1433170738
+  },
+  "ABILITY_RLF_DAMAGE_RETURN_FACTOR": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1433170740
+  },
+  "ABILITY_RLF_DAMAGE_RETURN_THRESHOLD": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1433170741
+  },
+  "ABILITY_RLF_RETURNED_DAMAGE_FACTOR": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1433695025
+  },
+  "ABILITY_RLF_RECEIVED_DAMAGE_FACTOR": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1433695026
+  },
+  "ABILITY_RLF_DEFENSE_BONUS_UTS3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1433695027
+  },
+  "ABILITY_RLF_DAMAGE_BONUS_NBA1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315070257
+  },
+  "ABILITY_RLF_SUMMONED_UNIT_DURATION_SECONDS_NBA3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315070259
+  },
+  "ABILITY_RLF_MANA_PER_SUMMONED_HITPOINT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1131243314
+  },
+  "ABILITY_RLF_CHARGE_FOR_CURRENT_LIFE": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1131243315
+  },
+  "ABILITY_RLF_HIT_POINTS_DRAINED": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315205681
+  },
+  "ABILITY_RLF_MANA_POINTS_DRAINED": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315205682
+  },
+  "ABILITY_RLF_DRAIN_INTERVAL_SECONDS": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315205683
+  },
+  "ABILITY_RLF_LIFE_TRANSFERRED_PER_SECOND": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315205684
+  },
+  "ABILITY_RLF_MANA_TRANSFERRED_PER_SECOND": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315205685
+  },
+  "ABILITY_RLF_BONUS_LIFE_FACTOR": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315205686
+  },
+  "ABILITY_RLF_BONUS_LIFE_DECAY": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315205687
+  },
+  "ABILITY_RLF_BONUS_MANA_FACTOR": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315205688
+  },
+  "ABILITY_RLF_BONUS_MANA_DECAY": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315205689
+  },
+  "ABILITY_RLF_CHANCE_TO_MISS_PERCENT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1316186418
+  },
+  "ABILITY_RLF_MOVEMENT_SPEED_MODIFIER": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1316186419
+  },
+  "ABILITY_RLF_ATTACK_SPEED_MODIFIER": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1316186420
+  },
+  "ABILITY_RLF_DAMAGE_PER_SECOND_TDG1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1415866161
+  },
+  "ABILITY_RLF_MEDIUM_DAMAGE_RADIUS_TDG2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1415866162
+  },
+  "ABILITY_RLF_MEDIUM_DAMAGE_PER_SECOND": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1415866163
+  },
+  "ABILITY_RLF_SMALL_DAMAGE_RADIUS_TDG4": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1415866164
+  },
+  "ABILITY_RLF_SMALL_DAMAGE_PER_SECOND": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1415866165
+  },
+  "ABILITY_RLF_AIR_TIME_SECONDS_TSP1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1416851505
+  },
+  "ABILITY_RLF_MINIMUM_HIT_INTERVAL_SECONDS": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1416851506
+  },
+  "ABILITY_RLF_DAMAGE_PER_SECOND_NBF5": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315071541
+  },
+  "ABILITY_RLF_MAXIMUM_RANGE": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1164078129
+  },
+  "ABILITY_RLF_MINIMUM_RANGE": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1164078130
+  },
+  "ABILITY_RLF_DAMAGE_PER_TARGET_EFK1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1164340017
+  },
+  "ABILITY_RLF_MAXIMUM_TOTAL_DAMAGE": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1164340018
+  },
+  "ABILITY_RLF_MAXIMUM_SPEED_ADJUSTMENT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1164340020
+  },
+  "ABILITY_RLF_DECAYING_DAMAGE": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1165191217
+  },
+  "ABILITY_RLF_MOVEMENT_SPEED_FACTOR_ESH2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1165191218
+  },
+  "ABILITY_RLF_ATTACK_SPEED_FACTOR_ESH3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1165191219
+  },
+  "ABILITY_RLF_DECAY_POWER": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1165191220
+  },
+  "ABILITY_RLF_INITIAL_DAMAGE_ESH5": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1165191221
+  },
+  "ABILITY_RLF_MAXIMUM_LIFE_ABSORBED": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1633841969
+  },
+  "ABILITY_RLF_MAXIMUM_MANA_ABSORBED": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1633841970
+  },
+  "ABILITY_RLF_MOVEMENT_SPEED_INCREASE_BSK1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1651731249
+  },
+  "ABILITY_RLF_ATTACK_SPEED_INCREASE_BSK2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1651731250
+  },
+  "ABILITY_RLF_DAMAGE_TAKEN_INCREASE": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1651731251
+  },
+  "ABILITY_RLF_LIFE_PER_UNIT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1685482801
+  },
+  "ABILITY_RLF_MANA_PER_UNIT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1685482802
+  },
+  "ABILITY_RLF_LIFE_PER_BUFF": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1685482803
+  },
+  "ABILITY_RLF_MANA_PER_BUFF": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1685482804
+  },
+  "ABILITY_RLF_SUMMONED_UNIT_DAMAGE_DVM5": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1685482805
+  },
+  "ABILITY_RLF_DAMAGE_BONUS_FAK1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1717660465
+  },
+  "ABILITY_RLF_MEDIUM_DAMAGE_FACTOR_FAK2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1717660466
+  },
+  "ABILITY_RLF_SMALL_DAMAGE_FACTOR_FAK3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1717660467
+  },
+  "ABILITY_RLF_FULL_DAMAGE_RADIUS_FAK4": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1717660468
+  },
+  "ABILITY_RLF_HALF_DAMAGE_RADIUS_FAK5": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1717660469
+  },
+  "ABILITY_RLF_EXTRA_DAMAGE_PER_SECOND": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1818849585
+  },
+  "ABILITY_RLF_MOVEMENT_SPEED_REDUCTION_LIQ2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1818849586
+  },
+  "ABILITY_RLF_ATTACK_SPEED_REDUCTION_LIQ3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1818849587
+  },
+  "ABILITY_RLF_MAGIC_DAMAGE_FACTOR": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1835625777
+  },
+  "ABILITY_RLF_UNIT_DAMAGE_PER_MANA_POINT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1835428913
+  },
+  "ABILITY_RLF_HERO_DAMAGE_PER_MANA_POINT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1835428914
+  },
+  "ABILITY_RLF_UNIT_MAXIMUM_DAMAGE": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1835428915
+  },
+  "ABILITY_RLF_HERO_MAXIMUM_DAMAGE": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1835428916
+  },
+  "ABILITY_RLF_DAMAGE_COOLDOWN": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1835428917
+  },
+  "ABILITY_RLF_DISTRIBUTED_DAMAGE_FACTOR_SPL1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1936747569
+  },
+  "ABILITY_RLF_LIFE_REGENERATED": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1769106481
+  },
+  "ABILITY_RLF_MANA_REGENERATED": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1769106482
+  },
+  "ABILITY_RLF_MANA_LOSS_PER_UNIT_IDC1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1768186673
+  },
+  "ABILITY_RLF_SUMMONED_UNIT_DAMAGE_IDC2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1768186674
+  },
+  "ABILITY_RLF_ACTIVATION_DELAY_IMO2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1768779570
+  },
+  "ABILITY_RLF_LURE_INTERVAL_SECONDS": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1768779571
+  },
+  "ABILITY_RLF_DAMAGE_BONUS_ISR1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1769173553
+  },
+  "ABILITY_RLF_DAMAGE_REDUCTION_ISR2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1769173554
+  },
+  "ABILITY_RLF_DAMAGE_BONUS_IPV1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1768977969
+  },
+  "ABILITY_RLF_LIFE_STEAL_AMOUNT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1768977970
+  },
+  "ABILITY_RLF_LIFE_RESTORED_FACTOR": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1634956337
+  },
+  "ABILITY_RLF_MANA_RESTORED_FACTOR": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1634956338
+  },
+  "ABILITY_RLF_ATTACH_DELAY": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1735549233
+  },
+  "ABILITY_RLF_REMOVE_DELAY": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1735549234
+  },
+  "ABILITY_RLF_HERO_REGENERATION_DELAY": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1316184370
+  },
+  "ABILITY_RLF_UNIT_REGENERATION_DELAY": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1316184371
+  },
+  "ABILITY_RLF_MAGIC_DAMAGE_REDUCTION_NSA4": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1316184372
+  },
+  "ABILITY_RLF_HIT_POINTS_PER_SECOND_NSA5": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1316184373
+  },
+  "ABILITY_RLF_DAMAGE_TO_SUMMONED_UNITS_IXS1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1232630577
+  },
+  "ABILITY_RLF_MAGIC_DAMAGE_REDUCTION_IXS2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1232630578
+  },
+  "ABILITY_RLF_SUMMONED_UNIT_DURATION": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315987766
+  },
+  "ABILITY_RLF_SHIELD_COOLDOWN_TIME": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1316185393
+  },
+  "ABILITY_RLF_DAMAGE_PER_SECOND_NDO1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315204913
+  },
+  "ABILITY_RLF_SUMMONED_UNIT_DURATION_SECONDS_NDO3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315204915
+  },
+  "ABILITY_RLF_MEDIUM_DAMAGE_RADIUS_FLK1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1718381361
+  },
+  "ABILITY_RLF_SMALL_DAMAGE_RADIUS_FLK2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1718381362
+  },
+  "ABILITY_RLF_FULL_DAMAGE_AMOUNT_FLK3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1718381363
+  },
+  "ABILITY_RLF_MEDIUM_DAMAGE_AMOUNT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1718381364
+  },
+  "ABILITY_RLF_SMALL_DAMAGE_AMOUNT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1718381365
+  },
+  "ABILITY_RLF_MOVEMENT_SPEED_REDUCTION_PERCENT_HBN1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1214410289
+  },
+  "ABILITY_RLF_ATTACK_SPEED_REDUCTION_PERCENT_HBN2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1214410290
+  },
+  "ABILITY_RLF_MAX_MANA_DRAINED_UNITS": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1717726001
+  },
+  "ABILITY_RLF_DAMAGE_RATIO_UNITS_PERCENT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1717726002
+  },
+  "ABILITY_RLF_MAX_MANA_DRAINED_HEROS": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1717726003
+  },
+  "ABILITY_RLF_DAMAGE_RATIO_HEROS_PERCENT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1717726004
+  },
+  "ABILITY_RLF_SUMMONED_DAMAGE": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1717726005
+  },
+  "ABILITY_RLF_DISTRIBUTED_DAMAGE_FACTOR_NCA1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1852006705
+  },
+  "ABILITY_RLF_INITIAL_DAMAGE_PXF1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1886938673
+  },
+  "ABILITY_RLF_DAMAGE_PER_SECOND_PXF2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1886938674
+  },
+  "ABILITY_RLF_DAMAGE_PER_SECOND_MLS1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1835823921
+  },
+  "ABILITY_RLF_BEAST_COLLISION_RADIUS": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1316189234
+  },
+  "ABILITY_RLF_DAMAGE_AMOUNT_NST3": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1316189235
+  },
+  "ABILITY_RLF_DAMAGE_RADIUS": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1316189236
+  },
+  "ABILITY_RLF_DAMAGE_DELAY": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1316189237
+  },
+  "ABILITY_RLF_FOLLOW_THROUGH_TIME": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315138609
+  },
+  "ABILITY_RLF_ART_DURATION": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315138612
+  },
+  "ABILITY_RLF_MOVEMENT_SPEED_REDUCTION_PERCENT_NAB1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315004977
+  },
+  "ABILITY_RLF_ATTACK_SPEED_REDUCTION_PERCENT_NAB2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315004978
+  },
+  "ABILITY_RLF_PRIMARY_DAMAGE": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315004980
+  },
+  "ABILITY_RLF_SECONDARY_DAMAGE": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315004981
+  },
+  "ABILITY_RLF_DAMAGE_INTERVAL_NAB6": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315004982
+  },
+  "ABILITY_RLF_GOLD_COST_FACTOR": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1316252977
+  },
+  "ABILITY_RLF_LUMBER_COST_FACTOR": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1316252978
+  },
+  "ABILITY_RLF_MOVE_SPEED_BONUS_NEG1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315268401
+  },
+  "ABILITY_RLF_DAMAGE_BONUS_NEG2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315268402
+  },
+  "ABILITY_RLF_DAMAGE_AMOUNT_NCS1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315140401
+  },
+  "ABILITY_RLF_DAMAGE_INTERVAL_NCS2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315140402
+  },
+  "ABILITY_RLF_MAX_DAMAGE_NCS4": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315140404
+  },
+  "ABILITY_RLF_BUILDING_DAMAGE_FACTOR_NCS5": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315140405
+  },
+  "ABILITY_RLF_EFFECT_DURATION": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315140406
+  },
+  "ABILITY_RLF_SPAWN_INTERVAL_NSY1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1316190513
+  },
+  "ABILITY_RLF_SPAWN_UNIT_DURATION": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1316190515
+  },
+  "ABILITY_RLF_SPAWN_UNIT_OFFSET": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1316190516
+  },
+  "ABILITY_RLF_LEASH_RANGE_NSY5": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1316190517
+  },
+  "ABILITY_RLF_SPAWN_INTERVAL_NFY1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315338545
+  },
+  "ABILITY_RLF_LEASH_RANGE_NFY2": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315338546
+  },
+  "ABILITY_RLF_CHANCE_TO_DEMOLISH": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315202353
+  },
+  "ABILITY_RLF_DAMAGE_MULTIPLIER_BUILDINGS": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315202354
+  },
+  "ABILITY_RLF_DAMAGE_MULTIPLIER_UNITS": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315202355
+  },
+  "ABILITY_RLF_DAMAGE_MULTIPLIER_HEROES": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315202356
+  },
+  "ABILITY_RLF_BONUS_DAMAGE_MULTIPLIER": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315529521
+  },
+  "ABILITY_RLF_DEATH_DAMAGE_FULL_AMOUNT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315529522
+  },
+  "ABILITY_RLF_DEATH_DAMAGE_FULL_AREA": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315529523
+  },
+  "ABILITY_RLF_DEATH_DAMAGE_HALF_AMOUNT": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315529524
+  },
+  "ABILITY_RLF_DEATH_DAMAGE_HALF_AREA": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315529525
+  },
+  "ABILITY_RLF_DEATH_DAMAGE_DELAY": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315529526
+  },
+  "ABILITY_RLF_DAMAGE_AMOUNT_NSO1": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1316187953
+  },
+  "ABILITY_RLF_DAMAGE_PERIOD": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1316187954
+  },
+  "ABILITY_RLF_DAMAGE_PENALTY": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1316187955
+  },
+  "ABILITY_RLF_MOVEMENT_SPEED_REDUCTION_PERCENT_NSO4": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1316187956
+  },
+  "ABILITY_RLF_ATTACK_SPEED_REDUCTION_PERCENT_NSO5": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1316187957
+  },
+  "ABILITY_RLF_SPLIT_DELAY": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315728690
+  },
+  "ABILITY_RLF_MAX_HITPOINT_FACTOR": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315728692
+  },
+  "ABILITY_RLF_LIFE_DURATION_SPLIT_BONUS": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1315728693
+  },
+  "ABILITY_RLF_WAVE_INTERVAL": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1316381491
+  },
+  "ABILITY_RLF_BUILDING_DAMAGE_FACTOR_NVC4": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1316381492
+  },
+  "ABILITY_RLF_FULL_DAMAGE_AMOUNT_NVC5": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1316381493
+  },
+  "ABILITY_RLF_HALF_DAMAGE_FACTOR": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1316381494
+  },
+  "ABILITY_RLF_INTERVAL_BETWEEN_PULSES": {
+   "conv": "ConvertAbilityRealLevelField",
+   "arg": 1415673141
+  },
+  "ABILITY_BLF_PERCENT_BONUS_HAB2": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1214341682
+  },
+  "ABILITY_BLF_USE_TELEPORT_CLUSTERING_HMT3": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1215132723
+  },
+  "ABILITY_BLF_NEVER_MISS_OCR5": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1331917365
+  },
+  "ABILITY_BLF_EXCLUDE_ITEM_DAMAGE": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1331917366
+  },
+  "ABILITY_BLF_BACKSTAB_DAMAGE": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1333226292
+  },
+  "ABILITY_BLF_INHERIT_UPGRADES_UAN3": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1432448563
+  },
+  "ABILITY_BLF_MANA_CONVERSION_AS_PERCENT": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1432645683
+  },
+  "ABILITY_BLF_LIFE_CONVERSION_AS_PERCENT": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1432645684
+  },
+  "ABILITY_BLF_LEAVE_TARGET_ALIVE": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1432645685
+  },
+  "ABILITY_BLF_PERCENT_BONUS_UAU3": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1432450355
+  },
+  "ABILITY_BLF_DAMAGE_IS_PERCENT_RECEIVED": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1164011570
+  },
+  "ABILITY_BLF_MELEE_BONUS": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1164014130
+  },
+  "ABILITY_BLF_RANGED_BONUS": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1164014131
+  },
+  "ABILITY_BLF_FLAT_BONUS": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1164014132
+  },
+  "ABILITY_BLF_NEVER_MISS_HBH5": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1214408757
+  },
+  "ABILITY_BLF_PERCENT_BONUS_HAD2": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1214342194
+  },
+  "ABILITY_BLF_CAN_DEACTIVATE": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1214542641
+  },
+  "ABILITY_BLF_RAISED_UNITS_ARE_INVULNERABLE": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1215456562
+  },
+  "ABILITY_BLF_PERCENTAGE_OAR2": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1331786290
+  },
+  "ABILITY_BLF_SUMMON_BUSY_UNITS": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1114926130
+  },
+  "ABILITY_BLF_CREATES_BLIGHT": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1114401074
+  },
+  "ABILITY_BLF_EXPLODES_ON_DEATH": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1399092022
+  },
+  "ABILITY_BLF_ALWAYS_AUTOCAST_FAE2": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1180788018
+  },
+  "ABILITY_BLF_REGENERATE_ONLY_AT_NIGHT": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1298297909
+  },
+  "ABILITY_BLF_SHOW_SELECT_UNIT_BUTTON": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1315271987
+  },
+  "ABILITY_BLF_SHOW_UNIT_INDICATOR": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1315271988
+  },
+  "ABILITY_BLF_CHARGE_OWNING_PLAYER": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1097757494
+  },
+  "ABILITY_BLF_PERCENTAGE_ARM2": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1098018098
+  },
+  "ABILITY_BLF_TARGET_IS_INVULNERABLE": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1349481267
+  },
+  "ABILITY_BLF_TARGET_IS_MAGIC_IMMUNE": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1349481268
+  },
+  "ABILITY_BLF_KILL_ON_CASTER_DEATH": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1432576566
+  },
+  "ABILITY_BLF_NO_TARGET_REQUIRED_REJ4": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1382378036
+  },
+  "ABILITY_BLF_ACCEPTS_GOLD": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1383362097
+  },
+  "ABILITY_BLF_ACCEPTS_LUMBER": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1383362098
+  },
+  "ABILITY_BLF_PREFER_HOSTILES_ROA5": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1383031093
+  },
+  "ABILITY_BLF_PREFER_FRIENDLIES_ROA6": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1383031094
+  },
+  "ABILITY_BLF_ROOTED_TURNING": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1383034675
+  },
+  "ABILITY_BLF_ALWAYS_AUTOCAST_SLO3": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1399615283
+  },
+  "ABILITY_BLF_HIDE_BUTTON": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1231579492
+  },
+  "ABILITY_BLF_USE_TELEPORT_CLUSTERING_ITP2": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1232367666
+  },
+  "ABILITY_BLF_IMMUNE_TO_MORPH_EFFECTS": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1165256753
+  },
+  "ABILITY_BLF_DOES_NOT_BLOCK_BUILDINGS": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1165256754
+  },
+  "ABILITY_BLF_AUTO_ACQUIRE_ATTACK_TARGETS": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1198026545
+  },
+  "ABILITY_BLF_IMMUNE_TO_MORPH_EFFECTS_GHO2": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1198026546
+  },
+  "ABILITY_BLF_DO_NOT_BLOCK_BUILDINGS": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1198026547
+  },
+  "ABILITY_BLF_INCLUDE_RANGED_DAMAGE": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1400073012
+  },
+  "ABILITY_BLF_INCLUDE_MELEE_DAMAGE": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1400073013
+  },
+  "ABILITY_BLF_MOVE_TO_PARTNER": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1668243762
+  },
+  "ABILITY_BLF_CAN_BE_DISPELLED": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1668899633
+  },
+  "ABILITY_BLF_IGNORE_FRIENDLY_BUFFS": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1685482806
+  },
+  "ABILITY_BLF_DROP_ITEMS_ON_DEATH": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1768846898
+  },
+  "ABILITY_BLF_CAN_USE_ITEMS": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1768846899
+  },
+  "ABILITY_BLF_CAN_GET_ITEMS": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1768846900
+  },
+  "ABILITY_BLF_CAN_DROP_ITEMS": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1768846901
+  },
+  "ABILITY_BLF_REPAIRS_ALLOWED": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1818849588
+  },
+  "ABILITY_BLF_CASTER_ONLY_SPLASH": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1835428918
+  },
+  "ABILITY_BLF_NO_TARGET_REQUIRED_IRL4": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1769106484
+  },
+  "ABILITY_BLF_DISPEL_ON_ATTACK": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1769106485
+  },
+  "ABILITY_BLF_AMOUNT_IS_RAW_VALUE": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1768977971
+  },
+  "ABILITY_BLF_SHARED_SPELL_COOLDOWN": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1936745010
+  },
+  "ABILITY_BLF_SLEEP_ONCE": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1936482609
+  },
+  "ABILITY_BLF_ALLOW_ON_ANY_PLAYER_SLOT": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1936482610
+  },
+  "ABILITY_BLF_DISABLE_OTHER_ABILITIES": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1315138613
+  },
+  "ABILITY_BLF_ALLOW_BOUNTY": {
+   "conv": "ConvertAbilityBooleanLevelField",
+   "arg": 1316252980
+  },
+  "ABILITY_SLF_ICON_NORMAL": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1633776244
+  },
+  "ABILITY_SLF_CASTER": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1633902964
+  },
+  "ABILITY_SLF_TARGET": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1635017076
+  },
+  "ABILITY_SLF_SPECIAL": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1634951540
+  },
+  "ABILITY_SLF_EFFECT": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1634034036
+  },
+  "ABILITY_SLF_AREA_EFFECT": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1633772897
+  },
+  "ABILITY_SLF_LIGHTNING_EFFECTS": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1634494823
+  },
+  "ABILITY_SLF_MISSILE_ART": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1634558324
+  },
+  "ABILITY_SLF_TOOLTIP_LEARN": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1634887028
+  },
+  "ABILITY_SLF_TOOLTIP_LEARN_EXTENDED": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1634891124
+  },
+  "ABILITY_SLF_TOOLTIP_NORMAL": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1635020849
+  },
+  "ABILITY_SLF_TOOLTIP_TURN_OFF": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1635087409
+  },
+  "ABILITY_SLF_TOOLTIP_NORMAL_EXTENDED": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1635082801
+  },
+  "ABILITY_SLF_TOOLTIP_TURN_OFF_EXTENDED": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1635087665
+  },
+  "ABILITY_SLF_NORMAL_FORM_UNIT_EME1": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1164797233
+  },
+  "ABILITY_SLF_SPAWNED_UNITS": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1315205169
+  },
+  "ABILITY_SLF_ABILITY_FOR_UNIT_CREATION": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1316119345
+  },
+  "ABILITY_SLF_NORMAL_FORM_UNIT_MIL1": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1298754609
+  },
+  "ABILITY_SLF_ALTERNATE_FORM_UNIT_MIL2": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1298754610
+  },
+  "ABILITY_SLF_BASE_ORDER_ID_ANS5": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1097757493
+  },
+  "ABILITY_SLF_MORPH_UNITS_GROUND": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1349286194
+  },
+  "ABILITY_SLF_MORPH_UNITS_AIR": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1349286195
+  },
+  "ABILITY_SLF_MORPH_UNITS_AMPHIBIOUS": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1349286196
+  },
+  "ABILITY_SLF_MORPH_UNITS_WATER": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1349286197
+  },
+  "ABILITY_SLF_UNIT_TYPE_ONE": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1382115635
+  },
+  "ABILITY_SLF_UNIT_TYPE_TWO": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1382115636
+  },
+  "ABILITY_SLF_UNIT_TYPE_SOD2": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1399809074
+  },
+  "ABILITY_SLF_SUMMON_1_UNIT_TYPE": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1232303153
+  },
+  "ABILITY_SLF_SUMMON_2_UNIT_TYPE": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1232303154
+  },
+  "ABILITY_SLF_RACE_TO_CONVERT": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1315201841
+  },
+  "ABILITY_SLF_PARTNER_UNIT_TYPE": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1668243761
+  },
+  "ABILITY_SLF_PARTNER_UNIT_TYPE_ONE": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1684238385
+  },
+  "ABILITY_SLF_PARTNER_UNIT_TYPE_TWO": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1684238386
+  },
+  "ABILITY_SLF_REQUIRED_UNIT_TYPE": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1953524017
+  },
+  "ABILITY_SLF_CONVERTED_UNIT_TYPE": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1953524018
+  },
+  "ABILITY_SLF_SPELL_LIST": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1936745009
+  },
+  "ABILITY_SLF_BASE_ORDER_ID_SPB5": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1936745013
+  },
+  "ABILITY_SLF_BASE_ORDER_ID_NCL6": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1315138614
+  },
+  "ABILITY_SLF_ABILITY_UPGRADE_1": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1315268403
+  },
+  "ABILITY_SLF_ABILITY_UPGRADE_2": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1315268404
+  },
+  "ABILITY_SLF_ABILITY_UPGRADE_3": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1315268405
+  },
+  "ABILITY_SLF_ABILITY_UPGRADE_4": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1315268406
+  },
+  "ABILITY_SLF_SPAWN_UNIT_ID_NSY2": {
+   "conv": "ConvertAbilityStringLevelField",
+   "arg": 1316190514
+  },
+  "ITEM_IF_LEVEL": {
+   "conv": "ConvertItemIntegerField",
+   "arg": 1768711542
+  },
+  "ITEM_IF_NUMBER_OF_CHARGES": {
+   "conv": "ConvertItemIntegerField",
+   "arg": 1769304933
+  },
+  "ITEM_IF_COOLDOWN_GROUP": {
+   "conv": "ConvertItemIntegerField",
+   "arg": 1768122724
+  },
+  "ITEM_IF_MAX_HIT_POINTS": {
+   "conv": "ConvertItemIntegerField",
+   "arg": 1768453232
+  },
+  "ITEM_IF_HIT_POINTS": {
+   "conv": "ConvertItemIntegerField",
+   "arg": 1768452195
+  },
+  "ITEM_IF_PRIORITY": {
+   "conv": "ConvertItemIntegerField",
+   "arg": 1768977001
+  },
+  "ITEM_IF_ARMOR_TYPE": {
+   "conv": "ConvertItemIntegerField",
+   "arg": 1767993965
+  },
+  "ITEM_IF_TINTING_COLOR_RED": {
+   "conv": "ConvertItemIntegerField",
+   "arg": 1768123506
+  },
+  "ITEM_IF_TINTING_COLOR_GREEN": {
+   "conv": "ConvertItemIntegerField",
+   "arg": 1768123495
+  },
+  "ITEM_IF_TINTING_COLOR_BLUE": {
+   "conv": "ConvertItemIntegerField",
+   "arg": 1768123490
+  },
+  "ITEM_IF_TINTING_COLOR_ALPHA": {
+   "conv": "ConvertItemIntegerField",
+   "arg": 1768120684
+  },
+  "ITEM_RF_SCALING_VALUE": {
+   "conv": "ConvertItemRealField",
+   "arg": 1769169761
+  },
+  "ITEM_BF_DROPPED_WHEN_CARRIER_DIES": {
+   "conv": "ConvertItemBooleanField",
+   "arg": 1768190576
+  },
+  "ITEM_BF_CAN_BE_DROPPED": {
+   "conv": "ConvertItemBooleanField",
+   "arg": 1768190575
+  },
+  "ITEM_BF_PERISHABLE": {
+   "conv": "ConvertItemBooleanField",
+   "arg": 1768973682
+  },
+  "ITEM_BF_INCLUDE_AS_RANDOM_CHOICE": {
+   "conv": "ConvertItemBooleanField",
+   "arg": 1768977006
+  },
+  "ITEM_BF_USE_AUTOMATICALLY_WHEN_ACQUIRED": {
+   "conv": "ConvertItemBooleanField",
+   "arg": 1768976247
+  },
+  "ITEM_BF_CAN_BE_SOLD_TO_MERCHANTS": {
+   "conv": "ConvertItemBooleanField",
+   "arg": 1768972663
+  },
+  "ITEM_BF_ACTIVELY_USED": {
+   "conv": "ConvertItemBooleanField",
+   "arg": 1769304929
+  },
+  "ITEM_SF_MODEL_USED": {
+   "conv": "ConvertItemStringField",
+   "arg": 1768319340
+  },
+  "UNIT_IF_DEFENSE_TYPE": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1969517689
+  },
+  "UNIT_IF_ARMOR_TYPE": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1969320557
+  },
+  "UNIT_IF_LOOPING_FADE_IN_RATE": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1970038377
+  },
+  "UNIT_IF_LOOPING_FADE_OUT_RATE": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1970038383
+  },
+  "UNIT_IF_AGILITY": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1969317731
+  },
+  "UNIT_IF_INTELLIGENCE": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1969843811
+  },
+  "UNIT_IF_STRENGTH": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1970500707
+  },
+  "UNIT_IF_AGILITY_PERMANENT": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1969317741
+  },
+  "UNIT_IF_INTELLIGENCE_PERMANENT": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1969843821
+  },
+  "UNIT_IF_STRENGTH_PERMANENT": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1970500717
+  },
+  "UNIT_IF_AGILITY_WITH_BONUS": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1969317730
+  },
+  "UNIT_IF_INTELLIGENCE_WITH_BONUS": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1969843810
+  },
+  "UNIT_IF_STRENGTH_WITH_BONUS": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1970500706
+  },
+  "UNIT_IF_GOLD_BOUNTY_AWARDED_NUMBER_OF_DICE": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1969382505
+  },
+  "UNIT_IF_GOLD_BOUNTY_AWARDED_BASE": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1969381985
+  },
+  "UNIT_IF_GOLD_BOUNTY_AWARDED_SIDES_PER_DIE": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1969386345
+  },
+  "UNIT_IF_LUMBER_BOUNTY_AWARDED_NUMBER_OF_DICE": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1970037348
+  },
+  "UNIT_IF_LUMBER_BOUNTY_AWARDED_BASE": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1970037345
+  },
+  "UNIT_IF_LUMBER_BOUNTY_AWARDED_SIDES_PER_DIE": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1970037363
+  },
+  "UNIT_IF_LEVEL": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1970038134
+  },
+  "UNIT_IF_FORMATION_RANK": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1969647474
+  },
+  "UNIT_IF_ORIENTATION_INTERPOLATION": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1970238057
+  },
+  "UNIT_IF_ELEVATION_SAMPLE_POINTS": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1969582196
+  },
+  "UNIT_IF_TINTING_COLOR_RED": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1969450098
+  },
+  "UNIT_IF_TINTING_COLOR_GREEN": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1969450087
+  },
+  "UNIT_IF_TINTING_COLOR_BLUE": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1969450082
+  },
+  "UNIT_IF_TINTING_COLOR_ALPHA": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1969447276
+  },
+  "UNIT_IF_MOVE_TYPE": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1970108020
+  },
+  "UNIT_IF_TARGETED_AS": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1970561394
+  },
+  "UNIT_IF_UNIT_CLASSIFICATION": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1970567536
+  },
+  "UNIT_IF_HIT_POINTS_REGENERATION_TYPE": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1969779316
+  },
+  "UNIT_IF_PLACEMENT_PREVENTED_BY": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1970299250
+  },
+  "UNIT_IF_PRIMARY_ATTRIBUTE": {
+   "conv": "ConvertUnitIntegerField",
+   "arg": 1970303585
+  },
+  "UNIT_RF_STRENGTH_PER_LEVEL": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1970500720
+  },
+  "UNIT_RF_AGILITY_PER_LEVEL": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1969317744
+  },
+  "UNIT_RF_INTELLIGENCE_PER_LEVEL": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1969843824
+  },
+  "UNIT_RF_HIT_POINTS_REGENERATION_RATE": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1969778802
+  },
+  "UNIT_RF_MANA_REGENERATION": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1970106482
+  },
+  "UNIT_RF_DEATH_TIME": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1969517677
+  },
+  "UNIT_RF_FLY_HEIGHT": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1969650024
+  },
+  "UNIT_RF_FLY_MAX_HEIGHT": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1969646952
+  },
+  "UNIT_RF_TURN_RATE": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1970108018
+  },
+  "UNIT_RF_ELEVATION_SAMPLE_RADIUS": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1969582692
+  },
+  "UNIT_RF_FOG_OF_WAR_SAMPLE_RADIUS": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1969648228
+  },
+  "UNIT_RF_MAXIMUM_PITCH_ANGLE_DEGREES": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1970108528
+  },
+  "UNIT_RF_MAXIMUM_ROLL_ANGLE_DEGREES": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1970108530
+  },
+  "UNIT_RF_SCALING_VALUE": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1970496353
+  },
+  "UNIT_RF_ANIMATION_RUN_SPEED": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1970435438
+  },
+  "UNIT_RF_SELECTION_SCALE": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1970500451
+  },
+  "UNIT_RF_SELECTION_CIRCLE_HEIGHT": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1970498682
+  },
+  "UNIT_RF_SHADOW_IMAGE_HEIGHT": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1970497640
+  },
+  "UNIT_RF_SHADOW_IMAGE_WIDTH": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1970497655
+  },
+  "UNIT_RF_SHADOW_IMAGE_CENTER_X": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1970497656
+  },
+  "UNIT_RF_SHADOW_IMAGE_CENTER_Y": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1970497657
+  },
+  "UNIT_RF_ANIMATION_WALK_SPEED": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1970757996
+  },
+  "UNIT_RF_DEFENSE": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1969514083
+  },
+  "UNIT_RF_SIGHT_RADIUS": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1970497906
+  },
+  "UNIT_RF_PRIORITY": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1970303593
+  },
+  "UNIT_RF_SPEED": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1970108003
+  },
+  "UNIT_RF_OCCLUDER_HEIGHT": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1970234211
+  },
+  "UNIT_RF_HP": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1969778787
+  },
+  "UNIT_RF_MANA": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1970106467
+  },
+  "UNIT_RF_ACQUISITION_RANGE": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1969316721
+  },
+  "UNIT_RF_CAST_BACK_SWING": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1969447539
+  },
+  "UNIT_RF_CAST_POINT": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1969451124
+  },
+  "UNIT_RF_MINIMUM_ATTACK_RANGE": {
+   "conv": "ConvertUnitRealField",
+   "arg": 1969319278
+  },
+  "UNIT_BF_RAISABLE": {
+   "conv": "ConvertUnitBooleanField",
+   "arg": 1970430313
+  },
+  "UNIT_BF_DECAYABLE": {
+   "conv": "ConvertUnitBooleanField",
+   "arg": 1969513827
+  },
+  "UNIT_BF_IS_A_BUILDING": {
+   "conv": "ConvertUnitBooleanField",
+   "arg": 1969382503
+  },
+  "UNIT_BF_USE_EXTENDED_LINE_OF_SIGHT": {
+   "conv": "ConvertUnitBooleanField",
+   "arg": 1970040691
+  },
+  "UNIT_BF_NEUTRAL_BUILDING_SHOWS_MINIMAP_ICON": {
+   "conv": "ConvertUnitBooleanField",
+   "arg": 1970168429
+  },
+  "UNIT_BF_HERO_HIDE_HERO_INTERFACE_ICON": {
+   "conv": "ConvertUnitBooleanField",
+   "arg": 1969776738
+  },
+  "UNIT_BF_HERO_HIDE_HERO_MINIMAP_DISPLAY": {
+   "conv": "ConvertUnitBooleanField",
+   "arg": 1969776749
+  },
+  "UNIT_BF_HERO_HIDE_HERO_DEATH_MESSAGE": {
+   "conv": "ConvertUnitBooleanField",
+   "arg": 1969776740
+  },
+  "UNIT_BF_HIDE_MINIMAP_DISPLAY": {
+   "conv": "ConvertUnitBooleanField",
+   "arg": 1969778541
+  },
+  "UNIT_BF_SCALE_PROJECTILES": {
+   "conv": "ConvertUnitBooleanField",
+   "arg": 1970496354
+  },
+  "UNIT_BF_SELECTION_CIRCLE_ON_WATER": {
+   "conv": "ConvertUnitBooleanField",
+   "arg": 1970496887
+  },
+  "UNIT_BF_HAS_WATER_SHADOW": {
+   "conv": "ConvertUnitBooleanField",
+   "arg": 1970497650
+  },
+  "UNIT_SF_NAME": {
+   "conv": "ConvertUnitStringField",
+   "arg": 1970168173
+  },
+  "UNIT_SF_PROPER_NAMES": {
+   "conv": "ConvertUnitStringField",
+   "arg": 1970303599
+  },
+  "UNIT_SF_GROUND_TEXTURE": {
+   "conv": "ConvertUnitStringField",
+   "arg": 1970627187
+  },
+  "UNIT_SF_SHADOW_IMAGE_UNIT": {
+   "conv": "ConvertUnitStringField",
+   "arg": 1970497653
+  },
+  "UNIT_WEAPON_IF_ATTACK_DAMAGE_NUMBER_OF_DICE": {
+   "conv": "ConvertUnitWeaponIntegerField",
+   "arg": 1969303908
+  },
+  "UNIT_WEAPON_IF_ATTACK_DAMAGE_BASE": {
+   "conv": "ConvertUnitWeaponIntegerField",
+   "arg": 1969303906
+  },
+  "UNIT_WEAPON_IF_ATTACK_DAMAGE_SIDES_PER_DIE": {
+   "conv": "ConvertUnitWeaponIntegerField",
+   "arg": 1969303923
+  },
+  "UNIT_WEAPON_IF_ATTACK_MAXIMUM_NUMBER_OF_TARGETS": {
+   "conv": "ConvertUnitWeaponIntegerField",
+   "arg": 1970561841
+  },
+  "UNIT_WEAPON_IF_ATTACK_ATTACK_TYPE": {
+   "conv": "ConvertUnitWeaponIntegerField",
+   "arg": 1969303924
+  },
+  "UNIT_WEAPON_IF_ATTACK_WEAPON_SOUND": {
+   "conv": "ConvertUnitWeaponIntegerField",
+   "arg": 1969451825
+  },
+  "UNIT_WEAPON_IF_ATTACK_AREA_OF_EFFECT_TARGETS": {
+   "conv": "ConvertUnitWeaponIntegerField",
+   "arg": 1969303920
+  },
+  "UNIT_WEAPON_IF_ATTACK_TARGETS_ALLOWED": {
+   "conv": "ConvertUnitWeaponIntegerField",
+   "arg": 1969303911
+  },
+  "UNIT_WEAPON_RF_ATTACK_BACKSWING_POINT": {
+   "conv": "ConvertUnitWeaponRealField",
+   "arg": 1969386289
+  },
+  "UNIT_WEAPON_RF_ATTACK_DAMAGE_POINT": {
+   "conv": "ConvertUnitWeaponRealField",
+   "arg": 1969516593
+  },
+  "UNIT_WEAPON_RF_ATTACK_BASE_COOLDOWN": {
+   "conv": "ConvertUnitWeaponRealField",
+   "arg": 1969303907
+  },
+  "UNIT_WEAPON_RF_ATTACK_DAMAGE_LOSS_FACTOR": {
+   "conv": "ConvertUnitWeaponRealField",
+   "arg": 1969515569
+  },
+  "UNIT_WEAPON_RF_ATTACK_DAMAGE_FACTOR_MEDIUM": {
+   "conv": "ConvertUnitWeaponRealField",
+   "arg": 1969775665
+  },
+  "UNIT_WEAPON_RF_ATTACK_DAMAGE_FACTOR_SMALL": {
+   "conv": "ConvertUnitWeaponRealField",
+   "arg": 1970365489
+  },
+  "UNIT_WEAPON_RF_ATTACK_DAMAGE_SPILL_DISTANCE": {
+   "conv": "ConvertUnitWeaponRealField",
+   "arg": 1970496561
+  },
+  "UNIT_WEAPON_RF_ATTACK_DAMAGE_SPILL_RADIUS": {
+   "conv": "ConvertUnitWeaponRealField",
+   "arg": 1970500145
+  },
+  "UNIT_WEAPON_RF_ATTACK_PROJECTILE_SPEED": {
+   "conv": "ConvertUnitWeaponRealField",
+   "arg": 1969303930
+  },
+  "UNIT_WEAPON_RF_ATTACK_PROJECTILE_ARC": {
+   "conv": "ConvertUnitWeaponRealField",
+   "arg": 1970102577
+  },
+  "UNIT_WEAPON_RF_ATTACK_AREA_OF_EFFECT_FULL_DAMAGE": {
+   "conv": "ConvertUnitWeaponRealField",
+   "arg": 1969303910
+  },
+  "UNIT_WEAPON_RF_ATTACK_AREA_OF_EFFECT_MEDIUM_DAMAGE": {
+   "conv": "ConvertUnitWeaponRealField",
+   "arg": 1969303912
+  },
+  "UNIT_WEAPON_RF_ATTACK_AREA_OF_EFFECT_SMALL_DAMAGE": {
+   "conv": "ConvertUnitWeaponRealField",
+   "arg": 1969303921
+  },
+  "UNIT_WEAPON_RF_ATTACK_RANGE": {
+   "conv": "ConvertUnitWeaponRealField",
+   "arg": 1969303922
+  },
+  "UNIT_WEAPON_BF_ATTACK_SHOW_UI": {
+   "conv": "ConvertUnitWeaponBooleanField",
+   "arg": 1970763057
+  },
+  "UNIT_WEAPON_BF_ATTACKS_ENABLED": {
+   "conv": "ConvertUnitWeaponBooleanField",
+   "arg": 1969317230
+  },
+  "UNIT_WEAPON_BF_ATTACK_PROJECTILE_HOMING_ENABLED": {
+   "conv": "ConvertUnitWeaponBooleanField",
+   "arg": 1970104369
+  },
+  "UNIT_WEAPON_SF_ATTACK_PROJECTILE_ART": {
+   "conv": "ConvertUnitWeaponStringField",
+   "arg": 1969303917
+  },
   "MOVE_TYPE_UNKNOWN": {
    "conv": "ConvertMoveType",
    "arg": 0
@@ -3866,8 +7286,6 @@
   "CreateTimerDialog",
   "CreateTimerDialogBJ",
   "CreateTrackable",
-  "CreateTrackableForPlayer",
-  "CreateTrackableZ",
   "CreateTrainCommandButtonEffectBJ",
   "CreateTrigger",
   "CreateUbersplat",
@@ -4944,7 +8362,6 @@
   "Preload",
   "PreloadEnd",
   "PreloadEndEx",
-  "PreloadFiles",
   "PreloadGenClear",
   "PreloadGenEnd",
   "PreloadGenStart",
@@ -5504,7 +8921,6 @@
   "SetWidgetLife",
   "ShareEverythingWithTeam",
   "ShareEverythingWithTeamAI",
-  "ShowBlueToRed",
   "ShowCustomCampaignButton",
   "ShowDestructable",
   "ShowDestructableBJ",

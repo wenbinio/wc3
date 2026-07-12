@@ -40,6 +40,7 @@ const path = require('path');
 const { sourceToExtracted, extractedToSource, writeJson, walk } = require('../lib/source');
 const { collectConstants, constantsIndex } = require('../lib/constants');
 const { checkLuaSyntax } = require('../lib/luacheck');
+const { checkJassSyntax } = require('../lib/jasscheck');
 const { lintGeneratedConstants } = require('../lib/constlint');
 const { extractAll } = require('../lib/mpq');
 const { byJson } = require('../lib/filemap');
@@ -173,6 +174,23 @@ function buildMap(sourceDir, outW3x, opts) {
             'generated-constant lint failed (gotcha 27; line numbers are source-relative):\n  '
             + findings.map((f) => f.message).join('\n  '));
         }
+      }
+    }
+    // JASS twin of the luaparse gate, via the OPTIONAL pjass checker
+    // (lib/jasscheck.js): syntax errors FAIL the build; a missing pjass
+    // degrades to a warning and the .j packs unchecked (validate-map WARNs
+    // on the same condition). Full API-level checking needs user-supplied
+    // common.j/Blizzard.j (WC3_JASS_API_DIR or WC3_COMMONJ+WC3_BLIZZARDJ);
+    // without them pjass runs grammar/syntax-level only.
+    const jassPath = path.join(tmp, 'war3map.j');
+    if (fs.existsSync(jassPath)) {
+      const jr = checkJassSyntax(fs.readFileSync(jassPath, 'utf8'));
+      if (!jr.checked) {
+        console.error(`warning: war3map.j packed unchecked (${jr.reason}) — scripts/setup.sh builds pjass when a C toolchain is available`);
+      } else if (jr.errors.length > 0) {
+        throw new Error(
+          `war3map.j: pjass ${jr.mode === 'full' ? 'check' : 'syntax check (grammar-only: no common.j/Blizzard.j supplied)'} failed:\n  `
+          + jr.errors.map((e) => `line ${e.line || '?'}: ${e.message}`).join('\n  '));
       }
     }
     const res = packDir(tmp, outW3x, { bare: opts.bare });

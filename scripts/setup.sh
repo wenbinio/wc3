@@ -21,6 +21,43 @@ else
     echo "WARN: no apt-get; skipping smpq (stormlib-node is the primary backend)"
 fi
 
+# 1b. pjass — OPTIONAL JASS syntax checker (lib/jasscheck.js; build-map and
+#     validate-map degrade to a warning without it — same pattern as smpq).
+#     Built from source (github.com/lep/pjass) into vendor/pjass (gitignored);
+#     needs git + make + cc + flex + bison. NEVER fails setup: any missing
+#     piece just skips the step with a WARN.
+if [ -x vendor/pjass/pjass ]; then
+    echo "pjass already built: vendor/pjass/pjass"
+elif command -v pjass >/dev/null 2>&1; then
+    echo "pjass already installed: $(command -v pjass)"
+else
+    PJASS_MISSING=""
+    for t in git make cc flex bison; do
+        command -v "$t" >/dev/null 2>&1 || PJASS_MISSING="$PJASS_MISSING $t"
+    done
+    if [ -n "$PJASS_MISSING" ] && command -v apt-get >/dev/null 2>&1; then
+        echo "installing pjass build toolchain via apt-get (optional):$PJASS_MISSING"
+        SUDO=""
+        if [ "$(id -u)" -ne 0 ]; then SUDO="sudo"; fi
+        # shellcheck disable=SC2086  # word-splitting the package list is intended
+        $SUDO apt-get install -y $(echo "$PJASS_MISSING" | sed 's/\bcc\b/gcc/') \
+            || echo "WARN: toolchain install failed — pjass step will be skipped"
+        PJASS_MISSING=""
+        for t in git make cc flex bison; do
+            command -v "$t" >/dev/null 2>&1 || PJASS_MISSING="$PJASS_MISSING $t"
+        done
+    fi
+    if [ -n "$PJASS_MISSING" ]; then
+        echo "WARN: missing$PJASS_MISSING — skipping pjass build (JASS maps pack unchecked; validate-map will WARN)"
+    elif ! (git clone --depth 1 https://github.com/lep/pjass vendor/pjass \
+            && make -C vendor/pjass >/dev/null); then
+        rm -rf vendor/pjass
+        echo "WARN: pjass clone/build failed — JASS maps pack unchecked (validate-map will WARN)"
+    else
+        echo "pjass built: vendor/pjass/pjass"
+    fi
+fi
+
 # 2. node dependencies (wc3maptranslator pinned to 5.0.0 — see CLAUDE.md).
 #    stormlib-node is an optionalDependency (needs node-gyp); npm install
 #    won't fail if its native build is impossible in this environment —

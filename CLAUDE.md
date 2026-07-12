@@ -9,8 +9,8 @@ in docs/ and .claude/skills/; follow the pointers.
 ## First step in any session
 
 ```bash
-bash scripts/setup.sh   # idempotent: npm install + optional apt-get smpq fallback
-npm test                # 364 tests; all must pass before you change anything
+bash scripts/setup.sh   # idempotent: npm install + optional smpq fallback + optional pjass build (vendor/pjass)
+npm test                # 373 tests; all must pass before you change anything
 ```
 
 If you touch `lib/mpq.js` or anything archive-related, the suite must be
@@ -28,13 +28,18 @@ node tools/build-map.js    [--bare] [--stabilize] [--variant-name <name>] <map-s
 node tools/validate-map.js <map.w3x>                   # layered pass/fail report, exit 0 = good
 node tools/test-map-logic.js [--coverage] [<map-source-dir> ...]  # EXECUTE the packed war3map.lua headlessly (lib/sim: fengari Lua 5.3 + mocked natives) and run maps/<name>/tests/*.test.js; no args = every map with tests/; --coverage = per-map natives real-vs-stubbed PLUS script LINE coverage aggregated from the test run (never-executed SOURCE ranges collapsed to whole functions — "which mechanics no test walks"; PIPELINE §8)
 
-bash scripts/crossvalidate-war3net.sh <extracted-dir>  # optional War3Net (C#) third opinion; needs dotnet
+bash scripts/crossvalidate-war3net.sh [--dump-triggers] <extracted-dir>  # optional War3Net v6 (C#) third opinion; needs dotnet. --dump-triggers: wtg/wct -> READ-ONLY JSON under <dir>/_triggers/ (PIPELINE §6)
 ```
 
 npm scripts: `npm test`, `npm run test:smpq`, `npm run test:logic`,
 `npm run setup`. Env vars:
 `WC3_MPQ_BACKEND=smpq|stormlib` (force a backend; stormlib errors if the
-native module won't load), `WC3_EXTRACT_UNKNOWN=1` (= `--dump-unknown`).
+native module won't load), `WC3_EXTRACT_UNKNOWN=1` (= `--dump-unknown`);
+JASS gate (lib/jasscheck.js, PIPELINE §5): `WC3_PJASS` (pjass binary path;
+an unusable value = "not installed", no PATH fallback),
+`WC3_JASS_API_DIR` or `WC3_COMMONJ`+`WC3_BLIZZARDJ` (user-supplied game
+common.j/Blizzard.j switch pjass from grammar-only to full checking —
+NEVER commit those files).
 
 ## Map source anatomy
 
@@ -399,11 +404,14 @@ never third-party maps, gotcha 9).
 
 ## Testing & validation doctrine
 
-- `npm test` = 364 tests, 32 files (26 under test/ + 6 map suites under
+- `npm test` = 373 tests, 35 files (29 under test/ + 6 map suites under
   maps/*/tests/, all auto-discovered by `node --test`): source⇄binary fixed
   points for the demo/siege/tidewatch/northreach sources (vaults-of-ash is
   covered by its 70-test logic suite), build+validate end-to-end, MPQ
-  backends, version codecs
+  backends, the optional-tool tiers (test/jasscheck.test.js pjass
+  presence+absence, test/war3net.test.js dotnet wtg/wct dump — both
+  self-skip when their tool is absent, never fail; test/mdx-v1000.test.js
+  Reforged-version model sanity), version codecs
   (synthetic v11/v25/v31 + object-data v1/v2 fixtures cross-checked against
   mdx-m3-viewer-th + guarded real-sample fixpoints), classic/protected
   fallbacks (`_viewer/`, `_unknown/`, classicw3i, truncated w3i), wts
@@ -455,7 +463,10 @@ never third-party maps, gotcha 9).
   check `--coverage` when a mechanic mysteriously "passes"); logic tests
   complement, never replace, the in-game protocol below.
 - `validate-map` layers: HM3W header + MPQ magic at 512 → extraction →
-  required files (w3i/w3e) + script presence → luaparse gate → per-file
+  required files (w3i/w3e) + script presence → luaparse gate → pjass gate
+  for war3map.j (OPTIONAL tool: FAIL on findings when pjass is present,
+  WARN "packed unchecked" when absent — build-map mirrors it as build
+  FAIL/warning; lib/jasscheck.js, PIPELINE §5) → per-file
   translator parse PLUS JSON→binary→JSON stability → object-data semantic
   lint (lib/objectlint.js — gotchas 22/23/25) → mdx-m3-viewer-th second
   opinion (independent MPQ open; parses wpm/shd/mmp/wct which the
@@ -470,10 +481,14 @@ never third-party maps, gotcha 9).
   failures on archives StormLib reads fine (protector-mangled
   header/listfile — disagreement, not proof of breakage), model-sanity
   findings on packed third-party models (gotcha 14's passthrough tier),
+  `war3map.j packed unchecked (pjass not installed)` (optional tool
+  absent — never punish the map for the environment),
   and all object-data lint findings. FAIL is reserved for things that
   break the map for players.
 - Third opinion for disputed layouts: `scripts/crossvalidate-war3net.sh`
-  (War3Net handles classic AND Reforged; the tie-breaker).
+  (War3Net v6 handles classic AND Reforged; the tie-breaker). Its
+  `--dump-triggers` mode is the only wtg/wct visibility in the toolkit
+  (read-only `_triggers/` JSON dumps — PIPELINE §6).
 - **Honest limit: structural validity ≠ game acceptance.** Only the game
   proves a map. In-game protocol: build variants with distinct internal
   names (gotcha 17) and bisect. Failure classes from our crash postmortems:
@@ -506,6 +521,10 @@ or CC0-converted content. Details: docs/ASSETS.md.
   incl. weather normalization + viewer/classic fallback wiring)
 - `lib/viewer.js` — mdx-m3-viewer-th second-opinion parsers (read-only);
   `lib/classicw3i.js` — tolerant truncated-classic-w3i reader
+- `lib/jasscheck.js` — OPTIONAL pjass JASS gate for war3map.j (grammar-only
+  without user-supplied common.j/Blizzard.j; binary from scripts/setup.sh's
+  vendor/pjass build, WC3_PJASS/WC3_JASS_API_DIR envs; absent = warning/WARN,
+  never a failure — PIPELINE §5)
 - `lib/luacheck.js` — luaparse Lua 5.3 gate; `lib/minimap.js` — minimap
   tga/mmp generation; `lib/pathing.js` — wpm/shd generation + dimension
   checks (gotcha 8); `lib/unitscript.js` — CreateAllUnits() generation;
@@ -523,8 +542,9 @@ or CC0-converted content. Details: docs/ASSETS.md.
 - `lib/sim/` — headless logic-test harness: index.js (loadMap + harness
   API), vm.js (fengari Lua 5.3 wrapper), natives.js (mocked WC3 natives:
   real-semantics tier + recording auto-stub tier), data/jass-constants.json
-  (875 API constants + 2533 native/BJ names, regenerate with
-  scripts/gen-jass-constants.js), coverage.js (opt-in script LINE coverage:
+  (1730 API constants + 2529 native/BJ names, regenerated 2026-07-12 against
+  current jassdoc incl. the Convert*('fourcc') object-field families —
+  UNIT_RF_*/ABILITY_ILF_*/... — via scripts/gen-jass-constants.js), coverage.js (opt-in script LINE coverage:
   fengari line hook on the packed chunk only, luaparse statement-start
   executable-line baseline, gotcha-27d offset mapping back to source lines,
   generated blocks reported separately; `loadMap(dir, {lineCoverage: true})`
@@ -542,7 +562,9 @@ or CC0-converted content. Details: docs/ASSETS.md.
   deferred-capabilities list), roguelike-comparison.md (vaults-of-ash vs
   the 3 strongest WC3 roguelikes: matrix + verdicts + credits),
   headless-tooling-audit-2026-07.md (ranked improvement program: internal
-  quick wins / sim-fidelity tiers / ecosystem adoptions + watch + declines)
+  quick wins / sim-fidelity tiers / ecosystem adoptions + watch + declines);
+  `docs/upstream/` — ready-to-file wc3maptranslator issue DRAFTS (verified
+  repros; not yet filed — see README there)
 - `.claude/skills/` — wc3-read-map, wc3-build-map, wc3-new-map,
   wc3-import-asset (operational recipes)
 
@@ -550,10 +572,14 @@ or CC0-converted content. Details: docs/ASSETS.md.
 
 - **Repo state**: all work committed + pushed through `d41bc1b` (Vaults of
   Ash phase 3); since then WP-A (audit Tier 1), WP-B1 (audit Tier 2
-  item 1: sim damage events + destructables) and WP-B2 (audit Tier 2
+  item 1: sim damage events + destructables), WP-B2 (audit Tier 2
   items 2/3/5: sim spell-event bookkeeping, map-delta stats, item events +
-  inventories) landed in the working tree —
-  suite green 354/354 on both MPQ backends.
+  inventories), WP-B3 (Tier 2 item 4: script line coverage) and WP-C
+  (audit Tier 3 items 1–6: pjass gate, War3Net v6 + wtg/wct dump,
+  jass-constants regen incl. the Convert*('fourcc') field families,
+  viewer-w3i-v33 + MDX-v1000 verdicts, docs/upstream/ issue drafts)
+  landed in the working tree —
+  suite green 373/373 on both MPQ backends.
 - **Bundled maps: in-game playtest status** (the sim is not the game —
   doctrine above): demo, crossroads-siege, tidewatch-arena **verified
   working in the real game** by the user; northreach was fixed AFTER its
@@ -583,13 +609,22 @@ or CC0-converted content. Details: docs/ASSETS.md.
   `sim.cast` with the CHANNEL→CAST→EFFECT→FINISH→ENDCAST order, per-unit
   ability sets from uabi, spawn-seeded uhpm/ua1b/udef/umvs/ulev/hero
   stats/ubui + item unam/iuse, `sim.pickup/drop/useItem/sell` +
-  PICKUP/DROP/USE/SELL_ITEM events — vaults golden run did NOT shift).
-  Remaining Tier 2 items (4: line coverage) + Tier 3 stay assessment-only.
-  Next sim tier = script line coverage;
-  top adoptions = War3Net v6 wtg dump, pjass gate, upstream our translator
-  fixes (upstream is responsive again), regen jass-constants vs 2.0.4.
-- **Reportable upstream bug, not yet filed**: classic `war3map.doo` parse
-  reads 8 bytes past the end of the buffer — repro in hand from decomposing
-  the Just Another Roguelike map (the roguelike-comparison research).
-  Classic .doo remains read-only in this toolkit regardless (capability
-  matrix above).
+  PICKUP/DROP/USE/SELL_ITEM events — vaults golden run did NOT shift);
+  **Tier 2 item 4 (script line coverage) is IMPLEMENTED** (WP-B3 —
+  Tier 2 complete); **Tier 3 items 1–6 are DONE** (WP-C, all
+  optional-path: pjass gate = lib/jasscheck.js + setup.sh vendor/pjass
+  build, War3Net v6 bump + `--dump-triggers` wtg/wct→`_triggers/` JSON,
+  jass-constants regenerated — see the audit doc's Tier-3 status note for
+  the 875→1730 constants finding —, viewer parses w3i v33 / sanity gate
+  trusted at MDX v1000 (verdicts in docs/FORMATS.md), upstream issue
+  drafts under docs/upstream/). Only audit item still open: Tier 3
+  item 7 (community-listfile dictionary probe for recover.js).
+- **Upstream issue drafts, NOT yet filed**: docs/upstream/ holds four
+  ready-to-file wc3maptranslator issues with verified repros — (a) the
+  classic-.doo past-end overread (root cause found during WP-C: upstream
+  unconditionally reads the 1.32+ skinId field, which classic v8-sub11
+  files lack → +4 bytes/doodad cursor drift; version dwords are identical
+  in both layouts so expectVersion can't catch it), (b) UTF-8 mangling,
+  (c) falsy-zero write-throughs, (d) unbounded readString. Filing awaits a
+  deliberate decision; classic .doo remains read-only in this toolkit
+  regardless (capability matrix above).

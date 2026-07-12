@@ -374,7 +374,25 @@ sanity) and map-to-json (classic-format fallback reader). Rules
   localPitch/localYaw/localRoll; the others write it *after*), so
   war3map.w3c is excluded from the second opinion.
 - `war3map.wtg` parsing needs the game's TriggerData.txt (not shipped) —
-  also excluded.
+  also excluded. (READ-level wtg visibility exists elsewhere: the War3Net
+  cross-validator's `--dump-triggers` mode, docs/PIPELINE.md §6.)
+- **w3i v33 verdict (2026-07 audit item)**: the pinned fork (5.13.4) DOES
+  parse w3i v33 — verified empirically against a bundled 2.0-editor map:
+  full-file consumption (`getByteLength()` == file size), fields agree with
+  wc3maptranslator (name/players/forces), and the v33-only fields
+  (scriptMode, graphicsMode, default/max/min camera zoom) are read. No bump
+  needed; test/build.test.js's `PASS viewer parse war3map.w3i` assertion on
+  the built demo (v33) is the standing regression gate.
+- **MDX v1000 verdict (2026-07 audit item)**: `sanityCheckModel` handles
+  Reforged-version models — a synthetic v1000 model (war3-model
+  version-aware writer, v900+ material shader/layer layout) parses with
+  content intact, passes 0-errors/0-severes when clean AND still yields
+  error-tier findings when broken (invalid Bone GeosetAnimId), so the
+  strict build-map gate (gotcha 14) can be trusted at v1000. Pinned by
+  test/mdx-v1000.test.js, which generates the fixture at test time from a
+  committed v800 model. Honest scope: the fixture is SD content tagged
+  v1000 — HD features (skin weights, tangents, HD shaders) are not
+  exercised.
 
 ## References
 

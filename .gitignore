@@ -16,3 +16,6 @@ dist/
 # scratch
 *.log
 .tmp/
+
+# optional tools built by scripts/setup.sh (never vendored into git)
+vendor/

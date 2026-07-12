@@ -194,6 +194,59 @@ auto-movement, pathing.
 
 ### Tier 3 — ecosystem adoptions (all cheap, all optional-path)
 
+> **Status update 2026-07-12: Tier 3 items 1–6 are DONE** (work package
+> WP-C; item 7 remains open — it was not in WP-C's scope). All landed
+> OPTIONAL-PATH: zero new hard dependencies, each degrades gracefully when
+> its tool is absent (the smpq pattern).
+> **Item 1 (War3Net v6 + wtg dump)**: crossvalidate-war3net.sh bumped to
+> War3Net.Build.Core 6.* (net8.0 project — v6 ships a net6.0 target; the
+> v5 static `MapInfo.Parse` API is gone, v6 reads via BinaryReader
+> extensions) + `--dump-triggers` mode: wtg/wct → READ-ONLY JSON under the
+> extracted dir's `_triggers/` (underscore = never repacked); trigger
+> functions resolve against War3Net's built-in community TriggerData;
+> compiled checker cached under ~/.cache/wc3-war3net. Exercised in-container
+> against a synthetic wtg/wct that War3Net itself generates (bundled maps
+> ship no wtg — WE-only file); test/war3net.test.js skips without dotnet
+> and degrades to skip when NuGet is unreachable. PIPELINE §6.
+> **Item 2 (pjass gate)**: lib/jasscheck.js (grammar-only via
+> `+nosemanticerror +noruntimeerror` without common.j/Blizzard.j;
+> user-supplied API files via WC3_JASS_API_DIR or WC3_COMMONJ+WC3_BLIZZARDJ
+> switch on full checking; a pjass first-function annotation-latch quirk is
+> shimmed — see the module header). build-map FAILs on findings,
+> validate-map WARNs "packed unchecked" when pjass is absent; setup.sh
+> builds it into vendor/pjass (gitignored) as an optional never-fails step.
+> test/jasscheck.test.js covers both presence and absence paths. PIPELINE §5.
+> **Item 3 (upstream engagement)**: all four issues DRAFTED with verified
+> repros under docs/upstream/ (classic-doo overread root-caused: the
+> unconditional skinId read vs the 1.32 no-version-bump layout change,
+> +4 bytes/doodad drift). NOT filed — filing was out of WP-C's scope;
+> drafts await maintainer submission.
+> **Item 4 (jass-constants regen)**: regenerated 2026-07-12 against jassdoc
+> master @6f9dd75 (2026-06-21, current). Finding: the raw regen was
+> byte-identical (the pinned table was already current — the audit's
+> expected 2.0.x delta does not exist in jassdoc declarations; 2.0.3's
+> BlzSetAbility*Field work was runtime fixes, and its one declaration
+> addition is UNIT_RF_FLY_MAX_HEIGHT). The real gap was the generator
+> itself: `Convert*('fourcc')` object-field constants were never captured.
+> Now they are: 875 → 1730 constants (+855: ABILITY_ILF/RLF/BLF/SLF_*,
+> UNIT_IF/RF/BF/SF_*, UNIT_WEAPON_*, ITEM_*F_* — which also whitelists them
+> for constlint's reserved-prefix lint, where UNIT_RF_* previously
+> false-FAILed); functions 2533 → 2529 (−4: doc-comment example code
+> misparsed as API — CreateTrackableForPlayer/CreateTrackableZ/
+> PreloadFiles/ShowBlueToRed — no bundled map used them; the generator now
+> strips /** */ blocks). Vaults golden run unshifted; suite green.
+> **Item 5 (viewer w3i v33)**: VERIFIED — pinned -th 5.13.4 parses v33
+> (full-byte consumption, fields agree with wc3maptranslator, v33-only
+> fields read). No bump needed; verdict recorded in docs/FORMATS.md; the
+> existing `PASS viewer parse war3map.w3i` assertion on built maps is the
+> regression gate.
+> **Item 6 (MDX v1000)**: VERIFIED — sanityCheckModel parses v1000
+> (war3-model can emit it; v900+ material/layer layout), passes clean
+> models and still detects error-tier breakage, so the strict build gate is
+> trustworthy at v1000. Pinned by test/mdx-v1000.test.js (fixture generated
+> at test time from a committed v800 model; SD-content-tagged-v1000 scope
+> caveat in docs/FORMATS.md).
+
 1. **War3Net v6.x for the cross-validator + a wtg→JSON dump command** —
    War3Net is the most alive project in the ecosystem (v6.0.3 tagged
    2026-07-04, MIT, .NET 10). Its `Build.Core` parses war3map.wtg/wct — the

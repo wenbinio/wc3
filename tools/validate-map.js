@@ -35,6 +35,7 @@ const { byWar, CONSUMED_AS_SKIN, warToJson, jsonToWar } = require('../lib/filema
 const { checkSuspectedTrap } = require('../lib/traps');
 const { walk } = require('../lib/source');
 const { checkLuaSyntax } = require('../lib/luacheck');
+const { checkJassSyntax } = require('../lib/jasscheck');
 const { lintObjectData } = require('../lib/objectlint');
 const viewer = require('../lib/viewer');
 
@@ -90,6 +91,23 @@ function validate(mapPath) {
       const err = checkLuaSyntax(fs.readFileSync(path.join(tmp, s), 'utf8'));
       if (err) fail(`lua syntax ${s}`, `line ${err.line ?? '?'}: ${err.message}`);
       else ok(`lua syntax ${s}`, 'parses as Lua 5.3 (luaparse)');
+    }
+
+    // 3c. JASS scripts get the same layer via the OPTIONAL pjass checker
+    // (lib/jasscheck.js — grammar-only without user-supplied common.j/
+    // Blizzard.j, see WC3_JASS_API_DIR / WC3_COMMONJ / WC3_BLIZZARDJ).
+    // pjass absent = WARN, never FAIL: it is not a dependency (smpq pattern).
+    for (const s of scripts.filter((n) => n.endsWith('.j'))) {
+      const jr = checkJassSyntax(fs.readFileSync(path.join(tmp, s), 'utf8'));
+      if (!jr.checked) {
+        warn(`jass syntax ${s}`, `${s} packed unchecked (${jr.reason})`);
+      } else if (jr.errors.length > 0) {
+        fail(`jass syntax ${s}`,
+          jr.errors.slice(0, 5).map((e) => `line ${e.line || '?'}: ${e.message}`).join('; ')
+          + (jr.errors.length > 5 ? ` (+${jr.errors.length - 5} more)` : ''));
+      } else {
+        ok(`jass syntax ${s}`, `pjass ${jr.mode === 'full' ? 'full check (user-supplied common.j/Blizzard.j)' : 'grammar check'} OK`);
+      }
     }
 
     // 4. Parse every translatable file + stability cycle. Every per-file
