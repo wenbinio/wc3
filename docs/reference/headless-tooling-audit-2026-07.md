@@ -67,6 +67,21 @@ game dir read at runtime (`WC3_GAME_DIR`), never committed, and **forbidden in
 committed tests / golden runs** (different patch = different stats =
 nondeterminism across machines).
 
+> **Status update 2026-07-12: Tier 2 item 1 is IMPLEMENTED** (work package
+> WP-B1) — lib/sim/natives.js damage path (`UnitDamageTarget` flat
+> application; `EVENT_PLAYER_UNIT_DAMAGING` then `EVENT_PLAYER_UNIT_DAMAGED`
+> fire BEFORE hit-point deduction; `GetEventDamage`/`BlzSetEventDamage`/
+> `GetEventDamageSource`/`BlzGetEventDamageTarget`; kill credit through the
+> existing death machinery; recursion capped at depth 8, hard-error naming
+> the trigger; NO internal randomness), destructables instantiated from the
+> map's own doodads.json (map-delta classification + bhps/bnam overrides;
+> enum/kill/life/widget-death events), harness `sim.damage`/`sim.dests`.
+> The provably sim-blind crossroads wave-5 grove kill is now pinned by
+> maps/crossroads-siege/tests/shortcut-grove.test.js. Per the closing
+> determinism rule below, the golden-run re-pin doctrine is documented in
+> PIPELINE §8; the vaults-of-ash golden run did NOT shift (zero doodads,
+> none of the promoted natives called). Items 2–5 remain assessment-only.
+
 1. **Damage-event skeleton + destructables** (recommended as one work
    package, ~150 lines + mirror-of-unit-table respectively):
    - `UnitDamageTarget` deducts life (flat, no mitigation by default) and
@@ -107,8 +122,8 @@ nondeterminism across machines).
 
 Determinism rule for ALL sim tiers: promoting a stub to real semantics can
 shift golden-run beat sequences — each tier lands with a deliberate,
-beat-by-beat-reviewed golden-run re-pin, never silently (add to PIPELINE §8
-when the first tier lands).
+beat-by-beat-reviewed golden-run re-pin, never silently (now documented in
+PIPELINE §8, added when WP-B1 landed as the first tier).
 
 Explicitly NOT sim work (see §3): full ability engine, combat AI,
 auto-movement, pathing.

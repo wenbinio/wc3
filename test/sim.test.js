@@ -5,6 +5,9 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 const { loadMap, fourCC } = require('../lib/sim');
 
 // tiny inline "map": no config/main, just a scriptable sandbox
@@ -351,6 +354,205 @@ test('deterministic RNG: same seed same sequence, different seed diverges', () =
   };
   assert.strictEqual(roll(7), roll(7));
   assert.notStrictEqual(roll(7), roll(8));
+});
+
+test('damage: UnitDamageTarget deducts life flat; widget-life readers agree', () => {
+  const sim = sandbox(`
+    src = CreateUnit(Player(0), FourCC("hfoo"), 0.0, 0.0, 0.0)
+    tgt = CreateUnit(Player(1), FourCC("hfoo"), 0.0, 0.0, 0.0)
+    ok = UnitDamageTarget(src, tgt, 30.0, true, false,
+      ATTACK_TYPE_NORMAL, DAMAGE_TYPE_NORMAL, WEAPON_TYPE_WHOKNOWS)
+    life_widget = GetWidgetLife(tgt)
+    life_state = GetUnitState(tgt, UNIT_STATE_LIFE)
+  `);
+  assert.strictEqual(sim.global('ok'), true);
+  assert.strictEqual(sim.global('life_widget'), 70); // 100 default max, no mitigation
+  assert.strictEqual(sim.global('life_state'), 70);
+  const tgt = sim.units.get(sim.global('tgt'));
+  assert.strictEqual(tgt.life, 70);
+  assert.strictEqual(tgt.alive, true);
+  // sim.damage harness mirrors the native path and returns the applied amount
+  assert.strictEqual(sim.damage(sim.units.get(sim.global('src')), tgt, 20), 20);
+  assert.strictEqual(tgt.life, 50);
+});
+
+test('damage: DAMAGED event fires BEFORE application with correct getters', () => {
+  const sim = sandbox(`
+    src = CreateUnit(Player(0), FourCC("hfoo"), 0.0, 0.0, 0.0)
+    tgt = CreateUnit(Player(1), FourCC("hfoo"), 0.0, 0.0, 0.0)
+    local t = CreateTrigger()
+    TriggerRegisterAnyUnitEventBJ(t, EVENT_PLAYER_UNIT_DAMAGED)
+    TriggerAddAction(t, function()
+      seen_amount = GetEventDamage()
+      seen_source = (GetEventDamageSource() == src)
+      seen_target = (BlzGetEventDamageTarget() == tgt)
+      seen_trigger_unit = (GetTriggerUnit() == tgt)
+      life_inside = GetWidgetLife(tgt)  -- damage NOT applied yet
+    end)
+    UnitDamageTarget(src, tgt, 25.0, true, false,
+      ATTACK_TYPE_NORMAL, DAMAGE_TYPE_NORMAL, WEAPON_TYPE_WHOKNOWS)
+  `);
+  assert.strictEqual(sim.global('seen_amount'), 25);
+  assert.strictEqual(sim.global('seen_source'), true);
+  assert.strictEqual(sim.global('seen_target'), true);
+  assert.strictEqual(sim.global('seen_trigger_unit'), true);
+  assert.strictEqual(sim.global('life_inside'), 100); // pre-application
+  assert.strictEqual(sim.units.get(sim.global('tgt')).life, 75);
+});
+
+test('damage: DAMAGING fires first; BlzSetEventDamage changes the applied amount', () => {
+  const sim = sandbox(`
+    order = {}
+    src = CreateUnit(Player(0), FourCC("hfoo"), 0.0, 0.0, 0.0)
+    tgt = CreateUnit(Player(1), FourCC("hfoo"), 0.0, 0.0, 0.0)
+    local pre = CreateTrigger()
+    TriggerRegisterAnyUnitEventBJ(pre, EVENT_PLAYER_UNIT_DAMAGING)
+    TriggerAddAction(pre, function()
+      order[#order+1] = "damaging:" .. GetEventDamage()
+      BlzSetEventDamage(GetEventDamage() * 2.0)  -- carries into DAMAGED
+    end)
+    local post = CreateTrigger()
+    TriggerRegisterAnyUnitEventBJ(post, EVENT_PLAYER_UNIT_DAMAGED)
+    TriggerAddAction(post, function()
+      order[#order+1] = "damaged:" .. GetEventDamage()
+      BlzSetEventDamage(GetEventDamage() + 10.0)
+    end)
+    UnitDamageTarget(src, tgt, 10.0, true, false,
+      ATTACK_TYPE_NORMAL, DAMAGE_TYPE_NORMAL, WEAPON_TYPE_WHOKNOWS)
+    flat = table.concat(order, "|")
+  `);
+  assert.strictEqual(sim.global('flat'), 'damaging:10.0|damaged:20.0');
+  assert.strictEqual(sim.units.get(sim.global('tgt')).life, 70); // 100 - (10*2+10)
+  // BlzSetEventDamage outside a damage handler fails loudly
+  assert.throws(() => sim.run('BlzSetEventDamage(5.0)'), /not inside a DAMAGING\/DAMAGED/);
+});
+
+test('damage to zero routes through the death path with killer credit', () => {
+  const sim = sandbox(`
+    src = CreateUnit(Player(0), FourCC("hkni"), 0.0, 0.0, 0.0)
+    tgt = CreateUnit(Player(1), FourCC("hfoo"), 0.0, 0.0, 0.0)
+    local t = CreateTrigger()
+    TriggerRegisterAnyUnitEventBJ(t, EVENT_PLAYER_UNIT_DEATH)
+    TriggerAddAction(t, function()
+      died = (GetTriggerUnit() == tgt)
+      credited = (GetKillingUnit() == src)
+    end)
+    UnitDamageTarget(src, tgt, 250.0, true, false,
+      ATTACK_TYPE_NORMAL, DAMAGE_TYPE_NORMAL, WEAPON_TYPE_WHOKNOWS)
+  `);
+  assert.strictEqual(sim.global('died'), true);
+  assert.strictEqual(sim.global('credited'), true);
+  const tgt = sim.units.get(sim.global('tgt'));
+  assert.strictEqual(tgt.alive, false);
+  assert.strictEqual(tgt.life, 0);
+});
+
+test('damage: recursive damage handlers hard-error at the depth cap', () => {
+  const sim = sandbox(`
+    src = CreateUnit(Player(0), FourCC("hfoo"), 0.0, 0.0, 0.0)
+    tgt = CreateUnit(Player(1), FourCC("hfoo"), 0.0, 0.0, 0.0)
+    SetUnitState(tgt, UNIT_STATE_MAX_LIFE, 1000000.0)
+    SetWidgetLife(tgt, 1000000.0)
+    local t = CreateTrigger()
+    TriggerRegisterAnyUnitEventBJ(t, EVENT_PLAYER_UNIT_DAMAGED)
+    TriggerAddAction(t, function()
+      -- classic infinite damage loop: re-damage the damaged unit
+      UnitDamageTarget(src, BlzGetEventDamageTarget(), 1.0, true, false,
+        ATTACK_TYPE_NORMAL, DAMAGE_TYPE_NORMAL, WEAPON_TYPE_WHOKNOWS)
+    end)
+  `);
+  assert.throws(
+    () => sim.run('UnitDamageTarget(src, tgt, 1.0, true, false, ATTACK_TYPE_NORMAL, DAMAGE_TYPE_NORMAL, WEAPON_TYPE_WHOKNOWS)'),
+    /damage recursion deeper than 8.*trigger/s);
+});
+
+test('destructables: create/enum/filter/kill/death-event round-trip', () => {
+  const sim = sandbox(`
+    log = {}
+    d1 = CreateDestructable(FourCC("LTlt"), 100.0, 100.0, 0.0, 1.0, 0)
+    d2 = CreateDestructable(FourCC("LTlt"), 200.0, 200.0, 0.0, 1.0, 0)
+    far = CreateDestructable(FourCC("LTlt"), 9000.0, 9000.0, 0.0, 1.0, 0)
+    max_life = GetDestructableMaxLife(d1)
+    name = GetDestructableName(d1)
+    -- death event on d1 (TriggerRegisterDeathEvent takes a widget)
+    local t = CreateTrigger()
+    TriggerRegisterDeathEvent(t, d1)
+    TriggerAddAction(t, function()
+      log[#log+1] = "death:" .. GetDestructableName(GetTriggerDestructable())
+      dying_matches = (GetDyingDestructable() == d1) and (GetTriggerWidget() == d1)
+    end)
+    -- enum with a filter: everything in the rect except d2
+    local r = Rect(0.0, 0.0, 500.0, 500.0)
+    EnumDestructablesInRect(r, Filter(function()
+      return GetFilterDestructable() ~= d2
+    end), function()
+      log[#log+1] = "enum:" .. GetDestructableX(GetEnumDestructable())
+      KillDestructable(GetEnumDestructable())
+    end)
+    alive_after = IsDestructableAliveBJ(d1)
+    life_after = GetDestructableLife(d1)
+    -- dead destructables still enumerate (like the game); removed ones do not
+    count2 = 0
+    EnumDestructablesInRect(r, nil, function() count2 = count2 + 1 end)
+    RemoveDestructable(d1)
+    count3 = 0
+    EnumDestructablesInRect(r, nil, function() count3 = count3 + 1 end)
+    -- restore brings d2 back to life
+    SetDestructableLife(d2, 0.0)
+    DestructableRestoreLife(d2, 40.0, true)
+    d2_alive = IsDestructableAliveBJ(d2)
+    d2_life = GetDestructableLife(d2)
+  `);
+  assert.strictEqual(sim.global('max_life'), 100); // neutral default, no map delta
+  assert.strictEqual(sim.global('name'), 'LTlt');  // typeStr fallback
+  sim.run('flat = table.concat(log, "|")');
+  assert.strictEqual(sim.global('flat'), 'enum:100.0|death:LTlt');
+  assert.strictEqual(sim.global('dying_matches'), true);
+  assert.strictEqual(sim.global('alive_after'), false);
+  assert.strictEqual(sim.global('life_after'), 0);
+  assert.strictEqual(sim.global('count2'), 2); // dead d1 + filtered-last-time d2
+  assert.strictEqual(sim.global('count3'), 1); // d1 removed
+  assert.strictEqual(sim.global('d2_alive'), true);
+  assert.strictEqual(sim.global('d2_life'), 40);
+  assert.strictEqual(sim.dests().length, 2);   // far + d2 (d1 removed)
+});
+
+test('destructables: instantiated from a synthetic map source, map-delta only', () => {
+  // copy the demo source, then: LTlt gets destructable object data (bhps max
+  // life + bnam name), a new LTrc placement is classified DECORATIVE via
+  // objects-doodads.json, and one LTlt placement carries a .doo life percent
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'w3xsimdest-'));
+  try {
+    fs.cpSync(path.join(__dirname, '..', 'maps', 'demo'), tmp, { recursive: true });
+    const dooPath = path.join(tmp, 'doodads.json');
+    const doo = JSON.parse(fs.readFileSync(dooPath, 'utf8'));
+    doo.regular[1].life = 50; // half-life placement
+    doo.regular.push({
+      type: 'LTrc', position: [0, 0, 0], angle: 0, scale: [1, 1, 1],
+      flags: { visible: true, solid: true, fixedZ: false }, id: 102, variation: 0,
+    });
+    fs.writeFileSync(dooPath, JSON.stringify(doo));
+    const mod = (id, type, value) => ({ id, type, level: 0, column: 0, value });
+    fs.writeFileSync(path.join(tmp, 'objects-destructables.json'), JSON.stringify({
+      original: { LTlt: [mod('bhps', 'int', 80), mod('bnam', 'string', 'Test Tree')] },
+      custom: {},
+    }));
+    fs.writeFileSync(path.join(tmp, 'objects-doodads.json'), JSON.stringify({
+      original: { LTrc: [mod('dnam', 'string', 'Decorative Rocks')] },
+      custom: {},
+    }));
+
+    const sim = loadMap(tmp);
+    const trees = sim.dests('LTlt');
+    assert.strictEqual(trees.length, 2, 'both LTlt placements instantiated');
+    assert.strictEqual(sim.dests('LTrc').length, 0, 'objects-doodads.json type is decorative');
+    assert.deepStrictEqual(trees.map((d) => d.maxLife), [80, 80], 'bhps map delta');
+    assert.deepStrictEqual(trees.map((d) => d.life), [80, 40], 'placement life percent');
+    sim.run(`n = GetDestructableName("${trees[0].handle}")`);
+    assert.strictEqual(sim.global('n'), 'Test Tree'); // bnam map delta
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
 });
 
 test('sim.calls records every native call with virtual timestamps', () => {

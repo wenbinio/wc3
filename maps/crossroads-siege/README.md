@@ -71,5 +71,8 @@ hard-crashes the game on map load.
   and commit the stabilized output (CLAUDE.md gotcha 6).
 - `test/siege.test.js` builds this source and asserts the fixed point, the
   import round-trip and the map's headline stats.
+- `tests/shortcut-grove.test.js` pins the wave-5 Shortcut Grove burn in the
+  logic sim (the doodads.json trees really die — this mechanic was sim-blind
+  before the WP-B1 destructable tier).
 - Keep `info.json` players/forces, the five `sloc` entries in `units.json`,
   and `config()` in `war3map.lua` consistent with each other.

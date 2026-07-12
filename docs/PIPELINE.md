@@ -387,6 +387,8 @@ const sim = loadMap(path.join(__dirname, '..'));
 sim.advance(301);                 // fire every timer due in 301 virtual seconds
 sim.chat(0, '-test');             // deliver a chat event to player 0's triggers
 sim.kill(sim.findUnit('nder'), sim.findUnit('H000', 0));  // death event + killer
+sim.damage(src, tgt, 40);         // real UnitDamageTarget path: DAMAGING/DAMAGED
+                                  // events, BlzSetEventDamage, death w/ kill credit
 sim.moveUnit(u, x, y);            // position + enter/leave-region events
 sim.constructFinish(u); sim.upgradeFinish(u, 'h003'); sim.pawn(hero, item);
 sim.leave(1);                     // player-leave event
@@ -394,6 +396,7 @@ sim.leave(1);                     // player-leave event
 sim.player(0).gold                // PLAYER_STATE_RESOURCE_GOLD readback
 sim.alliance(0, 1, 'ALLIANCE_PASSIVE')   // per-direction alliance state
 sim.unitsOf(pid, 'h003')          // live unit records {typeStr, x, y, alive...}
+sim.dests('LTlt')                 // destructable records (from doodads.json)
 sim.itemsByType('I000')           // dropped/created items
 sim.results                       // pid -> 'victory' | 'defeat' (Custom*BJ)
 sim.messages / sim.messagesTo(0)  // DisplayText* transcript
@@ -414,7 +417,25 @@ Mock tiers and their honesty rules (details in lib/sim/natives.js):
   08:00), players (alliances per direction+type, resources, slots,
   controllers), units/heroes, groups, items, rects/regions, triggers +
   events (chat substring/exact, deaths with killer, enter/leave region,
-  construct/upgrade/pawn/leave, timer-expire), FourCC, seeded RNG.
+  construct/upgrade/pawn/leave, timer-expire), FourCC, seeded RNG;
+  **damage** — `UnitDamageTarget` applies FLAT (no mitigation, and
+  deliberately NO crit/miss randomness: engine randomness would consume or
+  fork a map's seeded PRNG stream, gotcha 30), fires
+  `EVENT_PLAYER_UNIT_DAMAGING` then `EVENT_PLAYER_UNIT_DAMAGED` BEFORE
+  hit points are deducted (`GetEventDamage`/`GetEventDamageSource`/
+  `BlzGetEventDamageTarget`; `BlzSetEventDamage` replaces the pending
+  amount that then gets applied), and a lethal hit runs the normal death
+  path with kill credit to the source; damage handlers may nest damage up
+  to depth 8, deeper hard-errors naming the trigger (no infinite loops);
+  **destructables** — instantiated at load from the map source's OWN
+  doodads.json (map-delta classification: a type in objects-doodads.json
+  is decorative and skipped, everything else is modeled; max life/name
+  from objects-destructables.json `bhps`/`bnam` when overridden, neutral
+  100/typeStr otherwise — never fabricated Blizzard stats), with real
+  `EnumDestructablesInRect` (dead ones still enumerate, like the game),
+  `KillDestructable`, life get/set, and the widget-death event
+  (`TriggerRegisterDeathEvent` / `TriggerRegisterDestDeathInRegionEvent`,
+  first 64 like the real BJ). Full policy text: lib/sim/natives.js header.
 - **Auto-stub**: any OTHER name in the real JASS API surface (native + BJ
   list extracted from the community jassdoc into
   lib/sim/data/jass-constants.json) resolves to an inert recording
@@ -425,11 +446,25 @@ Mock tiers and their honesty rules (details in lib/sim/natives.js):
   papering over it. Names OUTSIDE the API surface stay nil, so map-author
   globals keep normal Lua truthiness.
 - **Not modeled** (drive outcomes explicitly instead): pathing/movement,
-  combat and AI (units never fight — use `sim.kill`), abilities,
-  object-data stat effects (only igol/uhpm/unam are read, for pawn values,
-  max life and names), destructables, `TriggerSleepAction`/`PolledWait`
-  (recorded no-ops). The sim complements the in-game protocol (§7); it
-  never replaces it.
+  combat and AI (units never fight on their own — use `sim.kill`/
+  `sim.damage`), abilities, object-data stat effects (only
+  igol/uhpm/unam/bhps/bnam are read, for pawn values, max life and names),
+  `TriggerSleepAction`/`PolledWait` (recorded no-ops). The sim complements
+  the in-game protocol (§7); it never replaces it.
+
+**Golden-run re-pin doctrine** (applies every time a stub is promoted to
+real semantics — this is how sim-fidelity tiers land): promoting a native
+can shift a pinned golden-run beat sequence (gotcha 30), because behavior
+the map script already invokes starts actually happening. A shifted golden
+run is NEVER regenerated blindly. The procedure: (1) run the golden-run
+test and capture the old vs new beat sequences; (2) diff them and review
+EVERY changed beat — each change must be explainable by the specific
+semantics that were promoted (if a change has no such explanation, it is a
+regression, not drift); (3) record the reviewed diff and the explanation in
+the commit/report; (4) only then update the pinned expectation. If the
+golden run does NOT shift, say so explicitly when landing the tier.
+(WP-B1, the damage+destructables tier, shifted nothing: vaults-of-ash has
+zero doodads.json entries and never calls the promoted natives.)
 
 Proof of value: the sim's first full playthrough caught crossroads-siege
 wave 10 spawning FIVE Dreadflesh Colossi — the per-wave escalation bonus

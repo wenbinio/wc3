@@ -10,7 +10,7 @@ in docs/ and .claude/skills/; follow the pointers.
 
 ```bash
 bash scripts/setup.sh   # idempotent: npm install + optional apt-get smpq fallback
-npm test                # 335 tests; all must pass before you change anything
+npm test                # 343 tests; all must pass before you change anything
 ```
 
 If you touch `lib/mpq.js` or anything archive-related, the suite must be
@@ -392,10 +392,14 @@ never third-party maps, gotcha 9).
     scripted playthrough on the default seed and `deepStrictEqual`s the
     byte-exact beat sequence (61 beats in the exemplar), so ANY drift names
     the beat. Exemplar: maps/vaults-of-ash/tests/golden-run.test.js.
+    Corollary: when SIM semantics change (a stub promoted to real), a
+    shifted golden run is re-pinned only after a beat-by-beat reviewed
+    diff — the re-pin doctrine in docs/PIPELINE.md §8; never regenerate
+    blindly.
 
 ## Testing & validation doctrine
 
-- `npm test` = 335 tests, 30 files (25 under test/ + 5 map suites under
+- `npm test` = 343 tests, 31 files (25 under test/ + 6 map suites under
   maps/*/tests/, all auto-discovered by `node --test`): source⇄binary fixed
   points for the demo/siege/tidewatch/northreach sources (vaults-of-ash is
   covered by its 70-test logic suite), build+validate end-to-end, MPQ
@@ -417,8 +421,14 @@ never third-party maps, gotcha 9).
   war3map.lua — assembled via the real pipeline, generated constants +
   CreateAllUnits blocks included — in fengari (Lua 5.3, same as the game)
   against mocked natives with real semantics for timers/virtual clock,
-  players (alliances, resources, slots), units/groups/items, triggers +
-  events (chat, deaths, regions, construct/upgrade/pawn); everything else
+  players (alliances, resources, slots), units/groups/items, damage
+  (UnitDamageTarget: flat application, DAMAGING/DAMAGED events fire before
+  hit-point deduction, BlzSetEventDamage, kill credit; NO crit/miss
+  randomness — gotcha 30; recursion capped at depth 8), destructables
+  (instantiated from the map's own doodads.json; enum/kill/life/
+  widget-death events — map-delta bhps/bnam only, policy in
+  lib/sim/natives.js header), triggers + events (chat, deaths, regions,
+  construct/upgrade/pawn, damage, destructable death); everything else
   auto-stubs to inert recorded calls, and unknown NON-API globals stay nil
   (normal Lua truthiness). Drive with `sim.advance/chat/kill/moveUnit/...`,
   assert via `sim.player(i).gold`, `sim.alliance`, `sim.results`,
@@ -523,8 +533,9 @@ or CC0-converted content. Details: docs/ASSETS.md.
 ## State & open threads (as of 2026-07-12)
 
 - **Repo state**: all work committed + pushed through `d41bc1b` (Vaults of
-  Ash phase 3); since then WP-A (audit Tier 1) landed in the working tree —
-  suite green 335/335 on both MPQ backends.
+  Ash phase 3); since then WP-A (audit Tier 1) and WP-B1 (audit Tier 2
+  item 1: sim damage events + destructables) landed in the working tree —
+  suite green 343/343 on both MPQ backends.
 - **Bundled maps: in-game playtest status** (the sim is not the game —
   doctrine above): demo, crossroads-siege, tidewatch-arena **verified
   working in the real game** by the user; northreach was fixed AFTER its
@@ -543,9 +554,14 @@ or CC0-converted content. Details: docs/ASSETS.md.
   (lib/constlint.js, build FAIL), wpm/shd autogen (lib/pathing.js),
   `--stabilize`, `--variant-name`, maps/builds/ freshness guard
   (default-on; it caught + fixed two stale committed artifacts);
-  Tiers 2–3 remain assessment-only.
-  Top sim tier = damage events + destructables (crossroads wave-5 grove
-  kill is provably sim-blind today), map-delta-only legality doctrine;
+  **Tier 2 item 1 (damage events + destructables) is IMPLEMENTED**
+  (WP-B1: lib/sim damage path with DAMAGING/DAMAGED events + recursion
+  cap, destructables from doodads.json, the formerly sim-blind crossroads
+  wave-5 grove kill now pinned by
+  maps/crossroads-siege/tests/shortcut-grove.test.js, golden-run re-pin
+  doctrine added to PIPELINE §8 — vaults golden run did NOT shift).
+  Remaining Tier 2 items + Tier 3 stay assessment-only.
+  Next sim tier = spell/ability event bookkeeping;
   top adoptions = War3Net v6 wtg dump, pjass gate, upstream our translator
   fixes (upstream is responsive again), regen jass-constants vs 2.0.4.
 - **Reportable upstream bug, not yet filed**: classic `war3map.doo` parse
