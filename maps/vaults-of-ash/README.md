@@ -138,6 +138,12 @@ HUB: pick a hero at the pedestals + swear a covenant (both optional, before the 
   summary (floor / rooms / embers / boons / **sigils / wrath peak /
   trials / insight / deaths / covenants** / seed).
 - **Seed**: `-seed N` before any covenant or door (refused after).
+  **N is capped at 9 digits** (<= 999999999): the digit COUNT is checked
+  before `tonumber`, so the game's 64-bit Lua and the sim's 32-bit Lua
+  accept exactly the same seed strings — a 10+-digit seed is refused
+  with feedback in both, never silently defaulted (preflight fix,
+  docs/reference/preflight-2026-07.md; the debug commands' numeric args
+  share the guard via `ParseNumArg`).
   Default `20260711`, printed in the lobby description and intro. PRNG:
   Park-Miller LCG via Schrage's algorithm — every intermediate stays
   below 2^31, so the sequence is bit-identical under the game's 64-bit
@@ -196,11 +202,15 @@ HUB: pick a hero at the pedestals + swear a covenant (both optional, before the 
 - Note: the script's functions are Lua **globals**, not locals — the
   packed chunk (script + generated blocks) must stay under Lua's
   200-local limit per function (fengari enforces it; the game would too;
-  CLAUDE.md gotcha 28).
+  CLAUDE.md gotcha 28). **Headroom caution (preflight 2026-07)**: the
+  main chunk already declares **169 locals** (141 peak-active) — 85% of
+  the cap, the highest of any bundled map. Future edits should add
+  script-level state as globals, never new chunk-level `local`s; ~31
+  declarations remain before the chunk refuses to load.
 
 ## Test coverage (tests/)
 
-`node tools/test-map-logic.js maps/vaults-of-ash` — **70 tests**, all
+`node tools/test-map-logic.js maps/vaults-of-ash` — **81 tests**, all
 executing the packed script in lib/sim (docs/PIPELINE.md §8):
 
 - **golden-run.test.js** — the flagship: a full scripted solo playthrough
@@ -240,6 +250,16 @@ executing the packed script in lib/sim (docs/PIPELINE.md §8):
   pulse/drain/siphon exact math), the 20x3 `VariantIndex`, seeded variant
   divergence (same template, different seeds -> different interiors) and
   obstacle spawn/sweep.
+- **edges.test.js** — the preflight edge branches
+  (docs/reference/preflight-2026-07.md): the `-seed` 9-digit width guard
+  (rejection + max accepted value + debug-arg defaults), every
+  `HandleDeath` arm no other test walked (Lightwarden's Oath rally on a
+  partial wipe, the Revenant felled by a non-hero, the bounty-pool
+  refill when no rare+ remains, Bloodtithe on the Guardian kill, the
+  Vampiric 8% drink — pinned seed 18), the Shard Ring phase-3 384-ring
+  add pattern (seed 7) and the `ClearRoom` reward/bonus arms
+  (relic-reward door at seed 12, Blood 3pc clear-heal, Stormheart Core
+  stacking, mid/slow wrath tiers + Stillness slow-clear Insight).
 
 Sim honesty notes: combat/abilities are not simulated — kills are driven
 with `sim.kill`, boss phase thresholds with `SetWidgetLife`; ability

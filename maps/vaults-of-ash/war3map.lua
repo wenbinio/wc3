@@ -2523,7 +2523,7 @@ end
 
 function ShowHelp(pid)
   Tell(pid, "|cffaaddffVaults of Ash commands:|r")
-  Tell(pid, "-help : this list. -sigils : your sigil counts + set bonuses. -seed N : reseed (only before any covenant or door; current seed " .. RunSeed .. ").")
+  Tell(pid, "-help : this list. -sigils : your sigil counts + set bonuses. -seed N : reseed, N up to 9 digits (only before any covenant or door; current seed " .. RunSeed .. ").")
   Tell(pid, "-vow <word> : speak an earned vow (before the first door) to open the fourth altar.")
   Tell(pid, "|cff888888The run: pick a torchbearer at the hero pedestals (Torchbearer / Ashblade / Chorister -- before the first door; Torchbearer by default), swear a covenant at the altars (optional, explicit terms), pick omen-read doors (a 4th TRIAL door on 1-2 floors). Every floor's room is warded by a FLOOR GUARDIAN -- the descent door opens at its corpse. Watch Wrath at 50/75/100%, spend Embers before the Heart's final phase feeds on them. Fallen torches rekindle on the next cleared room; a full wipe ends the run.|r")
   Tell(pid, "-test : toggle debug mode (required for the rest).")
@@ -2533,6 +2533,18 @@ function ShowHelp(pid)
   Tell(pid, "-hero <torch|ashblade|chorister> : force a torchbearer kit.")
   Tell(pid, "-boss : jump to the Vault Heart. -god : invulnerable. -ff : " .. FF_SCALE .. "x clock. -runlog : print the run log.")
   Tell(pid, "|cff888888Design inspirations, credited: Roguelike (DeathdruidX), Ulfsire's Roguelike (incl. its Guardians and exit-from-corpse), Just Another Roguelike (PortusM).|r")
+end
+
+-- integer-width portability (gotcha 29 corollary): the game's Lua integers
+-- are 64-bit, the headless sim's (fengari) are 32-bit, so a digit string
+-- >= 2^31 parses in game but overflows to a float (and fails
+-- math.tointeger) in the sim. Numeric chat arguments are therefore capped
+-- at 9 digits (max 999999999 < 2^31) BEFORE tonumber ever runs -- both
+-- widths accept exactly the same strings, and longer ones return nil
+-- (rejected or defaulted by the caller, identically everywhere).
+function ParseNumArg(s)
+  if s == nil or #s > 9 then return nil end
+  return math.tointeger(tonumber(s))
 end
 
 function HandleSeed(pid, n)
@@ -2621,7 +2633,12 @@ function HandleChat(pid, msgRaw)
   end
   local seedArg = string.match(msg, "^%-seed%s+(%d+)$")
   if seedArg ~= nil then
-    HandleSeed(pid, math.tointeger(tonumber(seedArg)) or DEFAULT_SEED)
+    local n = ParseNumArg(seedArg)
+    if n == nil then
+      Tell(pid, "|cffaaaaaaSeeds run 1 to 9 digits -- the vault refuses " .. seedArg .. ".|r")
+      return
+    end
+    HandleSeed(pid, n)
     return
   end
   if msg == "-test" then
@@ -2655,7 +2672,7 @@ function HandleChat(pid, msgRaw)
   end
 
   if floorArg ~= nil then
-    local f = math.tointeger(tonumber(floorArg))
+    local f = ParseNumArg(floorArg)
     roomsCleared = f - 1
     floorNum = f
     firstDoor = true
@@ -2670,15 +2687,15 @@ function HandleChat(pid, msgRaw)
       Tell(pid, "|cffaaaaaa-room wants killall, survive or reliquary.|r")
       return
     end
-    local d = math.tointeger(tonumber(roomDanger)) or 2
+    local d = ParseNumArg(roomDanger) or 2
     if d < 1 then d = 1 elseif d > 3 then d = 3 end
     DebugRoom(pid, roomObj, d)
   elseif embersArg ~= nil then
-    embersPool = math.tointeger(tonumber(embersArg)) or 0
+    embersPool = ParseNumArg(embersArg) or 0
     SyncEmbers()
     Tell(pid, "|cffff88ffParty Embers set to " .. embersPool .. ".|r")
   elseif wrathArg ~= nil then
-    local w = math.min(100, math.tointeger(tonumber(wrathArg)) or 0)
+    local w = math.min(100, ParseNumArg(wrathArg) or 0)
     wrath = math.max(0, w - 1)
     revenantArmed = false
     if w > 0 then
@@ -2696,7 +2713,7 @@ function HandleChat(pid, msgRaw)
     end
     Tell(pid, "|cffff88ffWrath set (now " .. wrath .. "%).|r")
   elseif insightArg ~= nil then
-    local target = math.tointeger(tonumber(insightArg)) or 0
+    local target = ParseNumArg(insightArg) or 0
     if target > insight then AddInsight(target - insight, "debug") end
     Tell(pid, "|cffff88ffInsight now " .. insight .. ".|r")
     if doorsArmed and doorDeal ~= nil then ShowDoorOmens() end

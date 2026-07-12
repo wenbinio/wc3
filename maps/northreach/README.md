@@ -159,8 +159,14 @@ bites `gold // 20` every 40s only while a Town Hall stands, `-test` gates
 the debug commands, `-endgame` purges hall-less dead charters and crowns
 the last one standing, hunting drops/respawns (shoal catch lands ashore),
 the Market pays FULL value via the currency-return top-up, Founders revive
-after 30s, and leavers concede. Keep it green — and extend it — whenever
-`war3map.lua` changes. `npm test` runs it too.
+after 30s, and leavers concede. `tests/nightday.test.js` (preflight
+2026-07, docs/reference/preflight-2026-07.md) walks the full day/night
+loop no earlier test reached: the docile grace night, the grace-end
+surge, the DAWN reset (acquire range + speed back to defaults, dawn
+announced), the second-night `NightBegins -> WolfSurge` path with its
+level-2 dire wolves, wolf pelt drops + phase-honoring respawns, and the
+repeat `-endgame` refusal. Keep them green — and extend them — whenever
+`war3map.lua` changes. `npm test` runs them too.
 
 The committed JSON is a **translator fixed point** (CLAUDE.md gotcha 6):
 `assets/generate-map-data.mjs` authored the original terrain/doodads and the

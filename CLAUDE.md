@@ -10,7 +10,7 @@ in docs/ and .claude/skills/; follow the pointers.
 
 ```bash
 bash scripts/setup.sh   # idempotent: npm install + optional smpq fallback + optional pjass build (vendor/pjass)
-npm test                # 373 tests; all must pass before you change anything
+npm test                # 387 tests; all must pass before you change anything
 ```
 
 If you touch `lib/mpq.js` or anything archive-related, the suite must be
@@ -73,7 +73,7 @@ Reference sources (each README documents its own invariants):
   (assets/mdl-lib.mjs), chat-command `-test` debug mode, FoTN-derived design.
 - `maps/vaults-of-ash/` — flagship seeded co-op roguelike; the sim-first
   reference: one Park-Miller PRNG stream, seed locked at first commitment,
-  golden-run replay test (gotchas 28–30), 70 logic tests, data-driven Lua
+  golden-run replay test (gotchas 28–30), 81 logic tests, data-driven Lua
   tables, 4 generated models; competitor matrix in
   docs/reference/roguelike-comparison.md.
 
@@ -404,7 +404,7 @@ never third-party maps, gotcha 9).
 
 ## Testing & validation doctrine
 
-- `npm test` = 373 tests, 35 files (29 under test/ + 6 map suites under
+- `npm test` = 387 tests, 37 files (29 under test/ + 8 map suites under
   maps/*/tests/, all auto-discovered by `node --test`): source⇄binary fixed
   points for the demo/siege/tidewatch/northreach sources (vaults-of-ash is
   covered by its 70-test logic suite), build+validate end-to-end, MPQ
@@ -577,16 +577,25 @@ or CC0-converted content. Details: docs/ASSETS.md.
   inventories), WP-B3 (Tier 2 item 4: script line coverage) and WP-C
   (audit Tier 3 items 1–6: pjass gate, War3Net v6 + wtg/wct dump,
   jass-constants regen incl. the Convert*('fourcc') field families,
-  viewer-w3i-v33 + MDX-v1000 verdicts, docs/upstream/ issue drafts)
-  landed in the working tree —
-  suite green 373/373 on both MPQ backends.
+  viewer-w3i-v33 + MDX-v1000 verdicts, docs/upstream/ issue drafts) and
+  the **pre-playtest preflight** (docs/reference/preflight-2026-07.md:
+  failure-class + 64-bit cross-execution audits condensed; -seed
+  integer-width fix; consequential coverage gaps closed — vaults 96.1%,
+  northreach 89.5% script lines) landed in the working tree —
+  suite green 387/387 on both MPQ backends.
 - **Bundled maps: in-game playtest status** (the sim is not the game —
   doctrine above): demo, crossroads-siege, tidewatch-arena **verified
   working in the real game** by the user; northreach was fixed AFTER its
   playtest (model paths / item art / truce / builder repair — gotchas
   22–25 came from it), **re-verification pending**; vaults-of-ash has
-  **never been loaded in the real game** — sim-proven only (70 logic
-  tests + golden run). Standing next step: playtest vaults-of-ash in-game.
+  **never been loaded in the real game** — sim-proven only (81 logic
+  tests + golden run). **Preflight DONE** (2026-07-12,
+  docs/reference/preflight-2026-07.md: all checklist rows PASS, PRNG
+  bit-exact over 720k+ states, residual-risk list + in-game protocol
+  there). Vaults-specific caution: its main chunk declares **169 of the
+  200 allowed locals** (gotcha 28) — future edits add script-level state
+  as globals only. Standing next step: playtest vaults-of-ash in-game
+  (solo default-seed run, beat-for-beat vs the 61-beat golden run).
 - **Deferred capabilities** (deliberate, ranked, don't re-derive):
   docs/reference/ambitious-maps-analysis.md §6 (persistence/save-codes,
   wtg/wct, etc.); docs/reference/modern-maps-analysis.md §3 (toolkit-gap

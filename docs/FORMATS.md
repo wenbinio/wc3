@@ -222,6 +222,13 @@ Northrend (`N`) ground tiles and cliffs:
 | `Nsnw` | Snow |
 | `Nsnr` | Rocky Snow |
 | `CNdi` / `CNsn` | Dirt Cliff / Snow Cliff |
+| `CNc1` / `CNc2` | Cliff type 1 / 2 (indexed cliff-id dialect) |
+
+`CNc1`/`CNc2` are the indexed `C<tileset letter>c<N>` cliff-id dialect seen
+in real `.w3e` files (cliff TYPE by palette index rather than by material
+name). They are **game-verified**: maps/tidewatch-arena ships exactly
+`["CNc1", "CNc2"]` as its `cliffTilePalette` and rendered its raised ice
+arena correctly in the in-game playtest.
 
 WE default palettes for all tilesets (ground tiles | cliff tiles):
 
