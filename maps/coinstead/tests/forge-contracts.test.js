@@ -62,11 +62,10 @@ test('forge: tier 2 makes every refiner batch yield +1; the ladder tops out at 3
   sim.chat(1, '-forge buy'); // tier 1 (4 tools + 6 planks)
   sim.chat(1, '-forge buy'); // tier 2 (8 tools + 4 ingots)
   assert.strictEqual(call(sim, 'ForgeTierOf', 1), 2);
-  sim.chat(1, '-stock wood 3');
-  sim.chat(1, '-stock planks 0');
+  sim.chat(1, '-stock sawmill1 wood 3'); // inputs live in the refiner's own slots
   sim.advance(5);
-  assert.strictEqual(call(sim, 'StockOf', 1, 'planks'), 2, 'Works: 1+1 planks per batch');
-  assert.strictEqual(call(sim, 'StockOf', 1, 'wood'), 0, 'inputs unchanged (3 wood in)');
+  assert.strictEqual(call(sim, 'StockAt', 1, 'sawmill1', 'planks'), 2, 'Works: 1+1 planks per batch');
+  assert.strictEqual(call(sim, 'StockAt', 1, 'sawmill1', 'wood'), 0, 'inputs unchanged (3 wood in)');
 
   sim.chat(1, '-stock tools 12');
   sim.chat(1, '-stock ingots 8');
@@ -88,15 +87,15 @@ test("forge: tier 3 Charter burns ammo only every SECOND shot; a dry rack still 
   sim.chat(0, '-forge buy');
   sim.chat(0, '-forge buy');
   assert.strictEqual(call(sim, 'ForgeTierOf', 0), 3);
-  sim.chat(0, '-stock planks 2');
+  sim.chat(0, '-stock watchtower1 planks 2'); // ammo lives in the tower's own rack
   const tower = sim.findUnit('h009', 0);
   const raider = sim.createUnit(23, 'n001', 100, 100, 0);
   assert.strictEqual(sim.damage(tower, raider, 20), 20, 'shot 1 burns');
-  assert.strictEqual(call(sim, 'StockOf', 0, 'planks'), 1);
+  assert.strictEqual(call(sim, 'StockAt', 0, 'watchtower1', 'planks'), 1);
   assert.strictEqual(sim.damage(tower, raider, 20), 20, 'shot 2 is the free one');
-  assert.strictEqual(call(sim, 'StockOf', 0, 'planks'), 1, 'no plank drawn');
+  assert.strictEqual(call(sim, 'StockAt', 0, 'watchtower1', 'planks'), 1, 'no plank drawn');
   assert.strictEqual(sim.damage(tower, raider, 20), 20, 'shot 3 burns');
-  assert.strictEqual(call(sim, 'StockOf', 0, 'planks'), 0);
+  assert.strictEqual(call(sim, 'StockAt', 0, 'watchtower1', 'planks'), 0);
   assert.strictEqual(sim.damage(tower, raider, 20), 20, 'shot 4 free');
   assert.strictEqual(sim.damage(tower, raider, 20), 0, 'shot 5 wants a plank: dry, zeroed');
   assert.strictEqual(call(sim, 'TowerInertCount', 0), 1, 'inert still applies under the Charter');

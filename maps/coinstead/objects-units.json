@@ -115,6 +115,13 @@
         "level": 0,
         "column": 0,
         "value": ""
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "AInv"
       }
     ],
     "h002:hhou": [
@@ -173,6 +180,13 @@
         "level": 0,
         "column": 0,
         "value": ""
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "AInv"
       }
     ],
     "h003:hhou": [
@@ -231,6 +245,13 @@
         "level": 0,
         "column": 0,
         "value": ""
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "AInv"
       }
     ],
     "h004:hhou": [
@@ -289,6 +310,13 @@
         "level": 0,
         "column": 0,
         "value": ""
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "AInv"
       }
     ],
     "h005:hlum": [
@@ -354,6 +382,13 @@
         "level": 0,
         "column": 0,
         "value": ""
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "AInv"
       }
     ],
     "h006:hhou": [
@@ -412,6 +447,13 @@
         "level": 0,
         "column": 0,
         "value": ""
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "AInv"
       }
     ],
     "h007:hbla": [
@@ -477,6 +519,13 @@
         "level": 0,
         "column": 0,
         "value": ""
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "AInv"
       }
     ],
     "h008:harm": [
@@ -542,6 +591,13 @@
         "level": 0,
         "column": 0,
         "value": ""
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "AInv"
       }
     ],
     "h009:hgtw": [
@@ -607,6 +663,13 @@
         "level": 0,
         "column": 0,
         "value": "war3mapImported\\CoinWatchtower.mdl"
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "AInv"
       }
     ],
     "h00A:hctw": [
@@ -672,6 +735,13 @@
         "level": 0,
         "column": 0,
         "value": "war3mapImported\\CannonKeep.mdl"
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "AInv"
       }
     ],
     "h00B:htow": [
@@ -737,6 +807,13 @@
         "level": 0,
         "column": 0,
         "value": "war3mapImported\\CoinsteadDepot.mdl"
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "AInv"
       }
     ],
     "n000:ngno": [
@@ -979,7 +1056,7 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": ""
+        "value": "AInv"
       },
       {
         "id": "usei",

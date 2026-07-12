@@ -1,5 +1,5 @@
 -- =========================================================================
--- Coinstead — war3map.lua (phase 2: the complete game)
+-- Coinstead — war3map.lua (phase 3: physical logistics + the live board)
 -- =========================================================================
 -- A 1-4 player co-op economy-defense map. The Stead Company holds a lone
 -- trade Depot on an open field: each player's Steward raises production
@@ -7,6 +7,37 @@
 -- market, and keeps the towers fed — every tower shot burns commodities,
 -- and an empty rack means an inert tower. Raider waves press the Depot for
 -- 20 waves; leaks cost shared company lives.
+--
+-- PHASE 3 — goods are PHYSICAL (Economy TD's two conceded wins, adopted
+-- and adapted with credit):
+--   * Every building stores goods as ITEM CHARGES in its own 6-slot
+--     inventory (one commodity stack per slot, 200 charges per stack).
+--     Harvesters store their own output; refiners eat inputs FROM their
+--     own slots; towers burn ammo FROM their own racks; the shared Depot
+--     and Market Stall hold stock too (stacks tagged by owning founder).
+--     A building whose output cannot fit HALTS (no partial batches, no
+--     silent waste) until space frees.
+--   * TRANSFER LINKS, not walking haulers: '-link <from> <to> [good]'
+--     opens a directed route that pumps up to 5 charges per second
+--     between two of your buildings (or depot/stall). 2 outgoing routes
+--     per building per founder, 1200 range, no pathing anywhere. Links
+--     from the same building are served in CREATION ORDER — a hungry
+--     first route can starve the second; steer with filters or -unlink.
+--     Towers never ship (racks only take deliveries). Refiners never
+--     export their own inputs.
+--   * The Depot is the company vault: dividends are UNDERWRITTEN by your
+--     reserves there — each cycle pays on min(produced value, value of
+--     your goods at the Depot). Bread is eaten from the Depot, the
+--     Toolwright is paid from the Depot, contract deliveries draw from
+--     the Depot. Idle goods alone still earn NOTHING (base is capped by
+--     production, never replaced by parking).
+--   * Selling needs goods AT the stall; buying lands goods AT the stall.
+--   * A razed building SPILLS half its stored charges as ground stacks;
+--     a Steward that picks a spill up couriers it to the Depot (surplus
+--     beyond the vault's space is lost).
+--   * A LIVE PRICE MULTIBOARD (one shared board, no GetLocalPlayer):
+--     price, trend vs base and stall stock per commodity, refreshed on
+--     every trade, every market cycle and stall arrivals.
 --
 -- Design (inspiration only, adapted with credit — see README + -help):
 --   * Economy TD (anonymous, EpicWar) — the economy-first TD frame and
@@ -34,9 +65,9 @@
 --     A building's stake dies with it (Gold TD's lesson). Idle cash earns
 --     NOTHING.
 --   * AMMO: watchtower shots burn 1 plank, cannon tower shots burn
---     1 ingot, drawn from the owner's stock on the DAMAGING event; with
---     no stock the shot is zeroed and the tower goes INERT (paused) until
---     the owner restocks.
+--     1 ingot, drawn from the TOWER'S OWN rack on the DAMAGING event; with
+--     an empty rack the shot is zeroed and the tower goes INERT (paused)
+--     until a route restocks it.
 --   * WAVES: 75s grace (scout raid at 45s), then 20 composed waves from 5
 --     raider archetypes (swarm/armored/fast/siege/boss — the Toll Baron
 --     REALLY spawns on 10 and 20), scaled by player count, swarm counts
@@ -69,9 +100,10 @@
 -- script — never hand-typed FourCC literals (CLAUDE.md gotcha 27).
 --
 -- Chat commands: -help, -price, -eco, -lives, -buy <good> <qty>,
--- -sell <good> <qty>, -forge [buy], -contract [a|b], -deliver <qty>,
+-- -sell <good> <qty>, -link <from> <to> [good], -unlink <from> <to>,
+-- -links, -forge [buy], -contract [a|b], -deliver <qty>,
 -- -seed N, -endless (after victory); '-test' toggles
--- debug gating (northreach convention): -gold N, -stock <good> N,
+-- debug gating (northreach convention): -gold N, -stock [bldg] <good> N,
 -- -build <key>, -wave, -wavejump N, -setlives N, -clearwave, -ff, -runlog.
 --
 -- info.json has scriptLanguage = 1 (Lua); the game calls config() in the
@@ -108,6 +140,11 @@ local SCORE_PER_LIFE    = 50
 local VICTORY_WINDOW    = 60      -- seconds to type -endless before the win screen
 local STEWARD_RESPAWN   = 15
 local FF_SCALE          = 4
+local STACK_CAP         = 200     -- charges per storage slot (6 slots/building)
+local PUMP_RATE         = 5      -- charges per transfer link per second
+local LINK_RANGE        = 1200.0 -- max distance between linked buildings
+local LINKS_OUT_MAX     = 2      -- outgoing links per building per founder
+local SPILL_PCT         = 50     -- % of stored charges spilled on building death
 local rngState          = 1
 
 -- -------------------------------------------------------------- game state
@@ -132,8 +169,14 @@ Buildings      = {}     -- building unit -> {key, def, pid, dead}
 BuildingList   = {}     -- append-ordered array of the same recs (determinism)
 TowerInert     = {}     -- tower unit -> true while starved
 DepotUnit      = nil
+DepotRec       = nil    -- the Depot's storage rec (shared; stacks tagged by pid)
+StallUnit      = nil
+StallRec       = nil    -- the Market Stall's storage rec (shared)
 Stewards       = {}     -- pid -> steward unit
-Stock          = {}     -- pid -> commodity key -> units held
+LinkList       = {}     -- append-ordered directed transfer links (determinism)
+BuildSeq       = {}     -- pid -> key -> ordinal (building names: woodcamp1, ...)
+Board          = nil    -- the live price multiboard (one shared board)
+BoardDirty     = false  -- stall stock changed since the last board refresh
 ProducedC      = {}     -- pid -> market value (cents) produced this cycle
 LastDividend   = {}     -- pid -> gold paid at the last cycle
 InvestedStanding = {}   -- pid -> gold invested in standing buildings
@@ -222,32 +265,154 @@ end
 -- ------------------------------------------------------- commodities/market
 -- Prices are integer CENTS (1 gold = 100), all arithmetic integer — the
 -- market is deterministic to the bit under both Lua integer widths.
+-- Each commodity is a PHYSICAL item type (objects-items.json): goods live
+-- as item charges in building inventories, one commodity stack per slot,
+-- STACK_CAP charges per stack (phase 3).
 COMMODITIES = {
-  { key = "wood",   name = "Wood",   base = 200 },
-  { key = "stone",  name = "Stone",  base = 300 },
-  { key = "grain",  name = "Grain",  base = 100 },
-  { key = "ore",    name = "Ore",    base = 500 },
-  { key = "planks", name = "Planks", base = 800 },
-  { key = "bread",  name = "Bread",  base = 400 },
-  { key = "tools",  name = "Tools",  base = 1500 },
-  { key = "ingots", name = "Ingots", base = 1800 },
+  { key = "wood",   name = "Wood",   base = 200,  item = ITEM_WOOD },
+  { key = "stone",  name = "Stone",  base = 300,  item = ITEM_STONE },
+  { key = "grain",  name = "Grain",  base = 100,  item = ITEM_GRAIN },
+  { key = "ore",    name = "Ore",    base = 500,  item = ITEM_ORE },
+  { key = "planks", name = "Planks", base = 800,  item = ITEM_PLANKS },
+  { key = "bread",  name = "Bread",  base = 400,  item = ITEM_BREAD },
+  { key = "tools",  name = "Tools",  base = 1500, item = ITEM_TOOLS },
+  { key = "ingots", name = "Ingots", base = 1800, item = ITEM_INGOTS },
 }
 COMM = {} -- key -> entry
-for _, c in ipairs(COMMODITIES) do COMM[c.key] = c end
-
-function StockOf(pid, key)
-  return (Stock[pid] and Stock[pid][key]) or 0
+ItemKeyOf = {} -- item type id -> commodity key (spill recovery)
+for _, c in ipairs(COMMODITIES) do
+  COMM[c.key] = c
+  ItemKeyOf[c.item] = c.key
 end
 
-function AddStock(pid, key, n)
-  Stock[pid][key] = StockOf(pid, key) + n
+-- ------------------------------------------------------- physical storage
+-- Every storage rec (production buildings, towers, the Depot, the Stall)
+-- carries rec.store: slots 1..6, each nil or {key, pid, n, item}. The
+-- engine item mirrors the stack (UnitAddItemToSlotById + SetItemCharges)
+-- so the game SHOWS the goods; the Lua table is the source of truth. All
+-- slot iteration is an explicit 1..6 loop — order is deterministic.
+
+function CountGoods(rec, pid, key)
+  if rec == nil then return 0 end
+  local n = 0
+  for i = 1, 6 do
+    local s = rec.store[i]
+    if s ~= nil and s.key == key and s.pid == pid then n = n + s.n end
+  end
+  return n
 end
 
--- take n of key from pid's stock; false (untouched) when short
-function TakeStock(pid, key, n)
-  if StockOf(pid, key) < n then return false end
-  Stock[pid][key] = Stock[pid][key] - n
+function CountAllGoods(rec, key) -- every founder's stacks (the board's column)
+  if rec == nil then return 0 end
+  local n = 0
+  for i = 1, 6 do
+    local s = rec.store[i]
+    if s ~= nil and s.key == key then n = n + s.n end
+  end
+  return n
+end
+
+function SpaceFor(rec, pid, key)
+  if rec == nil or rec.dead then return 0 end
+  local space = 0
+  for i = 1, 6 do
+    local s = rec.store[i]
+    if s == nil then
+      space = space + STACK_CAP
+    elseif s.key == key and s.pid == pid then
+      space = space + (STACK_CAP - s.n)
+    end
+  end
+  return space
+end
+
+-- store up to n charges (top up matching stacks, then open empty slots);
+-- returns the amount actually stored. Rearms an inert tower and marks the
+-- board dirty on stall arrivals.
+function StoreGoods(rec, pid, key, n)
+  if rec == nil or rec.dead or n <= 0 then return 0 end
+  local left = n
+  for i = 1, 6 do
+    local s = rec.store[i]
+    if left > 0 and s ~= nil and s.key == key and s.pid == pid and s.n < STACK_CAP then
+      local add = STACK_CAP - s.n
+      if add > left then add = left end
+      s.n = s.n + add
+      if s.item ~= nil then SetItemCharges(s.item, s.n) end
+      left = left - add
+    end
+  end
+  for i = 1, 6 do
+    if left > 0 and rec.store[i] == nil then
+      local add = left
+      if add > STACK_CAP then add = STACK_CAP end
+      UnitAddItemToSlotById(rec.unit, COMM[key].item, i - 1)
+      local it = UnitItemInSlot(rec.unit, i - 1)
+      if it ~= nil then SetItemCharges(it, add) end
+      rec.store[i] = { key = key, pid = pid, n = add, item = it }
+      left = left - add
+    end
+  end
+  local stored = n - left
+  if stored > 0 then
+    if rec.def.kind == "tower" then MaybeRearm(rec) end
+    if rec == StallRec then BoardDirty = true end
+  end
+  return stored
+end
+
+-- take exactly n of key from pid's stacks; false (untouched) when short
+function TakeGoods(rec, pid, key, n)
+  if rec == nil or n <= 0 or CountGoods(rec, pid, key) < n then return false end
+  local left = n
+  for i = 1, 6 do
+    local s = rec.store[i]
+    if left > 0 and s ~= nil and s.key == key and s.pid == pid then
+      local take = s.n
+      if take > left then take = left end
+      s.n = s.n - take
+      left = left - take
+      if s.n <= 0 then
+        if s.item ~= nil then RemoveItem(s.item) end
+        rec.store[i] = nil
+      elseif s.item ~= nil then
+        SetItemCharges(s.item, s.n)
+      end
+    end
+  end
+  if rec == StallRec then BoardDirty = true end
   return true
+end
+
+function SetGoods(rec, pid, key, n) -- debug -stock: set a stack exactly
+  local cur = CountGoods(rec, pid, key)
+  if cur > 0 then TakeGoods(rec, pid, key, cur) end
+  if n > 0 then StoreGoods(rec, pid, key, n) end
+end
+
+-- pid's total holdings everywhere (depot + stall + own buildings) — the
+-- score/eco view; the storage recs are visited in a fixed order.
+function StockOf(pid, key)
+  local n = CountGoods(DepotRec, pid, key) + CountGoods(StallRec, pid, key)
+  for _, rec in ipairs(BuildingList) do
+    if not rec.dead and rec.pid == pid then n = n + CountGoods(rec, pid, key) end
+  end
+  return n
+end
+
+-- resolve a player-visible storage name: "depot", "stall" or one of YOUR
+-- buildings ("woodcamp1", "watchtower2", ... — see -eco)
+function FindStorage(pid, name)
+  if name == "depot" then return DepotRec end
+  if name == "stall" then return StallRec end
+  for _, rec in ipairs(BuildingList) do
+    if not rec.dead and rec.pid == pid and rec.name == name then return rec end
+  end
+  return nil
+end
+
+function StockAt(pid, name, key) -- observability (tests, -eco)
+  return CountGoods(FindStorage(pid, name), pid, key)
 end
 
 function PriceOf(key) return PriceC[key] end
@@ -292,6 +457,9 @@ function LockSeed(reason)
     .. RunSeed .. " is locked for this run.|r")
 end
 
+-- Trading is PHYSICAL (phase 3): selling draws your goods AT the stall,
+-- buying lands goods AT the stall (both refused when they cannot fit/be
+-- found there). Route goods with -link.
 function DoTrade(pid, dir, key, qty)
   local c = COMM[key]
   if c == nil then
@@ -303,26 +471,38 @@ function DoTrade(pid, dir, key, qty)
     return
   end
   if qty > 999 then qty = 999 end
+  if StallRec == nil or StallRec.dead then
+    Tell(pid, "|cffaaaaaaThe Market Stall is rubble -- there is no market to trade on.|r")
+    return
+  end
   if dir == "buy" then
     local cost = BuyGoldFor(key, qty)
     if GoldOf(pid) < cost then
       Tell(pid, "|cffaaaaaaBuying " .. qty .. " " .. c.name .. " costs " .. cost .. "g -- you are short.|r")
       return
     end
-    LockSeed("trade")
-    AddGold(pid, -cost)
-    AddStock(pid, key, qty)
-    NetFlow[key] = NetFlow[key] + qty
-    MarketProfit = MarketProfit - cost
-    Tell(pid, "|cff88ccffBought " .. qty .. " " .. c.name .. " for " .. cost .. "g (" .. FmtGold(BuyUnitC(key)) .. "g each).|r")
-    LogRun("trade|pid=" .. pid .. "|buy|" .. key .. "|q=" .. qty .. "|gold=" .. cost)
-  else
-    if StockOf(pid, key) < qty then
-      Tell(pid, "|cffaaaaaaYou hold " .. StockOf(pid, key) .. " " .. c.name .. " -- cannot sell " .. qty .. ".|r")
+    local space = SpaceFor(StallRec, pid, key)
+    if space < qty then
+      Tell(pid, "|cffaaaaaaThe stall floor has room for only " .. space .. " more " .. c.name
+        .. " of yours -- bought goods land AT the stall.|r")
       return
     end
     LockSeed("trade")
-    TakeStock(pid, key, qty)
+    AddGold(pid, -cost)
+    StoreGoods(StallRec, pid, key, qty)
+    NetFlow[key] = NetFlow[key] + qty
+    MarketProfit = MarketProfit - cost
+    Tell(pid, "|cff88ccffBought " .. qty .. " " .. c.name .. " for " .. cost .. "g (" .. FmtGold(BuyUnitC(key)) .. "g each) -- stacked at the stall.|r")
+    LogRun("trade|pid=" .. pid .. "|buy|" .. key .. "|q=" .. qty .. "|gold=" .. cost)
+  else
+    local held = CountGoods(StallRec, pid, key)
+    if held < qty then
+      Tell(pid, "|cffaaaaaaYou hold " .. held .. " " .. c.name
+        .. " AT THE STALL -- route goods there ('-link <from> stall') to sell.|r")
+      return
+    end
+    LockSeed("trade")
+    TakeGoods(StallRec, pid, key, qty)
     local gain = SellGoldFor(key, qty)
     AddGold(pid, gain)
     NetFlow[key] = NetFlow[key] - qty
@@ -330,7 +510,7 @@ function DoTrade(pid, dir, key, qty)
     Tell(pid, "|cff88ccffSold " .. qty .. " " .. c.name .. " for " .. gain .. "g (" .. FmtGold(SellUnitC(key)) .. "g each).|r")
     LogRun("trade|pid=" .. pid .. "|sell|" .. key .. "|q=" .. qty .. "|gold=" .. gain)
   end
-  RearmTowers(pid)
+  UpdateBoard()
 end
 
 -- cycle-end price move: 1% per (ELASTIC_PER_PLAYER x players) NET units,
@@ -391,7 +571,7 @@ end
 
 function ShowForge(pid)
   local t = ForgeTierOf(pid)
-  Tell(pid, "|cffffcc00Toolwright ladder|r (paid in GOODS, never gold; your tier: "
+  Tell(pid, "|cffffcc00Toolwright ladder|r (paid in GOODS from your Depot reserve, never gold; your tier: "
     .. t .. "/" .. #FORGE_TIERS .. "):")
   for i, def in ipairs(FORGE_TIERS) do
     local mark
@@ -410,13 +590,13 @@ function HandleForgeBuy(pid)
   end
   local def = FORGE_TIERS[t + 1]
   for _, cst in ipairs(def.cost) do
-    if StockOf(pid, cst[1]) < cst[2] then
+    if CountGoods(DepotRec, pid, cst[1]) < cst[2] then
       Tell(pid, "|cffaaaaaa" .. def.name .. " costs " .. ForgeCostText(t + 1)
-        .. " -- you are short of " .. cst[1] .. ".|r")
+        .. " AT THE DEPOT -- you are short of " .. cst[1] .. " there.|r")
       return
     end
   end
-  for _, cst in ipairs(def.cost) do TakeStock(pid, cst[1], cst[2]) end
+  for _, cst in ipairs(def.cost) do TakeGoods(DepotRec, pid, cst[1], cst[2]) end
   ForgeTier[pid] = t + 1
   LogRun("forge|pid=" .. pid .. "|tier=" .. (t + 1))
   AnnounceAll("|cffffdd66" .. GetPlayerName(Player(pid)) .. " forges " .. def.name
@@ -514,12 +694,13 @@ function HandleDeliver(pid, n)
   end
   local remaining = a.def.qty - a.delivered
   if n > remaining then n = remaining end
-  if StockOf(pid, a.def.good) < n then n = StockOf(pid, a.def.good) end
+  local atDepot = CountGoods(DepotRec, pid, a.def.good)
+  if atDepot < n then n = atDepot end
   if n < 1 then
-    Tell(pid, "|cffaaaaaaYou hold no " .. a.def.good .. " to deliver.|r")
+    Tell(pid, "|cffaaaaaaYou hold no " .. a.def.good .. " AT THE DEPOT to deliver -- consignments ship from the vault.|r")
     return
   end
-  TakeStock(pid, a.def.good, n)
+  TakeGoods(DepotRec, pid, a.def.good, n)
   a.delivered = a.delivered + n
   LogRun("contract|deliver|pid=" .. pid .. "|" .. a.def.good .. "|n=" .. n
     .. "|total=" .. a.delivered .. "/" .. a.def.qty)
@@ -615,30 +796,47 @@ end
 -- shared registration path: engine CONSTRUCT_FINISH and debug -build both
 -- land here. The stake enters the owner's standing investment (and leaves
 -- it when the building dies — Gold TD's commitment lesson, credited).
+-- Phase 3: every building gets a 6-slot physical store and a stable
+-- player-visible name (key + per-founder ordinal: woodcamp1, sawmill2...)
+-- that -link/-unlink/-stock address it by.
 function RegisterBuilding(u)
   local key = BuildKeyOfUnit(u)
   if key == nil or Buildings[u] ~= nil then return end
   local pid = GetPlayerId(GetOwningPlayer(u))
-  local rec = { unit = u, key = key, def = BUILD_DEFS[key], pid = pid, dead = false }
+  BuildSeq[pid] = BuildSeq[pid] or {}
+  local seq = (BuildSeq[pid][key] or 0) + 1
+  BuildSeq[pid][key] = seq
+  local rec = { unit = u, key = key, name = key .. seq, def = BUILD_DEFS[key],
+    pid = pid, dead = false, store = {} }
   Buildings[u] = rec
   BuildingList[#BuildingList + 1] = rec
   InvestedStanding[pid] = (InvestedStanding[pid] or 0) + rec.def.cost
-  LogRun("build|pid=" .. pid .. "|" .. key)
-  Tell(pid, "|cff88ff88" .. key .. " raised -- " .. rec.def.cost
+  LogRun("build|pid=" .. pid .. "|" .. rec.name)
+  Tell(pid, "|cff88ff88" .. rec.name .. " raised -- " .. rec.def.cost
     .. "g now working for your dividend (stake: " .. InvestedStanding[pid] .. "g).|r")
-end
-
-function BuildingCountOf(pid, key)
-  local n = 0
-  for _, rec in ipairs(BuildingList) do
-    if not rec.dead and rec.pid == pid and rec.key == key then n = n + 1 end
-  end
-  return n
 end
 
 function InvestedOf(pid) return InvestedStanding[pid] or 0 end
 
 -- ------------------------------------------------------ production/dividend
+
+-- a producer whose output cannot fit in its OWN slots halts whole batches
+-- (no partials, no silent waste) until space frees — the phase-3 overflow
+-- rule. Transitions are told to the owner, not logged (no beat spam).
+function OutputHalted(rec, key, qty)
+  if SpaceFor(rec, rec.pid, key) >= qty then
+    if rec.halted then
+      rec.halted = nil
+      Tell(rec.pid, "|cff88ff88Your " .. rec.name .. " has room again and resumes work.|r")
+    end
+    return false
+  end
+  if not rec.halted then
+    rec.halted = true
+    Tell(rec.pid, "|cffff8866Your " .. rec.name .. " is FULL -- it halts until a route ('-link') moves its goods out.|r")
+  end
+  return true
+end
 
 function ProductionTick()
   for _, rec in ipairs(BuildingList) do
@@ -647,54 +845,74 @@ function ProductionTick()
       if d.kind == "harvest" then
         local qty = d.qty
         if ForgeTierOf(rec.pid) >= 1 then qty = qty + 1 end -- Toolwright's Bench
-        AddStock(rec.pid, d.out, qty)
-        ProducedC[rec.pid] = ProducedC[rec.pid] + qty * PriceC[d.out]
+        if not OutputHalted(rec, d.out, qty) then
+          StoreGoods(rec, rec.pid, d.out, qty)
+          ProducedC[rec.pid] = ProducedC[rec.pid] + qty * PriceC[d.out]
+        end
       elseif d.kind == "refine" then
+        -- inputs come from the refiner's OWN slots (route them in)
         local ok = true
         for _, inp in ipairs(d.inputs) do
-          if StockOf(rec.pid, inp[1]) < inp[2] then ok = false end
+          if CountGoods(rec, rec.pid, inp[1]) < inp[2] then ok = false end
         end
         if ok then
-          for _, inp in ipairs(d.inputs) do TakeStock(rec.pid, inp[1], inp[2]) end
           local qty = d.qty
           if ForgeTierOf(rec.pid) >= 2 then qty = qty + 1 end -- Toolwright's Works
-          AddStock(rec.pid, d.out, qty)
-          ProducedC[rec.pid] = ProducedC[rec.pid] + qty * PriceC[d.out]
+          if not OutputHalted(rec, d.out, qty) then
+            for _, inp in ipairs(d.inputs) do TakeGoods(rec, rec.pid, inp[1], inp[2]) end
+            StoreGoods(rec, rec.pid, d.out, qty)
+            ProducedC[rec.pid] = ProducedC[rec.pid] + qty * PriceC[d.out]
+          end
         end
       end
     end
   end
-  for _, pid in ipairs(Users) do RearmTowers(pid) end
 end
 
--- cycle end: bread is eaten (bounded), dividends are paid on this cycle's
--- GROSS production value, the market reprices. NO interest is paid on cash
--- — the only income is production you committed to.
+-- pid's goods value (cents, current prices) banked at the Depot — the
+-- vault reserve that UNDERWRITES the dividend (phase 3)
+function DepotValueC(pid)
+  local v = 0
+  for _, c in ipairs(COMMODITIES) do
+    v = v + CountGoods(DepotRec, pid, c.key) * PriceC[c.key]
+  end
+  return v
+end
+
+-- cycle end: bread is eaten from the DEPOT (provisions live in the vault),
+-- dividends are paid on this cycle's production value UNDERWRITTEN by your
+-- Depot reserve — min(produced, banked value) — then the market reprices.
+-- NO interest on cash, and parked goods alone earn nothing either: the
+-- reserve is a CAP on production income, never a source.
 function CycleEnd()
   CycleCount = CycleCount + 1
   for _, pid in ipairs(Users) do
-    local eaten = StockOf(pid, "bread")
+    local eaten = CountGoods(DepotRec, pid, "bread")
     if eaten > BREAD_MAX_EAT then eaten = BREAD_MAX_EAT end
     if eaten > 0 then
-      TakeStock(pid, "bread", eaten)
+      TakeGoods(DepotRec, pid, "bread", eaten)
       LogRun("eat|pid=" .. pid .. "|n=" .. eaten)
     end
     local commit = (InvestedStanding[pid] or 0) // COMMIT_PER_GOLD
     if commit > COMMIT_CAP_PCT then commit = COMMIT_CAP_PCT end
     local bonus = commit + eaten * BREAD_BONUS_PCT
-    local divC = (ProducedC[pid] * DIV_RATE_PCT) // 100
+    local baseC = ProducedC[pid]
+    local reserveC = DepotValueC(pid)
+    if reserveC < baseC then baseC = reserveC end
+    local divC = (baseC * DIV_RATE_PCT) // 100
     divC = (divC * (100 + bonus)) // 100
     local gold = divC // 100
     LastDividend[pid] = gold
     if gold > 0 then
       AddGold(pid, gold)
       Tell(pid, "|cffffdd66Dividend: +" .. gold .. "g on this cycle's production (+"
-        .. bonus .. "% commitment/bread bonus).|r")
+        .. bonus .. "% commitment/bread bonus; vault reserve underwrites it).|r")
       LogRun("div|pid=" .. pid .. "|gold=" .. gold .. "|bonus=" .. bonus)
     end
     ProducedC[pid] = 0
   end
   MarketCycle()
+  UpdateBoard()
   -- effect pacts burn a cycle at each market close
   if ContractActive ~= nil and (ContractActive.cyclesLeft or 0) > 0 then
     ContractActive.cyclesLeft = ContractActive.cyclesLeft - 1
@@ -705,10 +923,11 @@ end
 function DividendOf(pid) return LastDividend[pid] or 0 end
 
 -- ------------------------------------------------------------------- towers
--- Every tower shot burns 1 unit of its ammo commodity from the OWNER's
--- stock, drawn in the DAMAGING event (fires for real engine attacks in the
--- game and for sim.damage in the harness). No ammo: the shot is zeroed and
--- the tower goes INERT (paused) until the owner restocks.
+-- Every tower shot burns 1 unit of its ammo commodity from the tower's OWN
+-- rack (its inventory — phase 3), drawn in the DAMAGING event (fires for
+-- real engine attacks in the game and for sim.damage in the harness). No
+-- ammo: the shot is zeroed and the tower goes INERT (paused) until a route
+-- (or a debug -stock) puts charges back in its slots.
 AmmoSpent = {} -- pid -> total units burned (observability)
 
 function HandleDamaging()
@@ -720,29 +939,28 @@ function HandleDamaging()
     ShotParity[rec.pid] = 1 - (ShotParity[rec.pid] or 0)
     if ShotParity[rec.pid] == 0 then return end
   end
-  if TakeStock(rec.pid, rec.def.ammo, 1) then
+  if TakeGoods(rec, rec.pid, rec.def.ammo, 1) then
     AmmoSpent[rec.pid] = (AmmoSpent[rec.pid] or 0) + 1
   else
     BlzSetEventDamage(0.0)
     if not TowerInert[src] then
       TowerInert[src] = true
       PauseUnit(src, true)
-      Tell(rec.pid, "|cffff8866A " .. rec.key .. " has run dry of " .. rec.def.ammo
-        .. " -- it stands INERT until you restock.|r")
-      LogRun("tower|inert|pid=" .. rec.pid .. "|" .. rec.key)
+      Tell(rec.pid, "|cffff8866Your " .. rec.name .. " has run dry of " .. rec.def.ammo
+        .. " -- it stands INERT until a route restocks its rack.|r")
+      LogRun("tower|inert|pid=" .. rec.pid .. "|" .. rec.name)
     end
   end
 end
 
-function RearmTowers(pid)
-  for _, rec in ipairs(BuildingList) do
-    if not rec.dead and rec.pid == pid and rec.def.kind == "tower"
-      and TowerInert[rec.unit] and StockOf(pid, rec.def.ammo) > 0 then
-      TowerInert[rec.unit] = nil
-      PauseUnit(rec.unit, false)
-      Tell(pid, "|cff88ff88A " .. rec.key .. " is restocked and firing again.|r")
-      LogRun("tower|rearmed|pid=" .. pid .. "|" .. rec.key)
-    end
+-- called by StoreGoods whenever charges land in a tower's rack
+function MaybeRearm(rec)
+  if TowerInert[rec.unit] and not rec.dead
+    and CountGoods(rec, rec.pid, rec.def.ammo) > 0 then
+    TowerInert[rec.unit] = nil
+    PauseUnit(rec.unit, false)
+    Tell(rec.pid, "|cff88ff88Your " .. rec.name .. " is restocked and firing again.|r")
+    LogRun("tower|rearmed|pid=" .. rec.pid .. "|" .. rec.name)
   end
 end
 
@@ -753,6 +971,248 @@ function TowerInertCount(pid)
       and TowerInert[rec.unit] then n = n + 1 end
   end
   return n
+end
+
+-- ------------------------------------------------------------ transfer links
+-- Economy TD's logistics physicality, adapted with credit: no unit walks —
+-- a LINK is a directed route that pumps up to PUMP_RATE charges per second
+-- from one building's slots to another's. Player command:
+--   -link <from> <to> [good]   (names from -eco, plus depot/stall)
+-- Rules (all deterministic, all position- not pathing-based):
+--   * both endpoints yours or shared (depot/stall); range LINK_RANGE
+--   * LINKS_OUT_MAX outgoing routes per building per founder
+--   * links pump only YOUR stacks; optional [good] filters the route
+--   * refiners never export their own inputs; towers never ship at all
+--   * links from one building are served in CREATION ORDER — a hungry
+--     first route can starve the second (steer with filters/-unlink)
+--   * a link dies with either endpoint (link|cut beat)
+
+function IsRefinerInput(rec, key)
+  if rec.def.kind ~= "refine" then return false end
+  for _, inp in ipairs(rec.def.inputs) do
+    if inp[1] == key then return true end
+  end
+  return false
+end
+
+function LinksOutOf(pid, rec)
+  local n = 0
+  for _, ln in ipairs(LinkList) do
+    if not ln.dead and ln.pid == pid and ln.from == rec then n = n + 1 end
+  end
+  return n
+end
+
+function HandleLink(pid, fromName, toName, filterKey)
+  local from = FindStorage(pid, fromName)
+  local to = FindStorage(pid, toName)
+  if from == nil or to == nil or from.dead or to.dead then
+    Tell(pid, "|cffaaaaaa-link wants two of YOUR buildings by name (see -eco), or depot/stall.|r")
+    return
+  end
+  if from == to then
+    Tell(pid, "|cffaaaaaaA building cannot ship to itself.|r")
+    return
+  end
+  if from.def.kind == "tower" then
+    Tell(pid, "|cffaaaaaaTowers do not ship -- their racks only take deliveries.|r")
+    return
+  end
+  local filter = nil
+  if filterKey ~= nil and filterKey ~= "" then
+    if COMM[filterKey] == nil then
+      Tell(pid, "|cffaaaaaaNo such good. Goods: wood, stone, grain, ore, planks, bread, tools, ingots.|r")
+      return
+    end
+    filter = filterKey
+  end
+  for _, ln in ipairs(LinkList) do
+    if not ln.dead and ln.pid == pid and ln.from == from and ln.to == to then
+      Tell(pid, "|cffaaaaaa" .. from.name .. " already ships to " .. to.name .. " -- -unlink it first.|r")
+      return
+    end
+  end
+  if LinksOutOf(pid, from) >= LINKS_OUT_MAX then
+    Tell(pid, "|cffaaaaaa" .. from.name .. " already runs " .. LINKS_OUT_MAX
+      .. " outgoing routes -- -unlink one first.|r")
+    return
+  end
+  local dx = GetUnitX(from.unit) - GetUnitX(to.unit)
+  local dy = GetUnitY(from.unit) - GetUnitY(to.unit)
+  if dx * dx + dy * dy > LINK_RANGE * LINK_RANGE then
+    Tell(pid, "|cffaaaaaa" .. to.name .. " is out of carting range of " .. from.name
+      .. " (" .. math.floor(LINK_RANGE) .. ") -- place storage closer.|r")
+    return
+  end
+  LinkList[#LinkList + 1] = { pid = pid, from = from, to = to, filter = filter }
+  LogRun("link|create|pid=" .. pid .. "|" .. from.name .. ">" .. to.name
+    .. (filter ~= nil and ("|" .. filter) or ""))
+  Tell(pid, "|cff88ccffRoute open: " .. from.name .. " -> " .. to.name
+    .. (filter ~= nil and (" (" .. filter .. " only)") or "")
+    .. ", up to " .. PUMP_RATE .. " goods/s.|r")
+end
+
+function HandleUnlink(pid, fromName, toName)
+  for _, ln in ipairs(LinkList) do
+    if not ln.dead and ln.pid == pid and ln.from.name == fromName and ln.to.name == toName then
+      ln.dead = true
+      LogRun("link|cut|pid=" .. pid .. "|" .. fromName .. ">" .. toName)
+      Tell(pid, "|cffaaaaaaRoute cut: " .. fromName .. " -> " .. toName .. ".|r")
+      return
+    end
+  end
+  Tell(pid, "|cffaaaaaaNo such route of yours. '-links' lists them.|r")
+end
+
+function CutLinksFor(u)
+  for _, ln in ipairs(LinkList) do
+    if not ln.dead and (ln.from.unit == u or ln.to.unit == u) then
+      ln.dead = true
+      LogRun("link|cut|pid=" .. ln.pid .. "|" .. ln.from.name .. ">" .. ln.to.name)
+    end
+  end
+end
+
+function ShowLinks(pid)
+  local n = 0
+  for _, ln in ipairs(LinkList) do
+    if not ln.dead and ln.pid == pid then
+      n = n + 1
+      Tell(pid, "|cffaaddff" .. n .. ". " .. ln.from.name .. " -> " .. ln.to.name
+        .. (ln.filter ~= nil and (" (" .. ln.filter .. " only)") or " (all goods)") .. "|r")
+    end
+  end
+  if n == 0 then
+    Tell(pid, "|cffaaaaaaNo routes. '-link <from> <to> [good]' opens one (names: see -eco; depot/stall work too).|r")
+  end
+end
+
+-- one pump pass per virtual second, links in creation order, slots in
+-- order — fully deterministic. Each link moves up to PUMP_RATE charges of
+-- its owner's eligible stacks into whatever space the target has.
+function PumpLinks()
+  for _, ln in ipairs(LinkList) do
+    if not ln.dead and not ln.from.dead and not ln.to.dead then
+      local budget = PUMP_RATE
+      local keys, seen = {}, {}
+      for i = 1, 6 do
+        local s = ln.from.store[i]
+        if s ~= nil and s.pid == ln.pid and not seen[s.key]
+          and (ln.filter == nil or ln.filter == s.key)
+          and not IsRefinerInput(ln.from, s.key) then
+          seen[s.key] = true
+          keys[#keys + 1] = s.key
+        end
+      end
+      for _, key in ipairs(keys) do
+        if budget > 0 then
+          local m = CountGoods(ln.from, ln.pid, key)
+          if m > budget then m = budget end
+          local space = SpaceFor(ln.to, ln.pid, key)
+          if m > space then m = space end
+          if m > 0 then
+            TakeGoods(ln.from, ln.pid, key, m)
+            StoreGoods(ln.to, ln.pid, key, m)
+            budget = budget - m
+          end
+        end
+      end
+    end
+  end
+end
+
+-- ------------------------------------------------------------ spill/recovery
+-- A razed building SPILLS half its stored charges (per commodity, floor)
+-- as ground item stacks at its feet; the rest burns with it. A Steward
+-- that picks a spill up couriers it to the Depot with the recovering
+-- founder's mark (surplus beyond the vault's space is lost).
+function SpillStore(rec)
+  local tag = rec.pid ~= nil and ("pid=" .. rec.pid .. "|" .. rec.name) or rec.name
+  for _, c in ipairs(COMMODITIES) do
+    local total = 0
+    for i = 1, 6 do
+      local s = rec.store[i]
+      if s ~= nil and s.key == c.key then total = total + s.n end
+    end
+    if total > 0 then
+      local sp = (total * SPILL_PCT) // 100
+      if sp > 0 then
+        local it = CreateItem(c.item, GetUnitX(rec.unit), GetUnitY(rec.unit))
+        SetItemCharges(it, sp)
+        LogRun("spill|" .. tag .. "|" .. c.key .. "|n=" .. sp)
+      end
+    end
+  end
+  for i = 1, 6 do
+    local s = rec.store[i]
+    if s ~= nil then
+      if s.item ~= nil then RemoveItem(s.item) end
+      rec.store[i] = nil
+    end
+  end
+end
+
+function HandleItemPickup()
+  if GameOver then return end
+  local u = GetTriggerUnit()
+  if u == nil or GetUnitTypeId(u) ~= UNIT_STEWARD then return end
+  local it = GetManipulatedItem()
+  if it == nil then return end
+  local key = ItemKeyOf[GetItemTypeId(it)]
+  if key == nil then return end
+  local n = GetItemCharges(it)
+  if n == nil or n < 1 then n = 1 end
+  RemoveItem(it)
+  local pid = GetPlayerId(GetOwningPlayer(u))
+  local stored = StoreGoods(DepotRec, pid, key, n)
+  local lost = n - stored
+  LogRun("recover|pid=" .. pid .. "|" .. key .. "|n=" .. stored
+    .. (lost > 0 and ("|lost=" .. lost) or ""))
+  Tell(pid, "|cff88ccffYour Steward couriers " .. stored .. " spilled " .. key
+    .. " to the Depot" .. (lost > 0 and (" (" .. lost .. " lost -- the vault is full)") or "") .. ".|r")
+end
+
+-- ------------------------------------------------------- the live price board
+-- Economy TD's price multiboard, adopted with credit: ONE shared board for
+-- every founder (no GetLocalPlayer, desync-safe) — commodity, price, trend
+-- vs base, stall stock. Refreshed on every trade, every market cycle, and
+-- (through BoardDirty, once per second at most) on stall arrivals.
+function SetBoardCell(r, col, txt, w)
+  local mi = MultiboardGetItem(Board, r, col)
+  MultiboardSetItemStyle(mi, true, false)
+  MultiboardSetItemWidth(mi, w)
+  MultiboardSetItemValue(mi, txt)
+  MultiboardReleaseItem(mi)
+end
+
+function UpdateBoard()
+  if Board == nil then return end
+  BoardDirty = false
+  for i, c in ipairs(COMMODITIES) do
+    local pct = (PriceC[c.key] * 100) // c.base - 100
+    local trend
+    if pct > 0 then trend = "+" .. pct .. "%"
+    elseif pct < 0 then trend = pct .. "%"
+    else trend = "--" end
+    SetBoardCell(i, 0, c.name, 0.05)
+    SetBoardCell(i, 1, FmtGold(PriceC[c.key]) .. "g", 0.045)
+    SetBoardCell(i, 2, trend, 0.035)
+    SetBoardCell(i, 3, tostring(CountAllGoods(StallRec, c.key)), 0.035)
+  end
+end
+
+function InitBoard()
+  Board = CreateMultiboard()
+  MultiboardSetTitleText(Board, "Coinstead Market")
+  MultiboardSetRowCount(Board, #COMMODITIES + 1)
+  MultiboardSetColumnCount(Board, 4)
+  SetBoardCell(0, 0, "Good", 0.05)
+  SetBoardCell(0, 1, "Price", 0.045)
+  SetBoardCell(0, 2, "Trend", 0.035)
+  SetBoardCell(0, 3, "Stall", 0.035)
+  UpdateBoard()
+  MultiboardDisplay(Board, true)
+  MultiboardMinimize(Board, false)
 end
 
 -- -------------------------------------------------------------------- waves
@@ -1112,15 +1572,24 @@ function HandleDeath()
     return
   end
 
-  -- a registered building: production AND its income stake die with it
+  -- a registered building: its stored goods spill, its routes are cut,
+  -- and (for player buildings) production AND its income stake die with it
   local rec = Buildings[u]
   if rec ~= nil and not rec.dead then
     rec.dead = true
     Buildings[u] = nil
     TowerInert[u] = nil
+    SpillStore(rec)
+    CutLinksFor(u)
+    if rec.def.kind == "store" then -- the Market Stall (the Depot never gets here)
+      AnnounceAll("|cffff4444The Market Stall is rubble -- the market is CLOSED. Its stock spills into the street.|r")
+      LogRun("building|lost|stall")
+      BoardDirty = true
+      return
+    end
     InvestedStanding[rec.pid] = (InvestedStanding[rec.pid] or 0) - rec.def.cost
     if InvestedStanding[rec.pid] < 0 then InvestedStanding[rec.pid] = 0 end
-    Tell(rec.pid, "|cffff8866Your " .. rec.key .. " is rubble -- its " .. rec.def.cost
+    Tell(rec.pid, "|cffff8866Your " .. rec.name .. " is rubble -- its " .. rec.def.cost
       .. "g stake is out of your dividend (stake now " .. InvestedStanding[rec.pid] .. "g).|r")
     LogRun("building|lost|pid=" .. rec.pid .. "|" .. rec.key .. "|stake=" .. InvestedStanding[rec.pid])
     return
@@ -1156,6 +1625,7 @@ function StartClock()
   local t = CreateTimer()
   TimerStart(t, 1.0, true, function()
     if GameOver then return end
+    for _ = 1, ClockScale do PumpLinks() end -- one pump pass per virtual second
     ProdClock = ProdClock + ClockScale
     while ProdClock >= PROD_TICK do
       ProdClock = ProdClock - PROD_TICK
@@ -1166,6 +1636,7 @@ function StartClock()
       CycleClock = CycleClock - CYCLE_TIME
       CycleEnd()
     end
+    if BoardDirty then UpdateBoard() end -- stall arrivals: refresh at most 1/s
     if VictoryPending then
       VictoryClock = VictoryClock - ClockScale
       if VictoryClock <= 0 then
@@ -1198,17 +1669,22 @@ function ShowHelp(pid)
     .. FINAL_WAVE .. " waves; leaks cost shared lives.")
   Tell(pid, "|cffaaddffEconomy:|r harvesters make wood/stone/grain/ore each "
     .. PROD_TICK .. "s; refiners convert (3 wood->1 plank, 4 grain->2 bread, 3 ore->1 ingot, 2 stone+1 plank->1 tool).")
+  Tell(pid, "|cffaaddffGoods are PHYSICAL:|r every building stores its goods as item stacks (6 slots x "
+    .. STACK_CAP .. "); a full building HALTS. Refiners eat inputs from their OWN slots; route goods with '-link <from> <to> [good]' ("
+    .. PUMP_RATE .. "/s, " .. LINKS_OUT_MAX .. " routes out per building, range " .. math.floor(LINK_RANGE)
+    .. "; '-links', '-unlink <from> <to>'). A razed building spills HALF its stock -- a Steward can courier spills back to the Depot.")
   Tell(pid, "|cffaaddffDividends every " .. CYCLE_TIME .. "s:|r " .. DIV_RATE_PCT
-    .. "% of what you PRODUCED, +1%/" .. COMMIT_PER_GOLD .. "g standing stake (max +"
-    .. COMMIT_CAP_PCT .. "%), +" .. BREAD_BONUS_PCT .. "%/bread eaten (max "
-    .. BREAD_MAX_EAT .. "). Idle cash earns nothing; a dead building takes its stake with it.")
-  Tell(pid, "|cffaaddffMarket:|r -price, -buy <good> <qty>, -sell <good> <qty>. Shared prices, 10% spread; prices move 1% per "
+    .. "% of what you PRODUCED -- underwritten by your Depot reserve: min(produced, goods banked at the Depot) -- +1%/"
+    .. COMMIT_PER_GOLD .. "g standing stake (max +"
+    .. COMMIT_CAP_PCT .. "%), +" .. BREAD_BONUS_PCT .. "%/bread eaten from the Depot (max "
+    .. BREAD_MAX_EAT .. "). Idle cash and parked goods alone earn nothing; a dead building takes its stake with it.")
+  Tell(pid, "|cffaaddffMarket:|r the multiboard tracks prices live; -price, -buy <good> <qty>, -sell <good> <qty>. SELLING needs your goods AT the stall; buying lands them there. Shared prices, 10% spread; prices move 1% per "
     .. ELASTIC_PER_PLAYER .. "x(players) net units traded, hard-capped at "
     .. MOVE_CAP_PCT .. "%/cycle. No randomness.")
-  Tell(pid, "|cffaaddffAmmo:|r watchtowers burn planks, cannon towers burn ingots -- 1 per shot; empty racks = INERT tower until restocked.")
-  Tell(pid, "|cffaaddffToolwright:|r '-forge' shows the 3-tier ladder, '-forge buy' pays the next tier in GOODS (harvest +1, refine +1, every 2nd shot free).")
-  Tell(pid, "|cffaaddffContracts:|r posted after every 4th wave -- '-contract' to read the board, '-contract a|b' to sign (one active max), '-deliver N' on consignments.")
-  Tell(pid, "|cffaaddffCommands:|r -help -price -eco -lives -buy -sell -forge -contract -deliver -seed N (until the first trade/wave) -endless (after victory) -test (debug).")
+  Tell(pid, "|cffaaddffAmmo:|r watchtowers burn planks, cannon towers burn ingots -- 1 per shot from the tower's OWN rack; an empty rack = INERT tower until a route restocks it.")
+  Tell(pid, "|cffaaddffToolwright:|r '-forge' shows the 3-tier ladder, '-forge buy' pays the next tier in GOODS from your Depot reserve (harvest +1, refine +1, every 2nd shot free).")
+  Tell(pid, "|cffaaddffContracts:|r posted after every 4th wave -- '-contract' to read the board, '-contract a|b' to sign (one active max), '-deliver N' ships from your DEPOT stock.")
+  Tell(pid, "|cffaaddffCommands:|r -help -price -eco -lives -buy -sell -link -unlink -links -forge -contract -deliver -seed N (until the first trade/wave) -endless (after victory) -test (debug).")
   Tell(pid, "|cff888888Credits: adapted with credit from Economy TD (anonymous, EpicWar), Gold TD (EpicWar), Legion TD (AutoAttackGames), Line Tower Wars (Hive Workshop). Mechanics only; nothing copied.|r")
 end
 
@@ -1218,28 +1694,43 @@ function ShowPrices(pid)
   for _, c in ipairs(COMMODITIES) do
     Tell(pid, "|cffccaa66" .. c.name .. "|r " .. FmtGold(PriceC[c.key])
       .. "g (buy " .. FmtGold(BuyUnitC(c.key)) .. " / sell " .. FmtGold(SellUnitC(c.key))
-      .. ") net " .. NetFlow[c.key])
+      .. ") net " .. NetFlow[c.key] .. ", stall " .. CountAllGoods(StallRec, c.key))
   end
+end
+
+function StoreSummary(rec, pid)
+  local parts = {}
+  for _, c in ipairs(COMMODITIES) do
+    local n = CountGoods(rec, pid, c.key)
+    if n > 0 then parts[#parts + 1] = c.key .. " x" .. n end
+  end
+  return #parts > 0 and table.concat(parts, ", ") or "empty"
 end
 
 function ShowEco(pid)
   Tell(pid, "|cffffcc00Your ledger|r (stake " .. InvestedOf(pid)
     .. "g, last dividend " .. DividendOf(pid) .. "g):")
-  local parts = {}
-  for _, k in ipairs(BUILD_ORDER) do
-    local n = BuildingCountOf(pid, k)
-    if n > 0 then parts[#parts + 1] = k .. " x" .. n end
+  local any = false
+  for _, rec in ipairs(BuildingList) do
+    if not rec.dead and rec.pid == pid then
+      any = true
+      Tell(pid, "|cffaaddff" .. rec.name .. ":|r " .. StoreSummary(rec, pid)
+        .. (rec.halted and " |cffff8866[FULL - halted]|r" or "")
+        .. (TowerInert[rec.unit] and " |cffff8866[INERT]|r" or ""))
+    end
   end
-  Tell(pid, "|cffaaddffBuildings:|r " .. (#parts > 0 and table.concat(parts, ", ") or "none"))
-  parts = {}
-  for _, c in ipairs(COMMODITIES) do
-    local n = StockOf(pid, c.key)
-    if n > 0 then parts[#parts + 1] = c.key .. " x" .. n end
+  if not any then Tell(pid, "|cffaaddffBuildings:|r none") end
+  Tell(pid, "|cffaaddffdepot:|r " .. StoreSummary(DepotRec, pid)
+    .. " (reserve " .. (DepotValueC(pid) // 100) .. "g underwrites your dividend)")
+  Tell(pid, "|cffaaddffstall:|r " .. StoreSummary(StallRec, pid))
+  local links = 0
+  for _, ln in ipairs(LinkList) do
+    if not ln.dead and ln.pid == pid then links = links + 1 end
   end
-  Tell(pid, "|cffaaddffStock:|r " .. (#parts > 0 and table.concat(parts, ", ") or "empty"))
+  Tell(pid, "|cffaaddffRoutes:|r " .. links .. " ('-links' to list, '-link <from> <to> [good]' to open).")
   local inert = TowerInertCount(pid)
   if inert > 0 then
-    Tell(pid, "|cffff8866" .. inert .. " of your towers stand INERT -- restock their ammo.|r")
+    Tell(pid, "|cffff8866" .. inert .. " of your towers stand INERT -- route ammo to their racks.|r")
   end
   if ForgeTierOf(pid) > 0 then
     Tell(pid, "|cffaaddffToolwright:|r tier " .. ForgeTierOf(pid) .. " ("
@@ -1338,6 +1829,23 @@ function HandleChat(pid, msgRaw)
     return
   end
 
+  if msg == "-links" then ShowLinks(pid) return end
+  local linkFrom, linkTo, linkGood = string.match(msg, "^%-link%s+(%w+)%s+(%w+)%s+(%a+)$")
+  if linkFrom == nil then
+    linkFrom, linkTo = string.match(msg, "^%-link%s+(%w+)%s+(%w+)$")
+  end
+  if linkFrom ~= nil then
+    if GameOver then return end
+    HandleLink(pid, linkFrom, linkTo, linkGood)
+    return
+  end
+  local unFrom, unTo = string.match(msg, "^%-unlink%s+(%w+)%s+(%w+)$")
+  if unFrom ~= nil then
+    if GameOver then return end
+    HandleUnlink(pid, unFrom, unTo)
+    return
+  end
+
   local seedArg = string.match(msg, "^%-seed%s+(%d+)$")
   if seedArg ~= nil then
     local n = ParseNumArg(seedArg)
@@ -1353,7 +1861,7 @@ function HandleChat(pid, msgRaw)
     TestMode[pid] = not TestMode[pid]
     if TestMode[pid] then
       AnnounceAll("|cffff88ff" .. GetPlayerName(Player(pid))
-        .. " enabled -test debug mode.|r Commands: -gold N, -stock <good> N, -build <key>, -wave, -wavejump N, -setlives N, -clearwave, -ff, -runlog")
+        .. " enabled -test debug mode.|r Commands: -gold N, -stock [bldg] <good> N, -build <key>, -wave, -wavejump N, -setlives N, -clearwave, -ff, -runlog")
     else
       AnnounceAll("|cffff88ff" .. GetPlayerName(Player(pid)) .. " disabled -test debug mode.|r")
     end
@@ -1361,7 +1869,11 @@ function HandleChat(pid, msgRaw)
   end
 
   local goldArg = string.match(msg, "^%-gold%s+(%d+)$")
-  local stockKey, stockArg = string.match(msg, "^%-stock%s+(%a+)%s+(%d+)$")
+  -- -stock [<building>] <good> <N>: set a stack (default building: depot)
+  local stockName, stockKey, stockArg = string.match(msg, "^%-stock%s+(%w+)%s+(%a+)%s+(%d+)$")
+  if stockName == nil then
+    stockKey, stockArg = string.match(msg, "^%-stock%s+(%a+)%s+(%d+)$")
+  end
   local buildArg = string.match(msg, "^%-build%s+(%a+)$")
   local jumpArg = string.match(msg, "^%-wavejump%s+(%d+)$")
   local livesArg = string.match(msg, "^%-setlives%s+(%d+)$")
@@ -1382,9 +1894,17 @@ function HandleChat(pid, msgRaw)
       Tell(pid, "|cffaaaaaaNo such good.|r")
       return
     end
-    Stock[pid][stockKey] = ParseNumArg(stockArg) or 0
-    Tell(pid, "|cffff88ff" .. COMM[stockKey].name .. " stock set to " .. StockOf(pid, stockKey) .. ".|r")
-    RearmTowers(pid)
+    local rec = DepotRec
+    if stockName ~= nil then
+      rec = FindStorage(pid, stockName)
+      if rec == nil then
+        Tell(pid, "|cffaaaaaaNo storage of yours named '" .. stockName .. "' (see -eco; depot/stall work too).|r")
+        return
+      end
+    end
+    SetGoods(rec, pid, stockKey, ParseNumArg(stockArg) or 0)
+    Tell(pid, "|cffff88ff" .. COMM[stockKey].name .. " at " .. rec.name .. " set to "
+      .. CountGoods(rec, pid, stockKey) .. ".|r")
   elseif buildArg ~= nil then
     DebugBuild(pid, buildArg)
   elseif jumpArg ~= nil then
@@ -1454,6 +1974,11 @@ function RegisterTriggers()
   TriggerRegisterAnyUnitEventBJ(damaging, EVENT_PLAYER_UNIT_DAMAGING)
   TriggerAddAction(damaging, HandleDamaging)
 
+  -- spill recovery: a Steward picking up a spilled commodity stack
+  local pickup = CreateTrigger()
+  TriggerRegisterAnyUnitEventBJ(pickup, EVENT_PLAYER_UNIT_PICKUP_ITEM)
+  TriggerAddAction(pickup, HandleItemPickup)
+
   -- the leak rect around the Depot, from the generated REGION_ constant
   local leak = CreateTrigger()
   local rgn = CreateRegion()
@@ -1471,7 +1996,8 @@ function ShowCredits()
   local q = CreateQuest()
   QuestSetTitle(q, "Credits & Inspirations")
   QuestSetDescription(q, "Coinstead (wc3-map-toolkit). Design inspirations, adapted with credit, nothing copied:"
-    .. " Economy TD (anonymous, EpicWar) -- the economy-first tower defense frame, income from production;"
+    .. " Economy TD (anonymous, EpicWar) -- the economy-first tower defense frame, income from production,"
+    .. " goods as physical item stacks moved by transfer routes, and the live price multiboard;"
     .. " Gold TD (EpicWar) -- income stakes that live and die with the buildings that earn them, no idle interest;"
     .. " Legion TD (AutoAttackGames) -- legible authored wave composition;"
     .. " Line Tower Wars (Hive Workshop) -- leak pressure pacing."
@@ -1484,7 +2010,7 @@ function PlayIntro()
   AnnounceAll("|cffaaddffCOINSTEAD. One Depot, one shared market, twenty waves of toll-hungry raiders.|r")
   After(4.0, function()
     if GameOver then return end
-    AnnounceAll("|cffaaddffYour Steward builds the economy: harvesters feed refiners, refiners feed the market and your TOWERS -- every shot burns planks or ingots, and an empty rack is an inert tower. Dividends pay on what you PRODUCE, never on idle coin.|r")
+    AnnounceAll("|cffaaddffYour Steward builds the economy: harvesters feed refiners, refiners feed the stall, the Depot and your TOWERS -- goods are PHYSICAL stacks, moved by '-link' routes, and every shot burns planks or ingots from the tower's own rack. Dividends pay on what you PRODUCE, underwritten by your Depot reserve -- never on idle coin.|r")
   end)
   After(8.0, function()
     if GameOver then return end
@@ -1587,7 +2113,6 @@ function main()
   end
   Lives = START_LIVES
   for _, pid in ipairs(Users) do
-    Stock[pid] = {}
     ProducedC[pid] = 0
     LastDividend[pid] = 0
     InvestedStanding[pid] = 0
@@ -1605,11 +2130,32 @@ function main()
     Stewards[pid] = CreateUnit(Player(pid), UNIT_STEWARD, x, y, 270.0)
   end
 
+  -- the shared storage recs (phase 3): the Depot, and the preplaced
+  -- Market Stall (found among the neutral-passive units CreateAllUnits
+  -- placed). Their stacks are tagged per founder; -link addresses them
+  -- as "depot" and "stall".
+  DepotRec = { unit = DepotUnit, key = "depot", name = "depot",
+    def = { kind = "store" }, pid = nil, dead = false, store = {} }
+  Buildings[DepotUnit] = DepotRec
+  local ng = CreateGroup()
+  GroupEnumUnitsOfPlayer(ng, Player(PLAYER_NEUTRAL_PASSIVE), nil)
+  local nu = FirstOfGroup(ng)
+  while nu ~= nil do
+    if GetUnitTypeId(nu) == UNIT_MARKET_STALL then StallUnit = nu end
+    GroupRemoveUnit(ng, nu)
+    nu = FirstOfGroup(ng)
+  end
+  DestroyGroup(ng)
+  StallRec = { unit = StallUnit, key = "stall", name = "stall",
+    def = { kind = "store" }, pid = nil, dead = false, store = {} }
+  Buildings[StallUnit] = StallRec
+
   SeedRNG(DEFAULT_SEED)
   RunSeed = DEFAULT_SEED
   LogRun("seed=" .. DEFAULT_SEED)
 
   ShowCredits()
+  InitBoard()
   RegisterTriggers()
   RegisterChatCommands()
   StartClock()

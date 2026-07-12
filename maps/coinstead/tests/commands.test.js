@@ -25,8 +25,9 @@ test("'-test' gates every debug command; toggling is announced to all", () => {
     'announced to everyone');
   sim.chat(1, '-gold 999');
   assert.strictEqual(sim.player(1).gold, 999);
-  sim.chat(1, '-stock tools 7');
+  sim.chat(1, '-stock tools 7'); // 2-arg form: the Depot
   assert.strictEqual(call(sim, 'StockOf', 1, 'tools'), 7);
+  assert.strictEqual(call(sim, 'StockAt', 1, 'depot', 'tools'), 7);
   sim.chat(1, '-stock mithril 7');
   assert.ok(sim.messagesTo(1).some((m) => /No such good/.test(m.text)));
 
@@ -41,7 +42,9 @@ test('-help prints the loop, the seed rule and the design credits', () => {
   const texts = sim.messagesTo(0).map((m) => m.text).join('\n');
   assert.ok(/COINSTEAD/.test(texts));
   assert.ok(/3 wood->1 plank/.test(texts));
-  assert.ok(/Idle cash earns nothing/.test(texts));
+  assert.ok(/Idle cash and parked goods alone earn nothing/.test(texts));
+  assert.ok(/Goods are PHYSICAL/.test(texts), 'the logistics rules are in -help');
+  assert.ok(/-link <from> <to> \[good\]/.test(texts));
   assert.ok(/Economy TD \(anonymous, EpicWar\)/.test(texts));
   assert.ok(/Gold TD \(EpicWar\)/.test(texts));
   assert.ok(/Legion TD \(AutoAttackGames\)/.test(texts));
@@ -64,8 +67,8 @@ test('-price lists every commodity with spread; -eco and -lives summarize the le
   sim.chat(0, '-eco');
   const ecoText = sim.messagesTo(0).map((m) => m.text).join('\n');
   assert.ok(/stake 120g/.test(ecoText));
-  assert.ok(/woodcamp x1/.test(ecoText));
-  assert.ok(/ingots x4/.test(ecoText));
+  assert.ok(/woodcamp1:/.test(ecoText), 'per-building line with its -link name');
+  assert.ok(/depot:.*ingots x4/.test(ecoText));
 
   sim.chat(0, '-lives');
   assert.ok(sim.messagesTo(0).some((m) => /Lives:.*20.*wave 1 in \d+s/.test(m.text)));
@@ -77,7 +80,7 @@ test('-eco flags inert towers; -lives tracks the wave phases', () => {
   sim.chat(0, '-build watchtower');
   const tower = sim.findUnit('h009', 0);
   const dummy = sim.createUnit(23, 'n001', 50, 50, 0);
-  sim.damage(tower, dummy, 10); // no planks: instantly inert
+  sim.damage(tower, dummy, 10); // an empty rack: instantly inert
   sim.chat(0, '-eco');
   assert.ok(sim.messagesTo(0).some((m) => /1 of your towers stand INERT/.test(m.text)));
 

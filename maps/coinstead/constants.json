@@ -134,6 +134,62 @@
       "name": "Woodcamp",
       "source": "objects-units.json"
     },
+    "ITEM_BREAD": {
+      "kind": "item",
+      "rawcode": "I005",
+      "base": "ches",
+      "name": "Bread",
+      "source": "objects-items.json"
+    },
+    "ITEM_GRAIN": {
+      "kind": "item",
+      "rawcode": "I002",
+      "base": "ches",
+      "name": "Grain",
+      "source": "objects-items.json"
+    },
+    "ITEM_INGOTS": {
+      "kind": "item",
+      "rawcode": "I007",
+      "base": "ches",
+      "name": "Ingots",
+      "source": "objects-items.json"
+    },
+    "ITEM_ORE": {
+      "kind": "item",
+      "rawcode": "I003",
+      "base": "ches",
+      "name": "Ore",
+      "source": "objects-items.json"
+    },
+    "ITEM_PLANKS": {
+      "kind": "item",
+      "rawcode": "I004",
+      "base": "ches",
+      "name": "Planks",
+      "source": "objects-items.json"
+    },
+    "ITEM_STONE": {
+      "kind": "item",
+      "rawcode": "I001",
+      "base": "ches",
+      "name": "Stone",
+      "source": "objects-items.json"
+    },
+    "ITEM_TOOLS": {
+      "kind": "item",
+      "rawcode": "I006",
+      "base": "ches",
+      "name": "Tools",
+      "source": "objects-items.json"
+    },
+    "ITEM_WOOD": {
+      "kind": "item",
+      "rawcode": "I000",
+      "base": "ches",
+      "name": "Wood",
+      "source": "objects-items.json"
+    },
     "DOOD_LTlt": {
       "kind": "doodad",
       "rawcode": "LTlt",

@@ -1,0 +1,581 @@
+{
+  "original": {},
+  "custom": {
+    "I000:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Wood"
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Raw timber from the woodcamps. A physical stack: it lives in building slots, moves by -link routes, sells at the stall."
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Wood"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Raw timber from the woodcamps. A physical stack: it lives in building slots, moves by -link routes, sells at the stall."
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNBundleOfLumber.blp"
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\TreasureChest\\treasurechest.mdl"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 2
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "iabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "iper",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I001:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Stone"
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Quarried stone. Toolworks eat it two at a time; the market takes the rest."
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Stone"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Quarried stone. Toolworks eat it two at a time; the market takes the rest."
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNGlyph.blp"
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\TreasureChest\\treasurechest.mdl"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 3
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "iabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "iper",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I002:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Grain"
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Sacks of grain for the bakeries. Cheap, bulky, and the start of every loaf."
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Grain"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Sacks of grain for the bakeries. Cheap, bulky, and the start of every loaf."
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNMonsterLure.blp"
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\TreasureChest\\treasurechest.mdl"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 1
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "iabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "iper",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I003:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Ore"
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Rough ore for the smelters. Heavy going, but ingots pay for the trouble."
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Ore"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Rough ore for the smelters. Heavy going, but ingots pay for the trouble."
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNEnchantedGemstone.blp"
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\TreasureChest\\treasurechest.mdl"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 5
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "iabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "iper",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I004:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Planks"
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Sawn planks - watchtower ammunition and prime market goods."
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Planks"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Sawn planks - watchtower ammunition and prime market goods."
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNHumanLumberUpgrade1.blp"
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\TreasureChest\\treasurechest.mdl"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 8
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "iabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "iper",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I005:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Bread"
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Fresh bread. Up to three loaves are eaten from the Depot at every market cycle for a dividend bonus."
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Bread"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Fresh bread. Up to three loaves are eaten from the Depot at every market cycle for a dividend bonus."
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNCheese.blp"
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\TreasureChest\\treasurechest.mdl"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 4
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "iabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "iper",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I006:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Tools"
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Finished tools - the market luxury good and the Toolwright ladder currency."
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Tools"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Finished tools - the market luxury good and the Toolwright ladder currency."
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNRepair.blp"
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\TreasureChest\\treasurechest.mdl"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 15
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "iabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "iper",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "I007:ches": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Ingots"
+      },
+      {
+        "id": "ides",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Smelted ingots - cannon tower ammunition and the best price on the board."
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Ingots"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Smelted ingots - cannon tower ammunition and the best price on the board."
+      },
+      {
+        "id": "iico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNPillage.blp"
+      },
+      {
+        "id": "ifil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Objects\\InventoryItems\\TreasureChest\\treasurechest.mdl"
+      },
+      {
+        "id": "igol",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 18
+      },
+      {
+        "id": "ipaw",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "iabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "iper",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ]
+  }
+}
