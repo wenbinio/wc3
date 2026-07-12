@@ -498,7 +498,9 @@ or CC0-converted content. Details: docs/ASSETS.md.
   (persistence/competitive/campaign/peer-pipeline research + four flagship
   profiles: Gaias, Sunken City, DracoL1ch DotA, ITT — and the ranked
   deferred-capabilities list), roguelike-comparison.md (vaults-of-ash vs
-  the 3 strongest WC3 roguelikes: matrix + verdicts + credits)
+  the 3 strongest WC3 roguelikes: matrix + verdicts + credits),
+  headless-tooling-audit-2026-07.md (ranked improvement program: internal
+  quick wins / sim-fidelity tiers / ecosystem adoptions + watch + declines)
 - `.claude/skills/` — wc3-read-map, wc3-build-map, wc3-new-map,
   wc3-import-asset (operational recipes)
 
@@ -517,6 +519,15 @@ or CC0-converted content. Details: docs/ASSETS.md.
   docs/reference/ambitious-maps-analysis.md §6 (persistence/save-codes,
   wtg/wct, etc.); docs/reference/modern-maps-analysis.md §3 (toolkit-gap
   table with per-item fix status).
+- **Tooling-improvement program** (2026-07-12 three-agent audit, assessment
+  only — nothing implemented yet):
+  docs/reference/headless-tooling-audit-2026-07.md. Headlines: formats
+  unchanged through game patch 2.0.4 (no codec work needed); top internal
+  wins = stale-constant lint, wpm/shd autogen, --stabilize, --variant-name;
+  top sim tier = damage events + destructables (crossroads wave-5 grove
+  kill is provably sim-blind today), map-delta-only legality doctrine;
+  top adoptions = War3Net v6 wtg dump, pjass gate, upstream our translator
+  fixes (upstream is responsive again), regen jass-constants vs 2.0.4.
 - **Reportable upstream bug, not yet filed**: classic `war3map.doo` parse
   reads 8 bytes past the end of the buffer — repro in hand from decomposing
   the Just Another Roguelike map (the roguelike-comparison research).
