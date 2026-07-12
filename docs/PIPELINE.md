@@ -391,6 +391,13 @@ sim.damage(src, tgt, 40);         // real UnitDamageTarget path: DAMAGING/DAMAGE
                                   // events, BlzSetEventDamage, death w/ kill credit
 sim.moveUnit(u, x, y);            // position + enter/leave-region events
 sim.constructFinish(u); sim.upgradeFinish(u, 'h003'); sim.pawn(hero, item);
+sim.cast(hero, 'A001', target);   // completed cast: CHANNEL->CAST->EFFECT->
+                                  // FINISH->ENDCAST + GetSpell* getters; target
+                                  // = unit/dest/item, {x, y}, or omitted; errors
+                                  // on an unknown ability unless {force: true}
+sim.pickup(hero, item);           // PICKUP_ITEM into the 6-slot inventory
+sim.drop(hero, item); sim.useItem(hero, item);   // DROP_ITEM / USE_ITEM
+sim.sell(shop, hero, 'I001');     // SELL_ITEM (shop owner's triggers) + pickup
 sim.leave(1);                     // player-leave event
 
 sim.player(0).gold                // PLAYER_STATE_RESOURCE_GOLD readback
@@ -435,7 +442,38 @@ Mock tiers and their honesty rules (details in lib/sim/natives.js):
   `EnumDestructablesInRect` (dead ones still enumerate, like the game),
   `KillDestructable`, life get/set, and the widget-death event
   (`TriggerRegisterDeathEvent` / `TriggerRegisterDestDeathInRegionEvent`,
-  first 64 like the real BJ). Full policy text: lib/sim/natives.js header.
+  first 64 like the real BJ);
+  **ability/spell-event bookkeeping** (NOT an ability engine) — a unit's
+  known-ability set is real state seeded at spawn from the map's own `uabi`
+  delta (a stock unit with no delta knows NOTHING — the sim never fabricates
+  Blizzard kits; `sim.cast`'s `{force: true}` covers that case);
+  `UnitAdd/RemoveAbility` return real booleans, `Get/Set/Inc/Dec`
+  ability-level are real (0 when absent), `SelectHeroSkill` +
+  `GetLearnedSkill/-Level`; `sim.cast` fires the five spell events in the
+  documented completed-cast order CHANNEL -> CAST -> EFFECT -> FINISH ->
+  ENDCAST with `GetSpellAbilityId/-AbilityUnit/-TargetUnit/-TargetX/Y`
+  (no cooldowns/mana/effects — the trigger is what's under test);
+  **map-delta object-data stats** seeded at spawn (un-overridden =
+  documented neutral default, never a fabricated Blizzard value):
+  `uhpm`/`ua1b`/`udef`/`umvs`/`ulev`/`ustr`/`uagi`/`uini`/`uabi`/`ubui`
+  (+ items `igol`/`unam`/`iuse`), read back through
+  `BlzGet/SetUnitBaseDamage`, `BlzGet/SetUnitArmor` (bookkeeping only —
+  damage stays flat), `Get/SetUnitMoveSpeed`/`GetUnitDefaultMoveSpeed`,
+  `GetUnitLevel`, `GetItemName`, `Get/SetItemCharges` (unit gold/lumber
+  costs have no JASS readbacks: query `sim.objectData.unitGoldCost/
+  .unitLumberCost` from tests) — this makes gotcha-23 identity leaks
+  assertable (a clone overriding only `unam` is measurably stat-identical
+  to its base);
+  **items + 6-slot inventories** — real slots 0..5
+  (`UnitAddItem`/`UnitAddItemById`/`UnitAddItemToSlotById` with
+  full-inventory refusal, `UnitRemoveItem/-FromSlot`, `UnitItemInSlot`,
+  `UnitHasItem`, `UnitInventorySize` = flat 6) and the manipulation events
+  PICKUP/DROP/USE/SELL_ITEM with `GetManipulatedItem`/
+  `GetManipulatingUnit` (+ `GetSoldItem`/`GetSellingUnit`/`GetBuyingUnit`
+  on a `sim.sell` purchase, which then runs the pickup path like the game;
+  `sim.useItem` fires the event WITHOUT consumption/charge decrement —
+  perishability is Blizzard data). Full policy text: lib/sim/natives.js
+  header.
 - **Auto-stub**: any OTHER name in the real JASS API surface (native + BJ
   list extracted from the community jassdoc into
   lib/sim/data/jass-constants.json) resolves to an inert recording
@@ -447,10 +485,14 @@ Mock tiers and their honesty rules (details in lib/sim/natives.js):
   globals keep normal Lua truthiness.
 - **Not modeled** (drive outcomes explicitly instead): pathing/movement,
   combat and AI (units never fight on their own — use `sim.kill`/
-  `sim.damage`), abilities, object-data stat effects (only
-  igol/uhpm/unam/bhps/bnam are read, for pawn values, max life and names),
-  `TriggerSleepAction`/`PolledWait` (recorded no-ops). The sim complements
-  the in-game protocol (§7); it never replaces it.
+  `sim.damage`), ability EFFECTS/cooldowns/mana costs (only the events and
+  level bookkeeping above — a cast never damages, buffs or summons by
+  itself), stat EFFECTS (the seeded `ua1b`/`udef` numbers are readable
+  bookkeeping; they never feed the flat damage math), item consumption/
+  charge decrement on use (perishability is Blizzard data — drive
+  `SetItemCharges` explicitly), construction from `ubui` build lists
+  (queryable only), `TriggerSleepAction`/`PolledWait` (recorded no-ops).
+  The sim complements the in-game protocol (§7); it never replaces it.
 
 **Golden-run re-pin doctrine** (applies every time a stub is promoted to
 real semantics — this is how sim-fidelity tiers land): promoting a native
@@ -464,7 +506,13 @@ regression, not drift); (3) record the reviewed diff and the explanation in
 the commit/report; (4) only then update the pinned expectation. If the
 golden run does NOT shift, say so explicitly when landing the tier.
 (WP-B1, the damage+destructables tier, shifted nothing: vaults-of-ash has
-zero doodads.json entries and never calls the promoted natives.)
+zero doodads.json entries and never calls the promoted natives. WP-B2, the
+spells/stats/items tier, also shifted nothing: vaults' seven
+`UnitAddAbility` + all `BlzSetUnitBaseDamage` call sites are statements
+whose newly-real return values are never consumed, no bundled script
+registers spell/item events or reads the newly seeded stats into RUNLOG
+beats, and the seeded `umvs`/`uabi` values match what the scripts already
+set explicitly.)
 
 Proof of value: the sim's first full playthrough caught crossroads-siege
 wave 10 spawning FIVE Dreadflesh Colossi — the per-wave escalation bonus

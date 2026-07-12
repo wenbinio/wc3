@@ -10,7 +10,7 @@ in docs/ and .claude/skills/; follow the pointers.
 
 ```bash
 bash scripts/setup.sh   # idempotent: npm install + optional apt-get smpq fallback
-npm test                # 343 tests; all must pass before you change anything
+npm test                # 354 tests; all must pass before you change anything
 ```
 
 If you touch `lib/mpq.js` or anything archive-related, the suite must be
@@ -399,7 +399,7 @@ never third-party maps, gotcha 9).
 
 ## Testing & validation doctrine
 
-- `npm test` = 343 tests, 31 files (25 under test/ + 6 map suites under
+- `npm test` = 354 tests, 31 files (25 under test/ + 6 map suites under
   maps/*/tests/, all auto-discovered by `node --test`): source⇄binary fixed
   points for the demo/siege/tidewatch/northreach sources (vaults-of-ash is
   covered by its 70-test logic suite), build+validate end-to-end, MPQ
@@ -421,14 +421,25 @@ never third-party maps, gotcha 9).
   war3map.lua — assembled via the real pipeline, generated constants +
   CreateAllUnits blocks included — in fengari (Lua 5.3, same as the game)
   against mocked natives with real semantics for timers/virtual clock,
-  players (alliances, resources, slots), units/groups/items, damage
+  players (alliances, resources, slots), units/groups, damage
   (UnitDamageTarget: flat application, DAMAGING/DAMAGED events fire before
   hit-point deduction, BlzSetEventDamage, kill credit; NO crit/miss
   randomness — gotcha 30; recursion capped at depth 8), destructables
   (instantiated from the map's own doodads.json; enum/kill/life/
   widget-death events — map-delta bhps/bnam only, policy in
-  lib/sim/natives.js header), triggers + events (chat, deaths, regions,
-  construct/upgrade/pawn, damage, destructable death); everything else
+  lib/sim/natives.js header), ability/spell-EVENT bookkeeping (per-unit
+  ability sets seeded from the map's own uabi delta — a stock unit knows
+  NOTHING, no fabricated Blizzard kits; real UnitAdd/RemoveAbility booleans
+  + ability levels; `sim.cast` fires CHANNEL→CAST→EFFECT→FINISH→ENDCAST
+  with the GetSpell* getters; no cooldowns/mana/effects), map-delta stats
+  seeded at spawn (uhpm/ua1b/udef/umvs/ulev/ustr/uagi/uini/ubui + item
+  igol/unam/iuse; un-overridden = documented neutral default — makes
+  gotcha-23 identity leaks assertable), items with real 6-slot inventories
+  + PICKUP/DROP/USE/SELL_ITEM manipulation events (`sim.pickup/drop/
+  useItem/sell`; full inventory refuses; use fires the event with NO
+  consumption), triggers + events (chat, deaths, regions,
+  construct/upgrade/pawn, damage, destructable death, spells, items,
+  hero skill); everything else
   auto-stubs to inert recorded calls, and unknown NON-API globals stay nil
   (normal Lua truthiness). Drive with `sim.advance/chat/kill/moveUnit/...`,
   assert via `sim.player(i).gold`, `sim.alliance`, `sim.results`,
@@ -533,9 +544,11 @@ or CC0-converted content. Details: docs/ASSETS.md.
 ## State & open threads (as of 2026-07-12)
 
 - **Repo state**: all work committed + pushed through `d41bc1b` (Vaults of
-  Ash phase 3); since then WP-A (audit Tier 1) and WP-B1 (audit Tier 2
-  item 1: sim damage events + destructables) landed in the working tree —
-  suite green 343/343 on both MPQ backends.
+  Ash phase 3); since then WP-A (audit Tier 1), WP-B1 (audit Tier 2
+  item 1: sim damage events + destructables) and WP-B2 (audit Tier 2
+  items 2/3/5: sim spell-event bookkeeping, map-delta stats, item events +
+  inventories) landed in the working tree —
+  suite green 354/354 on both MPQ backends.
 - **Bundled maps: in-game playtest status** (the sim is not the game —
   doctrine above): demo, crossroads-siege, tidewatch-arena **verified
   working in the real game** by the user; northreach was fixed AFTER its
@@ -559,9 +572,15 @@ or CC0-converted content. Details: docs/ASSETS.md.
   cap, destructables from doodads.json, the formerly sim-blind crossroads
   wave-5 grove kill now pinned by
   maps/crossroads-siege/tests/shortcut-grove.test.js, golden-run re-pin
-  doctrine added to PIPELINE §8 — vaults golden run did NOT shift).
-  Remaining Tier 2 items + Tier 3 stay assessment-only.
-  Next sim tier = spell/ability event bookkeeping;
+  doctrine added to PIPELINE §8 — vaults golden run did NOT shift);
+  **Tier 2 items 2/3/5 (spell-event bookkeeping, map-delta object-data
+  stats, item events + 6-slot inventories) are IMPLEMENTED** (WP-B2:
+  `sim.cast` with the CHANNEL→CAST→EFFECT→FINISH→ENDCAST order, per-unit
+  ability sets from uabi, spawn-seeded uhpm/ua1b/udef/umvs/ulev/hero
+  stats/ubui + item unam/iuse, `sim.pickup/drop/useItem/sell` +
+  PICKUP/DROP/USE/SELL_ITEM events — vaults golden run did NOT shift).
+  Remaining Tier 2 items (4: line coverage) + Tier 3 stay assessment-only.
+  Next sim tier = script line coverage;
   top adoptions = War3Net v6 wtg dump, pjass gate, upstream our translator
   fixes (upstream is responsive again), regen jass-constants vs 2.0.4.
 - **Reportable upstream bug, not yet filed**: classic `war3map.doo` parse

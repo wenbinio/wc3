@@ -82,6 +82,43 @@ nondeterminism across machines).
 > PIPELINE §8; the vaults-of-ash golden run did NOT shift (zero doodads,
 > none of the promoted natives called). Items 2–5 remain assessment-only.
 
+> **Status update 2026-07-12 (later): Tier 2 items 2, 3 and 5 are
+> IMPLEMENTED** (work package WP-B2) —
+> **Item 2 (spell/ability event bookkeeping)**: per-unit ability sets
+> (Map abilityId -> level) seeded at spawn from the map's own `uabi` delta
+> (empty for stock units — no fabricated kits); `UnitAdd/RemoveAbility`
+> real booleans, `Get/Set/Inc/DecUnitAbilityLevel` (0/no-op when absent),
+> `SelectHeroSkill` + HERO_SKILL event; harness `sim.cast(unit, abil,
+> target?, {force}?)` fires the five spell events in the documented
+> completed-cast order CHANNEL -> CAST -> EFFECT -> FINISH -> ENDCAST with
+> `GetSpellAbilityId/-AbilityUnit/-TargetUnit/-Destructable/-Item/-X/Y`;
+> casting an unknown ability hard-errors unless forced.
+> **Item 3 (map-delta object-data stats)**: readObjectData widened to
+> `ua1b`/`udef`/`umvs`/`ulev`/`ustr`/`uagi`/`uini`/`uabi`/`ubui`/
+> `ugol`/`ulum` (+ item `unam`/`iuse`), seeded into unit records at spawn
+> with documented neutral defaults; readbacks via
+> `BlzGet/SetUnitBaseDamage`, `BlzGet/SetUnitArmor` (bookkeeping only —
+> damage stays flat), `GetUnitDefaultMoveSpeed`, `GetUnitLevel`,
+> `GetItemName`, `Get/SetItemCharges`; `ugol`/`ulum` have no JASS
+> readback natives, so they are exposed as
+> `sim.objectData.unitGoldCost/.unitLumberCost` only; skin twins merge
+> per lib/constants.js conventions. Gotcha-23 identity leaks are now
+> assertable (test/sim.test.js pins a unam-only clone as stat-identical
+> to its base).
+> **Item 5 (item events + inventories)**: real 6-slot inventories
+> (`UnitAddItem`/`-ById`/`-ToSlotById` with full-inventory refusal,
+> `UnitRemoveItem`/`-FromSlot`, `UnitItemInSlot(BJ)`, `UnitHasItem`,
+> `UnitInventorySize`/`UnitInventoryCount`, `UnitUseItem`) and the
+> PICKUP/DROP/USE/SELL_ITEM events (+ EVENT_UNIT_* twins) with
+> `GetManipulatedItem`/`GetManipulatingUnit`; harness
+> `sim.pickup/drop/useItem/sell` — `sim.sell` fires SELL_ITEM to the shop
+> owner's triggers then the pickup path (like the game); the WP-B1 pawn
+> flow is unchanged (and now vacates the carrier slot). Per the
+> determinism rule, the vaults golden run did NOT shift: the promoted
+> return values are never consumed by bundled scripts, and no bundled
+> script registers spell/item events. Item 4 (line coverage) remains
+> assessment-only.
+
 1. **Damage-event skeleton + destructables** (recommended as one work
    package, ~150 lines + mirror-of-unit-table respectively):
    - `UnitDamageTarget` deducts life (flat, no mitigation by default) and

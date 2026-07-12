@@ -555,6 +555,391 @@ test('destructables: instantiated from a synthetic map source, map-delta only', 
   }
 });
 
+test('abilities: add/remove/level bookkeeping with real booleans', () => {
+  const sim = sandbox(`
+    u = CreateUnit(Player(0), FourCC("hfoo"), 0.0, 0.0, 0.0)
+    lvl_absent = GetUnitAbilityLevel(u, FourCC("A000"))
+    add1 = UnitAddAbility(u, FourCC("A000"))
+    add2 = UnitAddAbility(u, FourCC("A000"))   -- already known -> false
+    lvl_added = GetUnitAbilityLevel(u, FourCC("A000"))
+    set3 = SetUnitAbilityLevel(u, FourCC("A000"), 3)
+    inc4 = IncUnitAbilityLevel(u, FourCC("A000"))
+    dec3 = DecUnitAbilityLevel(u, FourCC("A000"))
+    set_absent = SetUnitAbilityLevel(u, FourCC("A999"), 5)  -- absent -> 0, no-op
+    inc_absent = IncUnitAbilityLevel(u, FourCC("A999"))
+    rem1 = UnitRemoveAbility(u, FourCC("A000"))
+    rem2 = UnitRemoveAbility(u, FourCC("A000"))  -- already gone -> false
+    lvl_after = GetUnitAbilityLevel(u, FourCC("A000"))
+  `);
+  assert.strictEqual(sim.global('lvl_absent'), 0);
+  assert.strictEqual(sim.global('add1'), true);
+  assert.strictEqual(sim.global('add2'), false);
+  assert.strictEqual(sim.global('lvl_added'), 1);
+  assert.strictEqual(sim.global('set3'), 3);
+  assert.strictEqual(sim.global('inc4'), 4);
+  assert.strictEqual(sim.global('dec3'), 3);
+  assert.strictEqual(sim.global('set_absent'), 0);
+  assert.strictEqual(sim.global('inc_absent'), 0);
+  assert.strictEqual(sim.global('rem1'), true);
+  assert.strictEqual(sim.global('rem2'), false);
+  assert.strictEqual(sim.global('lvl_after'), 0);
+  assert.strictEqual(sim.global('set_absent'), 0);
+  assert.strictEqual(sim.units.get(sim.global('u')).abilities.has(fourCC('A999')), false,
+    'Set on an absent ability must not implicitly grant it');
+});
+
+test('spell cast: CHANNEL->CAST->EFFECT->FINISH->ENDCAST with getters, unit target', () => {
+  const sim = sandbox(`
+    order = {}
+    caster = CreateUnit(Player(0), FourCC("Hpal"), 10.0, 20.0, 0.0)
+    victim = CreateUnit(Player(1), FourCC("hfoo"), 300.0, 400.0, 0.0)
+    UnitAddAbility(caster, FourCC("A001"))
+    local function watch(ev, tag)
+      local t = CreateTrigger()
+      TriggerRegisterAnyUnitEventBJ(t, ev)
+      TriggerAddAction(t, function()
+        order[#order+1] = tag
+        ability_ok = (GetSpellAbilityId() == FourCC("A001"))
+        caster_ok = (GetSpellAbilityUnit() == caster) and (GetTriggerUnit() == caster)
+        target_ok = (GetSpellTargetUnit() == victim)
+        tx, ty = GetSpellTargetX(), GetSpellTargetY()
+      end)
+    end
+    watch(EVENT_PLAYER_UNIT_SPELL_CHANNEL, "channel")
+    watch(EVENT_PLAYER_UNIT_SPELL_CAST, "cast")
+    watch(EVENT_PLAYER_UNIT_SPELL_EFFECT, "effect")
+    watch(EVENT_PLAYER_UNIT_SPELL_FINISH, "finish")
+    watch(EVENT_PLAYER_UNIT_SPELL_ENDCAST, "endcast")
+    -- the EVENT_UNIT_* twin fires for the caster unit itself
+    local ut = CreateTrigger()
+    TriggerRegisterUnitEvent(ut, caster, EVENT_UNIT_SPELL_EFFECT)
+    TriggerAddAction(ut, function() unit_twin = true end)
+  `);
+  const caster = sim.units.get(sim.global('caster'));
+  const victim = sim.units.get(sim.global('victim'));
+  sim.cast(caster, 'A001', victim);
+  sim.run('flat = table.concat(order, ",")');
+  assert.strictEqual(sim.global('flat'), 'channel,cast,effect,finish,endcast');
+  assert.strictEqual(sim.global('ability_ok'), true);
+  assert.strictEqual(sim.global('caster_ok'), true);
+  assert.strictEqual(sim.global('target_ok'), true);
+  assert.strictEqual(sim.global('tx'), 300);
+  assert.strictEqual(sim.global('ty'), 400);
+  assert.strictEqual(sim.global('unit_twin'), true);
+});
+
+test('spell cast: point target and no-target coordinate semantics', () => {
+  const sim = sandbox(`
+    caster = CreateUnit(Player(0), FourCC("Hpal"), 50.0, 60.0, 0.0)
+    UnitAddAbility(caster, FourCC("A002"))
+    local t = CreateTrigger()
+    TriggerRegisterAnyUnitEventBJ(t, EVENT_PLAYER_UNIT_SPELL_EFFECT)
+    TriggerAddAction(t, function()
+      hits = (hits or 0) + 1
+      no_unit = (GetSpellTargetUnit() == nil)
+      tx, ty = GetSpellTargetX(), GetSpellTargetY()
+    end)
+  `);
+  const caster = sim.units.get(sim.global('caster'));
+  sim.cast(caster, 'A002', { x: -500, y: 750 });
+  assert.strictEqual(sim.global('no_unit'), true);
+  assert.deepStrictEqual([sim.global('tx'), sim.global('ty')], [-500, 750]);
+  sim.cast(caster, 'A002'); // no target: caster's own position
+  assert.deepStrictEqual([sim.global('tx'), sim.global('ty')], [50, 60]);
+  assert.strictEqual(sim.global('hits'), 2);
+});
+
+test('sim.cast hard-errors on an unknown ability; {force} overrides (stock-kit case)', () => {
+  const sim = sandbox(`
+    u = CreateUnit(Player(0), FourCC("Hpal"), 0.0, 0.0, 0.0)
+    local t = CreateTrigger()
+    TriggerRegisterAnyUnitEventBJ(t, EVENT_PLAYER_UNIT_SPELL_EFFECT)
+    TriggerAddAction(t, function() fired = true end)
+  `);
+  const u = sim.units.get(sim.global('u'));
+  // a stock unit's known set is EMPTY (map-delta doctrine: no fabricated kits)
+  assert.strictEqual(u.abilities.size, 0);
+  assert.throws(() => sim.cast(u, 'AHhb'), /does not know ability AHhb.*force/s);
+  assert.notStrictEqual(sim.global('fired'), true);
+  sim.cast(u, 'AHhb', undefined, { force: true });
+  assert.strictEqual(sim.global('fired'), true);
+});
+
+test('SelectHeroSkill learns then levels; HERO_SKILL event getters', () => {
+  const sim = sandbox(`
+    log = {}
+    h = CreateUnit(Player(0), FourCC("Hpal"), 0.0, 0.0, 0.0)
+    local t = CreateTrigger()
+    TriggerRegisterAnyUnitEventBJ(t, EVENT_PLAYER_HERO_SKILL)
+    TriggerAddAction(t, function()
+      log[#log+1] = GetLearnedSkillLevel()
+      skill_ok = (GetLearnedSkill() == FourCC("A005"))
+      learner_ok = (GetLearningUnit() == h) and (GetTriggerUnit() == h)
+    end)
+    SelectHeroSkill(h, FourCC("A005"))
+    SelectHeroSkill(h, FourCC("A005"))
+    lvl = GetUnitAbilityLevel(h, FourCC("A005"))
+  `);
+  sim.run('flat = table.concat(log, ",")');
+  assert.strictEqual(sim.global('flat'), '1,2');
+  assert.strictEqual(sim.global('skill_ok'), true);
+  assert.strictEqual(sim.global('learner_ok'), true);
+  assert.strictEqual(sim.global('lvl'), 2);
+});
+
+// build a throwaway map source on top of the demo template with the given
+// objects-*.json tables (shared by the map-delta stat tests below)
+function withSyntheticSource(files, fn) {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'w3xsimod-'));
+  try {
+    fs.cpSync(path.join(__dirname, '..', 'maps', 'demo'), tmp, { recursive: true });
+    for (const [name, json] of Object.entries(files)) {
+      fs.writeFileSync(path.join(tmp, name), JSON.stringify(json));
+    }
+    return fn(loadMap(tmp), tmp);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+}
+const mod = (id, type, value) => ({ id, type, level: 0, column: 0, value });
+
+test('map-delta stats seed at spawn; un-overridden fields read neutral defaults', () => {
+  withSyntheticSource({
+    'objects-units.json': {
+      original: {},
+      custom: {
+        'h00A:hfoo': [
+          mod('uhpm', 'int', 350), mod('ua1b', 'int', 22), mod('udef', 'int', 4),
+          mod('umvs', 'int', 310), mod('ulev', 'int', 6),
+          mod('ustr', 'int', 33), mod('uagi', 'int', 21), mod('uini', 'int', 17),
+          mod('uabi', 'string', 'A001,A002'), mod('ubui', 'string', 'h004,h006'),
+          mod('ugol', 'int', 425), mod('ulum', 'int', 30),
+        ],
+      },
+    },
+    // skin twin carries the display name for the same rawcode (merged, like
+    // lib/constants.js)
+    'objects-units-skin.json': {
+      original: {}, custom: { 'h00A:hfoo': [mod('unam', 'string', 'Skinned Raider')] },
+    },
+    'objects-items.json': {
+      original: {},
+      custom: { 'I00A:ches': [mod('unam', 'string', 'Wax Seal'), mod('iuse', 'int', 3), mod('igol', 'int', 90)] },
+    },
+  }, (sim) => {
+    const u = sim.createUnit(0, 'h00A', 0, 0);
+    sim.run(`
+      u = "${u.handle}"
+      dmg = BlzGetUnitBaseDamage(u, 0)
+      armor = BlzGetUnitArmor(u)
+      ms = GetUnitMoveSpeed(u)
+      dms = GetUnitDefaultMoveSpeed(u)
+      lvl = GetUnitLevel(u)
+      s, a, i = GetHeroStr(u, false), GetHeroAgi(u, false), GetHeroInt(u, false)
+      ab1 = GetUnitAbilityLevel(u, FourCC("A001"))
+      ab2 = GetUnitAbilityLevel(u, FourCC("A002"))
+      name = GetUnitName(u)
+      it = CreateItem(FourCC("I00A"), 0.0, 0.0)
+      iname = GetItemName(it)
+      icharges = GetItemCharges(it)
+    `);
+    assert.strictEqual(u.maxLife, 350);
+    assert.strictEqual(sim.global('dmg'), 22);
+    assert.strictEqual(sim.global('armor'), 4);
+    assert.strictEqual(sim.global('ms'), 310);
+    assert.strictEqual(sim.global('dms'), 310);
+    assert.strictEqual(sim.global('lvl'), 6);
+    assert.deepStrictEqual([sim.global('s'), sim.global('a'), sim.global('i')], [33, 21, 17]);
+    assert.deepStrictEqual([sim.global('ab1'), sim.global('ab2')], [1, 1], 'uabi grants at level 1');
+    assert.strictEqual(sim.global('name'), 'Skinned Raider', 'skin-twin unam merged');
+    assert.deepStrictEqual(u.builds, ['h004', 'h006'], 'ubui queryable, no construction semantics');
+    assert.strictEqual(sim.objectData.unitGoldCost.get(fourCC('h00A')), 425);
+    assert.strictEqual(sim.objectData.unitLumberCost.get(fourCC('h00A')), 30);
+    assert.strictEqual(sim.global('iname'), 'Wax Seal');
+    assert.strictEqual(sim.global('icharges'), 3, 'iuse seeds item charges');
+
+    // a STOCK type with no deltas: documented neutral defaults, never
+    // fabricated Blizzard values
+    const stock = sim.createUnit(0, 'hkni', 0, 0);
+    sim.run(`
+      k = "${stock.handle}"
+      kdmg = BlzGetUnitBaseDamage(k, 0)
+      karmor = BlzGetUnitArmor(k)
+      kms = GetUnitDefaultMoveSpeed(k)
+      klvl = GetUnitLevel(k)
+    `);
+    assert.strictEqual(stock.maxLife, 100);
+    assert.strictEqual(sim.global('kdmg'), 0);
+    assert.strictEqual(sim.global('karmor'), 0);
+    assert.strictEqual(sim.global('kms'), 270);
+    assert.strictEqual(sim.global('klvl'), 1);
+    assert.strictEqual(stock.abilities.size, 0, 'no uabi delta = empty known-ability set');
+    assert.deepStrictEqual(stock.builds, []);
+  });
+});
+
+test('gotcha 23 is assertable: a clone overriding only unam is stat-identical to its base', () => {
+  withSyntheticSource({
+    'objects-units.json': {
+      original: {},
+      custom: {
+        // the "deer drops cheese" bug shape: a clone that ONLY renames.
+        // Custom entries inherit from the STOCK base (WE semantics), so in
+        // the sim both spawn with pure neutral defaults — measurably
+        // identical in everything but the name.
+        'h00B:hfoo': [mod('unam', 'string', 'Totally New Hero')],
+      },
+    },
+  }, (sim) => {
+    const base = sim.createUnit(0, 'hfoo', 0, 0);
+    const clone = sim.createUnit(0, 'h00B', 0, 0);
+    const identity = (u) => ({
+      maxLife: u.maxLife, baseDamage: u.baseDamage, armor: u.armor,
+      moveSpeed: u.moveSpeed, level: u.level,
+      str: u.str, agi: u.agi, int: u.int,
+      abilities: [...u.abilities.keys()], builds: u.builds,
+    });
+    assert.deepStrictEqual(identity(clone), identity(base),
+      'everything measurable about the clone IS the base — only unam changed');
+    sim.run(`bn = GetUnitName("${base.handle}") cn = GetUnitName("${clone.handle}")`);
+    assert.strictEqual(sim.global('cn'), 'Totally New Hero');
+    assert.notStrictEqual(sim.global('bn'), sim.global('cn'));
+  });
+});
+
+test('inventory: 6 slots, first-free and exact-slot placement, full refusal', () => {
+  const sim = sandbox(`
+    u = CreateUnit(Player(0), FourCC("Hpal"), 0.0, 0.0, 0.0)
+    size = UnitInventorySize(u)
+    items = {}
+    for i = 1, 6 do items[i] = UnitAddItemById(u, FourCC("I000")) end
+    count_full = UnitInventoryCount(u)
+    -- 7th by-id: created but stays on the ground
+    overflow = UnitAddItemById(u, FourCC("I000"))
+    overflow_carried = UnitHasItem(u, overflow)
+    -- UnitAddItem on a full inventory refuses
+    ground = CreateItem(FourCC("I001"), 5.0, 5.0)
+    add_full = UnitAddItem(u, ground)
+    -- exact-slot add on an occupied slot refuses
+    slot_occupied = UnitAddItemToSlotById(u, FourCC("I001"), 2)
+    -- free slot 2, then exact-slot add succeeds there
+    dropped = UnitRemoveItemFromSlot(u, 2)
+    slot_free = UnitAddItemToSlotById(u, FourCC("I001"), 2)
+    in_slot2 = GetItemTypeId(UnitItemInSlot(u, 2))
+    in_slot2_bj = GetItemTypeId(UnitItemInSlotBJ(u, 3))  -- BJ is 1-based
+    has_type = UnitHasItemOfTypeBJ(u, FourCC("I001"))
+    empty_slot_read = UnitItemInSlot(u, 9)
+  `);
+  assert.strictEqual(sim.global('size'), 6);
+  assert.strictEqual(sim.global('count_full'), 6);
+  assert.strictEqual(sim.global('overflow_carried'), false, 'full: by-id item stays on the ground');
+  assert.strictEqual(sim.global('add_full'), false, 'full: UnitAddItem returns false');
+  assert.strictEqual(sim.global('slot_occupied'), false);
+  assert.ok(sim.global('dropped'));
+  assert.strictEqual(sim.global('slot_free'), true);
+  assert.strictEqual(sim.global('in_slot2'), fourCC('I001'));
+  assert.strictEqual(sim.global('in_slot2_bj'), fourCC('I001'));
+  assert.strictEqual(sim.global('has_type'), true);
+  assert.strictEqual(sim.global('empty_slot_read'), undefined);
+});
+
+test('item events: PICKUP/DROP/USE/SELL fire with manipulation getters', () => {
+  const sim = sandbox(`
+    log = {}
+    hero = CreateUnit(Player(0), FourCC("Hpal"), 0.0, 0.0, 0.0)
+    shop = CreateUnit(Player(27), FourCC("ngme"), 100.0, 0.0, 0.0)
+    loot = CreateItem(FourCC("I000"), 10.0, 10.0)
+    local function watch(ev, tag)
+      local t = CreateTrigger()
+      TriggerRegisterAnyUnitEventBJ(t, ev)
+      TriggerAddAction(t, function()
+        log[#log+1] = tag .. ":" .. GetItemTypeId(GetManipulatedItem())
+        manip_ok = (GetManipulatingUnit() == GetTriggerUnit())
+      end)
+    end
+    watch(EVENT_PLAYER_UNIT_PICKUP_ITEM, "pickup")
+    watch(EVENT_PLAYER_UNIT_DROP_ITEM, "drop")
+    watch(EVENT_PLAYER_UNIT_USE_ITEM, "use")
+    -- SELL_ITEM dispatches to the SHOP owner's triggers with the sale getters
+    local sell = CreateTrigger()
+    TriggerRegisterPlayerUnitEvent(sell, Player(27), EVENT_PLAYER_UNIT_SELL_ITEM, nil)
+    TriggerAddAction(sell, function()
+      log[#log+1] = "sell:" .. GetItemTypeId(GetSoldItem())
+      sale_ok = (GetSellingUnit() == shop) and (GetBuyingUnit() == hero)
+        and (GetTriggerUnit() == shop)
+    end)
+    -- EVENT_UNIT_* twin on the hero
+    local twin = CreateTrigger()
+    TriggerRegisterUnitEvent(twin, hero, EVENT_UNIT_PICKUP_ITEM)
+    TriggerAddAction(twin, function() twin_hits = (twin_hits or 0) + 1 end)
+  `);
+  const hero = sim.units.get(sim.global('hero'));
+  const shop = sim.units.get(sim.global('shop'));
+  const loot = sim.items.get(sim.global('loot'));
+  assert.strictEqual(sim.pickup(hero, loot), true);
+  sim.useItem(hero, loot);
+  sim.drop(hero, loot);
+  assert.strictEqual(loot.ownerUnit, null);
+  assert.deepStrictEqual([loot.x, loot.y], [0, 0], 'dropped at the carrier');
+  // purchase: SELL_ITEM first, then the pickup path into the buyer
+  const bought = sim.sell(shop, hero, 'I001');
+  assert.strictEqual(bought.ownerUnit, hero.handle);
+  sim.run('flat = table.concat(log, "|")');
+  assert.strictEqual(sim.global('flat'),
+    `pickup:${fourCC('I000')}|use:${fourCC('I000')}|drop:${fourCC('I000')}|` +
+    `sell:${fourCC('I001')}|pickup:${fourCC('I001')}`);
+  assert.strictEqual(sim.global('manip_ok'), true);
+  assert.strictEqual(sim.global('sale_ok'), true);
+  assert.strictEqual(sim.global('twin_hits'), 2, 'unit twin: ground pickup + purchase');
+  // harness misuse hard-errors (test-authoring bugs)
+  assert.throws(() => sim.drop(hero, loot), /does not carry/);
+  assert.throws(() => sim.useItem(hero, loot), /does not carry/);
+});
+
+test('pawn path unregressed: pays floor(igol/2), fires PAWN_ITEM, vacates the slot', () => {
+  withSyntheticSource({
+    'objects-items.json': {
+      original: {}, custom: { 'I00P:ches': [mod('igol', 'int', 90)] },
+    },
+  }, (sim) => {
+    sim.run(`
+      hero = CreateUnit(Player(0), FourCC("Hpal"), 0.0, 0.0, 0.0)
+      local t = CreateTrigger()
+      TriggerRegisterAnyUnitEventBJ(t, EVENT_PLAYER_UNIT_PAWN_ITEM)
+      TriggerAddAction(t, function()
+        pawned = GetItemTypeId(GetSoldItem())
+        pawn_seller = (GetSellingUnit() == hero)
+      end)
+    `);
+    const hero = sim.units.get(sim.global('hero'));
+    const it = sim.createItem('I00P', 0, 0);
+    assert.strictEqual(sim.pickup(hero, it), true);
+    const before = sim.player(0).gold;
+    const { enginePaid } = sim.pawn(hero, it);
+    assert.strictEqual(enginePaid, 45);
+    assert.strictEqual(sim.player(0).gold, before + 45);
+    assert.strictEqual(sim.global('pawned'), fourCC('I00P'));
+    assert.strictEqual(sim.global('pawn_seller'), true);
+    assert.strictEqual(it.removed, true);
+    assert.strictEqual(hero.inventory.filter(Boolean).length, 0, 'pawn vacated the slot');
+  });
+});
+
+test('RemoveItem vacates its carrier slot; charges default 0 and are settable', () => {
+  const sim = sandbox(`
+    u = CreateUnit(Player(0), FourCC("Hpal"), 0.0, 0.0, 0.0)
+    it = UnitAddItemById(u, FourCC("I000"))
+    c0 = GetItemCharges(it)
+    SetItemCharges(it, 7)
+    c7 = GetItemCharges(it)
+    RemoveItem(it)
+    slot0 = UnitItemInSlot(u, 0)
+  `);
+  assert.strictEqual(sim.global('c0'), 0, 'neutral default: no iuse delta');
+  assert.strictEqual(sim.global('c7'), 7);
+  assert.strictEqual(sim.global('slot0'), undefined);
+});
+
 test('sim.calls records every native call with virtual timestamps', () => {
   const sim = sandbox(`
     local t = CreateTimer()
