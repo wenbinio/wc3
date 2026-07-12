@@ -14,6 +14,7 @@ working example: `maps/demo/`). Edit it, then:
 node tools/build-map.js <map-source-dir> _build/out.w3x
 node tools/validate-map.js _build/out.w3x        # must exit 0
 node tools/test-map-logic.js <map-source-dir>    # headless logic tests (if tests/ exists)
+node tools/preflight.js <map-source-dir>         # standing rule: 0 FAILs on every change set (CLAUDE.md "First step")
 ```
 
 validate-map may also print `WARN lint ...` lines (object-data semantic

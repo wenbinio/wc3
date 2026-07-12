@@ -11,7 +11,16 @@ in docs/ and .claude/skills/; follow the pointers.
 ```bash
 bash scripts/setup.sh   # idempotent: npm install + optional smpq fallback + optional pjass build (vendor/pjass)
 npm test                # 393 tests; all must pass before you change anything
+npm run preflight       # ~13s one-shot gate; 0 FAILs required before AND after any change
 ```
+
+**Standing rule: preflight accompanies ALL testing from now on.** `npm test`
+green is not "done" — a change is done only when `npm run preflight` also
+exits 0 (no FAILs). Run both before starting (baseline) and after every
+change set; preflight catches whole classes `npm test` structurally can't
+(pick/load/runtime failure signatures on the BUILT artifacts, 64-bit
+cross-execution, lobby wiring, locals headroom). New WARNs vs the baseline
+must be explained in the commit message or fixed.
 
 If you touch `lib/mpq.js` or anything archive-related, the suite must be
 green under BOTH MPQ backends: `npm test` (stormlib-node when loadable)
@@ -493,11 +502,13 @@ never third-party maps, gotcha 9).
   (War3Net v6 handles classic AND Reforged; the tie-breaker). Its
   `--dump-triggers` mode is the only wtg/wct visibility in the toolkit
   (read-only `_triggers/` JSON dumps — PIPELINE §6).
-- **Pre-playtest gate is ONE command**: `npm run preflight`
-  (tools/preflight.js, PIPELINE §9) — codifies the whole failure-class +
-  64-bit cross-execution program of docs/reference/preflight-2026-07.md
-  (per-check catalog in the tool header); run it before ANY playtest
-  handoff. test/preflight.test.js keeps every bundled map preflighting
+- **Preflight is part of ALL testing, not just playtest handoff**:
+  `npm run preflight` (tools/preflight.js, PIPELINE §9) — codifies the
+  whole failure-class + 64-bit cross-execution program of
+  docs/reference/preflight-2026-07.md (per-check catalog in the tool
+  header). Standing rule (see "First step in any session"): every change
+  set ends with BOTH `npm test` green AND preflight at 0 FAILs; run it
+  before ANY playtest handoff as well. test/preflight.test.js keeps every bundled map preflighting
   with zero FAILs as a standing suite gate (logic tier exercised there by
   npm test itself, not re-run inside preflight's test).
 - **Honest limit: structural validity ≠ game acceptance.** Only the game

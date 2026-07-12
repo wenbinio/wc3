@@ -69,6 +69,7 @@ Build and check:
 node tools/build-map.js maps/<name> _build/<name>.w3x
 node tools/validate-map.js _build/<name>.w3x   # must exit 0
 node tools/test-map-logic.js maps/<name>       # logic tests (step 6) must pass
+node tools/preflight.js maps/<name>            # standing rule: 0 FAILs on every change set (CLAUDE.md "First step")
 ```
 
 Keep the map source committed. Scratch builds (`_build/`) stay gitignored;
