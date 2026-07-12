@@ -195,7 +195,8 @@ HUB: pick a hero at the pedestals + swear a covenant (both optional, before the 
   must stay in sync with `SIGIL_SETS` (tests enforce the tooltip format).
 - Note: the script's functions are Lua **globals**, not locals — the
   packed chunk (script + generated blocks) must stay under Lua's
-  200-local limit per function (fengari enforces it; the game would too).
+  200-local limit per function (fengari enforces it; the game would too;
+  CLAUDE.md gotcha 28).
 
 ## Test coverage (tests/)
 

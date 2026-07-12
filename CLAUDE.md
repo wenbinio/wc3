@@ -10,7 +10,7 @@ in docs/ and .claude/skills/; follow the pointers.
 
 ```bash
 bash scripts/setup.sh   # idempotent: npm install + optional apt-get smpq fallback
-npm test                # 201 tests; all must pass before you change anything
+npm test                # 311 tests; all must pass before you change anything
 ```
 
 If you touch `lib/mpq.js` or anything archive-related, the suite must be
@@ -66,6 +66,11 @@ Reference sources (each README documents its own invariants):
   "Use Custom Forces + Fixed Player Settings" `config()` pattern (gotcha 18).
 - `maps/northreach/` — economy/systems map: 3 generated custom models
   (assets/mdl-lib.mjs), chat-command `-test` debug mode, FoTN-derived design.
+- `maps/vaults-of-ash/` — flagship seeded co-op roguelike; the sim-first
+  reference: one Park-Miller PRNG stream, seed locked at first commitment,
+  golden-run replay test (gotchas 28–30), 70 logic tests, data-driven Lua
+  tables, 4 generated models; competitor matrix in
+  docs/reference/roguelike-comparison.md.
 
 Scratch builds go to `_build/` (gitignored). Exception: `maps/builds/` holds
 the committed compiled `.w3x` of each bundled source — regenerate via
@@ -92,11 +97,16 @@ never third-party maps, gotcha 9).
   (gotcha 17) — PIPELINE §7.
 - **Decomposition-driven design**: before cloning/adapting a real map,
   decompose the actual artifact — forum lore got nearly every FoTN mechanic
-  wrong; worked examples: docs/reference/fotn-analysis.md (protected
-  classic), docs/reference/modern-maps-analysis.md (4 modern production
-  maps), docs/reference/ambitious-maps-analysis.md (persistence/competitive/
+  wrong; and before DESIGNING against a genre, decompose the competitors and
+  write an honest comparison matrix (bold their wins too) — worked examples:
+  docs/reference/fotn-analysis.md (protected classic),
+  docs/reference/modern-maps-analysis.md (4 modern production maps),
+  docs/reference/ambitious-maps-analysis.md (persistence/competitive/
   campaign ecosystems + 4 flagship decompositions: Gaias, Sunken City,
-  DracoL1ch DotA, Island Troll Tribes).
+  DracoL1ch DotA, Island Troll Tribes),
+  docs/reference/roguelike-comparison.md (vaults-of-ash vs the 3 strongest
+  WC3 roguelikes — the design-workflow exemplar: decompose → adapt with
+  credit → fix the fairness flaw → concede lost rows plainly).
 
 ## Capability matrix (what we can do per map class, as of 2026-07)
 
@@ -133,17 +143,15 @@ never third-party maps, gotcha 9).
    `RangeError: offset out of range`. BUT real published maps (2023–2026,
    incl. 1.36/2.0-editor-saved) ship **w3e v11** terrain, **w3i v25/v31**
    info and **object data v1/v2** (current Wurst emits v2 today) — those now
-   have first-class read+WRITE codecs (`lib/codecs/`,
-   routed by lib/filemap.js off the binary version dword / the JSON
-   `"version"` marker) and land in normal editable
-   terrain.json/info.json/objects-*.json
+   have first-class read+WRITE codecs (`lib/codecs/`, routed by
+   lib/filemap.js off the binary version dword / the JSON `"version"`
+   marker) and land in normal editable terrain.json/info.json/objects-*.json
    with byte-faithful write-back (exact v11↔v12 / v25↔v31↔v33 / objects
    v1/v2↔v3 deltas: docs/FORMATS.md). **Keep the `"version"` marker in
-   source JSON** —
-   deleting it makes json-to-map write the NEWEST format (v12/v33/objects
-   v3), silently
-   changing the on-disk version. Only versions no codec covers (w3i v18,
-   classic doo, ...) still take the old path: map-to-json catches ANY
+   source JSON** — deleting it makes json-to-map write the NEWEST format
+   (v12/v33/objects v3), silently changing the on-disk version. Only
+   versions no codec covers (w3i v18, classic doo, ...) still take the old
+   path: map-to-json catches ANY
    translator throw — file copied raw (manifest.json → `errors`) plus a
    READ-ONLY mdx-m3-viewer-th parse under `_viewer/` (viewer schema, never
    repacked — not build-source); viewer failures land in
@@ -350,11 +358,38 @@ never third-party maps, gotcha 9).
     user script, so packed-script line numbers in build errors are offset by
     the block length; (e) JASS (war3map.j) gets no injection — the index is
     still written for reference.
+28. **Lua's 200-locals-per-function engine limit applies to the main chunk**
+    (the chunk IS a function). luaparse does NOT enforce it, so build-map
+    passes — but fengari (the sim) and the real game refuse to LOAD the
+    chunk ("too many local variables"). A big map script with `local`
+    script-level state/functions dies at load while validating clean. Fix =
+    WE convention: script-level functions and state are Lua GLOBALS; keep
+    `local` for true block/function locals (maps/vaults-of-ash/war3map.lua
+    is the worked example; its README notes the rule).
+29. **Seeded PRNGs must be integer-width portable**: fengari's Lua integers
+    are 32-bit, the game's are 64-bit — xorshift/bitwise PRNGs (anything
+    with intermediates ≥ 2^31) DIVERGE between sim and game. Use the
+    Park-Miller LCG via Schrage's algorithm (all intermediates < 2^31 →
+    bit-identical sequences under both widths; `SeedRNG`/`NextRand` in
+    maps/vaults-of-ash/war3map.lua). Never `math.random`/`GetRandomInt` for
+    seeded logic the sim must reproduce — those are engine randomness the
+    sim can't replay.
+30. **Seeded-determinism doctrine** (replayable/roguelike maps): route EVERY
+    random draw through ONE map-owned PRNG stream (gotcha 29); lock the seed
+    at the first commitment point (vaults: `-seed N` refused after any
+    covenant/door — reseeding mid-run forks state); append a machine-readable
+    run log; then pin it with a **golden-run test** — the sim plays a full
+    scripted playthrough on the default seed and `deepStrictEqual`s the
+    byte-exact beat sequence (61 beats in the exemplar), so ANY drift names
+    the beat. Exemplar: maps/vaults-of-ash/tests/golden-run.test.js.
 
 ## Testing & validation doctrine
 
-- `npm test` = 241 tests, 22 files: source⇄binary fixed points for all four
-  bundled maps, build+validate end-to-end, MPQ backends, version codecs
+- `npm test` = 311 tests, 26 files (21 under test/ + 5 map suites under
+  maps/*/tests/, all auto-discovered by `node --test`): source⇄binary fixed
+  points for the demo/siege/tidewatch/northreach sources (vaults-of-ash is
+  covered by its 70-test logic suite), build+validate end-to-end, MPQ
+  backends, version codecs
   (synthetic v11/v25/v31 + object-data v1/v2 fixtures cross-checked against
   mdx-m3-viewer-th + guarded real-sample fixpoints), classic/protected
   fallbacks (`_viewer/`, `_unknown/`, classicw3i, truncated w3i), wts
@@ -377,6 +412,9 @@ never third-party maps, gotcha 9).
   10 of crossroads-siege spawning FIVE bosses (escalation bonus applied to
   the boss entry) — structural validation could never see that. Write
   maps/<name>/tests/*.test.js for every mechanic you script (PIPELINE §8).
+  First-class technique for seeded maps: the **golden-run test** (gotcha 30)
+  — a full scripted playthrough pinning the byte-exact run-log beat
+  sequence; exemplar maps/vaults-of-ash/tests/golden-run.test.js.
 - **Sim honesty rules**: the sim is NOT the game — no pathing, combat AI,
   ability engine or object-data stat effects (a stubbed native is inert:
   check `--coverage` when a mechanic mysteriously "passes"); logic tests
@@ -435,7 +473,9 @@ or CC0-converted content. Details: docs/ASSETS.md.
   `lib/classicw3i.js` — tolerant truncated-classic-w3i reader
 - `lib/luacheck.js` — luaparse Lua 5.3 gate; `lib/minimap.js` — minimap
   tga/mmp generation; `lib/unitscript.js` — CreateAllUnits() generation;
-  `lib/objectlint.js` — object-data semantic WARNings (gotchas 22/23/25)
+  `lib/constants.js` — named-constants block + constants.json generation
+  (gotcha 27); `lib/objectlint.js` — object-data semantic WARNings
+  (gotchas 22/23/25)
 - `lib/wts.js` — linear wts parser/serializer, upstream dialect + byte-exact
   file-dialect preservation via the `_dialect` sidecar (upstream's regex
   reader OOMs on production-scale ~10k-string files; gotcha 16);
@@ -457,6 +497,28 @@ or CC0-converted content. Details: docs/ASSETS.md.
   the ranked toolkit-gap list with fix status), ambitious-maps-analysis.md
   (persistence/competitive/campaign/peer-pipeline research + four flagship
   profiles: Gaias, Sunken City, DracoL1ch DotA, ITT — and the ranked
-  deferred-capabilities list)
+  deferred-capabilities list), roguelike-comparison.md (vaults-of-ash vs
+  the 3 strongest WC3 roguelikes: matrix + verdicts + credits)
 - `.claude/skills/` — wc3-read-map, wc3-build-map, wc3-new-map,
   wc3-import-asset (operational recipes)
+
+## State & open threads (as of 2026-07-12)
+
+- **Repo state**: all work committed + pushed through `d41bc1b` (Vaults of
+  Ash phase 3); suite green 311/311 on both MPQ backends.
+- **Bundled maps: in-game playtest status** (the sim is not the game —
+  doctrine above): demo, crossroads-siege, tidewatch-arena **verified
+  working in the real game** by the user; northreach was fixed AFTER its
+  playtest (model paths / item art / truce / builder repair — gotchas
+  22–25 came from it), **re-verification pending**; vaults-of-ash has
+  **never been loaded in the real game** — sim-proven only (70 logic
+  tests + golden run). Standing next step: playtest vaults-of-ash in-game.
+- **Deferred capabilities** (deliberate, ranked, don't re-derive):
+  docs/reference/ambitious-maps-analysis.md §6 (persistence/save-codes,
+  wtg/wct, etc.); docs/reference/modern-maps-analysis.md §3 (toolkit-gap
+  table with per-item fix status).
+- **Reportable upstream bug, not yet filed**: classic `war3map.doo` parse
+  reads 8 bytes past the end of the buffer — repro in hand from decomposing
+  the Just Another Roguelike map (the roguelike-comparison research).
+  Classic .doo remains read-only in this toolkit regardless (capability
+  matrix above).

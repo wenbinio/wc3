@@ -11,8 +11,9 @@ and humans alike, with no Warcraft III installation or World Editor required.
 - Validate the result end to end.
 
 Supports the **current (Reforged) map formats** (w3i v33, w3e v12, object
-data v3). Classic-era files can still be extracted and repacked, just not
-translated to JSON — see `docs/FORMATS.md`.
+data v3) plus first-class read+write codecs for the versions real published
+maps actually ship (w3e v11, w3i v25/v31, object data v1/v2). Only classic
+`war3map.doo` stays read-only — see `docs/FORMATS.md`.
 
 ## Quickstart
 
