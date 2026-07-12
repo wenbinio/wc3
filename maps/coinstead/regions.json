@@ -1,0 +1,19 @@
+[
+  {
+    "name": "DepotCore",
+    "id": 0,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      255,
+      64,
+      64
+    ],
+    "position": {
+      "left": -256,
+      "bottom": -256,
+      "right": 256,
+      "top": 256
+    }
+  }
+]

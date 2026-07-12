@@ -1,0 +1,131 @@
+{
+  "regular": [
+    {
+      "type": "LTlt",
+      "position": [
+        -3600,
+        3600,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 100,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        3600,
+        3600,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 101,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -3600,
+        -3600,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 102,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        3600,
+        -3600,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 103,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -3400,
+        3600,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 104,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        3400,
+        -3600,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 105,
+      "variation": 0
+    }
+  ],
+  "special": []
+}

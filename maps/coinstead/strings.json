@@ -1,0 +1,11 @@
+{
+  "1": {
+    "value": "Coinstead"
+  },
+  "2": {
+    "value": "A 1-4 player co-op economy-defense map: build production chains, trade a shared deterministic market, keep your towers fed, and hold the Depot through 20 raider waves. Default seed 20260712; replay any run with -seed N before the first trade or wave. Built headlessly with wc3-map-toolkit."
+  },
+  "3": {
+    "value": "The Stead Company"
+  }
+}

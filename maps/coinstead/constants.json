@@ -1,0 +1,134 @@
+{
+  "_generated": "wc3-map-toolkit: derived from the map source JSON by build-map — regenerated every build, do not hand-edit",
+  "constants": {
+    "UNIT_BAKERY": {
+      "kind": "unit",
+      "rawcode": "h006",
+      "base": "hhou",
+      "name": "Bakery",
+      "source": "objects-units.json"
+    },
+    "UNIT_CANNON_TOWER": {
+      "kind": "unit",
+      "rawcode": "h00A",
+      "base": "hctw",
+      "name": "Cannon Tower",
+      "source": "objects-units.json"
+    },
+    "UNIT_COINSTEAD_DEPOT": {
+      "kind": "unit",
+      "rawcode": "h00B",
+      "base": "htow",
+      "name": "Coinstead Depot",
+      "source": "objects-units.json"
+    },
+    "UNIT_DUST_RUNNER": {
+      "kind": "unit",
+      "rawcode": "n002",
+      "base": "nwlt",
+      "name": "Dust Runner",
+      "source": "objects-units.json"
+    },
+    "UNIT_GRAINFIELD": {
+      "kind": "unit",
+      "rawcode": "h003",
+      "base": "hhou",
+      "name": "Grainfield",
+      "source": "objects-units.json"
+    },
+    "UNIT_IRONHIDE_MARAUDER": {
+      "kind": "unit",
+      "rawcode": "n001",
+      "base": "nogr",
+      "name": "Ironhide Marauder",
+      "source": "objects-units.json"
+    },
+    "UNIT_OREPIT": {
+      "kind": "unit",
+      "rawcode": "h004",
+      "base": "hhou",
+      "name": "Orepit",
+      "source": "objects-units.json"
+    },
+    "UNIT_QUARRY": {
+      "kind": "unit",
+      "rawcode": "h002",
+      "base": "hhou",
+      "name": "Quarry",
+      "source": "objects-units.json"
+    },
+    "UNIT_RAIDER_CUTPURSE": {
+      "kind": "unit",
+      "rawcode": "n000",
+      "base": "ngno",
+      "name": "Raider Cutpurse",
+      "source": "objects-units.json"
+    },
+    "UNIT_SAWMILL": {
+      "kind": "unit",
+      "rawcode": "h005",
+      "base": "hlum",
+      "name": "Sawmill",
+      "source": "objects-units.json"
+    },
+    "UNIT_SMELTER": {
+      "kind": "unit",
+      "rawcode": "h007",
+      "base": "hbla",
+      "name": "Smelter",
+      "source": "objects-units.json"
+    },
+    "UNIT_STEWARD": {
+      "kind": "unit",
+      "rawcode": "h000",
+      "base": "hpea",
+      "name": "Steward",
+      "source": "objects-units.json"
+    },
+    "UNIT_TOLL_BARON": {
+      "kind": "unit",
+      "rawcode": "n004",
+      "base": "nbld",
+      "name": "Toll Baron",
+      "source": "objects-units.json"
+    },
+    "UNIT_TOOLWORKS": {
+      "kind": "unit",
+      "rawcode": "h008",
+      "base": "harm",
+      "name": "Toolworks",
+      "source": "objects-units.json"
+    },
+    "UNIT_TUNNEL_SAPPER": {
+      "kind": "unit",
+      "rawcode": "n003",
+      "base": "nkob",
+      "name": "Tunnel Sapper",
+      "source": "objects-units.json"
+    },
+    "UNIT_WATCHTOWER": {
+      "kind": "unit",
+      "rawcode": "h009",
+      "base": "hgtw",
+      "name": "Watchtower",
+      "source": "objects-units.json"
+    },
+    "UNIT_WOODCAMP": {
+      "kind": "unit",
+      "rawcode": "h001",
+      "base": "hhou",
+      "name": "Woodcamp",
+      "source": "objects-units.json"
+    },
+    "DOOD_LTlt": {
+      "kind": "doodad",
+      "rawcode": "LTlt",
+      "source": "doodads.json"
+    },
+    "REGION_DEPOT_CORE": {
+      "kind": "region",
+      "name": "DepotCore",
+      "source": "regions.json"
+    }
+  }
+}

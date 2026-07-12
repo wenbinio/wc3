@@ -1,0 +1,74 @@
+[
+  {
+    "type": "sloc",
+    "position": [
+      -512,
+      -512,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 0,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 0,
+    "id": 0,
+    "targetAcquisition": 0
+  },
+  {
+    "type": "sloc",
+    "position": [
+      512,
+      -512,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 0,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 1,
+    "id": 1,
+    "targetAcquisition": 0
+  },
+  {
+    "type": "sloc",
+    "position": [
+      -512,
+      512,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 0,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 2,
+    "id": 2,
+    "targetAcquisition": 0
+  },
+  {
+    "type": "sloc",
+    "position": [
+      512,
+      512,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 0,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 3,
+    "id": 3,
+    "targetAcquisition": 0
+  }
+]
