@@ -99,7 +99,9 @@ pre-header (map name/flags/maxPlayers) is preserved. Edit it to change the
 lobby-visible map name.
 
 Shortcut: `node tools/build-map.js /tmp/work/src /tmp/work/modified.w3x`
-does json-to-map + pack in one step.
+does json-to-map + pack in one step. Add `--stabilize` to also run the
+gotcha-6 stabilization cycle (§3) after the build, and
+`--variant-name <name>` for pack-time A/B name overlays (§7).
 
 ## 3. Build a new map from scratch
 
@@ -118,8 +120,14 @@ Things that must stay consistent with each other:
   `(width+1)*(height+1)` entries; world coords span `width*128` centered on
   `map.offset`.
 - `files/war3map.wpm` and `files/war3map.shd` sizes derive from terrain size
-  (`width*4 × height*4` cells). If you resize terrain, regenerate them
-  (see maps/demo — they are all-zero buffers plus a 16-byte wpm header).
+  (`width*4 × height*4` cells) — but you no longer hand-craft them:
+  build-map **auto-generates** all-passable/no-shadow defaults from
+  terrain.json when the source ships neither under `files/`
+  (lib/pathing.js; byte layouts in docs/FORMATS.md). A provided `files/`
+  copy is packed verbatim — never clobbered — and build-map WARNs when its
+  size doesn't match the terrain dims (the classic resize foot-gun,
+  gotcha 8). After a terrain resize, simply delete the two files (or fix
+  your own pathing data to the new dims).
 - `info.json` `players[].startingPos` ⇔ `units.json` `sloc` entries ⇔
   `DefineStartLocation`/`SetPlayerStartLocation` calls in `war3map.lua`.
 - `info.json` `scriptLanguage`: **1 for Lua, 0 for JASS.** Ship `war3map.lua`
@@ -150,10 +158,14 @@ to the **packed** `war3map.lua` (the source file is never modified):
   repack cleanly. Edit units.json, not the generated Lua — units.json stays
   the single source of truth. JASS sources (`war3map.j`) are copied
   untouched; write your own `CreateAllUnits` there.
-- **Stabilization-cycle trap**: after a build → extract → map-to-json cycle
-  (run to stabilize float rotations, CLAUDE.md gotcha 6), commit the `*.json`
-  files ONLY. Never copy the extracted `war3map.lua` back into the source —
-  it contains this generated block.
+- **Stabilization cycle is one command now**: `build-map --stabilize`
+  runs the build → extract → map-to-json round trip and rewrites ONLY the
+  translatable `*.json` files that changed (float rotations etc., CLAUDE.md
+  gotcha 6), printing which ones; one run reaches the fixed point. It never
+  touches `war3map.lua`/`war3map.j`, `files/` or `imports/` — the old
+  manual cycle's trap (copying the extracted `war3map.lua`, which contains
+  this generated block, back into the source) is structurally impossible.
+  If you still run the cycle by hand, commit the `*.json` files ONLY.
 
 ### Named constants instead of raw FourCCs (generated)
 
@@ -192,6 +204,19 @@ are runtime nil, not parse errors; don't define your own globals with these
 prefixes; the block shifts packed-script line numbers in build errors).
 Doodads vs destructables placed in doodads.json can only be told apart via
 the map's own object data, so unclassified codes default to `DOOD_`.
+
+**Generated-constant lint (build FAIL)**: build-map walks the packed
+script's AST (lib/constlint.js) and fails the build on (a) any
+reserved-prefix identifier REFERENCED but not defined by the generated
+block — the object-rename runtime-nil trap, reported with the
+source-relative line and the nearest same-prefix defined name when edit
+distance suggests a rename — and (b) any user assignment/declaration
+(global, local, function, parameter, loop variable) squatting on the nine
+prefixes. The game's own API constants that share the prefixes
+(`UNIT_STATE_LIFE`, `UNIT_TYPE_HERO`, `SOUND_VOLUMEGROUP_*`, ...) are
+whitelisted from (a) via the sim's JASS API table. Direct identifiers
+only: dynamic access (`_G["UNIT_" .. x]`) is out of scope, as are table
+fields and goto labels. JASS (`war3map.j`) gets no lint (no injection).
 
 ### Minimap preview (generated)
 
@@ -309,11 +334,22 @@ The game's map list shows the map NAME stored **inside** the file (HM3W
 header + w3i name), never the filename — so `siege-no-sounds.w3x` and
 `siege-no-import.w3x` both appear identically as "Crossroads Siege" and
 cannot be told apart in-game. When building variant maps for in-game
-bisection/A-B testing, give EACH variant a distinct in-game name: change
-the map name in the source (the TRIGSTR entry in `strings.json` that
-`info.json` `name` points to, or `name` directly) AND `_header.json`
-`name`, e.g. "Siege DIAG-1 no-objabil". Renaming the `.w3x` alone is
-invisible in-game.
+bisection/A-B testing, give EACH variant a distinct in-game name — one
+command per variant:
+
+```bash
+node tools/build-map.js --variant-name "Siege DIAG-1 no-objabil" \
+  maps/crossroads-siege _build/siege-diag1.w3x
+```
+
+The overlay is applied at pack time in every place the game reads the name
+(HM3W header name + w3i map name, with any `TRIGSTR_n` indirection resolved
+to the plain variant string); the source directory is not modified.
+(Manual equivalent: change the TRIGSTR entry in `strings.json` that
+`info.json` `name` points to — or `name` directly — AND `_header.json`
+`name`.) Renaming the `.w3x` alone is invisible in-game. `--variant-name`
+is mutually exclusive with `--stabilize`, which would write the overlay
+into the source.
 
 **Known-working-reference debugging**: before (or instead of) in-game
 bisection, decompose a map where the misbehaving mechanic provably works

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 'use strict';
-// build-map.js [--bare] <map-source-dir> <out.w3x>
+// build-map.js [--bare] [--stabilize] [--variant-name <name>] <map-source-dir> <out.w3x>
 // The top-level map compiler:
 //   map source (JSON + war3map.lua + files/ + imports/)
 //     -> translate JSON to war3map.* binaries (temp dir)
@@ -9,6 +9,15 @@
 // --bare packs a bare MPQ instead (no HM3W pre-header, archive at offset 0)
 // — the modern container real 2023+ maps ship; only 1.31+ clients read it.
 // Passed straight through to the pack layer (tools/w3x-pack.js packDir).
+// --stabilize: after a successful build, round-trip the built .w3x
+// (extract -> extracted-to-source) and rewrite ONLY the translatable *.json
+// files in the map source that changed — the gotcha-6 stabilization cycle
+// in one command, without its copy-the-extracted-lua-back trap (war3map.lua/
+// war3map.j, files/ and imports/ are never touched).
+// --variant-name <name>: overlay the internal map name (HM3W header + w3i
+// name, resolving TRIGSTR indirection) at pack time for in-game A/B variants
+// (gotcha 17) — the source directory is not modified. Mutually exclusive
+// with --stabilize (the overlay must never reach the source).
 //
 // Sanity checks before packing: a map script must exist (war3map.lua or
 // war3map.j), info.json/terrain.json should be present for a playable map,
@@ -19,13 +28,21 @@
 // sanity findings, because repacked third-party maps legitimately ship
 // hundreds of models that fail this bar yet run in game — the strict bar is
 // for models WE are about to ship from a map source.)
+// The packed war3map.lua must parse (luaparse gate) AND pass the generated-
+// constant lint (lib/constlint.js, gotcha 27): a reserved-prefix identifier
+// (UNIT_/ITEM_/...) referenced but not defined by the generated block —
+// runtime nil after an object rename — or user code squatting on the
+// prefixes FAILS the build.
 
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { sourceToExtracted, writeJson, walk } = require('../lib/source');
+const { sourceToExtracted, extractedToSource, writeJson, walk } = require('../lib/source');
 const { collectConstants, constantsIndex } = require('../lib/constants');
 const { checkLuaSyntax } = require('../lib/luacheck');
+const { lintGeneratedConstants } = require('../lib/constlint');
+const { extractAll } = require('../lib/mpq');
+const { byJson } = require('../lib/filemap');
 const { packDir } = require('./w3x-pack');
 
 // Gotcha 14, strict tier — see header. Throws when any imports/ model fails.
@@ -60,9 +77,41 @@ function checkImportedModels(sourceDir) {
   }
 }
 
+// --stabilize: round-trip the built .w3x back to source JSON and rewrite the
+// translatable *.json files that changed (lib/filemap.js's byJson set knows
+// which — scripts, files/ and imports/ are NEVER touched: gotcha 6's trap).
+// A json the round-trip could not produce (e.g. a read-only classic format)
+// is left alone. Returns the list of rewritten source-relative file names.
+function stabilizeSource(sourceDir, w3xPath) {
+  const tmpExtract = fs.mkdtempSync(path.join(os.tmpdir(), 'w3xstab-x-'));
+  const tmpSource = fs.mkdtempSync(path.join(os.tmpdir(), 'w3xstab-s-'));
+  try {
+    extractAll(w3xPath, tmpExtract);
+    extractedToSource(tmpExtract, tmpSource);
+    const changed = [];
+    for (const jsonName of byJson.keys()) {
+      const srcPath = path.join(sourceDir, jsonName);
+      const rtPath = path.join(tmpSource, jsonName);
+      if (!fs.existsSync(srcPath) || !fs.existsSync(rtPath)) continue;
+      const next = fs.readFileSync(rtPath);
+      if (!next.equals(fs.readFileSync(srcPath))) {
+        fs.writeFileSync(srcPath, next);
+        changed.push(jsonName);
+      }
+    }
+    return changed;
+  } finally {
+    fs.rmSync(tmpExtract, { recursive: true, force: true });
+    fs.rmSync(tmpSource, { recursive: true, force: true });
+  }
+}
+
 function buildMap(sourceDir, outW3x, opts) {
   opts = opts || {};
   if (!fs.existsSync(sourceDir)) throw new Error(`map source dir not found: ${sourceDir}`);
+  if (opts.stabilize && opts.variantName) {
+    throw new Error('--stabilize and --variant-name are mutually exclusive — stabilizing would write the variant overlay into the source');
+  }
 
   const hasScript = ['war3map.lua', 'war3map.j'].some((s) => fs.existsSync(path.join(sourceDir, s)));
   if (!hasScript) throw new Error(`${sourceDir}: no map script (war3map.lua or war3map.j) — the map would not run`);
@@ -77,8 +126,11 @@ function buildMap(sourceDir, outW3x, opts) {
   // itself is injected by sourceToExtracted — lib/constants.js): written
   // into the map source dir so agents can grep constant -> rawcode -> file.
   // Regenerated every build; only written when the source yields constants.
+  // The collected set also feeds the stale-constant lint below; when
+  // collection itself fails the lint is skipped (no set to lint against).
+  let constants = null;
   try {
-    const constants = collectConstants(sourceDir);
+    constants = collectConstants(sourceDir);
     if (constants.length > 0) {
       writeJson(path.join(sourceDir, 'constants.json'), constantsIndex(constants));
     }
@@ -88,39 +140,81 @@ function buildMap(sourceDir, outW3x, opts) {
 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'w3xbuild-'));
   try {
-    const { written, header } = sourceToExtracted(sourceDir, tmp);
+    const converted = sourceToExtracted(sourceDir, tmp, { variantName: opts.variantName });
+    const { written, warnings } = converted;
+    for (const w of warnings || []) console.error(`warning: ${w}`);
+    // Variant overlay reaches the HM3W header too (gotcha 17: the picker
+    // shows header + w3i name). With no _header.json, packDir synthesizes
+    // the header from the packed w3i — which already carries the overlay.
+    const header = opts.variantName && converted.header
+      ? { ...converted.header, name: opts.variantName }
+      : converted.header;
     if (header) writeJson(path.join(tmp, '_header.json'), header);
     // The packed war3map.lua (source + generated blocks) must be valid Lua —
     // a script that doesn't parse loads as a silently dead map.
     const luaPath = path.join(tmp, 'war3map.lua');
     if (fs.existsSync(luaPath)) {
-      const err = checkLuaSyntax(fs.readFileSync(luaPath, 'utf8'));
+      const lua = fs.readFileSync(luaPath, 'utf8');
+      const err = checkLuaSyntax(lua);
       if (err) {
         throw new Error(
           `war3map.lua: Lua syntax error at line ${err.line ?? '?'}: ${err.message}` +
           ' (line refers to the packed script: source war3map.lua + generated blocks)'
         );
       }
+      // Generated-constant lint (gotcha 27): a reserved-prefix identifier the
+      // generated block doesn't define is a RUNTIME nil the syntax gate can't
+      // see (the object-rename trap); user declarations squatting on the nine
+      // prefixes shadow/collide with generated globals. Both FAIL the build.
+      if (constants !== null) {
+        const findings = lintGeneratedConstants(lua, constants.map((e) => e.constName));
+        if (findings.length > 0) {
+          throw new Error(
+            'generated-constant lint failed (gotcha 27; line numbers are source-relative):\n  '
+            + findings.map((f) => f.message).join('\n  '));
+        }
+      }
     }
     const res = packDir(tmp, outW3x, { bare: opts.bare });
-    return { members: written, ...res };
+    const stabilized = opts.stabilize ? stabilizeSource(sourceDir, outW3x) : null;
+    return { members: written, warnings, stabilized, ...res };
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
 }
 
+const USAGE = 'usage: node tools/build-map.js [--bare] [--stabilize] [--variant-name <name>] <map-source-dir> <out.w3x>';
+
 function main(argv) {
-  const bare = argv.includes('--bare');
-  const [sourceDir, outW3x] = argv.filter((a) => a !== '--bare');
+  const opts = { bare: false, stabilize: false, variantName: null };
+  const rest = [];
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === '--bare') opts.bare = true;
+    else if (a === '--stabilize') opts.stabilize = true;
+    else if (a === '--variant-name') {
+      opts.variantName = argv[++i];
+      if (opts.variantName == null || opts.variantName.startsWith('--')) {
+        console.error(USAGE + '\n--variant-name needs a value');
+        process.exit(2);
+      }
+    } else rest.push(a);
+  }
+  const [sourceDir, outW3x] = rest;
   if (!sourceDir || !outW3x) {
-    console.error('usage: node tools/build-map.js [--bare] <map-source-dir> <out.w3x>');
+    console.error(USAGE);
     process.exit(2);
   }
   try {
-    const { files, headerFields, bytes } = buildMap(sourceDir, outW3x, { bare });
+    const { files, headerFields, bytes, stabilized } = buildMap(sourceDir, outW3x, opts);
     console.log(`built ${outW3x} (${bytes} bytes, ${files.length} archive members)`);
-    if (bare) console.log('bare MPQ container (no HM3W pre-header — 1.31+ clients only)');
+    if (opts.bare) console.log('bare MPQ container (no HM3W pre-header — 1.31+ clients only)');
     else console.log(`HM3W header: name=${JSON.stringify(headerFields.name)} maxPlayers=${headerFields.maxPlayers ?? 4}`);
+    if (opts.variantName) console.log(`variant name overlay: ${JSON.stringify(opts.variantName)} (HM3W header + w3i; source not modified)`);
+    if (stabilized) {
+      if (stabilized.length === 0) console.log('stabilize: source already at its translator fixed point — nothing rewritten');
+      else console.log(`stabilize: rewrote ${stabilized.length} source file(s): ${stabilized.join(', ')}`);
+    }
   } catch (e) {
     console.error('build failed: ' + (e.message || e));
     process.exit(1);

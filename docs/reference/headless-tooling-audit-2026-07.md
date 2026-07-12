@@ -3,8 +3,8 @@
 Three-agent parallel discovery: (A) internal gap/friction audit of this toolkit,
 (B) external ecosystem sweep 2024–2026, (C) sim-fidelity feasibility study.
 This doc is the synthesis: a ranked improvement program, the watch list, and the
-consolidated "not worth doing" list. Assessment only — nothing here is
-implemented yet. Every claim below was verified by the agents against the
+consolidated "not worth doing" list. Originally assessment-only; Tier 1 has
+since been implemented (see its status note). Every claim below was verified by the agents against the
 current tree (HEAD `8d6d2cf`) or against live commit/release feeds fetched on
 the audit date (not README claims).
 
@@ -22,6 +22,13 @@ ecosystem adoptions.
 ## 1. Ranked improvement program
 
 ### Tier 1 — internal quick wins (all S effort, low risk)
+
+> **Status update 2026-07-12: Tier 1 is IMPLEMENTED** (work package WP-A) —
+> lib/constlint.js (build FAIL), lib/pathing.js, `build-map --stabilize` /
+> `--variant-name`, test/builds-freshness.test.js (default-on, ~1s; found
+> and fixed two stale committed artifacts: northreach.w3x and
+> tidewatch-arena.w3x predated the constants-block feature). Tiers 2–3
+> remain assessment-only.
 
 1. **Stale generated-constant lint in build-map** — highest value-for-effort in
    the repo. Gotcha 27's worst trap (object rename → constant rename → runtime

@@ -85,8 +85,13 @@ the original HM3W header).
 
 Gotchas: build-map syntax-checks the packed war3map.lua (luaparse, Lua 5.3)
 and fails with the parse error + line — the line number refers to the packed
-script (source + generated blocks). Rebuilt JSON is round-trip stable but
-not byte-identical (float rotations); when committing a stabilized source,
-copy `*.json` only — never the extracted war3map.lua (CLAUDE.md gotcha 6).
-If you resize terrain, regenerate files/war3map.wpm and .shd
-(docs/PIPELINE.md §3). Full gotcha list: CLAUDE.md.
+script (source + generated blocks) — and FAILS on stale/squatted
+reserved-prefix constants (gotcha 27; stale references report the
+source-relative line + nearest defined name). Rebuilt JSON is round-trip
+stable but not byte-identical (float rotations): after value edits run
+`build-map --stabilize` (rewrites only the changed translatable source
+*.json — CLAUDE.md gotcha 6). For in-game A/B variants use
+`build-map --variant-name "<distinct name>"` (gotcha 17; source untouched).
+If you resize terrain, delete files/war3map.wpm and .shd — build-map
+auto-generates them from terrain.json (docs/PIPELINE.md §3).
+Full gotcha list: CLAUDE.md.

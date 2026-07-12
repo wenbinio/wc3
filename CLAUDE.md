@@ -10,7 +10,7 @@ in docs/ and .claude/skills/; follow the pointers.
 
 ```bash
 bash scripts/setup.sh   # idempotent: npm install + optional apt-get smpq fallback
-npm test                # 311 tests; all must pass before you change anything
+npm test                # 335 tests; all must pass before you change anything
 ```
 
 If you touch `lib/mpq.js` or anything archive-related, the suite must be
@@ -24,7 +24,7 @@ node tools/w3x-extract.js  [--dump-unknown] [--recover-names] <map.w3x> <outdir>
 node tools/map-to-json.js  <extracted-dir> <json-dir>  # binaries -> editable map source
 node tools/json-to-map.js  <json-dir> <out-dir>        # map source -> binaries
 node tools/w3x-pack.js     [--bare] <dir> <out.w3x>    # binaries -> MPQ v1 + HM3W header (--bare: no pre-header)
-node tools/build-map.js    [--bare] <map-source-dir> <out.w3x>  # one-step: source -> .w3x (--bare: no HM3W pre-header, 1.31+ container); also injects the generated named-constants + CreateAllUnits Lua blocks and rewrites <map-source>/constants.json (gotchas 10, 27)
+node tools/build-map.js    [--bare] [--stabilize] [--variant-name <name>] <map-source-dir> <out.w3x>  # one-step: source -> .w3x (--bare: no HM3W pre-header, 1.31+ container); also injects the generated named-constants + CreateAllUnits Lua blocks, rewrites <map-source>/constants.json, FAILS on stale/squatted reserved-prefix identifiers, and auto-generates wpm/shd/minimap when files/ has none (gotchas 8, 10, 27). --stabilize: run the gotcha-6 cycle after the build (rewrites only changed translatable source *.json). --variant-name: pack-time internal-name overlay for A/B variants (gotcha 17; source untouched; excludes --stabilize)
 node tools/validate-map.js <map.w3x>                   # layered pass/fail report, exit 0 = good
 node tools/test-map-logic.js [--coverage] [<map-source-dir> ...]  # EXECUTE the packed war3map.lua headlessly (lib/sim: fengari Lua 5.3 + mocked natives) and run maps/<name>/tests/*.test.js; no args = every map with tests/
 
@@ -81,8 +81,9 @@ never third-party maps, gotcha 9).
 
 - **Read/decompose any map** (incl. classic + protected: `_viewer/`,
   `_unknown/`, classicw3i) — PIPELINE §1, skill wc3-read-map.
-- **Edit + rebuild**: source → build-map → validate-map; stabilization cycle
-  after value edits (gotcha 6) — PIPELINE §2, skill wc3-build-map.
+- **Edit + rebuild**: source → build-map → validate-map; after value edits
+  use `build-map --stabilize` (the gotcha-6 cycle in one command) —
+  PIPELINE §2, skill wc3-build-map.
 - **New map**: `cp -r maps/demo maps/<name>`, keep terrain/wpm/shd/slocs
   consistent — PIPELINE §3, skill wc3-new-map.
 - **Asset generation/import**: MDL → war3-model → MDX chain, PNG → BLP1 via
@@ -210,8 +211,12 @@ never third-party maps, gotcha 9).
    validate-map syntax-check the packed war3map.lua with luaparse (Lua 5.3
    grammar) — a script that doesn't parse fails the build with error+line
    (line numbers refer to the PACKED script, source + generated blocks).
-8. If you resize terrain, regenerate `files/war3map.wpm` and `war3map.shd`
-   (sizes depend on terrain dimensions — see docs/PIPELINE.md §3).
+8. **wpm/shd sizes depend on terrain dimensions** — but build-map now
+   auto-generates all-passable/no-shadow defaults from terrain.json when
+   `files/` ships neither (lib/pathing.js), never clobbers a provided copy,
+   and WARNs when a provided copy's size mismatches the terrain dims. After
+   a resize: delete the two files (or fix your own pathing data) —
+   docs/PIPELINE.md §3.
 9. **Copyright**: never commit Blizzard-authored or downloaded third-party
    maps. Fixtures here are MIT (see fixtures/ATTRIBUTION.md).
 10. **war3mapUnits.doo is EDITOR-ONLY** — the game never reads it; WE compiles
@@ -351,9 +356,14 @@ never third-party maps, gotcha 9).
     constants. TRAPS: (a) constant names derive from DISPLAY names — renaming
     an object, or adding a second entry with the same name (ALL colliders
     then get a `_<rawcode>` suffix), RENAMES the constant; a script using the
-    old name sees nil at RUNTIME (luaparse can't catch undefined globals) —
-    grep constants.json after object-data renames; (b) don't define your own
-    globals with these nine prefixes; (c) unnamed entries fall back to
+    old name sees nil at RUNTIME (luaparse can't catch undefined globals);
+    (b) don't define your own globals with these nine prefixes. Traps (a)
+    and (b) are now BUILD FAILURES: build-map lints the packed script's AST
+    (lib/constlint.js) — an undefined reserved-prefix reference fails with
+    the source-relative line + nearest defined name (engine API names like
+    UNIT_STATE_LIFE are whitelisted; dynamic `_G["UNIT_"..x]` access is out
+    of scope), and any user declaration on the prefixes fails as squatting;
+    (c) unnamed entries fall back to
     case-sensitive rawcode names (`UNIT_hfoo`); (d) the block sits ABOVE the
     user script, so packed-script line numbers in build errors are offset by
     the block length; (e) JASS (war3map.j) gets no injection — the index is
@@ -385,7 +395,7 @@ never third-party maps, gotcha 9).
 
 ## Testing & validation doctrine
 
-- `npm test` = 311 tests, 26 files (21 under test/ + 5 map suites under
+- `npm test` = 335 tests, 30 files (25 under test/ + 5 map suites under
   maps/*/tests/, all auto-discovered by `node --test`): source⇄binary fixed
   points for the demo/siege/tidewatch/northreach sources (vaults-of-ash is
   covered by its 70-test logic suite), build+validate end-to-end, MPQ
@@ -393,7 +403,11 @@ never third-party maps, gotcha 9).
   (synthetic v11/v25/v31 + object-data v1/v2 fixtures cross-checked against
   mdx-m3-viewer-th + guarded real-sample fixpoints), classic/protected
   fallbacks (`_viewer/`, `_unknown/`, classicw3i, truncated w3i), wts
-  dialects, luacheck, gotcha regressions, PLUS the logic-sim tier below
+  dialects, luacheck, gotcha regressions, the maps/builds/ freshness guard
+  (test/builds-freshness.test.js, default-on: every committed compiled .w3x
+  must match a rebuild of its source by extracted MEMBER CONTENT — archive
+  bytes are MPQ-nondeterministic; on failure regenerate via build-map and
+  commit the new artifact), PLUS the logic-sim tier below
   (test/sim.test.js harness semantics, test/maplogic.test.js bundled-map
   acceptance, maps/*/tests/*.test.js — node --test discovers map suites
   automatically). Both backends when touching archive code
@@ -472,10 +486,12 @@ or CC0-converted content. Details: docs/ASSETS.md.
 - `lib/viewer.js` — mdx-m3-viewer-th second-opinion parsers (read-only);
   `lib/classicw3i.js` — tolerant truncated-classic-w3i reader
 - `lib/luacheck.js` — luaparse Lua 5.3 gate; `lib/minimap.js` — minimap
-  tga/mmp generation; `lib/unitscript.js` — CreateAllUnits() generation;
+  tga/mmp generation; `lib/pathing.js` — wpm/shd generation + dimension
+  checks (gotcha 8); `lib/unitscript.js` — CreateAllUnits() generation;
   `lib/constants.js` — named-constants block + constants.json generation
-  (gotcha 27); `lib/objectlint.js` — object-data semantic WARNings
-  (gotchas 22/23/25)
+  (gotcha 27); `lib/constlint.js` — stale/squatted reserved-prefix
+  identifier lint, a build-map FAIL (gotcha 27 traps a+b);
+  `lib/objectlint.js` — object-data semantic WARNings (gotchas 22/23/25)
 - `lib/wts.js` — linear wts parser/serializer, upstream dialect + byte-exact
   file-dialect preservation via the `_dialect` sidecar (upstream's regex
   reader OOMs on production-scale ~10k-string files; gotcha 16);
@@ -507,7 +523,8 @@ or CC0-converted content. Details: docs/ASSETS.md.
 ## State & open threads (as of 2026-07-12)
 
 - **Repo state**: all work committed + pushed through `d41bc1b` (Vaults of
-  Ash phase 3); suite green 311/311 on both MPQ backends.
+  Ash phase 3); since then WP-A (audit Tier 1) landed in the working tree —
+  suite green 335/335 on both MPQ backends.
 - **Bundled maps: in-game playtest status** (the sim is not the game —
   doctrine above): demo, crossroads-siege, tidewatch-arena **verified
   working in the real game** by the user; northreach was fixed AFTER its
@@ -519,12 +536,15 @@ or CC0-converted content. Details: docs/ASSETS.md.
   docs/reference/ambitious-maps-analysis.md §6 (persistence/save-codes,
   wtg/wct, etc.); docs/reference/modern-maps-analysis.md §3 (toolkit-gap
   table with per-item fix status).
-- **Tooling-improvement program** (2026-07-12 three-agent audit, assessment
-  only — nothing implemented yet):
+- **Tooling-improvement program** (2026-07-12 three-agent audit):
   docs/reference/headless-tooling-audit-2026-07.md. Headlines: formats
-  unchanged through game patch 2.0.4 (no codec work needed); top internal
-  wins = stale-constant lint, wpm/shd autogen, --stabilize, --variant-name;
-  top sim tier = damage events + destructables (crossroads wave-5 grove
+  unchanged through game patch 2.0.4 (no codec work needed); **Tier 1
+  (internal quick wins) is IMPLEMENTED** — stale-constant lint
+  (lib/constlint.js, build FAIL), wpm/shd autogen (lib/pathing.js),
+  `--stabilize`, `--variant-name`, maps/builds/ freshness guard
+  (default-on; it caught + fixed two stale committed artifacts);
+  Tiers 2–3 remain assessment-only.
+  Top sim tier = damage events + destructables (crossroads wave-5 grove
   kill is provably sim-blind today), map-delta-only legality doctrine;
   top adoptions = War3Net v6 wtg dump, pjass gate, upstream our translator
   fixes (upstream is responsive again), regen jass-constants vs 2.0.4.

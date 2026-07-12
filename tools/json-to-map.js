@@ -17,7 +17,8 @@ function main(argv) {
     process.exit(2);
   }
   try {
-    const { written, header } = sourceToExtracted(jsonDir, outDir);
+    const { written, header, warnings } = sourceToExtracted(jsonDir, outDir);
+    for (const w of warnings || []) console.error(`warning: ${w}`);
     if (header) writeJson(path.join(outDir, '_header.json'), header);
     console.log(`wrote ${written.length} archive member(s) to ${outDir}:`);
     for (const f of written) console.log('  ' + f);

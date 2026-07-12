@@ -50,9 +50,10 @@ melee-ish Lua map — it builds as-is):
 Terrain: the template is 32x32 tiles of flat grass. To resize, change
 `terrain.json` `map.width/height` and make ALL per-vertex arrays
 `(w+1)*(h+1)` long (groundHeight 8192 = flat ground), update `map.offset`
-to `-(w*128)/2`, fix `info.json` camera bounds, and regenerate
-`files/war3map.wpm` (16-byte header + w*4*h*4 zero bytes) and
-`files/war3map.shd` (w*4*h*4 zero bytes) — see docs/PIPELINE.md §3.
+to `-(w*128)/2`, fix `info.json` camera bounds, and DELETE
+`files/war3map.wpm` + `files/war3map.shd` — build-map auto-generates
+correctly sized all-passable/no-shadow defaults from terrain.json (and
+warns if a kept copy mismatches the new dims) — see docs/PIPELINE.md §3.
 
 - Orientation: terrain.json per-vertex arrays are row-major with
   **row 0 = map NORTH (top)**, col 0 = west (index = `row*(w+1)+col`) —
