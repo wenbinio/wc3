@@ -3,15 +3,15 @@
     {
       "type": "LTlt",
       "position": [
-        -3600,
-        3600,
+        -560,
+        1500,
         0
       ],
       "angle": 269.9777130656439,
       "scale": [
-        1,
-        1,
-        1
+        0.88,
+        0.88,
+        0.88
       ],
       "flags": {
         "visible": true,
@@ -24,15 +24,15 @@
     {
       "type": "LTlt",
       "position": [
-        3600,
-        3600,
+        -560,
+        -1500,
         0
       ],
       "angle": 269.9777130656439,
       "scale": [
-        1,
-        1,
-        1
+        0.97,
+        0.97,
+        0.97
       ],
       "flags": {
         "visible": true,
@@ -45,15 +45,15 @@
     {
       "type": "LTlt",
       "position": [
-        -3600,
-        -3600,
+        1500,
+        -560,
         0
       ],
       "angle": 269.9777130656439,
       "scale": [
-        1,
-        1,
-        1
+        0.95,
+        0.95,
+        0.95
       ],
       "flags": {
         "visible": true,
@@ -66,15 +66,15 @@
     {
       "type": "LTlt",
       "position": [
-        3600,
-        -3600,
+        -1500,
+        -560,
         0
       ],
       "angle": 269.9777130656439,
       "scale": [
-        1,
-        1,
-        1
+        1.07,
+        1.07,
+        1.07
       ],
       "flags": {
         "visible": true,
@@ -87,15 +87,15 @@
     {
       "type": "LTlt",
       "position": [
-        -3400,
-        3600,
+        560,
+        1500,
         0
       ],
       "angle": 269.9777130656439,
       "scale": [
-        1,
-        1,
-        1
+        1.12,
+        1.12,
+        1.12
       ],
       "flags": {
         "visible": true,
@@ -108,8 +108,134 @@
     {
       "type": "LTlt",
       "position": [
-        3400,
-        -3600,
+        560,
+        -1500,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.11,
+        1.11,
+        1.11
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 105,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        1500,
+        560,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.95,
+        0.95,
+        0.95
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 106,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -1500,
+        560,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.92,
+        0.92,
+        0.92
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 107,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -560,
+        1840,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.86,
+        0.86,
+        0.86
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 108,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -560,
+        -1840,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.92,
+        0.92,
+        0.92
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 109,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        1840,
+        -560,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.85,
+        0.85,
+        0.85
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 110,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -1840,
+        -560,
         0
       ],
       "angle": 269.9777130656439,
@@ -123,7 +249,1771 @@
         "solid": true,
         "fixedZ": false
       },
-      "id": 105,
+      "id": 111,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        560,
+        1840,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.05,
+        1.05,
+        1.05
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 112,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        560,
+        -1840,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.14,
+        1.14,
+        1.14
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 113,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        1840,
+        560,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.86,
+        0.86,
+        0.86
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 114,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -1840,
+        560,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.13,
+        1.13,
+        1.13
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 115,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -560,
+        2180,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.98,
+        0.98,
+        0.98
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 116,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -560,
+        -2180,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.97,
+        0.97,
+        0.97
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 117,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        2180,
+        -560,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.97,
+        0.97,
+        0.97
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 118,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -2180,
+        -560,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.97,
+        0.97,
+        0.97
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 119,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        560,
+        2180,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.96,
+        0.96,
+        0.96
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 120,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        560,
+        -2180,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.14,
+        1.14,
+        1.14
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 121,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        2180,
+        560,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 122,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -2180,
+        560,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.12,
+        1.12,
+        1.12
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 123,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -560,
+        2520,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.87,
+        0.87,
+        0.87
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 124,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -560,
+        -2520,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 125,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        2520,
+        -560,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.89,
+        0.89,
+        0.89
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 126,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -2520,
+        -560,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 127,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        560,
+        2520,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.93,
+        0.93,
+        0.93
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 128,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        560,
+        -2520,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.95,
+        0.95,
+        0.95
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 129,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        2520,
+        560,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.01,
+        1.01,
+        1.01
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 130,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -2520,
+        560,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.93,
+        0.93,
+        0.93
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 131,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -560,
+        2860,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.99,
+        0.99,
+        0.99
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 132,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -560,
+        -2860,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.94,
+        0.94,
+        0.94
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 133,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        2860,
+        -560,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.96,
+        0.96,
+        0.96
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 134,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -2860,
+        -560,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.98,
+        0.98,
+        0.98
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 135,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        560,
+        2860,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.94,
+        0.94,
+        0.94
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 136,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        560,
+        -2860,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.86,
+        0.86,
+        0.86
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 137,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        2860,
+        560,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.14,
+        1.14,
+        1.14
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 138,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -2860,
+        560,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.07,
+        1.07,
+        1.07
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 139,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -560,
+        3200,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.11,
+        1.11,
+        1.11
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 140,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -560,
+        -3200,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.15,
+        1.15,
+        1.15
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 141,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        3200,
+        -560,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.96,
+        0.96,
+        0.96
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 142,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -3200,
+        -560,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.89,
+        0.89,
+        0.89
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 143,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        560,
+        3200,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 144,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        560,
+        -3200,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.01,
+        1.01,
+        1.01
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 145,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        3200,
+        560,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.06,
+        1.06,
+        1.06
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 146,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -3200,
+        560,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.99,
+        0.99,
+        0.99
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 147,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -560,
+        3540,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.05,
+        1.05,
+        1.05
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 148,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -560,
+        -3540,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.99,
+        0.99,
+        0.99
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 149,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        3540,
+        -560,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.86,
+        0.86,
+        0.86
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 150,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -3540,
+        -560,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.08,
+        1.08,
+        1.08
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 151,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        560,
+        3540,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.96,
+        0.96,
+        0.96
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 152,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        560,
+        -3540,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.07,
+        1.07,
+        1.07
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 153,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        3540,
+        560,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.86,
+        0.86,
+        0.86
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 154,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -3540,
+        560,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.91,
+        0.91,
+        0.91
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 155,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -2900,
+        -2900,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.88,
+        0.88,
+        0.88
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 156,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -2620,
+        -2780,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.08,
+        1.08,
+        1.08
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 157,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -3140,
+        -2700,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.09,
+        1.09,
+        1.09
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 158,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -2780,
+        -3180,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.11,
+        1.11,
+        1.11
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 159,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -3060,
+        -3080,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.89,
+        0.89,
+        0.89
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 160,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -2580,
+        -3020,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.87,
+        0.87,
+        0.87
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 161,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -3220,
+        -2860,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.91,
+        0.91,
+        0.91
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 162,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        2900,
+        -2900,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.96,
+        0.96,
+        0.96
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 163,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        3180,
+        -2780,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.96,
+        0.96,
+        0.96
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 164,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        2660,
+        -2700,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.11,
+        1.11,
+        1.11
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 165,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        3020,
+        -3180,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.92,
+        0.92,
+        0.92
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 166,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        2740,
+        -3080,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.94,
+        0.94,
+        0.94
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 167,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        3220,
+        -3020,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.98,
+        0.98,
+        0.98
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 168,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        2580,
+        -2860,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.13,
+        1.13,
+        1.13
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 169,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -2900,
+        2900,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.94,
+        0.94,
+        0.94
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 170,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -2620,
+        3020,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.92,
+        0.92,
+        0.92
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 171,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -3140,
+        3100,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.15,
+        1.15,
+        1.15
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 172,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -2780,
+        2620,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.13,
+        1.13,
+        1.13
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 173,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -3060,
+        2720,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.05,
+        1.05,
+        1.05
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 174,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -2580,
+        2780,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.91,
+        0.91,
+        0.91
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 175,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        -3220,
+        2940,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.07,
+        1.07,
+        1.07
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 176,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        2900,
+        2900,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.86,
+        0.86,
+        0.86
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 177,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        3180,
+        3020,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.97,
+        0.97,
+        0.97
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 178,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        2660,
+        3100,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.14,
+        1.14,
+        1.14
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 179,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        3020,
+        2620,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 180,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        2740,
+        2720,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.06,
+        1.06,
+        1.06
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 181,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        3220,
+        2780,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.86,
+        0.86,
+        0.86
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 182,
+      "variation": 0
+    },
+    {
+      "type": "LTlt",
+      "position": [
+        2580,
+        2940,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.95,
+        0.95,
+        0.95
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 183,
+      "variation": 0
+    },
+    {
+      "type": "LTrc",
+      "position": [
+        760,
+        3760,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.92,
+        0.92,
+        0.92
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 184,
+      "variation": 0
+    },
+    {
+      "type": "LTrc",
+      "position": [
+        -760,
+        3760,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 185,
+      "variation": 0
+    },
+    {
+      "type": "LTrc",
+      "position": [
+        760,
+        -3760,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.07,
+        1.07,
+        1.07
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 186,
+      "variation": 0
+    },
+    {
+      "type": "LTrc",
+      "position": [
+        -760,
+        -3760,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.99,
+        0.99,
+        0.99
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 187,
+      "variation": 0
+    },
+    {
+      "type": "LTrc",
+      "position": [
+        3760,
+        760,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.07,
+        1.07,
+        1.07
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 188,
+      "variation": 0
+    },
+    {
+      "type": "LTrc",
+      "position": [
+        3760,
+        -760,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.12,
+        1.12,
+        1.12
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 189,
+      "variation": 0
+    },
+    {
+      "type": "LTrc",
+      "position": [
+        -3760,
+        760,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.98,
+        0.98,
+        0.98
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 190,
+      "variation": 0
+    },
+    {
+      "type": "LTrc",
+      "position": [
+        -3760,
+        -760,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.09,
+        1.09,
+        1.09
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 191,
+      "variation": 0
+    },
+    {
+      "type": "LTrc",
+      "position": [
+        810,
+        810,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 192,
+      "variation": 0
+    },
+    {
+      "type": "LTrc",
+      "position": [
+        -810,
+        810,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.9,
+        0.9,
+        0.9
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 193,
+      "variation": 0
+    },
+    {
+      "type": "LTrc",
+      "position": [
+        -810,
+        -810,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        0.88,
+        0.88,
+        0.88
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 194,
+      "variation": 0
+    },
+    {
+      "type": "LTrc",
+      "position": [
+        810,
+        -810,
+        0
+      ],
+      "angle": 269.9777130656439,
+      "scale": [
+        1.07,
+        1.07,
+        1.07
+      ],
+      "flags": {
+        "visible": true,
+        "solid": true,
+        "fixedZ": false
+      },
+      "id": 195,
       "variation": 0
     }
   ],

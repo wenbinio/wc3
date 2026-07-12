@@ -1,5 +1,5 @@
 -- =========================================================================
--- Coinstead — war3map.lua (phase 1: the complete core game)
+-- Coinstead — war3map.lua (phase 2: the complete game)
 -- =========================================================================
 -- A 1-4 player co-op economy-defense map. The Stead Company holds a lone
 -- trade Depot on an open field: each player's Steward raises production
@@ -42,7 +42,23 @@
 --     REALLY spawns on 10 and 20), scaled by player count, swarm counts
 --     jittered +-1 by the seeded PRNG. Leaks cost shared lives (boss 5).
 --     Wave 20 cleared = victory + score line; then -endless to keep going.
---   * SEED: every random draw (wave edge, swarm jitter) flows through ONE
+--   * TOOLWRIGHT (phase 2): a 3-tier per-founder upgrade ladder paid in
+--     COMMODITIES, never gold ('-forge buy'): Bench (harvesters +1/tick),
+--     Works (refiners +1/batch), Charter (towers burn ammo only every
+--     second shot). Spending goods on tiers keeps the economy circulating.
+--   * CONTRACTS (phase 2): after every 4th wave the company board posts a
+--     SEEDED choice of two contracts ('-contract a|b', one active max):
+--     delivery consignments (goods in, lump dividend out), the Trade
+--     Tariff (+20% sell prices for 2 cycles, next wave adds a marauder
+--     squad) and the Toll Concession (-15% buy prices for 2 cycles, wave
+--     bounties halved for 2 waves). Every offer/accept/deliver/resolve
+--     beat lands in RUNLOG.
+--   * WAVE TEXTURE (phase 2): the Tollman Skimmer (leaks also skim 25g
+--     from every founder) rides waves 11/15/18, and each boss entry draws
+--     a seeded AFFIX (Ironclad +35% hp / Swift +70 speed / Greedy: leak 7
+--     but bounty 250).
+--   * SEED: every random draw (wave edge, swarm jitter, contract offers,
+--     boss affixes) flows through ONE
 --     Park-Miller PRNG. '-seed N' (1-9 digits) reseeds until the seed
 --     LOCKS at the first commitment point: the first market trade or the
 --     first wave launch, whichever comes first. math.random / GetRandomInt
@@ -53,7 +69,8 @@
 -- script — never hand-typed FourCC literals (CLAUDE.md gotcha 27).
 --
 -- Chat commands: -help, -price, -eco, -lives, -buy <good> <qty>,
--- -sell <good> <qty>, -seed N, -endless (after victory); '-test' toggles
+-- -sell <good> <qty>, -forge [buy], -contract [a|b], -deliver <qty>,
+-- -seed N, -endless (after victory); '-test' toggles
 -- debug gating (northreach convention): -gold N, -stock <good> N,
 -- -build <key>, -wave, -wavejump N, -setlives N, -clearwave, -ff, -runlog.
 --
@@ -123,6 +140,12 @@ InvestedStanding = {}   -- pid -> gold invested in standing buildings
 PriceC         = {}     -- commodity key -> current price (cents, integer)
 NetFlow        = {}     -- commodity key -> net units traded this cycle (+buy)
 MarketProfit   = 0      -- company-wide: sell income - buy spend (gold)
+ForgeTier      = {}     -- pid -> 0..3 Toolwright tiers forged
+ShotParity     = {}     -- pid -> 0/1 (the Charter's every-second-shot bookkeeping)
+ContractOffer  = nil    -- { a, b, wave } — open until the next wave launches
+ContractActive = nil    -- the one accepted contract (one active max)
+ContractsDone  = 0      -- fulfilled deliveries + resolved pacts
+ContractsFailed = 0     -- missed delivery deadlines
 CycleCount     = 0
 CycleClock     = 0
 ProdClock      = 0
@@ -230,11 +253,23 @@ end
 function PriceOf(key) return PriceC[key] end
 
 function BuyUnitC(key)  -- cents per unit bought (110% of price, ceil)
-  return (PriceC[key] * 11 + 9) // 10
+  local cents = (PriceC[key] * 11 + 9) // 10
+  -- the Toll Concession pact: buy prices discounted while its cycles run
+  if ContractActive ~= nil and ContractActive.key == "toll"
+    and (ContractActive.cyclesLeft or 0) > 0 then
+    cents = (cents * (100 - CONTRACTS.toll.pct) + 99) // 100
+  end
+  return cents
 end
 
 function SellUnitC(key) -- cents per unit sold (90% of price, floor)
-  return (PriceC[key] * 9) // 10
+  local cents = (PriceC[key] * 9) // 10
+  -- the Trade Tariff pact: sell prices boosted while its cycles run
+  if ContractActive ~= nil and ContractActive.key == "tariff"
+    and (ContractActive.cyclesLeft or 0) > 0 then
+    cents = (cents * (100 + CONTRACTS.tariff.pct)) // 100
+  end
+  return cents
 end
 
 function BuyGoldFor(key, qty)  -- gold cost, ceil
@@ -330,6 +365,227 @@ function MarketCycle()
   end
 end
 
+-- ---------------------------------------------------------- the Toolwright
+-- A 3-tier per-founder upgrade ladder paid in COMMODITIES, never gold
+-- (Economy TD's blacksmith idea, bounded and credited): spending goods on
+-- permanent improvements keeps the market circulating. No PRNG, no seed
+-- interaction — the ladder is pure commitment.
+FORGE_TIERS = {
+  { name = "Toolwright's Bench",   desc = "your harvesters yield +1 unit per tick",
+    cost = { { "tools", 4 }, { "planks", 6 } } },
+  { name = "Toolwright's Works",   desc = "your refiners yield +1 unit per batch",
+    cost = { { "tools", 8 }, { "ingots", 4 } } },
+  { name = "Toolwright's Charter", desc = "your towers burn ammo only every SECOND shot",
+    cost = { { "tools", 12 }, { "ingots", 8 } } },
+}
+
+function ForgeTierOf(pid) return ForgeTier[pid] or 0 end
+
+function ForgeCostText(tier)
+  local parts = {}
+  for _, cst in ipairs(FORGE_TIERS[tier].cost) do
+    parts[#parts + 1] = cst[2] .. " " .. cst[1]
+  end
+  return table.concat(parts, " + ")
+end
+
+function ShowForge(pid)
+  local t = ForgeTierOf(pid)
+  Tell(pid, "|cffffcc00Toolwright ladder|r (paid in GOODS, never gold; your tier: "
+    .. t .. "/" .. #FORGE_TIERS .. "):")
+  for i, def in ipairs(FORGE_TIERS) do
+    local mark
+    if i <= t then mark = "[forged]"
+    elseif i == t + 1 then mark = "[next: '-forge buy' for " .. ForgeCostText(i) .. "]"
+    else mark = "[locked]" end
+    Tell(pid, "|cffaaddff" .. i .. ". " .. def.name .. "|r -- " .. def.desc .. " " .. mark)
+  end
+end
+
+function HandleForgeBuy(pid)
+  local t = ForgeTierOf(pid)
+  if t >= #FORGE_TIERS then
+    Tell(pid, "|cffaaaaaaThe Toolwright has nothing left to teach you.|r")
+    return
+  end
+  local def = FORGE_TIERS[t + 1]
+  for _, cst in ipairs(def.cost) do
+    if StockOf(pid, cst[1]) < cst[2] then
+      Tell(pid, "|cffaaaaaa" .. def.name .. " costs " .. ForgeCostText(t + 1)
+        .. " -- you are short of " .. cst[1] .. ".|r")
+      return
+    end
+  end
+  for _, cst in ipairs(def.cost) do TakeStock(pid, cst[1], cst[2]) end
+  ForgeTier[pid] = t + 1
+  LogRun("forge|pid=" .. pid .. "|tier=" .. (t + 1))
+  AnnounceAll("|cffffdd66" .. GetPlayerName(Player(pid)) .. " forges " .. def.name
+    .. " -- " .. def.desc .. ".|r")
+end
+
+-- ---------------------------------------------------------------- contracts
+-- After every 4th wave the company board posts a SEEDED choice of two
+-- contracts; one active contract max; every state transition is a RUNLOG
+-- beat (offer / accept / deliver / fulfilled / failed / resolved / lapsed).
+-- The offer draws ALWAYS happen (whether or not anyone can accept), so the
+-- PRNG stream never depends on player state — only on the run's inputs.
+CONTRACTS = {
+  planks = { kind = "deliver", name = "Plank Consignment", good = "planks",
+             qty = 30, waves = 3, lump = 120 },
+  bread  = { kind = "deliver", name = "Provisions Order", good = "bread",
+             qty = 20, waves = 3, lump = 90 },
+  tariff = { kind = "tariff", name = "Trade Tariff", pct = 20, cycles = 2,
+             squad = "marauder", squadN = 3 },
+  toll   = { kind = "toll", name = "Toll Concession", pct = 15, cycles = 2,
+             bwaves = 2 },
+}
+CONTRACT_ORDER = { "planks", "bread", "tariff", "toll" }
+
+function ContractTerms(key, wave)
+  local def = CONTRACTS[key]
+  if def.kind == "deliver" then
+    return def.name .. ": deliver " .. def.qty .. " " .. def.good
+      .. " ('-deliver N') before wave " .. (wave + def.waves)
+      .. " clears -- a lump " .. def.lump .. "g dividend to every founder"
+  elseif def.kind == "tariff" then
+    return def.name .. ": sell prices +" .. def.pct .. "% for " .. def.cycles
+      .. " market cycles, but the next wave adds a marauder squad (+" .. def.squadN .. ")"
+  end
+  return def.name .. ": buy prices -" .. def.pct .. "% for " .. def.cycles
+    .. " market cycles, but wave bounties are HALVED for the next " .. def.bwaves .. " waves"
+end
+
+function OfferContracts()
+  local i = RandInt(1, #CONTRACT_ORDER)
+  local j = RandInt(1, #CONTRACT_ORDER - 1)
+  if j >= i then j = j + 1 end
+  ContractOffer = { a = CONTRACT_ORDER[i], b = CONTRACT_ORDER[j], wave = WaveNumber }
+  LogRun("contract|offer|wave=" .. WaveNumber .. "|a=" .. ContractOffer.a
+    .. "|b=" .. ContractOffer.b)
+  AnnounceAll("|cffffcc00The company board posts CONTRACTS -- accept ONE before the next wave:|r")
+  AnnounceAll("|cffaaddff-contract a: " .. ContractTerms(ContractOffer.a, WaveNumber) .. "|r")
+  AnnounceAll("|cffaaddff-contract b: " .. ContractTerms(ContractOffer.b, WaveNumber) .. "|r")
+  if ContractActive ~= nil then
+    AnnounceAll("|cffaaaaaa(The company's hands are full -- the "
+      .. ContractActive.def.name .. " must resolve first.)|r")
+  end
+end
+
+function AcceptContract(pid, slot)
+  if ContractOffer == nil then
+    Tell(pid, "|cffaaaaaaNothing is on the board -- contracts are posted after every fourth wave.|r")
+    return
+  end
+  if ContractActive ~= nil then
+    Tell(pid, "|cffaaaaaaOne contract at a time -- the " .. ContractActive.def.name
+      .. " must resolve first.|r")
+    return
+  end
+  local key = (slot == "a") and ContractOffer.a or ContractOffer.b
+  local def = CONTRACTS[key]
+  local a = { key = key, def = def }
+  if def.kind == "deliver" then
+    a.delivered = 0
+    a.due = ContractOffer.wave + def.waves
+  elseif def.kind == "tariff" then
+    a.cyclesLeft = def.cycles
+    a.squadPending = true
+  else
+    a.cyclesLeft = def.cycles
+    a.bountyWaves = def.bwaves
+  end
+  ContractActive = a
+  local offerWave = ContractOffer.wave
+  ContractOffer = nil
+  LogRun("contract|accept|pid=" .. pid .. "|" .. key)
+  AnnounceAll("|cff88ccff" .. GetPlayerName(Player(pid)) .. " signs the "
+    .. def.name .. ": " .. ContractTerms(key, offerWave) .. ".|r")
+end
+
+function HandleDeliver(pid, n)
+  local a = ContractActive
+  if a == nil or a.def.kind ~= "deliver" then
+    Tell(pid, "|cffaaaaaaNo delivery contract is open.|r")
+    return
+  end
+  if n == nil or n < 1 then
+    Tell(pid, "|cffaaaaaaQuantity must be 1-999.|r")
+    return
+  end
+  local remaining = a.def.qty - a.delivered
+  if n > remaining then n = remaining end
+  if StockOf(pid, a.def.good) < n then n = StockOf(pid, a.def.good) end
+  if n < 1 then
+    Tell(pid, "|cffaaaaaaYou hold no " .. a.def.good .. " to deliver.|r")
+    return
+  end
+  TakeStock(pid, a.def.good, n)
+  a.delivered = a.delivered + n
+  LogRun("contract|deliver|pid=" .. pid .. "|" .. a.def.good .. "|n=" .. n
+    .. "|total=" .. a.delivered .. "/" .. a.def.qty)
+  Tell(pid, "|cff88ccffDelivered " .. n .. " " .. a.def.good .. " ("
+    .. a.delivered .. "/" .. a.def.qty .. ").|r")
+  if a.delivered >= a.def.qty then
+    for _, u in ipairs(Users) do AddGold(u, a.def.lump) end
+    ContractsDone = ContractsDone + 1
+    ContractActive = nil
+    LogRun("contract|fulfilled|" .. a.key .. "|lump=" .. a.def.lump)
+    AnnounceAll("|cffffdd66The " .. a.def.name .. " is FULFILLED -- a lump "
+      .. a.def.lump .. "g dividend lands in every founder's purse.|r")
+  end
+end
+
+-- an effect pact resolves once every clause has run its course
+function CheckPactResolved()
+  local a = ContractActive
+  if a == nil or a.def.kind == "deliver" then return end
+  if (a.cyclesLeft or 0) <= 0 and not a.squadPending and (a.bountyWaves or 0) <= 0 then
+    ContractsDone = ContractsDone + 1
+    ContractActive = nil
+    LogRun("contract|resolved|" .. a.key)
+    AnnounceAll("|cff88ccffThe " .. a.def.name .. " has run its course -- the books close on it.|r")
+  end
+end
+
+-- wave-clear bookkeeping: delivery deadlines are checked here
+function ContractWaveCheck()
+  local a = ContractActive
+  if a == nil then return end
+  if a.def.kind == "deliver" then
+    if WaveNumber >= a.due and a.delivered < a.def.qty then
+      ContractsFailed = ContractsFailed + 1
+      ContractActive = nil
+      LogRun("contract|failed|" .. a.key .. "|got=" .. a.delivered .. "/" .. a.def.qty)
+      AnnounceAll("|cffff8866The " .. a.def.name .. " FAILS -- only " .. a.delivered
+        .. " of " .. a.def.qty .. " " .. a.def.good .. " arrived in time. The company's name suffers.|r")
+    end
+  else
+    CheckPactResolved()
+  end
+end
+
+function ShowContract(pid)
+  if ContractActive ~= nil then
+    local a = ContractActive
+    if a.def.kind == "deliver" then
+      Tell(pid, "|cffffcc00Active contract:|r " .. a.def.name .. " -- " .. a.delivered
+        .. "/" .. a.def.qty .. " " .. a.def.good .. " delivered ('-deliver N'), due before wave "
+        .. a.due .. " clears.")
+    else
+      local bits = (a.cyclesLeft or 0) .. " market cycles left"
+      if a.squadPending then bits = bits .. ", the marauder squad is still owed" end
+      if (a.bountyWaves or 0) > 0 then bits = bits .. ", " .. a.bountyWaves .. " halved bounties left" end
+      Tell(pid, "|cffffcc00Active contract:|r " .. a.def.name .. " -- " .. bits .. ".")
+    end
+  elseif ContractOffer ~= nil then
+    Tell(pid, "|cffffcc00On the board (accept before the next wave):|r")
+    Tell(pid, "|cffaaddff-contract a: " .. ContractTerms(ContractOffer.a, ContractOffer.wave) .. "|r")
+    Tell(pid, "|cffaaddff-contract b: " .. ContractTerms(ContractOffer.b, ContractOffer.wave) .. "|r")
+  else
+    Tell(pid, "|cffaaaaaaNo contracts on the board -- the company posts them after every fourth wave.|r")
+  end
+end
+
 -- --------------------------------------------------------------- buildings
 -- Build keys -> definitions. Unit types come from the GENERATED constants;
 -- costs mirror the object-data ugol values (engine builds charge them; the
@@ -389,8 +645,10 @@ function ProductionTick()
     if not rec.dead and Alive(rec.unit) then
       local d = rec.def
       if d.kind == "harvest" then
-        AddStock(rec.pid, d.out, d.qty)
-        ProducedC[rec.pid] = ProducedC[rec.pid] + d.qty * PriceC[d.out]
+        local qty = d.qty
+        if ForgeTierOf(rec.pid) >= 1 then qty = qty + 1 end -- Toolwright's Bench
+        AddStock(rec.pid, d.out, qty)
+        ProducedC[rec.pid] = ProducedC[rec.pid] + qty * PriceC[d.out]
       elseif d.kind == "refine" then
         local ok = true
         for _, inp in ipairs(d.inputs) do
@@ -398,8 +656,10 @@ function ProductionTick()
         end
         if ok then
           for _, inp in ipairs(d.inputs) do TakeStock(rec.pid, inp[1], inp[2]) end
-          AddStock(rec.pid, d.out, d.qty)
-          ProducedC[rec.pid] = ProducedC[rec.pid] + d.qty * PriceC[d.out]
+          local qty = d.qty
+          if ForgeTierOf(rec.pid) >= 2 then qty = qty + 1 end -- Toolwright's Works
+          AddStock(rec.pid, d.out, qty)
+          ProducedC[rec.pid] = ProducedC[rec.pid] + qty * PriceC[d.out]
         end
       end
     end
@@ -435,6 +695,11 @@ function CycleEnd()
     ProducedC[pid] = 0
   end
   MarketCycle()
+  -- effect pacts burn a cycle at each market close
+  if ContractActive ~= nil and (ContractActive.cyclesLeft or 0) > 0 then
+    ContractActive.cyclesLeft = ContractActive.cyclesLeft - 1
+    CheckPactResolved()
+  end
 end
 
 function DividendOf(pid) return LastDividend[pid] or 0 end
@@ -451,6 +716,10 @@ function HandleDamaging()
   if src == nil then return end
   local rec = Buildings[src]
   if rec == nil or rec.dead or rec.def.kind ~= "tower" then return end
+  if ForgeTierOf(rec.pid) >= 3 then -- Toolwright's Charter: every 2nd shot free
+    ShotParity[rec.pid] = 1 - (ShotParity[rec.pid] or 0)
+    if ShotParity[rec.pid] == 0 then return end
+  end
   if TakeStock(rec.pid, rec.def.ammo, 1) then
     AmmoSpent[rec.pid] = (AmmoSpent[rec.pid] or 0) + 1
   else
@@ -497,7 +766,14 @@ ARCHETYPES = {
   marauder = { unit = UNIT_IRONHIDE_MARAUDER, hp = 400,  bounty = 12,  leak = 1 },
   runner   = { unit = UNIT_DUST_RUNNER,       hp = 140,  bounty = 6,   leak = 1, swarm = true },
   sapper   = { unit = UNIT_TUNNEL_SAPPER,     hp = 250,  bounty = 10,  leak = 1, siege = true },
+  skimmer  = { unit = UNIT_TOLLMAN_SKIMMER,   hp = 160,  bounty = 8,   leak = 1, steal = 25 },
   baron    = { unit = UNIT_TOLL_BARON,        hp = 2500, bounty = 150, leak = 5, boss = true },
+}
+-- every boss ENTRY draws one seeded affix, applied to each baron it fields
+BOSS_AFFIXES = {
+  { key = "ironclad", hpPct = 135 },              -- +35% hit points
+  { key = "swift",    ms = 340 },                 -- +70 move speed over the 270 base
+  { key = "greedy",   leak = 7, bounty = 250 },   -- worse leak, richer kill
 }
 WAVES = {
   { { "cutpurse", 6 } },
@@ -510,14 +786,14 @@ WAVES = {
   { { "sapper", 3 }, { "cutpurse", 6 } },
   { { "marauder", 6 } },
   { { "baron", 1 }, { "marauder", 2 } },          -- the boss ACTUALLY spawns
-  { { "cutpurse", 14 }, { "runner", 4 } },
+  { { "cutpurse", 12 }, { "runner", 4 }, { "skimmer", 3 } },
   { { "sapper", 5 }, { "marauder", 3 } },
   { { "runner", 12 } },
   { { "marauder", 8 }, { "sapper", 2 } },
-  { { "cutpurse", 16 }, { "marauder", 4 } },
+  { { "cutpurse", 16 }, { "marauder", 4 }, { "skimmer", 3 } },
   { { "sapper", 6 }, { "runner", 6 } },
   { { "marauder", 10 } },
-  { { "runner", 10 }, { "sapper", 4 } },
+  { { "runner", 10 }, { "sapper", 4 }, { "skimmer", 4 } },
   { { "marauder", 8 }, { "cutpurse", 12 }, { "sapper", 3 } },
   { { "baron", 2 }, { "marauder", 6 } },          -- the final toll
 }
@@ -553,13 +829,20 @@ function NearestBuilding(x, y)
   return best
 end
 
-function SpawnRaider(kind, wave, x, y)
+function SpawnRaider(kind, wave, x, y, affix)
   local a = ARCHETYPES[kind]
   local u = CreateUnit(Player(PLAYER_NEUTRAL_AGGRESSIVE), a.unit, x, y, 270.0)
   local hp = WaveHpOf(kind, wave < 1 and 1 or wave)
+  local leak, bounty = a.leak, a.bounty
+  if affix ~= nil then
+    if affix.hpPct ~= nil then hp = (hp * affix.hpPct) // 100 end
+    if affix.ms ~= nil then SetUnitMoveSpeed(u, affix.ms + 0.0) end
+    if affix.leak ~= nil then leak = affix.leak end
+    if affix.bounty ~= nil then bounty = affix.bounty end
+  end
   BlzSetUnitMaxHP(u, hp)
   SetWidgetLife(u, hp)
-  RaiderRec[u] = { kind = kind, wave = wave, leak = a.leak, bounty = a.bounty }
+  RaiderRec[u] = { kind = kind, wave = wave, leak = leak, bounty = bounty }
   if wave > 0 then WaveRaidersLeft = WaveRaidersLeft + 1 end
   if a.siege then
     local tgt = NearestBuilding(x, y)
@@ -592,6 +875,11 @@ end
 
 function LaunchWave(n)
   LockSeed("wave")
+  if ContractOffer ~= nil then -- the board clears when the road gets loud
+    LogRun("contract|lapsed|wave=" .. ContractOffer.wave)
+    AnnounceAll("|cffaaaaaaThe contract board clears unsigned.|r")
+    ContractOffer = nil
+  end
   WaveNumber = n
   WavePhase = "active"
   local comp, growPct = CompositionOf(n)
@@ -602,19 +890,41 @@ function LaunchWave(n)
     local kind, base = entry[1], entry[2]
     local count = ScaledCount((base * growPct) // 100, kind)
     if count < 1 then count = 1 end
+    local affix = nil
+    if ARCHETYPES[kind].boss then
+      affix = BOSS_AFFIXES[RandInt(1, #BOSS_AFFIXES)]
+      LogRun("wave|bossaffix|" .. affix.key)
+    end
     for i = 1, count do
       -- fan the pack out along the edge, perpendicular to the approach
       local off = (i - 1) * 72.0 - (count - 1) * 36.0
       if edge == 1 or edge == 3 then
-        SpawnRaider(kind, n, ex + off, ey)
+        SpawnRaider(kind, n, ex + off, ey, affix)
       else
-        SpawnRaider(kind, n, ex, ey + off)
+        SpawnRaider(kind, n, ex, ey + off, affix)
       end
     end
     parts[#parts + 1] = kind .. ":" .. count
     if ARCHETYPES[kind].boss then
-      AnnounceAll("|cffff4444The TOLL BARON rides with wave " .. n .. " -- leaking him costs 5 lives.|r")
+      AnnounceAll("|cffff4444The " .. affix.key .. " TOLL BARON rides with wave " .. n
+        .. " -- leaking him costs " .. (affix.leak or 5) .. " lives.|r")
     end
+  end
+  -- the Trade Tariff's owed marauder squad rides the next wave out
+  if ContractActive ~= nil and ContractActive.squadPending then
+    local sqk, sqn = ContractActive.def.squad, ContractActive.def.squadN
+    for i = 1, sqn do
+      local off = (i - 1) * 72.0 + 420.0
+      if edge == 1 or edge == 3 then
+        SpawnRaider(sqk, n, ex + off, ey)
+      else
+        SpawnRaider(sqk, n, ex, ey + off)
+      end
+    end
+    ContractActive.squadPending = false
+    parts[#parts + 1] = "pact:" .. sqk .. ":" .. sqn
+    AnnounceAll("|cffff8866The Tariff's price rides with them -- a marauder squad joins the wave.|r")
+    CheckPactResolved()
   end
   local desc = table.concat(parts, ",")
   AnnounceAll("|cffffcc00Wave " .. n .. " from the " .. EDGE_NAMES[edge] .. " -- " .. desc .. ".|r")
@@ -624,12 +934,21 @@ end
 function WaveCleared()
   WavePhase = "gap"
   local bounty = WAVE_BOUNTY_BASE + WAVE_BOUNTY_PER * WaveNumber
+  -- the Toll Concession's price: halved bounties while its waves run
+  if ContractActive ~= nil and (ContractActive.bountyWaves or 0) > 0 then
+    bounty = bounty // 2
+    ContractActive.bountyWaves = ContractActive.bountyWaves - 1
+  end
   for _, pid in ipairs(Users) do AddGold(pid, bounty) end
   AnnounceAll("|cff88ff88Wave " .. WaveNumber .. " broken -- +" .. bounty .. "g to every founder.|r")
   LogRun("wave|clear|" .. WaveNumber .. "|bounty=" .. bounty)
+  ContractWaveCheck()
   if WaveNumber >= FINAL_WAVE and not EndlessMode and not VictoryPending then
     VictoryReached()
     return
+  end
+  if WaveNumber % 4 == 0 and WaveNumber < FINAL_WAVE then
+    OfferContracts()
   end
   GapLeft = WAVE_GAP
 end
@@ -667,6 +986,16 @@ function HandleLeak(u)
   AnnounceAll("|cffff4444A " .. rec.kind .. " reaches the Depot -- -" .. rec.leak
     .. (rec.leak == 1 and " life" or " lives") .. " (" .. Lives .. " left).|r")
   LogRun("leak|" .. rec.kind .. "|lives=" .. Lives)
+  local skim = ARCHETYPES[rec.kind].steal
+  if skim ~= nil then -- the Skimmer robs every founder's purse on the way out
+    for _, pid in ipairs(Users) do
+      local g = GoldOf(pid) - skim
+      if g < 0 then g = 0 end
+      SetPlayerState(Player(pid), PLAYER_STATE_RESOURCE_GOLD, g)
+    end
+    LogRun("steal|gold=" .. skim)
+    AnnounceAll("|cffff8866The Skimmer makes off with " .. skim .. "g from every founder's purse.|r")
+  end
   RaiderGone(u, false)
   RemoveUnit(u)
   if Lives <= 0 then
@@ -677,24 +1006,28 @@ end
 -- ------------------------------------------------------------ score/verdict
 
 function ComputeScore()
-  local gold, stockV, invested = 0, 0, 0
+  local gold, stockV, invested, forgeV = 0, 0, 0, 0
   for _, pid in ipairs(Users) do
     gold = gold + GoldOf(pid)
     invested = invested + (InvestedStanding[pid] or 0)
+    forgeV = forgeV + ForgeTierOf(pid) * 100 -- each forged tier is worth 100
     for _, c in ipairs(COMMODITIES) do
       stockV = stockV + SellGoldFor(c.key, StockOf(pid, c.key))
     end
   end
+  local pactV = ContractsDone * 75 - ContractsFailed * 25
   local total = gold + stockV + invested + Lives * SCORE_PER_LIFE + MarketProfit
-  return total, gold, stockV, invested, Lives * SCORE_PER_LIFE, MarketProfit
+    + forgeV + pactV
+  return total, gold, stockV, invested, Lives * SCORE_PER_LIFE, MarketProfit, forgeV, pactV
 end
 
 function ScoreLine(verdict)
-  local total, gold, stockV, invested, livesV, profit = ComputeScore()
+  local total, gold, stockV, invested, livesV, profit, forgeV, pactV = ComputeScore()
   ScoreFinal = total
   return "COINSTEAD -- " .. verdict .. ". Score " .. total
     .. " (coin " .. gold .. " + goods " .. stockV .. " + stakes " .. invested
-    .. " + lives " .. livesV .. " + market " .. profit .. ")."
+    .. " + lives " .. livesV .. " + market " .. profit
+    .. " + forge " .. forgeV .. " + pacts " .. pactV .. ")."
     .. " Waves: " .. WaveNumber .. ". Cycles: " .. CycleCount .. ". Seed: " .. RunSeed .. "."
 end
 
@@ -873,7 +1206,9 @@ function ShowHelp(pid)
     .. ELASTIC_PER_PLAYER .. "x(players) net units traded, hard-capped at "
     .. MOVE_CAP_PCT .. "%/cycle. No randomness.")
   Tell(pid, "|cffaaddffAmmo:|r watchtowers burn planks, cannon towers burn ingots -- 1 per shot; empty racks = INERT tower until restocked.")
-  Tell(pid, "|cffaaddffCommands:|r -help -price -eco -lives -buy -sell -seed N (until the first trade/wave) -endless (after victory) -test (debug).")
+  Tell(pid, "|cffaaddffToolwright:|r '-forge' shows the 3-tier ladder, '-forge buy' pays the next tier in GOODS (harvest +1, refine +1, every 2nd shot free).")
+  Tell(pid, "|cffaaddffContracts:|r posted after every 4th wave -- '-contract' to read the board, '-contract a|b' to sign (one active max), '-deliver N' on consignments.")
+  Tell(pid, "|cffaaddffCommands:|r -help -price -eco -lives -buy -sell -forge -contract -deliver -seed N (until the first trade/wave) -endless (after victory) -test (debug).")
   Tell(pid, "|cff888888Credits: adapted with credit from Economy TD (anonymous, EpicWar), Gold TD (EpicWar), Legion TD (AutoAttackGames), Line Tower Wars (Hive Workshop). Mechanics only; nothing copied.|r")
 end
 
@@ -905,6 +1240,10 @@ function ShowEco(pid)
   local inert = TowerInertCount(pid)
   if inert > 0 then
     Tell(pid, "|cffff8866" .. inert .. " of your towers stand INERT -- restock their ammo.|r")
+  end
+  if ForgeTierOf(pid) > 0 then
+    Tell(pid, "|cffaaddffToolwright:|r tier " .. ForgeTierOf(pid) .. " ("
+      .. FORGE_TIERS[ForgeTierOf(pid)].name .. ").")
   end
 end
 
@@ -969,6 +1308,25 @@ function HandleChat(pid, msgRaw)
   if msg == "-eco" then ShowEco(pid) return end
   if msg == "-lives" then ShowLives(pid) return end
   if msg == "-endless" then StartEndless(pid) return end
+  if msg == "-forge" then ShowForge(pid) return end
+  if msg == "-forge buy" then
+    if GameOver then return end
+    HandleForgeBuy(pid)
+    return
+  end
+  if msg == "-contract" then ShowContract(pid) return end
+  local slotArg = string.match(msg, "^%-contract%s+([ab])$")
+  if slotArg ~= nil then
+    if GameOver then return end
+    AcceptContract(pid, slotArg)
+    return
+  end
+  local delArg = string.match(msg, "^%-deliver%s+(%d+)$")
+  if delArg ~= nil then
+    if GameOver then return end
+    HandleDeliver(pid, ParseNumArg(delArg))
+    return
+  end
 
   local tradeDir, tradeKey, tradeQty = string.match(msg, "^%-(buy)%s+(%a+)%s+(%d+)$")
   if tradeDir == nil then
@@ -1234,6 +1592,8 @@ function main()
     LastDividend[pid] = 0
     InvestedStanding[pid] = 0
     AmmoSpent[pid] = 0
+    ForgeTier[pid] = 0
+    ShotParity[pid] = 0
     SetPlayerState(Player(pid), PLAYER_STATE_RESOURCE_GOLD, START_GOLD)
   end
 

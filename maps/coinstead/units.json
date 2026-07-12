@@ -70,5 +70,22 @@
     "player": 3,
     "id": 3,
     "targetAcquisition": 0
+  },
+  {
+    "type": "h00C",
+    "position": [
+      896,
+      0,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 27,
+    "id": 4
   }
 ]

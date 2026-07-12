@@ -600,6 +600,13 @@
         "level": 0,
         "column": 0,
         "value": ""
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\CoinWatchtower.mdl"
       }
     ],
     "h00A:hctw": [
@@ -658,6 +665,13 @@
         "level": 0,
         "column": 0,
         "value": ""
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\CannonKeep.mdl"
       }
     ],
     "h00B:htow": [
@@ -716,6 +730,13 @@
         "level": 0,
         "column": 0,
         "value": ""
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\CoinsteadDepot.mdl"
       }
     ],
     "n000:ngno": [
@@ -922,6 +943,101 @@
         "level": 0,
         "column": 0,
         "value": 10
+      }
+    ],
+    "h00C:ngme": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Market Stall"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Market Stall"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "The street face of the company's shared market. Trade from anywhere with -buy and -sell; one price for everyone, and every trade moves it."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\MarketStall.mdl"
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "usei",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 900
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "n005:nban": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Tollman Skimmer"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Tollman Skimmer"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Raider bagman. A Skimmer that reaches the Depot does not just cost a life - it skims 25 gold from EVERY founder's purse on the way out."
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 160
+      },
+      {
+        "id": "umvs",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 320
       }
     ]
   }

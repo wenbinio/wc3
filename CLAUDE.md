@@ -10,7 +10,7 @@ in docs/ and .claude/skills/; follow the pointers.
 
 ```bash
 bash scripts/setup.sh   # idempotent: npm install + optional smpq fallback + optional pjass build (vendor/pjass)
-npm test                # 433 tests; all must pass before you change anything
+npm test                # 450 tests; all must pass before you change anything
 npm run preflight       # ~13s one-shot gate; 0 FAILs required before AND after any change
 ```
 
@@ -89,14 +89,21 @@ Reference sources (each README documents its own invariants):
   golden-run replay test (gotchas 28–30), 81 logic tests, data-driven Lua
   tables, 4 generated models; competitor matrix in
   docs/reference/roguelike-comparison.md.
-- `maps/coinstead/` — 1–4 player co-op economy defense (phase 1):
-  production chains → deterministic shared market (integer-cents prices,
-  net-flow elasticity with a hard per-cycle move cap), dividends on
-  produced value with stake loss (no idle interest), ammo-hungry towers
-  (DAMAGING-event draw, inert on empty), 20 authored waves + endless;
-  39 logic tests at 100% script line coverage; golden run deferred to
-  phase 2 (design credits in its README: Economy TD / Gold TD /
-  Legion TD / Line Tower Wars — mechanics only, nothing copied).
+- `maps/coinstead/` — 1–4 player co-op economy defense (phase 2 —
+  COMPLETE): production chains → deterministic shared market
+  (integer-cents prices, net-flow elasticity with a hard per-cycle move
+  cap), dividends on produced value with stake loss (no idle interest),
+  ammo-hungry towers (DAMAGING-event draw, inert on empty), the
+  Toolwright ladder (3 tiers paid in commodities), a seeded contract
+  board every 4th wave (4 templates, every state a RUNLOG beat), 20
+  authored waves + skimmer/boss-affix texture + endless; 4 generated
+  identity models + generated roads/plaza/berm terrain (assets/);
+  56 logic tests at 100% script line coverage incl. a 144-beat pinned
+  golden run; competitor matrix in
+  docs/reference/economy-survival-comparison.md (design credits in its
+  README: Economy TD / Gold TD / Legion TD / Line Tower Wars —
+  mechanics only, nothing copied). Never loaded in the real game —
+  sim-proven only.
 
 Scratch builds go to `_build/` (gitignored). Exception: `maps/builds/` holds
 the committed compiled `.w3x` of each bundled source — regenerate via
@@ -425,7 +432,7 @@ never third-party maps, gotcha 9).
 
 ## Testing & validation doctrine
 
-- `npm test` = 433 tests, 41 files (30 under test/ + 11 map suites under
+- `npm test` = 450 tests, 43 files (30 under test/ + 13 map suites under
   maps/*/tests/, all auto-discovered by `node --test`): source⇄binary fixed
   points for the demo/siege/tidewatch/northreach sources (vaults-of-ash and
   coinstead are covered by their logic suites), build+validate end-to-end, MPQ

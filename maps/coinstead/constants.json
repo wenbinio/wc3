@@ -43,6 +43,13 @@
       "name": "Ironhide Marauder",
       "source": "objects-units.json"
     },
+    "UNIT_MARKET_STALL": {
+      "kind": "unit",
+      "rawcode": "h00C",
+      "base": "ngme",
+      "name": "Market Stall",
+      "source": "objects-units.json"
+    },
     "UNIT_OREPIT": {
       "kind": "unit",
       "rawcode": "h004",
@@ -85,6 +92,13 @@
       "name": "Steward",
       "source": "objects-units.json"
     },
+    "UNIT_TOLLMAN_SKIMMER": {
+      "kind": "unit",
+      "rawcode": "n005",
+      "base": "nban",
+      "name": "Tollman Skimmer",
+      "source": "objects-units.json"
+    },
     "UNIT_TOLL_BARON": {
       "kind": "unit",
       "rawcode": "n004",
@@ -123,6 +137,11 @@
     "DOOD_LTlt": {
       "kind": "doodad",
       "rawcode": "LTlt",
+      "source": "doodads.json"
+    },
+    "DOOD_LTrc": {
+      "kind": "doodad",
+      "rawcode": "LTrc",
       "source": "doodads.json"
     },
     "REGION_DEPOT_CORE": {
