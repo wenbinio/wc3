@@ -713,8 +713,14 @@ maps/*/assets/) or CC0-converted content. Details: docs/ASSETS.md.
   profiles: Gaias, Sunken City, DracoL1ch DotA, ITT — and the ranked
   deferred-capabilities list), roguelike-comparison.md (vaults-of-ash vs
   the 3 strongest WC3 roguelikes: matrix + verdicts + credits),
+  zombie-survival-comparison.md (last-train vs the zombie genre: five
+  archetypes, ZS7/Zombination/NotD:SO/DotD decomposed with real numbers,
+  SWAT:A/UA2/Eras/Parasite surveyed, adopted-vs-fixed ledger,
+  sim-testability appendix),
   headless-tooling-audit-2026-07.md (ranked improvement program: internal
-  quick wins / sim-fidelity tiers / ecosystem adoptions + watch + declines);
+  quick wins / sim-fidelity tiers / ecosystem adoptions + watch + declines),
+  and README.md — the per-file index (question answered / date / staleness
+  caveat for every dossier);
   `docs/upstream/` — ready-to-file wc3maptranslator issue DRAFTS (verified
   repros; not yet filed — see README there)
 - `.claude/skills/` — wc3-read-map, wc3-build-map, wc3-new-map,
@@ -735,25 +741,17 @@ maps/*/assets/) or CC0-converted content. Details: docs/ASSETS.md.
   "Serendipity"** (w3i author field + README byline + in-game credits
   where a command exists). Community/mechanics credits stay per-author in
   each map's README + imports-credits.json.
-- **Open threads**: promote the model-preview render rig into tools/ —
-  the scratchpad prototype (Playwright headless Chromium + mdx-m3-viewer
-  UMD over a local server, `--enable-unsafe-swiftshader`; war3-model
-  flat-shade cross-check) rendered 90/90 fleet models and closes the
-  "generated models are eyeball-blind until playtest" gap; its render
-  read drove real fixes (CannonKeep silhouette, NorthLongship sail —
-  still unfixed). Sol round-2 commission (Broodmother/lair, MRT gates,
+- **Open threads**: from the render rig's render read, the
+  **NorthLongship sail is still unfixed** (the CannonKeep silhouette fix
+  already landed); Sol round-2 commission (Broodmother/lair, MRT gates,
   void-deck set, taxi/food cart) drafted via
   docs/reference/ai-model-workorder.md conventions.
-- **Session-context-only research (compaction risk)**: the zombie-genre
-  research that designed Last Train exists as three agent reports in
-  session context, NOT yet as docs/reference/ files — the Zombie
-  Simulator 7 + Zombination v11 decompositions (real numbers), the
-  five-archetype genre survey (NotD:SO + Dawn of the Dead decomposed;
-  SWAT/UA2/Eras/Parasite surveyed), and the art-system recommendation
-  (largely implemented). Last Train phase 2 MUST write the comparison doc
-  (docs/reference/ zombie matrix, roguelike-comparison.md style) while or
-  by re-deriving from the READMEs + re-decomposition (both source maps
-  remain downloadable — EpicWar 246910, 257009).
+- **Compaction risk DISCHARGED (2026-08-07)**: the session-only
+  zombie-genre research is committed as
+  docs/reference/zombie-survival-comparison.md (+ the docs/reference/
+  README.md index), and the model-preview render rig is committed under
+  scripts/experimental/render-rig/ (90/90 fleet renders; see its README
+  for quirks/limits — outputs stay in `_build/`, never committed).
 - **Bundled maps: in-game playtest status** (the sim is not the game —
   doctrine above): demo, crossroads-siege, tidewatch-arena, **and now
   coinstead (2026-08-07, phase-3 build: "everything is working" —
@@ -772,7 +770,8 @@ maps/*/assets/) or CC0-converted content. Details: docs/ASSETS.md.
   as globals only. Standing next step: playtest vaults-of-ash in-game
   (solo default-seed run, beat-for-beat vs the 61-beat golden run).
   **last-train has never been loaded in the real game** — sim-proven only
-  (64 logic tests, 98.2% coverage; golden run + comparison doc = phase 2).
+  (64 logic tests, 98.2% coverage; golden run = phase 2 — the comparison
+  doc landed 2026-08-07: docs/reference/zombie-survival-comparison.md).
   Coinstead's art fix (`f405bac`) awaits its re-verification eyeball pass
   (Barn/WindMill construction shows no Birth anim — cosmetic, accept or
   swap at next playtest; promote its paths to game-verified after).

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>preview rig</title>
+<style>body{margin:0;background:#1c1e22}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="c" width="800" height="800"></canvas>
+<script src="/viewer.min.js"></script>
+<script>
+const canvas = document.getElementById('c');
+const V = ModelViewer.viewer;
+const viewer = new V.ModelViewer(canvas, { alpha: false, antialias: true, preserveDrawingBuffer: true });
+window.__errors = [];
+viewer.on('error', (e) => { try { window.__errors.push(String(e && (e.error || e.fetchUrl || e))); } catch (_) {} });
+
+const pathSolver = (src) => {
+  if (typeof src !== 'string') return src;
+  if (src.startsWith('/') || src.startsWith('http')) return src;
+  return '/tex/' + src.replace(/\\/g, '/');
+};
+
+viewer.addHandler(V.handlers.blp);
+viewer.addHandler(V.handlers.tga);
+viewer.addHandler(V.handlers.dds);
+viewer.addHandler(V.handlers.mdx, pathSolver);
+
+const scene = viewer.addScene();
+scene.color.fill(0.11);
+
+// cam: {cx,cy,cz, r} model center + radius from node-side vertex scan
+window.renderModel = async function (url, cam, seq, azDeg, elDeg) {
+  window.__errors = [];
+  scene.clearInstances && scene.clearInstances();
+  // remove old instances by rebuilding the scene each time is messy; instead detach previous
+  if (window.__inst) { window.__inst.detach ? window.__inst.detach() : null; }
+  const model = await viewer.load(url, pathSolver);
+  // RIG QUIRK: this mdx-m3-viewer-th build has no resource.ok — probe
+  // addInstance to tell a parsed model from a failed load.
+  if (!model || typeof model.addInstance !== 'function') {
+    return { ok: false, errors: window.__errors.concat(['model load failed']) };
+  }
+  const inst = model.addInstance();
+  window.__inst = inst;
+  inst.setScene(scene);
+  // pick a Stand sequence when present
+  let seqIdx = -1;
+  try {
+    const seqs = model.sequences || [];
+    for (let i = 0; i < seqs.length; i++) {
+      if (/stand/i.test(seqs[i].name) && !/hit|work|channel|victory/i.test(seqs[i].name)) { seqIdx = i; break; }
+    }
+    if (seqIdx < 0 && seqs.length) seqIdx = 0;
+  } catch (e) {}
+  if (typeof seq === 'number') seqIdx = seq;
+  if (seqIdx >= 0) { inst.setSequence(seqIdx); inst.setSequenceLoopMode(2); }
+  // three-quarter view
+  const r = Math.max(cam.r, 1);
+  const d = r * 2.65; // ~bounding-sphere fit for fov 40deg with margin (r is half-diagonal, usually loose)
+  const az = (azDeg === undefined ? 335 : azDeg) * Math.PI / 180;
+  const el = (elDeg === undefined ? 22 : elDeg) * Math.PI / 180;
+  const eye = [
+    cam.cx + d * Math.cos(el) * Math.cos(az),
+    cam.cy + d * Math.cos(el) * Math.sin(az),
+    cam.cz + d * Math.sin(el),
+  ];
+  scene.camera.perspective(Math.PI / 4.5, 1, r * 0.02, d * 8);
+  scene.camera.moveToAndFace(eye, [cam.cx, cam.cy, cam.cz], [0, 0, 1]);
+  // let everything (textures) finish loading
+  await viewer.whenAllLoaded();
+  // advance a bit into the sequence, render
+  for (let i = 0; i < 12; i++) viewer.updateAndRender(1000 / 60);
+  return { ok: true, errors: window.__errors.slice(), dataURL: canvas.toDataURL('image/png') };
+};
+window.__ready = true;
+</script>
+</body>
+</html>
