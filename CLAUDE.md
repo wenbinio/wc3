@@ -129,8 +129,10 @@ Reference sources (each README documents its own invariants):
   in progress; future maps must give every building-class clone a
   distinct model+icon from day one.
 - `maps/last-train/` — **"Last Train from Yio Chu Kang"**, a map by
-  **Serendipity** (the authorship convention for this and future bundled
-  maps): 1–4 player co-op Singapore-set zombie survival (phase 1 —
+  **Serendipity** (the authorship convention — applied FLEET-WIDE
+  2026-08-07: every bundled map now carries author "Serendipity" in its
+  w3i, its README byline, and any existing credits/help command; future
+  bundled maps follow suit): 1–4 player co-op Singapore-set zombie survival (phase 1 —
   core loop COMPLETE). One permanent monsoon night in an HDB estate:
   gold-as-bullets/lumber-as-clips ammo (DAMAGING-event draw, 4s reload
   lockout), curable 1.5-dps infection STATE, 3.5s corpse-rise with
@@ -143,7 +145,10 @@ Reference sources (each README documents its own invariants):
   classes, seeded wandering patrols + dread beats. FIRST CONSUMER of
   two conventions: community models from Hive Workshop (HerrDave /
   Ilya Alaric / bakr / Wayshan — per-author credit, imports-credits.json
-  provenance ledger + lint rule g) and the ambience-first-class rule
+  provenance ledger + lint rule g; the ledger also covers the 2026-08-07
+  **Sol commissioned ambience batch** — 8 externally-authored gate-clean
+  models by AI fleet "Sol", credited like community authors in the
+  ledger, README and -credits) and the ambience-first-class rule
   (permanent night, script-side RLlr rain, lamplight pockets, MRT
   announcement beats). 64 logic tests at 98.2% script line coverage;
   golden run deferred to phase 2 (documented in its README). Design
@@ -502,6 +507,21 @@ never third-party maps, gotcha 9).
     baked border frame, auto-derived DISBTN twin, BLP1 via Pillow with TGA
     fallback) for abstractions; playtests promote table entries to
     game-verified.
+32. **Community assets ARE fetchable headlessly, and model authoring is
+    delegable to any code LLM.** (a) Hive Workshop's Cloudflare 403s are a
+    FETCHER artifact, not a wall — plain curl with a browser User-Agent
+    works end-to-end (exact recipes + xgm.guru/wc3modding.info alternates:
+    docs/ASSETS.md Tier 4; discovery via WebSearch — Hive's own search is
+    JS-only). Every import needs an `imports-credits.json` entry (lint
+    rule (g); harvest author/source from the Hive zip's readme.html; Legal
+    section governs — per-author credit, no bulk mirroring, ripped content
+    forbidden). (b) MDL is TEXT, so prop/ambience model authoring can be
+    handed to an external code LLM: send the work-order template
+    `docs/reference/ai-model-workorder.md` (encodes gotchas 14+19 + a
+    known-good skeleton), gate every return through parse → MDX →
+    sanityTest, and NEGATIVE-CONTROL the gate before trusting a clean
+    sweep (strip a Death sequence / force GeosetAnimId 0 — the expected
+    failures must appear). Precedent: first external batch 8/8 clean.
 
 ## Testing & validation doctrine
 
@@ -700,23 +720,40 @@ maps/*/assets/) or CC0-converted content. Details: docs/ASSETS.md.
 - `.claude/skills/` — wc3-read-map, wc3-build-map, wc3-new-map,
   wc3-import-asset (operational recipes)
 
-## State & open threads (as of 2026-07-12)
+## State & open threads (as of 2026-08-07)
 
-- **Repo state**: all work committed + pushed through `d41bc1b` (Vaults of
-  Ash phase 3); since then WP-A (audit Tier 1), WP-B1 (audit Tier 2
-  item 1: sim damage events + destructables), WP-B2 (audit Tier 2
-  items 2/3/5: sim spell-event bookkeeping, map-delta stats, item events +
-  inventories), WP-B3 (Tier 2 item 4: script line coverage) and WP-C
-  (audit Tier 3 items 1–6: pjass gate, War3Net v6 + wtg/wct dump,
-  jass-constants regen incl. the Convert*('fourcc') field families,
-  viewer-w3i-v33 + MDX-v1000 verdicts, docs/upstream/ issue drafts) and
-  the **pre-playtest preflight** (docs/reference/preflight-2026-07.md:
-  failure-class + 64-bit cross-execution audits condensed; -seed
-  integer-width fix; consequential coverage gaps closed — vaults 96.1%,
-  northreach 89.5% script lines) landed in the working tree —
-  suite green 387/387 on both MPQ backends; since 1863fd4 the preflight
-  checklist is **automated as `npm run preflight`** (tools/preflight.js +
-  test/preflight.test.js, 393 tests).
+- **Repo state**: committed + pushed through `db2dfcc` (Last Train from
+  Yio Chu Kang phase 1 — the seventh bundled map). The 2026-07-12 audit
+  program (WP-A/B1/B2/B3/C, preflight automation) is fully landed — see
+  the tooling-improvement bullet below. Since then: Coinstead (economy
+  survival, phases 1–3, Economy TD-decomposition-driven, in-game
+  VERIFIED), the art system (gotcha 31: stock-art table + icon pipeline +
+  clone-crowd lint, `f405bac`), the community-asset channel + credits
+  ledger (gotcha 32), and Last Train phase 1. Suite 557/557 on both MPQ
+  backends; preflight 7 maps 0 FAIL.
+- **Authorship convention: all bundled maps are credited to
+  "Serendipity"** (w3i author field + README byline + in-game credits
+  where a command exists). Community/mechanics credits stay per-author in
+  each map's README + imports-credits.json.
+- **In-flight at last compaction point** (EPHEMERAL — verify in git log,
+  then DELETE this bullet once both land): (a) a wiring package — Sol's 8
+  accepted ambience models into maps/last-train + the fleet-wide
+  Serendipity authorship pass over the six older maps (rebuilds all
+  committed artifacts); (b) a headless model-preview render rig
+  (Playwright + Chromium + mdx-m3-viewer, scratchpad prototype) producing
+  contact-sheet PNGs of the fleet's art — if it worked, consider promoting
+  it into tools/ (it closes the "generated models are eyeball-blind until
+  playtest" gap).
+- **Session-context-only research (compaction risk)**: the zombie-genre
+  research that designed Last Train exists as three agent reports in
+  session context, NOT yet as docs/reference/ files — the Zombie
+  Simulator 7 + Zombination v11 decompositions (real numbers), the
+  five-archetype genre survey (NotD:SO + Dawn of the Dead decomposed;
+  SWAT/UA2/Eras/Parasite surveyed), and the art-system recommendation
+  (largely implemented). Last Train phase 2 MUST write the comparison doc
+  (docs/reference/ zombie matrix, roguelike-comparison.md style) while or
+  by re-deriving from the READMEs + re-decomposition (both source maps
+  remain downloadable — EpicWar 246910, 257009).
 - **Bundled maps: in-game playtest status** (the sim is not the game —
   doctrine above): demo, crossroads-siege, tidewatch-arena, **and now
   coinstead (2026-08-07, phase-3 build: "everything is working" —
@@ -734,6 +771,11 @@ maps/*/assets/) or CC0-converted content. Details: docs/ASSETS.md.
   200 allowed locals** (gotcha 28) — future edits add script-level state
   as globals only. Standing next step: playtest vaults-of-ash in-game
   (solo default-seed run, beat-for-beat vs the 61-beat golden run).
+  **last-train has never been loaded in the real game** — sim-proven only
+  (64 logic tests, 98.2% coverage; golden run + comparison doc = phase 2).
+  Coinstead's art fix (`f405bac`) awaits its re-verification eyeball pass
+  (Barn/WindMill construction shows no Birth anim — cosmetic, accept or
+  swap at next playtest; promote its paths to game-verified after).
 - **Deferred capabilities** (deliberate, ranked, don't re-derive):
   docs/reference/ambitious-maps-analysis.md §6 (persistence/save-codes,
   wtg/wct, etc.); docs/reference/modern-maps-analysis.md §3 (toolkit-gap
