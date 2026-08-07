@@ -1,5 +1,5 @@
 {
-  "_doc": "Provenance ledger for every file under imports/ (lib/objectlint.js rule g; consumed by build-map and preflight's imports-credits check). Exact-path keys cover one file; keys ending in '/' cover a directory subtree (the generated-asset convention). Community assets are Hive Workshop resources fetched 2026-08-07 with the user's authorization — per-author credit is mandatory and repeated in README.md and the in-game -credits command; author terms honored; no bulk mirroring. 'modified' records any local change (script committed under assets/).",
+  "_doc": "Provenance ledger for every file under imports/ (lib/objectlint.js rule g; consumed by build-map and preflight's imports-credits check). Exact-path keys cover one file; keys ending in '/' cover a directory subtree (the generated-asset convention). Community assets are Hive Workshop resources fetched 2026-08-07 with the user's authorization — per-author credit is mandatory and repeated in README.md and the in-game -credits command; author terms honored; no bulk mirroring. 'modified' records any local change (script committed under assets/). The Sol* files are externally-authored COMMISSIONED models (AI fleet Sol, delivered 2026-08-07, accepted through the full sanity gate at 0 errors/0 severes/0 warnings, negative-controlled) — credited like community authors: here, in README.md, and in -credits.",
   "entries": {
     "Zombies_Male.blp": {
       "author": "HerrDave",
@@ -94,13 +94,6 @@
     "war3mapImported/CityHouse1.mdx": {
       "author": "bakr",
       "resource": "Assorted City Buildings (City House 1)",
-      "source": "https://www.hiveworkshop.com/threads/assorted-city-buildings.336823/",
-      "license": "Hive Workshop resource — 'please give proper credits when using this pack'",
-      "fetched": "2026-08-07"
-    },
-    "war3mapImported/CityBuilding.mdx": {
-      "author": "bakr",
-      "resource": "Assorted City Buildings (City Building)",
       "source": "https://www.hiveworkshop.com/threads/assorted-city-buildings.336823/",
       "license": "Hive Workshop resource — 'please give proper credits when using this pack'",
       "fetched": "2026-08-07"
@@ -209,13 +202,6 @@
       "license": "original, repo license",
       "fetched": "2026-08-07"
     },
-    "war3mapImported/Lamppost.mdx": {
-      "author": "Serendipity (generated)",
-      "resource": "generated model",
-      "source": "assets/generate-models.mjs",
-      "license": "original, repo license",
-      "fetched": "2026-08-07"
-    },
     "war3mapImported/BusStop.mdx": {
       "author": "Serendipity (generated)",
       "resource": "generated model",
@@ -235,6 +221,62 @@
       "resource": "generated command-button icons (BTN + auto-derived DISBTN twins)",
       "source": "assets/generate-icons.mjs (lib/icon.js pipeline)",
       "license": "original, repo license",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/SolHDBBlock.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models (commissioned — HDB point tower, 27 storey bands)",
+      "source": "user-commissioned delivery 2026-08-07",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/SolHawkerCentre.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models (commissioned — hawker centre)",
+      "source": "user-commissioned delivery 2026-08-07",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/SolMRTCanopy.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models (commissioned — MRT platform canopy)",
+      "source": "user-commissioned delivery 2026-08-07",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/SolBusStop.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models (commissioned — bus stop shelter)",
+      "source": "user-commissioned delivery 2026-08-07",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/SolLampPost.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models (commissioned — lamp post, additive glow)",
+      "source": "user-commissioned delivery 2026-08-07",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/SolStormDrain.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models (commissioned — storm drain segment)",
+      "source": "user-commissioned delivery 2026-08-07",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/SolPedBridge.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models (commissioned — pedestrian overhead bridge, stair steps)",
+      "source": "user-commissioned delivery 2026-08-07",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/SolKopitiam.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models (commissioned — kopitiam seating)",
+      "source": "user-commissioned delivery 2026-08-07",
+      "license": "commissioned for this project",
       "fetched": "2026-08-07"
     }
   }

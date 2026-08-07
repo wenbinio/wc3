@@ -1,6 +1,6 @@
 # Coinstead
 
-A **1-4 player co-op economy-defense map** (~35 minutes). The Stead
+**A map by Serendipity.** A **1-4 player co-op economy-defense map** (~35 minutes). The Stead
 Company holds a lone trade Depot at the crossing of four toll roads:
 every founder's Steward raises production chains, trades one SHARED
 deterministic market, and keeps the towers fed — every tower shot burns

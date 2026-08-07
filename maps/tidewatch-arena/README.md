@@ -1,6 +1,6 @@
 # Tidewatch Arena
 
-A small 2-player "arena skirmish" test map, built entirely headlessly with
+**A map by Serendipity.** A small 2-player "arena skirmish" test map, built entirely headlessly with
 wc3-map-toolkit. It deliberately sits between the two other bundled sources:
 bigger than `maps/demo` (minimal melee), leaner than `maps/crossroads-siege`
 (no sounds, no custom imports) — its job is to exercise **cliff/ramp/water

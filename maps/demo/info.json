@@ -1,7 +1,7 @@
 {
   "map": {
     "name": "Toolkit Demo Map",
-    "author": "wc3-map-toolkit",
+    "author": "Serendipity",
     "description": "Minimal demo map built headlessly by tools/build-map.js",
     "recommendedPlayers": "2",
     "playableArea": {

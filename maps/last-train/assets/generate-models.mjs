@@ -214,25 +214,11 @@ buildModel({
   outFile: path.join(OUT, 'Substation.mdx'),
 });
 
-// ------------------------------------------------------------- lamp post
-// Night ambience: darkness is a managed resource — lamplight pockets mark
-// the safe-ish ground. The head is additive so it reads as light at night.
-buildModel({
-  name: 'Lamppost',
-  extents: { min: [-60, -60, 0], max: [60, 60, 260], radius: 280 },
-  geosets: [
-    { name: 'base', tint: CONCRETE_DARK, mesh: box(-16, 16, -16, 16, 0, 14) },
-    { name: 'pole', tint: FENCE_GREY, mesh: merge(
-      box(-6, 6, -6, 6, 14, 230),
-      box(-6, 44, -6, 6, 218, 230),        // the road-side arm
-    ) },
-    { name: 'head', tint: AMBER, additive: true, mesh: merge(
-      box(28, 56, -12, 12, 204, 222),      // sodium lamp head
-      box(20, 60, -20, 20, 196, 206),      // light pool bloom
-    ) },
-  ],
-  outFile: path.join(OUT, 'Lamppost.mdx'),
-});
+// NOTE: the street-lamp model used to be generated here (Lamppost.mdx).
+// The 2026-08-07 Sol ambience batch replaced it — n028 Street Lamp now uses
+// war3mapImported\SolLampPost.mdx (richer additive lamp glow; provenance in
+// ../imports-credits.json). The generator entry was removed WITH the file
+// so this script keeps regenerating exactly what ships (assets doctrine).
 
 // --------------------------------------------------------------- bus stop
 buildModel({
@@ -272,4 +258,4 @@ buildModel({
   outFile: path.join(OUT, 'Barricade.mdx'),
 });
 
-console.log('last-train models regenerated: MRTTrain, StationPlatform, TrackSegment, HDBBlockA, HDBBlockB, Substation, Lamppost, BusStop, Barricade');
+console.log('last-train models regenerated: MRTTrain, StationPlatform, TrackSegment, HDBBlockA, HDBBlockB, Substation, BusStop, Barricade');

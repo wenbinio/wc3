@@ -93,7 +93,13 @@ whole map (script-side `AddWeatherEffect` with the game-verified `RLlr`
 code — the picky w3i weather field stays `'0000'`, gotcha 11), low blue
 fog, and **lamplight pockets**: generated street lamps pool light at the
 void decks and along the roads, so flares and the Mobile Phone's 30
-seconds of "estate cameras" are worth carrying. **Seeded dread beats** in
+seconds of "estate cameras" are worth carrying. The estate's dressing got
+a second pass with the **Sol ambience batch** (2026-08-07, commissioned —
+see Art): 27-storey point towers over the districts, a purpose-built
+hawker centre, canopies on the platform ends, kerbside bus shelters, a
+monsoon drain running the park-connector flank, two pedestrian overhead
+bridges (non-solid — decor never blocks a road), and kopitiam seating in
+the void decks. **Seeded dread beats** in
 the NotD: Special Ops tradition land every 35s from a data-driven table
 (dying car alarms, laundry still turning on the poles, the 265 timetable
 glass smeared from the inside), and the MRT announcements ride the train
@@ -130,10 +136,41 @@ nothing re-hosted):
 - **Ilya Alaric**, after Ujimasa Hojo's Villager — *Citizen Pack* (all
   four survivor-class civvies and the three residents; zero-import stock
   textures).
-- **bakr** — *Assorted City Buildings* (the hawker centre and the
-  polyclinic).
+- **bakr** — *Assorted City Buildings* (the polyclinic).
 - **Wayshan** (readme byline: purparisien) — *Modern Cars Pack* (the
   abandoned Compact and Van).
+
+**Commissioned ambience models — the Sol batch** (AI fleet "Sol", GPT 5.6
+Codex; user-commissioned delivery 2026-08-07; all eight accepted through
+the full sanity gate at 0 errors / 0 severes / 0 warnings,
+negative-controlled; per-file provenance in `imports-credits.json`,
+credited in `-credits` after the human community authors). Shipped as
+`Sol*.mdx` with per-model wiring decisions:
+
+- **SolHDBBlock** (27 storey bands) — *supplements* the two generated
+  blocks as the third tower variant, `HDB Block (Tower)`, one per
+  district (gotcha-31 visual variety; the generated slab/point blocks
+  keep their roles).
+- **SolHawkerCentre** — *replaces* bakr's generic City Building as the
+  Mayflower Hawker Centre's model (purpose-built beats generic; the
+  now-unused CityBuilding.mdx was removed with its ledger entry — bakr
+  still ships the polyclinic).
+- **SolLampPost** (additive lamp glow) — *replaces* the generated
+  Lamppost as the Street Lamp model; the generator entry was removed
+  with the file (assets doctrine: the script regenerates exactly what
+  ships).
+- **SolBusStop** — *supplements*: the generated BusStop keeps the
+  searchable Bus Stop role; Sol's smaller shelter is pure kerbside decor
+  at road mouths the searchable stops don't cover.
+- **SolMRTCanopy / SolStormDrain / SolPedBridge / SolKopitiam** — net-new
+  decor: platform-end canopies, the monsoon drain run, two road-spanning
+  overhead bridges, void-deck/hawker seating clusters.
+
+The five decor classes are custom DOODADS (`objects-doodads.json`,
+D000–D004), which the sim classifies as decorative and never
+instantiates — the Sol pass provably shifts no logic test. All decor is
+`solid:false` and placed clear of roads, pads and the boarding platform
+(pathing-safety keep-out).
 
 Local modifications are recorded per-file: the Citizen Pack rigs death on
 the Villager's "Death Alternate" tag and the Urban props are Stand-only —
@@ -151,7 +188,8 @@ granary (kampong nests), villager/potion/crate/cheese/flare icon set.
 sanity-clean): the **MRT train** (three cars, red cab bands, additive
 headlights — the map's signature), station platform, viaduct track
 segments, two HDB block variants (slab + point, team-color roof tanks),
-substation, street lamp, bus stop, barricade. **Generated icons**
+substation, bus stop, barricade (the street lamp moved to the Sol batch
+above). **Generated icons**
 (`assets/generate-icons.mjs`, lib/icon.js): 21 BTN + auto-derived DISBTN
 twins for everything no stock button depicts (kopi set, blowtorch, the
 HDB silhouette, the train...).

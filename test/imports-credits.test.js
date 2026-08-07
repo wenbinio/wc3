@@ -125,11 +125,19 @@ test('last-train: the first consumer credits every community author on file', ()
   const credits = JSON.parse(fs.readFileSync(
     path.join(ROOT, 'maps', 'last-train', 'imports-credits.json'), 'utf8'));
   const authors = new Set(Object.values(credits.entries).map((e) => e.author));
-  for (const needle of ['HerrDave', 'Ilya Alaric', 'bakr', 'Wayshan']) {
+  for (const needle of ['HerrDave', 'Ilya Alaric', 'bakr', 'Wayshan', 'Sol (GPT 5.6 Codex fleet)']) {
     assert.ok([...authors].some((a) => a.includes(needle)), `${needle} credited`);
   }
   for (const [file, e] of Object.entries(credits.entries)) {
     if (String(e.author).includes('generated')) continue;
+    if (/commissioned/.test(String(e.license))) {
+      // third provenance class (2026-08-07 Sol ambience batch):
+      // externally-authored models commissioned for this project — no Hive
+      // URL to carry, but author + delivery record + license are mandatory
+      assert.ok(e.author && e.source, `${file}: commissioned entries name author + delivery`);
+      assert.ok(e.license && e.fetched, `${file}: license note + delivery date`);
+      continue;
+    }
     assert.ok(/^https:\/\/www\.hiveworkshop\.com\//.test(e.source),
       `${file}: community entries carry their Hive source URL`);
     assert.ok(e.license && e.fetched, `${file}: license note + fetch date`);

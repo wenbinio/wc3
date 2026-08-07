@@ -1,6 +1,6 @@
 # Crossroads Siege
 
-A wave-survival / siege map source that exercises **every moving part the
+**A map by Serendipity.** A wave-survival / siege map source that exercises **every moving part the
 toolkit supports**. 1-4 human defenders (allied, players 0-3) hold the
 Crossroads Keep at the center of a 64x64 map against ten timed waves of the
 Withering Legion (player 4, hostile computer). Built and validated headlessly:

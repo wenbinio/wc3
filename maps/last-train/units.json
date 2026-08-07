@@ -2399,5 +2399,90 @@
     },
     "player": 24,
     "id": 140
+  },
+  {
+    "type": "h01C",
+    "position": [
+      -1250,
+      -2700,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 27,
+    "id": 141
+  },
+  {
+    "type": "h01C",
+    "position": [
+      -3600,
+      500,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 27,
+    "id": 142
+  },
+  {
+    "type": "h01C",
+    "position": [
+      1000,
+      2900,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 27,
+    "id": 143
+  },
+  {
+    "type": "h01C",
+    "position": [
+      3900,
+      3500,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 27,
+    "id": 144
+  },
+  {
+    "type": "h01C",
+    "position": [
+      1900,
+      -4000,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 27,
+    "id": 145
   }
 ]

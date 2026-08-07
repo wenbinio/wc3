@@ -55,6 +55,10 @@ test('-credits opens with the Serendipity byline BEFORE the community roll', () 
   assert.ok(/Ilya Alaric \(after Ujimasa Hojo's Villager\) -- Citizen Pack/.test(roll));
   assert.ok(/bakr -- Assorted City Buildings/.test(roll));
   assert.ok(/Wayshan\/purparisien -- Modern Cars Pack/.test(roll));
+  // the Sol commissioned-batch line follows the HUMAN community authors
+  const iCommunity = msgs.findIndex((m) => /HerrDave/.test(m));
+  const iSol = msgs.findIndex((m) => /Sol \(GPT 5\.6 Codex fleet\)/.test(m));
+  assert.ok(iSol > iCommunity && iCommunity >= 0, 'Sol line after the human community roll');
   assert.ok(/Trinin/.test(roll) && /SpirulinaN/.test(roll) && /PreViO/.test(roll));
 });
 

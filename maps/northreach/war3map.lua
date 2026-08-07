@@ -790,6 +790,7 @@ local function ShowHelp(pid)
   Tell(pid, "-tax : force a corruption tick. -wolves : force a wolf surge. -grace : end the grace period.")
   Tell(pid, "-reveal : reveal the map. -victory : run the victory sequence.")
   Tell(pid, "-ff : toggle " .. FF_SCALE .. "x speed on the tax/prowl clock.")
+  Tell(pid, "|cff888888Northreach Founders -- a map by Serendipity. Built headlessly with wc3-map-toolkit.|r")
 end
 
 local function PingSites(pid)

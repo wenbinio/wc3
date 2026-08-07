@@ -1,6 +1,6 @@
 # The Vaults of Ash
 
-A **seeded one-session co-op roguelike** for 1-3 players (~30 minutes).
+**A map by Serendipity.** A **seeded one-session co-op roguelike** for 1-3 players (~30 minutes).
 The last torchbearers of a burned monastic order descend the vault the
 order died sealing. One seed = one exact dungeon: every random draw flows
 through the map's own PRNG, so a run can be replayed move-for-move — in

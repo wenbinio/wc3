@@ -71,6 +71,13 @@
       "name": "HDB Block (Slab)",
       "source": "objects-units.json"
     },
+    "UNIT_HDB_BLOCK_TOWER": {
+      "kind": "unit",
+      "rawcode": "h01C",
+      "base": "htow",
+      "name": "HDB Block (Tower)",
+      "source": "objects-units.json"
+    },
     "UNIT_HEARTLANDER": {
       "kind": "unit",
       "rawcode": "h000",
@@ -379,6 +386,20 @@
       "name": "Wire",
       "source": "objects-items.json"
     },
+    "DOOD_BUS_STOP_SHELTER": {
+      "kind": "doodad",
+      "rawcode": "D001",
+      "base": "YOtf",
+      "name": "Bus Stop Shelter",
+      "source": "objects-doodads.json"
+    },
+    "DOOD_KOPITIAM_SEATING": {
+      "kind": "doodad",
+      "rawcode": "D004",
+      "base": "YOtf",
+      "name": "Kopitiam Seating",
+      "source": "objects-doodads.json"
+    },
     "DOOD_LTlt": {
       "kind": "doodad",
       "rawcode": "LTlt",
@@ -388,6 +409,27 @@
       "kind": "doodad",
       "rawcode": "LTrc",
       "source": "doodads.json"
+    },
+    "DOOD_MONSOON_DRAIN": {
+      "kind": "doodad",
+      "rawcode": "D002",
+      "base": "YOtf",
+      "name": "Monsoon Drain",
+      "source": "objects-doodads.json"
+    },
+    "DOOD_MRT_PLATFORM_CANOPY": {
+      "kind": "doodad",
+      "rawcode": "D000",
+      "base": "YOtf",
+      "name": "MRT Platform Canopy",
+      "source": "objects-doodads.json"
+    },
+    "DOOD_PEDESTRIAN_OVERHEAD_BRIDGE": {
+      "kind": "doodad",
+      "rawcode": "D003",
+      "base": "YOtf",
+      "name": "Pedestrian Overhead Bridge",
+      "source": "objects-doodads.json"
     },
     "REGION_CHENG_SAN": {
       "kind": "region",

@@ -1371,7 +1371,7 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "war3mapImported\\CityBuilding.mdl"
+        "value": "war3mapImported\\SolHawkerCentre.mdl"
       },
       {
         "id": "uico",
@@ -2532,7 +2532,7 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "war3mapImported\\Lamppost.mdl"
+        "value": "war3mapImported\\SolLampPost.mdl"
       },
       {
         "id": "uico",
@@ -2557,6 +2557,85 @@
       },
       {
         "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "h01C:htow": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "HDB Block (Tower)"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "HDB Block (Tower)"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Twenty-seven storeys of corridor lights still burning. Nobody answers the intercom."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolHDBBlock.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNHDB.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 5000
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Avul"
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "utra",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ures",
         "type": "string",
         "level": 0,
         "column": 0,

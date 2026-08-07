@@ -207,6 +207,53 @@ for (let y = -5800; y <= 5800; y += 1600) D('LTrc', BERM.x0 - 160, y, 14);
 D('LTrc', LAIR.x + 500, LAIR.y - 300, 15);
 D('LTrc', LAIR.x - 400, LAIR.y + 500, 15);
 
+// ---------------------------------------------------- Sol ambience decor
+// The 2026-08-07 Sol batch (commissioned, gate-clean; provenance in
+// ../imports-credits.json) placed as PURE DECOR: custom DOODAD classes
+// (objects-doodads.json, D000..D004) — the sim classifies doodad-class
+// types as decorative and never instantiates them, so no logic test can
+// shift. All pieces are solid:false and sit clear of roads, pads, the
+// berm and the platform's boarding ground (pathing-safety keep-out:
+// ambience must never block a walk the game needs).
+const SD = (type, x, y, angle, scale) => {
+  doodads.push({
+    type, position: [x, y, 0], angle,
+    scale: scale || [1, 1, 1],
+    flags: { visible: true, solid: false, fixedZ: false },
+    id: did++, variation: 0,
+  });
+};
+// D000 MRT platform canopies: dress the platform ENDS (the boarding
+// center stays clear); long axis rotated onto the platform's N-S run.
+SD('D000', 4550, -430, 90);
+SD('D000', 4550, 430, 90);
+// D001 bus-stop shelters (Sol variant, decor): road mouths the searchable
+// n029 stops do not cover; kerbside, outside the ROAD_HALF band.
+SD('D001', -3400, ROAD_MAIN_Y + 320, 270);
+SD('D001', 600, ROAD_MAIN_Y - 320, 270);
+SD('D001', ROAD_NS_X + 320, -3000, 270);
+// D002 monsoon drain: a continuous canal run along the estate flank
+// between the park connector and the N-S road (x=-2080), broken nowhere
+// it would cross the main road's band (|y| >= 400 throughout).
+for (let y = -2375; y <= 2375; y += 250) {
+  if (Math.abs(y) < 400) continue;
+  SD('D002', PARK_X + 520, y, 90, [2, 1, 1]);
+}
+// D003 pedestrian overhead bridges: one over the main road between the
+// spawn blocks and the park connector, one over the N-S estate road.
+// Scaled to span the full road + shoulders; solid:false is load-bearing
+// here — a bridge must NEVER block the road it crosses.
+SD('D003', -2000, ROAD_MAIN_Y, 90, [1.6, 1.2, 1.2]);
+SD('D003', ROAD_NS_X, 2600, 0, [1.6, 1.2, 1.2]);
+// D004 kopitiam seating clusters: the spawn void deck, the hawker centre
+// forecourt, and two district void decks (near, not on, the prop units).
+SD('D004', -350, -450, 270); SD('D004', -260, -380, 90); SD('D004', -350, -300, 0);
+SD('D004', HAWKER.x - 140, HAWKER.y - 150, 270);
+SD('D004', HAWKER.x + 140, HAWKER.y - 150, 90);
+SD('D004', HAWKER.x, HAWKER.y - 250, 0);
+SD('D004', -1550, -3660, 270); SD('D004', -1440, -3580, 90);   // Teck Ghee
+SD('D004', -4450, 120, 270); SD('D004', -4530, 240, 0);        // Kebun Baru
+
 // ------------------------------------------------------------------- units
 // Type ids mirror objects-units.json (the generated UNIT_ constants).
 const units = [];
@@ -319,6 +366,16 @@ U('u000', LAIR.x - 250, LAIR.y + 600, P_HORDE);
 U('u001', LAIR.x + 100, LAIR.y + 650, P_HORDE);
 U('u001', LAIR.x - 650, LAIR.y - 250, P_HORDE);
 U('u005', LAIR.x, LAIR.y, P_HORDE);
+
+// Sol HDB point towers (h01C, the 27-storey SolHDBBlock — the 2026-08-07
+// Sol batch's third tower variant, gotcha-31 visual variety): one per
+// district, off-road/off-pad, APPENDED LAST so every existing unit id and
+// the CreateAllUnits order above stay byte-stable.
+U('h01C', -1250, -2700, P_PASSIVE);   // Teck Ghee
+U('h01C', -3600, 500, P_PASSIVE);     // Kebun Baru
+U('h01C', 1000, 2900, P_PASSIVE);     // Yio Chu Kang Gardens
+U('h01C', 3900, 3500, P_PASSIVE);     // Seletar Hills
+U('h01C', 1900, -4000, P_PASSIVE);    // Cheng San
 
 // ----------------------------------------------------------------- regions
 const NUL = '\u0000\u0000\u0000\u0000';

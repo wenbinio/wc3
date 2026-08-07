@@ -1,0 +1,85 @@
+{
+  "original": {},
+  "custom": {
+    "D000:YOtf": [
+      {
+        "id": "dnam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "MRT Platform Canopy"
+      },
+      {
+        "id": "dfil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolMRTCanopy.mdl"
+      }
+    ],
+    "D001:YOtf": [
+      {
+        "id": "dnam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Bus Stop Shelter"
+      },
+      {
+        "id": "dfil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolBusStop.mdl"
+      }
+    ],
+    "D002:YOtf": [
+      {
+        "id": "dnam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Monsoon Drain"
+      },
+      {
+        "id": "dfil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolStormDrain.mdl"
+      }
+    ],
+    "D003:YOtf": [
+      {
+        "id": "dnam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Pedestrian Overhead Bridge"
+      },
+      {
+        "id": "dfil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolPedBridge.mdl"
+      }
+    ],
+    "D004:YOtf": [
+      {
+        "id": "dnam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Kopitiam Seating"
+      },
+      {
+        "id": "dfil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolKopitiam.mdl"
+      }
+    ]
+  }
+}

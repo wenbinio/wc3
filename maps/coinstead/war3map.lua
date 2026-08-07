@@ -1685,7 +1685,7 @@ function ShowHelp(pid)
   Tell(pid, "|cffaaddffToolwright:|r '-forge' shows the 3-tier ladder, '-forge buy' pays the next tier in GOODS from your Depot reserve (harvest +1, refine +1, every 2nd shot free).")
   Tell(pid, "|cffaaddffContracts:|r posted after every 4th wave -- '-contract' to read the board, '-contract a|b' to sign (one active max), '-deliver N' ships from your DEPOT stock.")
   Tell(pid, "|cffaaddffCommands:|r -help -price -eco -lives -buy -sell -link -unlink -links -forge -contract -deliver -seed N (until the first trade/wave) -endless (after victory) -test (debug).")
-  Tell(pid, "|cff888888Credits: adapted with credit from Economy TD (anonymous, EpicWar), Gold TD (EpicWar), Legion TD (AutoAttackGames), Line Tower Wars (Hive Workshop). Mechanics only; nothing copied.|r")
+  Tell(pid, "|cff888888A map by Serendipity. Credits: adapted with credit from Economy TD (anonymous, EpicWar), Gold TD (EpicWar), Legion TD (AutoAttackGames), Line Tower Wars (Hive Workshop). Mechanics only; nothing copied.|r")
 end
 
 function ShowPrices(pid)
@@ -1995,7 +1995,7 @@ end
 function ShowCredits()
   local q = CreateQuest()
   QuestSetTitle(q, "Credits & Inspirations")
-  QuestSetDescription(q, "Coinstead (wc3-map-toolkit). Design inspirations, adapted with credit, nothing copied:"
+  QuestSetDescription(q, "Coinstead -- a map by Serendipity (wc3-map-toolkit). Design inspirations, adapted with credit, nothing copied:"
     .. " Economy TD (anonymous, EpicWar) -- the economy-first tower defense frame, income from production,"
     .. " goods as physical item stacks moved by transfer routes, and the live price multiboard;"
     .. " Gold TD (EpicWar) -- income stakes that live and die with the buildings that earn them, no idle interest;"

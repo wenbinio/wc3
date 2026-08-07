@@ -1,6 +1,6 @@
 # Northreach Founders
 
-A 4-player **frontier-economy sandbox** on a cold Northrend coast, built
+**A map by Serendipity.** A 4-player **frontier-economy sandbox** on a cold Northrend coast, built
 entirely headlessly with wc3-map-toolkit. All four Founders land TOGETHER at
 one neutral landing on the southern coast with 320 gold and 20 lumber, hunt
 and fish the wild for trade goods, sell them at the neutral Northreach
