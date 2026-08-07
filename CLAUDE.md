@@ -735,15 +735,15 @@ maps/*/assets/) or CC0-converted content. Details: docs/ASSETS.md.
   "Serendipity"** (w3i author field + README byline + in-game credits
   where a command exists). Community/mechanics credits stay per-author in
   each map's README + imports-credits.json.
-- **In-flight at last compaction point** (EPHEMERAL — verify in git log,
-  then DELETE this bullet once both land): (a) a wiring package — Sol's 8
-  accepted ambience models into maps/last-train + the fleet-wide
-  Serendipity authorship pass over the six older maps (rebuilds all
-  committed artifacts); (b) a headless model-preview render rig
-  (Playwright + Chromium + mdx-m3-viewer, scratchpad prototype) producing
-  contact-sheet PNGs of the fleet's art — if it worked, consider promoting
-  it into tools/ (it closes the "generated models are eyeball-blind until
-  playtest" gap).
+- **Open threads**: promote the model-preview render rig into tools/ —
+  the scratchpad prototype (Playwright headless Chromium + mdx-m3-viewer
+  UMD over a local server, `--enable-unsafe-swiftshader`; war3-model
+  flat-shade cross-check) rendered 90/90 fleet models and closes the
+  "generated models are eyeball-blind until playtest" gap; its render
+  read drove real fixes (CannonKeep silhouette, NorthLongship sail —
+  still unfixed). Sol round-2 commission (Broodmother/lair, MRT gates,
+  void-deck set, taxi/food cart) drafted via
+  docs/reference/ai-model-workorder.md conventions.
 - **Session-context-only research (compaction risk)**: the zombie-genre
   research that designed Last Train exists as three agent reports in
   session context, NOT yet as docs/reference/ files — the Zombie
