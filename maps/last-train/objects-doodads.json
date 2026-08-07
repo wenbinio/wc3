@@ -94,7 +94,7 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "war3mapImported\\SkyTowerSlab.mdl"
+        "value": "war3mapImported\\SolSkyTowerSlab.mdl"
       }
     ],
     "D006:YOtf": [
@@ -110,7 +110,7 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "war3mapImported\\SkyTowerStep.mdl"
+        "value": "war3mapImported\\SolSkyTowerStep.mdl"
       }
     ],
     "D007:YOtf": [
@@ -126,7 +126,7 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "war3mapImported\\SkyTowerCrown.mdl"
+        "value": "war3mapImported\\SolSkyTowerCrown.mdl"
       }
     ],
     "D008:YOtf": [
@@ -142,7 +142,7 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "war3mapImported\\SkyTowerTwin.mdl"
+        "value": "war3mapImported\\SolSkyTowerTwin.mdl"
       }
     ],
     "D009:YOtf": [
@@ -158,7 +158,7 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "war3mapImported\\SkyTowerSpire.mdl"
+        "value": "war3mapImported\\SolSkyTowerSpire.mdl"
       }
     ],
     "D00A:YOtf": [
@@ -174,7 +174,7 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "war3mapImported\\MRTEntrance.mdl"
+        "value": "war3mapImported\\SolMRTEntrance.mdl"
       }
     ],
     "D00B:YOtf": [
@@ -190,7 +190,7 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "war3mapImported\\MRTSign.mdl"
+        "value": "war3mapImported\\SolMRTSign.mdl"
       }
     ],
     "D00C:YOtf": [
@@ -206,7 +206,7 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "war3mapImported\\LaundryRack.mdl"
+        "value": "war3mapImported\\SolLaundryRack.mdl"
       }
     ],
     "D00D:YOtf": [
@@ -222,7 +222,7 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "war3mapImported\\LinkwayCanopy.mdl"
+        "value": "war3mapImported\\SolLinkwayCanopy.mdl"
       }
     ],
     "D00E:YOtf": [
@@ -383,6 +383,54 @@
         "level": 0,
         "column": 0,
         "value": "war3mapImported\\SolFoodCart.mdl"
+      }
+    ],
+    "D018:YOtf": [
+      {
+        "id": "dnam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Skyline Tower (Arc)"
+      },
+      {
+        "id": "dfil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolSkyTowerArc.mdl"
+      }
+    ],
+    "D019:YOtf": [
+      {
+        "id": "dnam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Viaduct Bent"
+      },
+      {
+        "id": "dfil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolViaductBent.mdl"
+      }
+    ],
+    "D01A:YOtf": [
+      {
+        "id": "dnam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Station Clock"
+      },
+      {
+        "id": "dfil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolStationClock.mdl"
       }
     ]
   }

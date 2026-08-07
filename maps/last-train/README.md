@@ -275,10 +275,30 @@ the ledger's `modified`):
   among the round-1 abandoned cars (varied angles), food carts at the
   hawker forecourt and the main/N-S junction corner.
 
+**Sol round 3 — the Singapore identity set** (2026-08-07, same commission
+and gate, 13/13 accepted 0/0/0, negative-controlled): the in-house
+visual-identity placeholder models are RETIRED, replaced one-for-one by
+Sol's versions under the same slots and doodad classes —
+`SolSkyTowerSlab/Step/Crown/Twin/Spire`, `SolMRTEntrance`, `SolMRTSign`,
+`SolLaundryRack`, `SolLinkwayCanopy` (D005–D00D re-pointed; every
+placement position unchanged), and **SolMRTTrain** replaces the generated
+train as h01A's unit model (X-authored, so under the existing spawn
+facing 270 the train finally berths NORTH-SOUTH along the platform).
+Net-new: **SolSkyTowerArc** (D018) — the skyline row's sixth DISTINCT
+silhouette, replacing the scaled duplicate slab —, **SolViaductBent**
+(D019) — between-span pier rhythm along the berm centerline (the gate's
+86-total-crosshead reading verified too narrow for the TrackSegment's
+160-wide deck, so the in-house spans keep their integrated piers) — and
+**SolStationClock** (D01A) — two lit clock totems at the platform ends
+(the D000/D012 platform-dressing precedent). Wiring notes live in
+`assets/generate-layout.mjs`; the laundry racks turned to angle 0 for
+Sol's wall-flush −y frame, and the linkway tile stretches ×2.11 to the
+old 270 slot so the runs stay flush without churning a single id.
+
 The Sol decor classes are custom DOODADS (`objects-doodads.json`,
-D000–D004 round 1, D00E–D017 round 2), which the sim classifies as
-decorative and never instantiates — both Sol passes provably shift no
-logic test. All decor is `solid:false` and placed clear of roads, pads
+D000–D004 round 1, D00E–D017 round 2, D018–D01A round 3, D005–D00D
+re-pointed to round-3 models), which the sim classifies as decorative and
+never instantiates — all three Sol passes provably shift no logic test. All decor is `solid:false` and placed clear of roads, pads
 and the boarding platform (pathing-safety keep-out, asserted in
 `generate-layout.mjs`; the platform screen doors are the documented
 exception above).
@@ -297,14 +317,14 @@ villager/potion/crate/cheese/flare icon set (the Broodmother wore the
 stock Abomination until Sol round 2; its `BTNAbomination` icon stays).
 
 **Generated models** (`assets/generate-models.mjs`, mdl-lib, all
-sanity-clean): the **MRT train** (three cars, red cab bands, door rhythm,
-additive headlights — the map's signature), station platform, viaduct
-track segments (T-crosshead piers), two HDB block variants (slab + point,
-team-color roof tanks, pastel accent schemes), substation, bus stop,
-barricade (the street lamp moved to the Sol batch above) — plus the
-2026-08-07 **visual-identity pass** pieces (next section): five CBD
-skyline towers, the MRT entrance portal, the line-sign totem, the laundry
-rack and the linkway canopy. **Generated icons**
+sanity-clean): station platform, viaduct track segments (T-crosshead
+piers), two HDB block variants (slab + point, team-color roof tanks,
+pastel accent schemes), substation, bus stop, barricade. The street lamp
+moved to Sol round 1; the MRT train and the whole visual-identity pass
+set (skyline towers, MRT entrance/sign, laundry rack, linkway canopy)
+moved to Sol round 3 — their generator entries were removed with the
+files (the SolLampPost precedent; the script regenerates exactly what
+ships). **Generated icons**
 (`assets/generate-icons.mjs`, lib/icon.js): 21 BTN + auto-derived DISBTN
 twins for everything no stock button depicts (kopi set, blowtorch, the
 HDB silhouette, the train...).
@@ -316,32 +336,37 @@ Design inspirations (mechanics only, nothing copied): **Zombination v11**
 ## Visual identity & the camera-safety doctrine (2026-08-07 pass)
 
 The estate now reads explicitly Singaporean without costing gameplay
-view. Every piece is an in-house generated model
-(`assets/generate-models.mjs`), render-verified through the
-`scripts/experimental/render-rig` loop before shipping, placed by
-`assets/generate-layout.mjs` as **non-solid decor doodad classes**
-(`objects-doodads.json` D005–D00D — sim-invisible like the Sol batch, so
-the 64 logic tests and all seeded-replay pins are untouched):
+view. The identity pieces shipped 2026-08-07 as in-house generated
+placeholders and were **retired for Sol's round-3 commissioned set**
+(same slots, same doodad classes D005–D00D re-pointed, plus D018–D01A;
+gate-clean 0/0/0 with render-rig reads per model — see Art above).
+Everything is placed by `assets/generate-layout.mjs` as **non-solid
+decor doodad classes** (sim-invisible like the earlier Sol batches, so
+the logic tests and all seeded-replay pins are untouched):
 
-- **CBD skyline backdrop**: six towers (five distinct silhouettes —
-  slab, stepped, twin-with-skybridge, spire, and a generic
-  three-column-with-rooftop-deck crown, suggestive of a bayfront hotel
-  but no real building's trade dress) along the NORTH map edge, heights
-  560–790, Sol-style per-floor window banding + dim additive window
-  glints for the permanent night.
-- **MRT identity**: the train carries a proper white-body/dark-window/
-  red-accent livery with door rhythm (SMRT-esque, no logos); a curved
-  glass-canopy **station entrance portal** on the forecourt; abstract
-  **line-sign totems** (red disc + white cross-band mass, no text) at
-  the station and two road corners; the viaduct's piers thickened with
-  T-crossheads so the elevated line reads.
+- **CBD skyline backdrop**: six towers, now six DISTINCT silhouettes —
+  slab (fin pair), stepped (lit setbacks), twin-with-skybridge,
+  wedding-cake spire with red aircraft beacon, a generic
+  three-column-with-rooftop-deck crown (suggestive of a bayfront hotel
+  but no real building's trade dress), and round 3's bowed-front **Arc**
+  in the slot the duplicate scaled slab used to fill — along the NORTH
+  map edge, heights 560–790, per-floor window banding + dim additive
+  window glints for the permanent night.
+- **MRT identity**: the train (now `SolMRTTrain.mdx`) carries a proper
+  white-body/dark-window/red-accent livery with south-face door rhythm
+  (SMRT-esque, no logos); a see-through glass-vault **station entrance
+  pavilion** on the forecourt; abstract **line-sign totems** (faceted
+  red disc + white cross-band, no text) at the station and two road
+  corners; the elevated line reads via the in-house spans' T-crosshead
+  piers PLUS round 3's **viaduct bents** marching the inter-span gaps;
+  two lit **platform clocks** at the canopy ends.
 - **Estate character**: pastel accent schemes on the HDB blocks — slab
   blocks get the classic painted-coral gable ends with a white stripe,
   point blocks mint corner columns; the five Sol towers each get a
   district pastel wash (mint/peach/sky/lavender + one unwashed) via
   **unit-tint clone classes** (`h01D–h01G`: `uclr`/`uclg`/`uclb` over
   the same `SolHDBBlock.mdx` — Sol's file is never edited); **laundry
-  racks** (bamboo poles + hanging cloth at mid-level) flush on tower
+  racks** (staggered poles + three-pastel hanging cloth) flush on tower
   south faces; **linkway canopies** (< 100 tall) in three covered-walkway
   runs (spawn void deck, hawker approach, station approach).
 

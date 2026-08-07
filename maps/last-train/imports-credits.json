@@ -160,13 +160,6 @@
       "fetched": "2026-08-07",
       "modified": "still-frame NonLooping Death sequence appended (assets/community-death-fix.mjs)"
     },
-    "war3mapImported/MRTTrain.mdx": {
-      "author": "Serendipity (generated)",
-      "resource": "generated model",
-      "source": "assets/generate-models.mjs",
-      "license": "original, repo license",
-      "fetched": "2026-08-07"
-    },
     "war3mapImported/StationPlatform.mdx": {
       "author": "Serendipity (generated)",
       "resource": "generated model",
@@ -279,69 +272,6 @@
       "license": "commissioned for this project",
       "fetched": "2026-08-07"
     },
-    "war3mapImported/SkyTowerSlab.mdx": {
-      "author": "Serendipity (generated)",
-      "resource": "generated model (2026-08-07 visual-identity pass)",
-      "source": "assets/generate-models.mjs",
-      "license": "original, repo license",
-      "fetched": "2026-08-07"
-    },
-    "war3mapImported/SkyTowerStep.mdx": {
-      "author": "Serendipity (generated)",
-      "resource": "generated model (2026-08-07 visual-identity pass)",
-      "source": "assets/generate-models.mjs",
-      "license": "original, repo license",
-      "fetched": "2026-08-07"
-    },
-    "war3mapImported/SkyTowerCrown.mdx": {
-      "author": "Serendipity (generated)",
-      "resource": "generated model (2026-08-07 visual-identity pass)",
-      "source": "assets/generate-models.mjs",
-      "license": "original, repo license",
-      "fetched": "2026-08-07"
-    },
-    "war3mapImported/SkyTowerTwin.mdx": {
-      "author": "Serendipity (generated)",
-      "resource": "generated model (2026-08-07 visual-identity pass)",
-      "source": "assets/generate-models.mjs",
-      "license": "original, repo license",
-      "fetched": "2026-08-07"
-    },
-    "war3mapImported/SkyTowerSpire.mdx": {
-      "author": "Serendipity (generated)",
-      "resource": "generated model (2026-08-07 visual-identity pass)",
-      "source": "assets/generate-models.mjs",
-      "license": "original, repo license",
-      "fetched": "2026-08-07"
-    },
-    "war3mapImported/MRTEntrance.mdx": {
-      "author": "Serendipity (generated)",
-      "resource": "generated model (2026-08-07 visual-identity pass)",
-      "source": "assets/generate-models.mjs",
-      "license": "original, repo license",
-      "fetched": "2026-08-07"
-    },
-    "war3mapImported/MRTSign.mdx": {
-      "author": "Serendipity (generated)",
-      "resource": "generated model (2026-08-07 visual-identity pass)",
-      "source": "assets/generate-models.mjs",
-      "license": "original, repo license",
-      "fetched": "2026-08-07"
-    },
-    "war3mapImported/LaundryRack.mdx": {
-      "author": "Serendipity (generated)",
-      "resource": "generated model (2026-08-07 visual-identity pass)",
-      "source": "assets/generate-models.mjs",
-      "license": "original, repo license",
-      "fetched": "2026-08-07"
-    },
-    "war3mapImported/LinkwayCanopy.mdx": {
-      "author": "Serendipity (generated)",
-      "resource": "generated model (2026-08-07 visual-identity pass)",
-      "source": "assets/generate-models.mjs",
-      "license": "original, repo license",
-      "fetched": "2026-08-07"
-    },
     "war3mapImported/SolBroodmother.mdx": {
       "author": "Sol (GPT 5.6 Codex fleet)",
       "resource": "Warcraft3 Ambience Models round 2 (commissioned — the Broodmother boss, 300x300)",
@@ -425,6 +355,97 @@
       "author": "Sol (GPT 5.6 Codex fleet)",
       "resource": "Warcraft3 Ambience Models round 2 (commissioned — void-deck pillar row)",
       "source": "user-commissioned delivery 2026-08-07 (round 2)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/SolSkyTowerSlab.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models round 3 (commissioned Singapore identity set — CBD skyline slab tower, fin pair + storey banding)",
+      "source": "user-commissioned delivery 2026-08-07 (round 3)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/SolSkyTowerStep.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models round 3 (commissioned Singapore identity set — CBD skyline setback tower, lit step edges)",
+      "source": "user-commissioned delivery 2026-08-07 (round 3)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/SolSkyTowerCrown.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models round 3 (commissioned Singapore identity set — CBD skyline three-column tower with overhung deck)",
+      "source": "user-commissioned delivery 2026-08-07 (round 3)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/SolSkyTowerTwin.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models round 3 (commissioned Singapore identity set — CBD skyline twin towers with lit skybridge)",
+      "source": "user-commissioned delivery 2026-08-07 (round 3)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/SolSkyTowerSpire.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models round 3 (commissioned Singapore identity set — CBD skyline wedding-cake spire, red beacon)",
+      "source": "user-commissioned delivery 2026-08-07 (round 3)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/SolSkyTowerArc.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models round 3 (commissioned Singapore identity set — CBD skyline bowed-front tower (net-new sixth silhouette))",
+      "source": "user-commissioned delivery 2026-08-07 (round 3)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/SolMRTEntrance.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models round 3 (commissioned Singapore identity set — MRT station entrance pavilion, curved glass vault)",
+      "source": "user-commissioned delivery 2026-08-07 (round 3)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/SolMRTSign.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models round 3 (commissioned Singapore identity set — MRT line-sign totem, faceted red disc)",
+      "source": "user-commissioned delivery 2026-08-07 (round 3)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/SolMRTTrain.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models round 3 (commissioned Singapore identity set — the Last Train, 3-car body with door rhythm (h01A unit model))",
+      "source": "user-commissioned delivery 2026-08-07 (round 3)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/SolLaundryRack.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models round 3 (commissioned Singapore identity set — HDB laundry rack, staggered poles + pastel cloth)",
+      "source": "user-commissioned delivery 2026-08-07 (round 3)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/SolLinkwayCanopy.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models round 3 (commissioned Singapore identity set — covered-walkway canopy tile, terracotta pitched roof)",
+      "source": "user-commissioned delivery 2026-08-07 (round 3)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/SolViaductBent.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models round 3 (commissioned Singapore identity set — viaduct pier bent, 12-facet pier + T-crosshead (net-new))",
+      "source": "user-commissioned delivery 2026-08-07 (round 3)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/SolStationClock.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models round 3 (commissioned Singapore identity set — platform clock totem, 4 lit faces (net-new))",
+      "source": "user-commissioned delivery 2026-08-07 (round 3)",
       "license": "commissioned for this project",
       "fetched": "2026-08-07"
     }

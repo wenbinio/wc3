@@ -543,6 +543,13 @@
       "name": "Platform Screen Doors",
       "source": "objects-doodads.json"
     },
+    "DOOD_SKYLINE_TOWER_ARC": {
+      "kind": "doodad",
+      "rawcode": "D018",
+      "base": "YOtf",
+      "name": "Skyline Tower (Arc)",
+      "source": "objects-doodads.json"
+    },
     "DOOD_SKYLINE_TOWER_CROWN_DECK": {
       "kind": "doodad",
       "rawcode": "D007",
@@ -576,6 +583,20 @@
       "rawcode": "D008",
       "base": "YOtf",
       "name": "Skyline Tower (Twin)",
+      "source": "objects-doodads.json"
+    },
+    "DOOD_STATION_CLOCK": {
+      "kind": "doodad",
+      "rawcode": "D01A",
+      "base": "YOtf",
+      "name": "Station Clock",
+      "source": "objects-doodads.json"
+    },
+    "DOOD_VIADUCT_BENT": {
+      "kind": "doodad",
+      "rawcode": "D019",
+      "base": "YOtf",
+      "name": "Viaduct Bent",
       "source": "objects-doodads.json"
     },
     "DOOD_VOID_DECK_PILLARS": {

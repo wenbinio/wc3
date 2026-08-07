@@ -278,12 +278,15 @@ const DX = (type, x, y, angle, top, scale) => {
 
 // CBD skyline backdrop: six silhouettes along the NORTH map edge, heights
 // 560-790 world units at varied spacing (the "city beyond the estate").
-// Angle 0 keeps each tower's glint faces toward the camera.
+// Angle 0 keeps each tower's glint faces toward the camera. Sol round 3:
+// the row is now six DISTINCT silhouettes — the scaled duplicate slab at
+// x=1500 became the net-new SolSkyTowerArc (bowed front, 660 tall), so
+// the roofline runs 560/620/700/780/660/790 with no repeats.
 DX('D008', -5600, 5950, 0, 560);                 // twin towers
 DX('D005', -3900, 6000, 0, 620);                 // slab
 DX('D006', -2100, 5920, 0, 700);                 // stepped
 DX('D007', -300, 5980, 0, 780);                  // three-column crown deck
-DX('D005', 1500, 5940, 0, 694, [1.12, 1.12, 1.12]); // slab, taller variant
+DX('D018', 1500, 5940, 0, 660);                  // bowed-front arc (Sol r3)
 DX('D009', 3300, 6000, 0, 790);                  // spire
 
 // MRT identity: station-approach entrance portal (on the station
@@ -296,16 +299,25 @@ DX('D00B', 2500, 250, 0, 172);
 
 // Estate linkways (covered walkways, < 100 tall): three runs — the spawn
 // void deck eastward, the hawker-centre approach off the main road, and
-// the station approach on the south shoulder.
-DX('D00D', -860, 252, 0, 96); DX('D00D', -590, 252, 0, 96);
-DX('D00D', 200, 480, 90, 96); DX('D00D', 200, 750, 90, 96);
-DX('D00D', 200, 1020, 90, 96);
-DX('D00D', 3390, -252, 0, 96); DX('D00D', 3660, -252, 0, 96);
-DX('D00D', 3930, -252, 0, 96);
+// the station approach on the south shoulder. Sol round 3: the Sol
+// segment is a 128-long open-ended TILE (in-house was 270); the local-x
+// scale 2.11 stretches it to the exact 270 slot the run spacing assumes,
+// so ends stay flush and every position/id is unchanged (posts read ~17
+// wide instead of 8 — invisible at estate scale).
+const LINK_SCALE = [2.11, 1, 1];
+DX('D00D', -860, 252, 0, 96, LINK_SCALE); DX('D00D', -590, 252, 0, 96, LINK_SCALE);
+DX('D00D', 200, 480, 90, 96, LINK_SCALE); DX('D00D', 200, 750, 90, 96, LINK_SCALE);
+DX('D00D', 200, 1020, 90, 96, LINK_SCALE);
+DX('D00D', 3390, -252, 0, 96, LINK_SCALE); DX('D00D', 3660, -252, 0, 96, LINK_SCALE);
+DX('D00D', 3930, -252, 0, 96, LINK_SCALE);
 
-// Laundry racks flush on tower south faces (angle 270: local +x = south,
-// backboard spans east-west). Offset = the tower model's half-extent
-// along its rotated long axis (A 234 / B 152 / Sol 130).
+// Laundry racks flush on tower south faces. Offset = the tower model's
+// half-extent along its rotated long axis (A 234 / B 152 / Sol 130).
+// Sol round 3 frame change: the in-house rack was +x-outreach (mounted at
+// angle 270 so local +x pointed south); Sol's rack is wall-flush in the
+// local y=0 plane with −y outreach ("wall flush: y range [-36,0]" in the
+// gate report), so ANGLE 0 now puts the wall on the tower's south face
+// with the poles/cloth hanging south. Positions are unchanged.
 const RACK_OFFS = { A: 234, B: 152, S: 130 };
 const RACKS = [
   ['A', -1320, -3400],           // Teck Ghee tower A (x nudged off the
@@ -318,7 +330,7 @@ const RACKS = [
   ['S', -3600, 500], ['S', 1000, 2900],
   ['S', 3900, 3500], ['S', 1900, -4000],
 ];
-for (const [v, tx, ty] of RACKS) DX('D00C', tx, ty - RACK_OFFS[v], 270, 232);
+for (const [v, tx, ty] of RACKS) DX('D00C', tx, ty - RACK_OFFS[v], 0, 232);
 
 // ---------------------- 2026-08-07 Sol round-2 batch (gate-clean, credits
 // in ../imports-credits.json). Ten more PURE-DECOR classes (D00E..D017,
@@ -376,6 +388,38 @@ DX('D016', 1700, -290, 45, 40);
 DX('D016', -890, -800, 120, 40);
 DX('D017', 430, 1520, 200, 70);
 DX('D017', -1450, 330, 300, 70);
+
+// ---------------------- 2026-08-07 Sol round-3 additions (gate-clean,
+// credits in ../imports-credits.json), APPENDED after every existing
+// doodad so all prior ids stay byte-stable.
+// ViaductBent (D019): the gate flagged Sol's crosshead as 86 TOTAL span —
+// verified here against the in-house TrackSegment: its deck is 160 wide
+// with 172-wide integrated crossheads, and its deck soffit sits at z170
+// vs the bent's z150 top, so a straight pier-treatment swap would leave
+// the deck overhanging a too-narrow, too-short bent. TrackSegment
+// therefore keeps its integrated deck+piers, and the Sol bents stand in
+// the INTER-SPAN GAPS along the berm centerline — the between-span pier
+// rhythm every real viaduct has. Angle 0 = crosshead east-west,
+// perpendicular to the line. Midpoints derive from the h019 loop below
+// (y step 760, platform span skipped) so the coordinates always agree.
+{
+  const segYs = [];
+  for (let y = -6000; y <= 6000; y += 760) {
+    if (y > PLATFORM_RECT.y0 - 200 && y < PLATFORM_RECT.y1 + 200) continue;
+    segYs.push(y);
+  }
+  for (let i = 1; i < segYs.length; i++) {
+    if (segYs[i] - segYs[i - 1] !== 760) continue;   // the platform gap
+    DX('D019', TRACK_X, segYs[i - 1] + 380, 0, 150);
+  }
+}
+// StationClock (D01A): two clock totems at the platform ends beside the
+// D000 canopies. Deliberate SD, not DX — the D000/D012 platform-dressing
+// precedent (dressing the platform IS the point); solid:false, 120 tall
+// (camera-safe), 24x24 footprint on the slab's west edge, clear of the
+// boarding walk and the track-side door line.
+SD('D01A', 4400, -430, 0);
+SD('D01A', 4400, 430, 0);
 
 // ------------------------------------------------------------------- units
 // Type ids mirror objects-units.json (the generated UNIT_ constants).
