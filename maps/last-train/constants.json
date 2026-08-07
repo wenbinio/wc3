@@ -78,6 +78,34 @@
       "name": "HDB Block (Tower)",
       "source": "objects-units.json"
     },
+    "UNIT_HDB_BLOCK_TOWER_LAVENDER": {
+      "kind": "unit",
+      "rawcode": "h01G",
+      "base": "htow",
+      "name": "HDB Block (Tower, Lavender)",
+      "source": "objects-units.json"
+    },
+    "UNIT_HDB_BLOCK_TOWER_MINT": {
+      "kind": "unit",
+      "rawcode": "h01D",
+      "base": "htow",
+      "name": "HDB Block (Tower, Mint)",
+      "source": "objects-units.json"
+    },
+    "UNIT_HDB_BLOCK_TOWER_PEACH": {
+      "kind": "unit",
+      "rawcode": "h01E",
+      "base": "htow",
+      "name": "HDB Block (Tower, Peach)",
+      "source": "objects-units.json"
+    },
+    "UNIT_HDB_BLOCK_TOWER_SKY": {
+      "kind": "unit",
+      "rawcode": "h01F",
+      "base": "htow",
+      "name": "HDB Block (Tower, Sky)",
+      "source": "objects-units.json"
+    },
     "UNIT_HEARTLANDER": {
       "kind": "unit",
       "rawcode": "h000",
@@ -400,6 +428,20 @@
       "name": "Kopitiam Seating",
       "source": "objects-doodads.json"
     },
+    "DOOD_LAUNDRY_RACK": {
+      "kind": "doodad",
+      "rawcode": "D00C",
+      "base": "YOtf",
+      "name": "Laundry Rack",
+      "source": "objects-doodads.json"
+    },
+    "DOOD_LINKWAY_CANOPY": {
+      "kind": "doodad",
+      "rawcode": "D00D",
+      "base": "YOtf",
+      "name": "Linkway Canopy",
+      "source": "objects-doodads.json"
+    },
     "DOOD_LTlt": {
       "kind": "doodad",
       "rawcode": "LTlt",
@@ -417,6 +459,13 @@
       "name": "Monsoon Drain",
       "source": "objects-doodads.json"
     },
+    "DOOD_MRT_LINE_SIGN": {
+      "kind": "doodad",
+      "rawcode": "D00B",
+      "base": "YOtf",
+      "name": "MRT Line Sign",
+      "source": "objects-doodads.json"
+    },
     "DOOD_MRT_PLATFORM_CANOPY": {
       "kind": "doodad",
       "rawcode": "D000",
@@ -424,11 +473,53 @@
       "name": "MRT Platform Canopy",
       "source": "objects-doodads.json"
     },
+    "DOOD_MRT_STATION_ENTRANCE": {
+      "kind": "doodad",
+      "rawcode": "D00A",
+      "base": "YOtf",
+      "name": "MRT Station Entrance",
+      "source": "objects-doodads.json"
+    },
     "DOOD_PEDESTRIAN_OVERHEAD_BRIDGE": {
       "kind": "doodad",
       "rawcode": "D003",
       "base": "YOtf",
       "name": "Pedestrian Overhead Bridge",
+      "source": "objects-doodads.json"
+    },
+    "DOOD_SKYLINE_TOWER_CROWN_DECK": {
+      "kind": "doodad",
+      "rawcode": "D007",
+      "base": "YOtf",
+      "name": "Skyline Tower (Crown Deck)",
+      "source": "objects-doodads.json"
+    },
+    "DOOD_SKYLINE_TOWER_SLAB": {
+      "kind": "doodad",
+      "rawcode": "D005",
+      "base": "YOtf",
+      "name": "Skyline Tower (Slab)",
+      "source": "objects-doodads.json"
+    },
+    "DOOD_SKYLINE_TOWER_SPIRE": {
+      "kind": "doodad",
+      "rawcode": "D009",
+      "base": "YOtf",
+      "name": "Skyline Tower (Spire)",
+      "source": "objects-doodads.json"
+    },
+    "DOOD_SKYLINE_TOWER_STEPPED": {
+      "kind": "doodad",
+      "rawcode": "D006",
+      "base": "YOtf",
+      "name": "Skyline Tower (Stepped)",
+      "source": "objects-doodads.json"
+    },
+    "DOOD_SKYLINE_TOWER_TWIN": {
+      "kind": "doodad",
+      "rawcode": "D008",
+      "base": "YOtf",
+      "name": "Skyline Tower (Twin)",
       "source": "objects-doodads.json"
     },
     "REGION_CHENG_SAN": {

@@ -254,6 +254,72 @@ SD('D004', HAWKER.x, HAWKER.y - 250, 0);
 SD('D004', -1550, -3660, 270); SD('D004', -1440, -3580, 90);   // Teck Ghee
 SD('D004', -4450, 120, 270); SD('D004', -4530, 240, 0);        // Kebun Baru
 
+// ------------------------- 2026-08-07 visual-identity pass (README:
+// "Visual identity & the camera-safety doctrine"). All pieces are custom
+// decor DOODAD classes (D005..D00D) — solid:false, sim-invisible, zero
+// logic shift. CAMERA-SAFETY: WC3's camera looks from the SOUTH, tilted
+// down, so tall models south of walkable space occlude units. Skyline
+// pieces (500-800 tall) therefore stand ONLY on the north-edge fringe
+// (y >= 5800 — nothing walkable behind them); mid/low pieces stay under
+// ~175; linkway canopies under 100. Laundry racks (~230) are the one
+// documented exception: flush against each tower's SOUTH face, the tower
+// itself directly behind — they occlude nothing a player can stand on.
+const DECOR_KEEPOUT = (x, y, top) => {
+  const inPlatform = x >= PLATFORM_RECT.x0 - 200 && x <= PLATFORM_RECT.x1
+    && y >= PLATFORM_RECT.y0 - 200 && y <= PLATFORM_RECT.y1 + 200;
+  if (inPlatform) throw new Error(`decor inside platform keep-out: ${x},${y}`);
+  if (onRoad(x, y, ROAD_CORE)) throw new Error(`decor on a road core: ${x},${y}`);
+  if (top > 400 && y < 5800) throw new Error(`skyline-height decor south of the north edge: ${x},${y}`);
+};
+const DX = (type, x, y, angle, top, scale) => {
+  DECOR_KEEPOUT(x, y, top);
+  SD(type, x, y, angle, scale);
+};
+
+// CBD skyline backdrop: six silhouettes along the NORTH map edge, heights
+// 560-790 world units at varied spacing (the "city beyond the estate").
+// Angle 0 keeps each tower's glint faces toward the camera.
+DX('D008', -5600, 5950, 0, 560);                 // twin towers
+DX('D005', -3900, 6000, 0, 620);                 // slab
+DX('D006', -2100, 5920, 0, 700);                 // stepped
+DX('D007', -300, 5980, 0, 780);                  // three-column crown deck
+DX('D005', 1500, 5940, 0, 694, [1.12, 1.12, 1.12]); // slab, taller variant
+DX('D009', 3300, 6000, 0, 790);                  // spire
+
+// MRT identity: station-approach entrance portal (on the station
+// forecourt pad), roundel-suggestive line signs at the station and two
+// main-road corners.
+DX('D00A', 4050, -270, 90, 172);
+DX('D00B', 4060, 240, 0, 172);
+DX('D00B', -1050, 250, 0, 172);
+DX('D00B', 2500, 250, 0, 172);
+
+// Estate linkways (covered walkways, < 100 tall): three runs — the spawn
+// void deck eastward, the hawker-centre approach off the main road, and
+// the station approach on the south shoulder.
+DX('D00D', -860, 252, 0, 96); DX('D00D', -590, 252, 0, 96);
+DX('D00D', 200, 480, 90, 96); DX('D00D', 200, 750, 90, 96);
+DX('D00D', 200, 1020, 90, 96);
+DX('D00D', 3390, -252, 0, 96); DX('D00D', 3660, -252, 0, 96);
+DX('D00D', 3930, -252, 0, 96);
+
+// Laundry racks flush on tower south faces (angle 270: local +x = south,
+// backboard spans east-west). Offset = the tower model's half-extent
+// along its rotated long axis (A 234 / B 152 / Sol 130).
+const RACK_OFFS = { A: 234, B: 152, S: 130 };
+const RACKS = [
+  ['A', -1320, -3400],           // Teck Ghee tower A (x nudged off the
+  ['A', -4600, 400],             //   kopitiam cluster), then Kebun Baru,
+  ['A', 0, 3000],                // Gardens,
+  ['B', 2700, 3500],             // Seletar (point block),
+  ['A', 1700, -3100],            // Cheng San
+  // Sol towers (Teck Ghee's at -1250,-2700 gets NO rack: its south foot
+  // falls on the N-S road core — the keep-out assert rejects it)
+  ['S', -3600, 500], ['S', 1000, 2900],
+  ['S', 3900, 3500], ['S', 1900, -4000],
+];
+for (const [v, tx, ty] of RACKS) DX('D00C', tx, ty - RACK_OFFS[v], 270, 232);
+
 // ------------------------------------------------------------------- units
 // Type ids mirror objects-units.json (the generated UNIT_ constants).
 const units = [];
@@ -367,15 +433,22 @@ U('u001', LAIR.x + 100, LAIR.y + 650, P_HORDE);
 U('u001', LAIR.x - 650, LAIR.y - 250, P_HORDE);
 U('u005', LAIR.x, LAIR.y, P_HORDE);
 
-// Sol HDB point towers (h01C, the 27-storey SolHDBBlock — the 2026-08-07
-// Sol batch's third tower variant, gotcha-31 visual variety): one per
+// Sol HDB point towers (the 27-storey SolHDBBlock — the 2026-08-07 Sol
+// batch's third tower variant, gotcha-31 visual variety): one per
 // district, off-road/off-pad, APPENDED LAST so every existing unit id and
-// the CreateAllUnits order above stay byte-stable.
-U('h01C', -1250, -2700, P_PASSIVE);   // Teck Ghee
-U('h01C', -3600, 500, P_PASSIVE);     // Kebun Baru
-U('h01C', 1000, 2900, P_PASSIVE);     // Yio Chu Kang Gardens
-U('h01C', 3900, 3500, P_PASSIVE);     // Seletar Hills
-U('h01C', 1900, -4000, P_PASSIVE);    // Cheng San
+// the CreateAllUnits order above stay byte-stable. Visual-identity pass:
+// each district's tower is a DIFFERENT pastel-wash clone (h01D..h01G add
+// uclr/uclg/uclb over the same Sol model — Singapore estates repaint per
+// precinct; Sol's file itself is never edited). Same count/order, so unit
+// ids stay byte-stable.
+const SOL_TOWERS = [
+  ['h01C', -1250, -2700],   // Teck Ghee (unwashed white)
+  ['h01D', -3600, 500],     // Kebun Baru (mint)
+  ['h01E', 1000, 2900],     // Yio Chu Kang Gardens (peach)
+  ['h01F', 3900, 3500],     // Seletar Hills (sky)
+  ['h01G', 1900, -4000],    // Cheng San (lavender)
+];
+for (const [t, x, y] of SOL_TOWERS) U(t, x, y, P_PASSIVE);
 
 // ----------------------------------------------------------------- regions
 const NUL = '\u0000\u0000\u0000\u0000';

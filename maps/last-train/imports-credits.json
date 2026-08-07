@@ -278,6 +278,69 @@
       "source": "user-commissioned delivery 2026-08-07",
       "license": "commissioned for this project",
       "fetched": "2026-08-07"
+    },
+    "war3mapImported/SkyTowerSlab.mdx": {
+      "author": "Serendipity (generated)",
+      "resource": "generated model (2026-08-07 visual-identity pass)",
+      "source": "assets/generate-models.mjs",
+      "license": "original, repo license",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/SkyTowerStep.mdx": {
+      "author": "Serendipity (generated)",
+      "resource": "generated model (2026-08-07 visual-identity pass)",
+      "source": "assets/generate-models.mjs",
+      "license": "original, repo license",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/SkyTowerCrown.mdx": {
+      "author": "Serendipity (generated)",
+      "resource": "generated model (2026-08-07 visual-identity pass)",
+      "source": "assets/generate-models.mjs",
+      "license": "original, repo license",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/SkyTowerTwin.mdx": {
+      "author": "Serendipity (generated)",
+      "resource": "generated model (2026-08-07 visual-identity pass)",
+      "source": "assets/generate-models.mjs",
+      "license": "original, repo license",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/SkyTowerSpire.mdx": {
+      "author": "Serendipity (generated)",
+      "resource": "generated model (2026-08-07 visual-identity pass)",
+      "source": "assets/generate-models.mjs",
+      "license": "original, repo license",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/MRTEntrance.mdx": {
+      "author": "Serendipity (generated)",
+      "resource": "generated model (2026-08-07 visual-identity pass)",
+      "source": "assets/generate-models.mjs",
+      "license": "original, repo license",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/MRTSign.mdx": {
+      "author": "Serendipity (generated)",
+      "resource": "generated model (2026-08-07 visual-identity pass)",
+      "source": "assets/generate-models.mjs",
+      "license": "original, repo license",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/LaundryRack.mdx": {
+      "author": "Serendipity (generated)",
+      "resource": "generated model (2026-08-07 visual-identity pass)",
+      "source": "assets/generate-models.mjs",
+      "license": "original, repo license",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/LinkwayCanopy.mdx": {
+      "author": "Serendipity (generated)",
+      "resource": "generated model (2026-08-07 visual-identity pass)",
+      "source": "assets/generate-models.mjs",
+      "license": "original, repo license",
+      "fetched": "2026-08-07"
     }
   }
 }

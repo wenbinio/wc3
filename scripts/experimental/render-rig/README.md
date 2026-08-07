@@ -44,6 +44,15 @@ else Playwright's own).
 - **This mdx-m3-viewer-th build has no `resource.ok`** — a failed load
   still resolves; `page.html` probes `typeof model.addInstance` to tell a
   parsed model from a failure.
+- **Geoset static-Color tints display with R and B swapped** (found
+  2026-08-07): a gotcha-19-conventional MDX (mdl-lib authoring, plain-RGB
+  tints, file order B,G,R per the Magos spec the fleet's game-verified
+  models follow) renders its red as blue in the rig — e.g. last-train's
+  MRT band, northreach's timber longship hull. Read hues with a mental
+  R<->B swap; silhouettes, banding, additive glow and relative values are
+  unaffected. (The viewer stack's static-color handling disagrees with
+  the repo's playtest-backed convention; the shipped files keep the
+  convention — do NOT "fix" model generators from rig hues alone.)
 
 ## Limitations (read renders accordingly)
 

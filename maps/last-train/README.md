@@ -185,11 +185,14 @@ Ghoul (Sprinter), Zombie (Revenant), Abomination (Broodmother), infected
 granary (kampong nests), villager/potion/crate/cheese/flare icon set.
 
 **Generated models** (`assets/generate-models.mjs`, mdl-lib, all
-sanity-clean): the **MRT train** (three cars, red cab bands, additive
-headlights — the map's signature), station platform, viaduct track
-segments, two HDB block variants (slab + point, team-color roof tanks),
-substation, bus stop, barricade (the street lamp moved to the Sol batch
-above). **Generated icons**
+sanity-clean): the **MRT train** (three cars, red cab bands, door rhythm,
+additive headlights — the map's signature), station platform, viaduct
+track segments (T-crosshead piers), two HDB block variants (slab + point,
+team-color roof tanks, pastel accent schemes), substation, bus stop,
+barricade (the street lamp moved to the Sol batch above) — plus the
+2026-08-07 **visual-identity pass** pieces (next section): five CBD
+skyline towers, the MRT entrance portal, the line-sign totem, the laundry
+rack and the linkway canopy. **Generated icons**
 (`assets/generate-icons.mjs`, lib/icon.js): 21 BTN + auto-derived DISBTN
 twins for everything no stock button depicts (kopi set, blowtorch, the
 HDB silhouette, the train...).
@@ -197,6 +200,52 @@ HDB silhouette, the train...).
 Design inspirations (mechanics only, nothing copied): **Zombination v11**
 (Trinin), **Zombie-Simulator 7** (SpirulinaN), **Dawn of the Dead**
 (PreViO), **NotD: Special Ops**, **SWAT: Aftermath**.
+
+## Visual identity & the camera-safety doctrine (2026-08-07 pass)
+
+The estate now reads explicitly Singaporean without costing gameplay
+view. Every piece is an in-house generated model
+(`assets/generate-models.mjs`), render-verified through the
+`scripts/experimental/render-rig` loop before shipping, placed by
+`assets/generate-layout.mjs` as **non-solid decor doodad classes**
+(`objects-doodads.json` D005–D00D — sim-invisible like the Sol batch, so
+the 64 logic tests and all seeded-replay pins are untouched):
+
+- **CBD skyline backdrop**: six towers (five distinct silhouettes —
+  slab, stepped, twin-with-skybridge, spire, and a generic
+  three-column-with-rooftop-deck crown, suggestive of a bayfront hotel
+  but no real building's trade dress) along the NORTH map edge, heights
+  560–790, Sol-style per-floor window banding + dim additive window
+  glints for the permanent night.
+- **MRT identity**: the train carries a proper white-body/dark-window/
+  red-accent livery with door rhythm (SMRT-esque, no logos); a curved
+  glass-canopy **station entrance portal** on the forecourt; abstract
+  **line-sign totems** (red disc + white cross-band mass, no text) at
+  the station and two road corners; the viaduct's piers thickened with
+  T-crossheads so the elevated line reads.
+- **Estate character**: pastel accent schemes on the HDB blocks — slab
+  blocks get the classic painted-coral gable ends with a white stripe,
+  point blocks mint corner columns; the five Sol towers each get a
+  district pastel wash (mint/peach/sky/lavender + one unwashed) via
+  **unit-tint clone classes** (`h01D–h01G`: `uclr`/`uclg`/`uclb` over
+  the same `SolHDBBlock.mdx` — Sol's file is never edited); **laundry
+  racks** (bamboo poles + hanging cloth at mid-level) flush on tower
+  south faces; **linkway canopies** (< 100 tall) in three covered-walkway
+  runs (spawn void deck, hawker approach, station approach).
+
+**The camera-safety doctrine** (binding for all future dressing): WC3's
+camera looks from the SOUTH, tilted down, so tall models placed south of
+walkable space occlude the units behind them. Therefore skyline-height
+pieces (> 400 units tall) may only stand along the NORTH map edge and
+the far NE/NW corners — background silhouette with nothing walkable
+behind — and `generate-layout.mjs` **asserts** this (plus road-core and
+platform keep-outs) at generation time. Mid-rise (~200–400) may line
+east/west margins if set back from roads; nothing over ~180 tall may
+stand south of any walkable row except the existing viaduct pylons
+(thin). One documented exception: the ~230-tall laundry racks mount
+flush against each tower's own south face — the solid tower is directly
+behind them, so they occlude nothing a unit can stand on. All identity
+pieces are `solid:false` decor: zero pathing, zero logic shift.
 
 ## Chat commands
 
