@@ -20,6 +20,10 @@
 //                         platform, corner crenels, amber rack glow
 //   CannonKeep.mdx      — the ingot-burning tower: squat stone drum, cap,
 //                         iron barrel, muzzle ember
+//   Orepit.mdx          — the ore harvester (2026-08 art fix, report §6):
+//                         dark pit ring sunk in a spoil apron, TEAM-COLOR
+//                         crane (untinted geoset = raw ReplaceableId 1) with
+//                         iron winch line + bucket and an ember glint
 
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -133,4 +137,39 @@ buildModel({
   outFile: path.join(OUT, 'CannonKeep.mdx'),
 });
 
-console.log('coinstead models regenerated: Depot, MarketStall, Watchtower, CannonKeep');
+// ---------------------------------------------------------------- Ore pit
+// The Orepit harvester (hhou base) — the one coinstead building whose job
+// no stock structure depicts (an open ore digging). Dark pit ring + a
+// TEAM-COLOR crane: the crane geosets carry NO tint, so they render the raw
+// ReplaceableId 1 team color (mdl-lib emits static Color only when a tint
+// is given).
+buildModel({
+  name: 'Orepit',
+  extents: { min: [-140, -140, 0], max: [140, 140, 235], radius: 320 },
+  geosets: [
+    { name: 'apron', tint: STONE, mesh: box(-130, 130, -130, 130, 0, 16) },
+    { name: 'ring', tint: STONE_DARK, mesh: merge(
+      box(-96, 96, -96, -72, 16, 44), box(-96, 96, 72, 96, 16, 44),   // n/s walls
+      box(-96, -72, -72, 72, 16, 44), box(72, 96, -72, 72, 16, 44),   // e/w walls
+    ) },
+    { name: 'pitfloor', tint: [0.08, 0.07, 0.09], mesh: box(-72, 72, -72, 72, 16, 22) },
+    { name: 'spoil', tint: TIMBER_DARK, mesh: merge(
+      box(-128, -92, 84, 126, 16, 58), box(88, 126, -126, -88, 16, 50),
+    ) },
+    // the crane: untinted geosets -> raw team color (player identity)
+    { name: 'cranepost', mesh: box(-110, -86, -12, 12, 16, 210) },
+    { name: 'cranejib', mesh: merge(
+      box(-110, 40, -10, 10, 186, 210),     // jib arm out over the pit
+      box(-118, -78, -18, 18, 200, 218),    // counterweight cap
+    ) },
+    { name: 'winch', tint: IRON, mesh: merge(
+      box(18, 26, -4, 4, 92, 190),          // hoist line
+      box(2, 42, -20, 20, 58, 92),          // ore bucket
+    ) },
+    { name: 'oreglint', tint: COIN_GOLD, additive: true,
+      mesh: box(8, 36, -14, 14, 84, 100) }, // raw ore glowing in the bucket
+  ],
+  outFile: path.join(OUT, 'Orepit.mdx'),
+});
+
+console.log('coinstead models regenerated: Depot, MarketStall, Watchtower, CannonKeep, Orepit');

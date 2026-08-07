@@ -10,7 +10,7 @@ in docs/ and .claude/skills/; follow the pointers.
 
 ```bash
 bash scripts/setup.sh   # idempotent: npm install + optional smpq fallback + optional pjass build (vendor/pjass)
-npm test                # 465 tests; all must pass before you change anything
+npm test                # 483 tests; all must pass before you change anything
 npm run preflight       # ~13s one-shot gate; 0 FAILs required before AND after any change
 ```
 
@@ -36,7 +36,7 @@ node tools/w3x-pack.js     [--bare] <dir> <out.w3x>    # binaries -> MPQ v1 + HM
 node tools/build-map.js    [--bare] [--stabilize] [--variant-name <name>] <map-source-dir> <out.w3x>  # one-step: source -> .w3x (--bare: no HM3W pre-header, 1.31+ container); also injects the generated named-constants + CreateAllUnits Lua blocks, rewrites <map-source>/constants.json, FAILS on stale/squatted reserved-prefix identifiers, and auto-generates wpm/shd/minimap when files/ has none (gotchas 8, 10, 27). --stabilize: run the gotcha-6 cycle after the build (rewrites only changed translatable source *.json). --variant-name: pack-time internal-name overlay for A/B variants (gotcha 17; source untouched; excludes --stabilize)
 node tools/validate-map.js <map.w3x>                   # layered pass/fail report, exit 0 = good
 node tools/test-map-logic.js [--coverage] [<map-source-dir> ...]  # EXECUTE the packed war3map.lua headlessly (lib/sim: fengari Lua 5.3 + mocked natives) and run maps/<name>/tests/*.test.js; no args = every map with tests/; --coverage = per-map natives real-vs-stubbed PLUS script LINE coverage aggregated from the test run (never-executed SOURCE ranges collapsed to whole functions — "which mechanics no test walks"; PIPELINE §8)
-node tools/preflight.js    [--json[=file]] [--no-logic|--no-validate|--no-crossexec] [<map-source-dir> ...]  # ONE-SHOT pre-playtest gate (PIPELINE §9): build + validate + pick/load/runtime failure-class checks (weather bytes, header flags, forces + sim-executed config() lobby wiring, minimap/mmp, TRIGSTR closure, start locations, model fields/imports, CreateAllUnits, chunk-locals headroom) + 64-bit lua5.3 cross-execution incl. Schrage-PRNG bit-exactness (OPTIONAL tool, smpq pattern: absent = WARN "unchecked") + the map's logic tests w/ coverage floor; no args = all bundled maps (~13s); exit 0 = no FAILs; ends with the honest only-the-game-can-check list. Automates docs/reference/preflight-2026-07.md — run before ANY playtest handoff (npm run preflight)
+node tools/preflight.js    [--json[=file]] [--no-logic|--no-validate|--no-crossexec] [<map-source-dir> ...]  # ONE-SHOT pre-playtest gate (PIPELINE §9): build + validate + pick/load/runtime failure-class checks (weather bytes, header flags, forces + sim-executed config() lobby wiring, minimap/mmp, TRIGSTR closure, start locations, model fields/imports + stock-art table cross-check, CreateAllUnits, chunk-locals headroom) + 64-bit lua5.3 cross-execution incl. Schrage-PRNG bit-exactness (OPTIONAL tool, smpq pattern: absent = WARN "unchecked") + the map's logic tests w/ coverage floor; no args = all bundled maps (~13s); exit 0 = no FAILs; ends with the honest only-the-game-can-check list. Automates docs/reference/preflight-2026-07.md — run before ANY playtest handoff (npm run preflight)
 
 bash scripts/crossvalidate-war3net.sh [--dump-triggers] <extracted-dir>  # optional War3Net v6 (C#) third opinion; needs dotnet. --dump-triggers: wtg/wct -> READ-ONLY JSON under <dir>/_triggers/ (PIPELINE §6)
 ```
@@ -108,8 +108,10 @@ Reference sources (each README documents its own invariants):
   charges as ground stacks; Steward pickup couriers them to the Depot),
   the Toolwright ladder (3 tiers paid in Depot commodities), a seeded
   contract board every 4th wave (deliveries ship from Depot stock), 20
-  authored waves + skimmer/boss-affix texture + endless; 4 generated
-  identity models + generated roads/plaza/berm terrain (assets/);
+  authored waves + skimmer/boss-affix texture + endless; 5 generated
+  identity models + a generated BTNOrepit icon + table-verified stock art
+  on every other structure (2026-08 art fix, gotcha 31) + generated
+  roads/plaza/berm terrain (assets/);
   71 logic tests at 100% script line coverage incl. a 159-beat pinned
   golden run (re-pinned from phase 2's 144 per PIPELINE §8 —
   PRNG-derived beats byte-identical); competitor matrix in
@@ -141,6 +143,11 @@ never third-party maps, gotcha 9).
 - **Asset generation/import**: MDL → war3-model → MDX chain, PNG → BLP1 via
   Pillow, sanityTest bar (gotchas 14, 19) — PIPELINE §4, docs/ASSETS.md,
   skill wc3-import-asset.
+- **Art doctrine** (gotcha 31): stock art BY PATH first (every path
+  table-verified in lib/data/stock-art.json), generated models for
+  signature pieces, generated icons (lib/icon.js) for abstractions;
+  playtests promote table entries to game-verified — docs/ASSETS.md
+  "Art doctrine: three tiers".
 - **Validate**: validate-map layers + War3Net third opinion — PIPELINE §5–6.
 - **Logic-test map mechanics** (BEFORE any human playtest): execute the
   packed script in the headless sim, assert on alliances/gold/units/
@@ -448,10 +455,31 @@ never third-party maps, gotcha 9).
     shifted golden run is re-pinned only after a beat-by-beat reviewed
     diff — the re-pin doctrine in docs/PIPELINE.md §8; never regenerate
     blindly.
+31. **Stock art paths are unverifiable headlessly — and clone crowds need
+    distinct art** (both from the coinstead 2026-08 playtest). (a) A typo'd
+    stock model/icon path (`umdl`/`uico`/`ifil`/`iico`/`dfil`/`bfil`)
+    renders NOTHING in-game with no error, and the near-misses are real
+    (`Buildings\Human\HumanLumberMill\...` NOT `LumberMill`;
+    `BTNHumanWatchTower` NOT `BTNScoutTower`; `BTNGraveYard`/`BTNMeatWagon`
+    inner capitals) — so every stock path used must be in
+    **`lib/data/stock-art.json`**, the verified PATH facts table
+    (community-doc < listfile-verified < game-verified; paths are facts,
+    not assets — committable; maintenance loop in docs/ASSETS.md). Lint
+    rule (d) WARNs on any art path below listfile-verified; preflight's
+    `stock-art` check counts per-map refs by status. (b) Gotcha 23 scaled
+    up: cloning one base into SEVERAL renamed units without re-arting any
+    of them ships a visually indistinguishable clone crowd (coinstead
+    launched with five identical farms) — lint rule (e) WARNs on >= 2
+    renamed clones of one base with no umdl/uico override in the group.
+    Art doctrine (docs/ASSETS.md): stock-by-path FIRST (table-verified),
+    generated models for signature pieces, generated icons (lib/icon.js —
+    baked border frame, auto-derived DISBTN twin, BLP1 via Pillow with TGA
+    fallback) for abstractions; playtests promote table entries to
+    game-verified.
 
 ## Testing & validation doctrine
 
-- `npm test` = 465 tests, 44 files (30 under test/ + 14 map suites under
+- `npm test` = 483 tests, 46 files (32 under test/ + 14 map suites under
   maps/*/tests/, all auto-discovered by `node --test`): source⇄binary fixed
   points for the demo/siege/tidewatch/northreach sources (vaults-of-ash and
   coinstead are covered by their logic suites), build+validate end-to-end, MPQ
@@ -515,7 +543,7 @@ never third-party maps, gotcha 9).
   WARN "packed unchecked" when absent — build-map mirrors it as build
   FAIL/warning; lib/jasscheck.js, PIPELINE §5) → per-file
   translator parse PLUS JSON→binary→JSON stability → object-data semantic
-  lint (lib/objectlint.js — gotchas 22/23/25) → mdx-m3-viewer-th second
+  lint (lib/objectlint.js — gotchas 22/23/25/31) → mdx-m3-viewer-th second
   opinion (independent MPQ open; parses wpm/shd/mmp/wct which the
   translator can't; MDX sanityTest on every packed model — findings are
   WARN here, the strict 0-errors/0-severes FAIL lives in build-map for
@@ -589,7 +617,16 @@ or CC0-converted content. Details: docs/ASSETS.md.
   `lib/constants.js` — named-constants block + constants.json generation
   (gotcha 27); `lib/constlint.js` — stale/squatted reserved-prefix
   identifier lint, a build-map FAIL (gotcha 27 traps a+b);
-  `lib/objectlint.js` — object-data semantic WARNings (gotchas 22/23/25)
+  `lib/objectlint.js` — object-data semantic WARNings (gotchas
+  22/23/25/31: model fields, identity leaks, builders, stock-art table,
+  clone crowds, BTN/DISBTN twins)
+- `lib/data/stock-art.json` — verified stock-art PATH facts table (gotcha
+  31; statuses community-doc/listfile-verified/game-verified; consumed by
+  objectlint rule d + preflight's stock-art check; maintenance doctrine in
+  docs/ASSETS.md); `lib/icon.js` — generated 64x64 command-button icons
+  (canvas primitives + baked border frame, auto-derived DISBTN twin, BLP1
+  via Pillow / 32-bit-TGA fallback, WC3_PYTHON env; per-map generators:
+  maps/<name>/assets/generate-icons.mjs)
 - `lib/wts.js` — linear wts parser/serializer, upstream dialect + byte-exact
   file-dialect preservation via the `_dialect` sidecar (upstream's regex
   reader OOMs on production-scale ~10k-string files; gotcha 16);

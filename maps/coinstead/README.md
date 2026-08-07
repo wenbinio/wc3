@@ -183,12 +183,16 @@ compiled artifact: `maps/builds/coinstead.w3x`.
   regenerating run `build-map --stabilize` once and commit the
   stabilized JSON):
   - `generate-models.mjs` + `mdl-lib.mjs` (the northreach known-good MDL
-    library) author the **four identity models** under
+    library) author the **five identity models** under
     `imports/war3mapImported/` — `CoinsteadDepot`, `MarketStall`,
-    `CoinWatchtower`, `CannonKeep` — all sanityTest-clean (gotcha 14),
+    `CoinWatchtower`, `CannonKeep`, `Orepit` (2026-08 art fix: dark pit
+    ring + team-color crane) — all sanityTest-clean (gotcha 14),
     team-color textured (ReplaceableId 1, nothing Blizzard-authored).
     Object-data `umdl` FIELDS use `.mdl`, archive members stay `.mdx`
     (gotcha 22).
+  - `generate-icons.mjs` (2026-08 art fix) authors `BTNOrepit` +
+    auto-derived `DISBTNOrepit` with `lib/icon.js` (BLP1 via Pillow, TGA
+    fallback) under `imports/ReplaceableTextures/CommandButtons[Disabled]/`.
   - `generate-terrain.mjs` paints `terrain.json` (64x64 Lordaeron
     Summer: four dirt toll roads from the spawn edges, a paved plaza, a
     raised earthwork berm ring — heightfield only, deliberately NO
@@ -208,10 +212,21 @@ compiled artifact: `maps/builds/coinstead.w3x`.
   4 refiners, 2 towers, the Depot, the Market Stall, 6 raider
   archetypes. Phase 3: every storage building (all ten structures, the
   Depot AND the Stall) carries `uabi: "AInv"` — the engine inventory the
-  physical stacks live in. The four identity buildings carry generated
-  `umdl` models (gotcha 23's full visible-identity sets); the other
-  clones keep bases whose stock model IS the identity, with
-  `unam`/`utip`/`utub` + stats carrying the rest. Building costs
+  physical stacks live in. **2026-08 art fix (gotcha 31)**: the 2026-08
+  playtest found five visually identical farms (the hhou clone crowd), so
+  every structure now carries a distinct visible identity — generated
+  `umdl` models for the five signature pieces (Depot, Stall, both towers,
+  Orepit), stock models BY PATH for the rest (Woodcamp -> Barn, Quarry ->
+  GoldMine, Bakery -> WindMill; all paths listfile-verified in
+  `lib/data/stock-art.json`), and explicit `uico` icons on every
+  buildable/selectable structure (BTNBundleOfLumber/BTNGoldmine/BTNFarm/
+  BTNCheese/generated BTNOrepit/BTNGuardTower/BTNCannonTower/
+  BTNArcaneVault/BTNMarketPlace). Caveats accepted for the next playtest:
+  the doodad-based models (Barn, WindMill) ship **no Birth animation**, so
+  those buildings appear full-grown during construction (cosmetic only —
+  accept or swap after seeing it in-game); the Market Stall keeps its
+  goblin-merchant voice set (`usnd` override skipped — untested field, not
+  worth the risk for a cosmetic). Building costs
   (`ugol`, `ulum` 0) mirror the script's `BUILD_DEFS`.
 - `objects-items.json` (phase 3): the 8 commodity ITEM types
   (`I000`-`I007`, base `ches`, full identity sets per gotcha 23 —

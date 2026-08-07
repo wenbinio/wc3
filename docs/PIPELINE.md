@@ -242,6 +242,13 @@ pjass (https://github.com/lep/pjass, builds with `make`); it needs the
 
 ## 4. Import custom assets (MDX models, BLP textures, ...)
 
+**Before importing anything**, check the art doctrine (docs/ASSETS.md
+"Art doctrine: three tiers", gotcha 31): stock art referenced BY PATH is
+tier 1 (zero imports; every path must be in `lib/data/stock-art.json` —
+lint rule d WARNs otherwise), generated models are tier 2, generated
+icons via `lib/icon.js` are tier 3 (BTN+DISBTN pair auto-written into
+`imports/ReplaceableTextures/CommandButtons[Disabled]/`).
+
 Drop assets into the map source `imports/` tree; the path relative to
 `imports/` becomes the archive path:
 

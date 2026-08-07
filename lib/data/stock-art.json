@@ -1,0 +1,862 @@
+{
+  "_meta": {
+    "doc": "Verified stock-art PATH facts (no assets are stored or redistributed — paths reference the user's own game data; CLAUDE.md Legal). Consumed by lib/objectlint.js rule (d) and tools/preflight.js (stock-art check). Maintenance doctrine: docs/ASSETS.md \"Stock art by path\". Model paths use the .mdl field-value dialect (gotcha 22); the archive members behind them are .mdx.",
+    "statuses": {
+      "community-doc": "path copied from community documentation only — weakest tier, still WARNs",
+      "listfile-verified": "path present in the WurstScript community listfiles (existence in game data confirmed)",
+      "game-verified": "art seen rendering in an in-game playtest of a bundled map (strongest tier)"
+    },
+    "verification": "WurstScript community listfiles: github.com/wurstscript/WurstScript, de.peeeq.wurstscript/src/main/resources rocfile+tftfile, fetched 2026-08-07 (16455 distinct entries). Listfiles are consulted at table-build time only and are NOT committed.",
+    "updated": "2026-08-07"
+  },
+  "entries": [
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNBandit.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "game-verified",
+      "source": "coinstead base-unit art of nban (implicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNBanditLord.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "game-verified",
+      "source": "coinstead base-unit art of nbld (implicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNBlacksmith.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "game-verified",
+      "source": "coinstead base-unit art of hbla (implicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNBundleOfLumber.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "game-verified",
+      "source": "coinstead objects-items iico (explicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNCannonTower.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "game-verified",
+      "source": "coinstead base-unit art of hctw (implicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNCheese.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "game-verified",
+      "source": "coinstead objects-items iico (explicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNEnchantedGemstone.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "game-verified",
+      "source": "coinstead objects-items iico (explicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNFarm.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "game-verified",
+      "source": "coinstead base-unit art of hhou (implicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNGlyph.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "game-verified",
+      "source": "coinstead objects-items iico (explicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNGnoll.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "game-verified",
+      "source": "coinstead base-unit art of ngno (implicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNGuardTower.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "game-verified",
+      "source": "coinstead base-unit art of hgtw (implicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNHumanLumberMill.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "game-verified",
+      "source": "coinstead base-unit art of hlum (implicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNHumanLumberUpgrade1.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "game-verified",
+      "source": "coinstead objects-items iico (explicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNKobold.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "game-verified",
+      "source": "coinstead base-unit art of nkob (implicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNMerchant.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "game-verified",
+      "source": "coinstead base-unit art of ngme (implicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNMonsterLure.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "game-verified",
+      "source": "coinstead objects-items iico (explicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNPeasant.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "game-verified",
+      "source": "coinstead base-unit art of hpea (implicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNPillage.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "game-verified",
+      "source": "coinstead objects-items iico (explicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNPotionGreen.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "game-verified",
+      "source": "crossroads-siege objects-items iico (explicit)",
+      "verifiedBy": "crossroads-siege in-game playtest; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNRepair.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "game-verified",
+      "source": "coinstead objects-items iico (explicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNSteelMelee.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "game-verified",
+      "source": "crossroads-siege objects-items iico (explicit)",
+      "verifiedBy": "crossroads-siege in-game playtest; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNTimberWolf.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "game-verified",
+      "source": "coinstead base-unit art of nwlt (implicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNTownHall.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "game-verified",
+      "source": "coinstead base-unit art of htow (implicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNWorkshop.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "game-verified",
+      "source": "coinstead base-unit art of harm (implicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNAbomination.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNAcolyte.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNAltarOfDarkness.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNArcaneVault.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "coinstead art fix (report section 6)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNBanshee.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNBoneYard.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNChestOfGold.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "northreach objects (map re-verification pending after post-playtest fixes)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNCrypt.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNCryptFiend.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNEnsnare.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "northreach objects (map re-verification pending after post-playtest fixes)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNFrostWyrm.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNGargoyle.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNGhoul.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNGoldmine.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "coinstead art fix (report section 6)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNGraveYard.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNHauntedMine.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNMarketPlace.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "coinstead art fix (report section 6)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNMeatWagon.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNNecromancer.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNNecropolis.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNObsidianStatue.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNOgre.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "base art of nogr per community docs (attribution not game-confirmed)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNSacrificialPit.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNShade.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNSkeletonMage.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNSkeletonWarrior.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNSlaughterHouse.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNStag.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "northreach objects (map re-verification pending after post-playtest fixes)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNTempleOfTheDamned.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNZiggurat.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNZombie.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Buildings\\Human\\Blacksmith\\Blacksmith.mdl",
+      "kind": "model",
+      "class": "building",
+      "status": "game-verified",
+      "source": "coinstead base-unit art of hbla (implicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Buildings\\Human\\Farm\\Farm.mdl",
+      "kind": "model",
+      "class": "building",
+      "status": "game-verified",
+      "source": "coinstead base-unit art of hhou (implicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Buildings\\Human\\HumanLumberMill\\HumanLumberMill.mdl",
+      "kind": "model",
+      "class": "building",
+      "status": "game-verified",
+      "source": "coinstead base-unit art of hlum (implicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Buildings\\Human\\Workshop\\Workshop.mdl",
+      "kind": "model",
+      "class": "building",
+      "status": "game-verified",
+      "source": "coinstead base-unit art of harm (implicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Objects\\InventoryItems\\Rune\\Rune.mdl",
+      "kind": "model",
+      "class": "item",
+      "status": "game-verified",
+      "source": "crossroads-siege objects-items ifil (explicit)",
+      "verifiedBy": "crossroads-siege in-game playtest; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Objects\\InventoryItems\\TreasureChest\\treasurechest.mdl",
+      "kind": "model",
+      "class": "item",
+      "status": "game-verified",
+      "source": "coinstead objects-items ifil (explicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Units\\Creeps\\Bandit\\Bandit.mdl",
+      "kind": "model",
+      "class": "unit",
+      "status": "game-verified",
+      "source": "coinstead base-unit art of nban (implicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Units\\Creeps\\BanditLord\\BanditLord.mdl",
+      "kind": "model",
+      "class": "unit",
+      "status": "game-verified",
+      "source": "coinstead base-unit art of nbld (implicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Units\\Creeps\\Gnoll\\Gnoll.mdl",
+      "kind": "model",
+      "class": "unit",
+      "status": "game-verified",
+      "source": "coinstead base-unit art of ngno (implicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Units\\Creeps\\Kobold\\Kobold.mdl",
+      "kind": "model",
+      "class": "unit",
+      "status": "game-verified",
+      "source": "coinstead base-unit art of nkob (implicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Units\\Creeps\\TimberWolf\\TimberWolf.mdl",
+      "kind": "model",
+      "class": "unit",
+      "status": "game-verified",
+      "source": "coinstead base-unit art of nwlt (implicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Units\\Human\\Peasant\\peasant.mdl",
+      "kind": "model",
+      "class": "unit",
+      "status": "game-verified",
+      "source": "coinstead base-unit art of hpea (implicit)",
+      "verifiedBy": "coinstead in-game playtest 2026-08; wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Buildings\\Human\\HumanTower\\HumanTower.mdl",
+      "kind": "model",
+      "class": "building",
+      "status": "listfile-verified",
+      "source": "base art of hgtw/hctw (umdl overridden in coinstead — base model never rendered)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Buildings\\Human\\TownHall\\TownHall.mdl",
+      "kind": "model",
+      "class": "building",
+      "status": "listfile-verified",
+      "source": "base art of htow (umdl overridden in coinstead — base model never rendered)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "buildings\\Other\\BarrelsUnit0\\BarrelsUnit0.mdl",
+      "kind": "model",
+      "class": "doodad",
+      "status": "listfile-verified",
+      "source": "northreach objects (map re-verification pending after post-playtest fixes)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Buildings\\Other\\GoldMine\\Goldmine.mdl",
+      "kind": "model",
+      "class": "building",
+      "status": "listfile-verified",
+      "source": "coinstead art fix (report section 6)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Buildings\\Other\\GranaryInfected\\GranaryInfected.mdl",
+      "kind": "model",
+      "class": "doodad",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Buildings\\Other\\Merchant\\Merchant.mdl",
+      "kind": "model",
+      "class": "building",
+      "status": "listfile-verified",
+      "source": "base art of ngme (umdl overridden in coinstead — base model never rendered)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Buildings\\Undead\\AltarOfDarkness\\AltarOfDarkness.mdl",
+      "kind": "model",
+      "class": "building",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Buildings\\Undead\\BoneYard\\BoneYard.mdl",
+      "kind": "model",
+      "class": "building",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Buildings\\Undead\\Crypt\\Crypt.mdl",
+      "kind": "model",
+      "class": "building",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Buildings\\Undead\\Graveyard\\Graveyard.mdl",
+      "kind": "model",
+      "class": "building",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Buildings\\Undead\\HauntedMine\\HauntedMine.mdl",
+      "kind": "model",
+      "class": "building",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Buildings\\Undead\\Necropolis\\Necropolis.mdl",
+      "kind": "model",
+      "class": "building",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Buildings\\Undead\\SacrificialPit\\SacrificialPit.mdl",
+      "kind": "model",
+      "class": "building",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Buildings\\Undead\\SlaughterHouse\\SlaughterHouse.mdl",
+      "kind": "model",
+      "class": "building",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Buildings\\Undead\\TempleOfTheDamned\\TempleOfTheDamned.mdl",
+      "kind": "model",
+      "class": "building",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Buildings\\Undead\\Ziggurat\\Ziggurat.mdl",
+      "kind": "model",
+      "class": "building",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Doodads\\LordaeronSummer\\Props\\PeasantGrave\\PeasantGrave0.mdl",
+      "kind": "model",
+      "class": "doodad",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Doodads\\LordaeronSummer\\Props\\PeasantGrave\\PeasantGrave1.mdl",
+      "kind": "model",
+      "class": "doodad",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Doodads\\LordaeronSummer\\Props\\PeasantGrave\\PeasantGrave2.mdl",
+      "kind": "model",
+      "class": "doodad",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Doodads\\LordaeronSummer\\Structures\\Barn\\Barn.mdl",
+      "kind": "model",
+      "class": "doodad",
+      "status": "listfile-verified",
+      "source": "coinstead art fix (report section 6)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Doodads\\LordaeronSummer\\Structures\\GranaryBurned\\GranaryBurned.mdl",
+      "kind": "model",
+      "class": "doodad",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Doodads\\LordaeronSummer\\Structures\\WindMill\\WindMill.mdl",
+      "kind": "model",
+      "class": "doodad",
+      "status": "listfile-verified",
+      "source": "coinstead art fix (report section 6)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Doodads\\LordaeronSummer\\Structures\\WindMillBurned\\WindMillBurned.mdl",
+      "kind": "model",
+      "class": "doodad",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Objects\\InventoryItems\\PotofGold\\PotofGold.mdl",
+      "kind": "model",
+      "class": "item",
+      "status": "listfile-verified",
+      "source": "northreach objects (map re-verification pending after post-playtest fixes)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Units\\Creeps\\OgreOneHeaded\\OgreOneHeaded.mdl",
+      "kind": "model",
+      "class": "unit",
+      "status": "listfile-verified",
+      "source": "base art of nogr per community docs (attribution not game-confirmed)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Units\\Creeps\\Zombie\\Zombie.mdl",
+      "kind": "model",
+      "class": "unit",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Units\\Undead\\Abomination\\Abomination.mdl",
+      "kind": "model",
+      "class": "unit",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Units\\Undead\\Acolyte\\Acolyte.mdl",
+      "kind": "model",
+      "class": "unit",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Units\\Undead\\Banshee\\Banshee.mdl",
+      "kind": "model",
+      "class": "unit",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Units\\Undead\\CryptFiend\\CryptFiend.mdl",
+      "kind": "model",
+      "class": "unit",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Units\\Undead\\FrostWyrm\\FrostWyrm.mdl",
+      "kind": "model",
+      "class": "unit",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Units\\Undead\\Gargoyle\\Gargoyle.mdl",
+      "kind": "model",
+      "class": "unit",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Units\\Undead\\Ghoul\\Ghoul.mdl",
+      "kind": "model",
+      "class": "unit",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Units\\Undead\\Meatwagon\\Meatwagon.mdl",
+      "kind": "model",
+      "class": "unit",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Units\\Undead\\Necromancer\\Necromancer.mdl",
+      "kind": "model",
+      "class": "unit",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Units\\Undead\\ObsidianStatue\\ObsidianStatue.mdl",
+      "kind": "model",
+      "class": "unit",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Units\\Undead\\Shade\\Shade.mdl",
+      "kind": "model",
+      "class": "unit",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Units\\Undead\\Skeleton\\Skeleton.mdl",
+      "kind": "model",
+      "class": "unit",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Units\\Undead\\SkeletonMage\\SkeletonMage.mdl",
+      "kind": "model",
+      "class": "unit",
+      "status": "listfile-verified",
+      "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    }
+  ]
+}

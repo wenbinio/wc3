@@ -122,6 +122,20 @@
         "level": 0,
         "column": 0,
         "value": "AInv"
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Doodads\\LordaeronSummer\\Structures\\Barn\\Barn.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNBundleOfLumber.blp"
       }
     ],
     "h002:hhou": [
@@ -187,6 +201,20 @@
         "level": 0,
         "column": 0,
         "value": "AInv"
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Buildings\\Other\\GoldMine\\Goldmine.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNGoldmine.blp"
       }
     ],
     "h003:hhou": [
@@ -252,6 +280,13 @@
         "level": 0,
         "column": 0,
         "value": "AInv"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNFarm.blp"
       }
     ],
     "h004:hhou": [
@@ -317,6 +352,20 @@
         "level": 0,
         "column": 0,
         "value": "AInv"
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\Orepit.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNOrepit.blp"
       }
     ],
     "h005:hlum": [
@@ -454,6 +503,20 @@
         "level": 0,
         "column": 0,
         "value": "AInv"
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Doodads\\LordaeronSummer\\Structures\\WindMill\\WindMill.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNCheese.blp"
       }
     ],
     "h007:hbla": [
@@ -670,6 +733,13 @@
         "level": 0,
         "column": 0,
         "value": "AInv"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNGuardTower.blp"
       }
     ],
     "h00A:hctw": [
@@ -742,6 +812,13 @@
         "level": 0,
         "column": 0,
         "value": "AInv"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNCannonTower.blp"
       }
     ],
     "h00B:htow": [
@@ -814,6 +891,13 @@
         "level": 0,
         "column": 0,
         "value": "AInv"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNArcaneVault.blp"
       }
     ],
     "n000:ngno": [
@@ -1078,6 +1162,13 @@
         "level": 0,
         "column": 0,
         "value": 0
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNMarketPlace.blp"
       }
     ],
     "n005:nban": [

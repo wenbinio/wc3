@@ -8,7 +8,7 @@
 // archive, every inner file it has a parser for must parse (it also covers
 // wpm/shd/mmp/wct which wc3maptranslator can't), and every packed .mdx/.mdl
 // gets mdx-m3-viewer's sanity test. Object data additionally gets a semantic
-// lint (lib/objectlint.js — gotchas 22/23/25) whose findings print as WARN
+// lint (lib/objectlint.js — gotchas 22/23/25/31) whose findings print as WARN
 // lines and never fail the map. Prints a pass/fail summary; exit code
 // 0 = all PASS (warnings allowed).
 //
@@ -43,7 +43,7 @@ function validate(mapPath) {
   const results = [];
   const ok = (name, detail) => results.push({ name, pass: true, detail });
   const fail = (name, detail) => results.push({ name, pass: false, detail });
-  // warnings never fail the map (semantic heuristics, gotchas 22/23/25)
+  // warnings never fail the map (semantic heuristics, gotchas 22/23/25/31)
   const warn = (name, detail) => results.push({ name, pass: true, warn: true, detail });
 
   const buf = fs.readFileSync(mapPath);
@@ -146,9 +146,11 @@ function validate(mapPath) {
     }
 
     // 4b. Semantic lint of the object data — WARN lines only, never
-    // failures (playtest heuristics, CLAUDE.md gotchas 22/23/25):
-    // .mdx model-field values / unresolved war3mapImported model paths,
-    // items renamed without re-arting, builders without a repair ability.
+    // failures (playtest heuristics, CLAUDE.md gotchas 22/23/25/31):
+    // .mdx model-field values / unresolved war3mapImported model+icon
+    // paths, items renamed without re-arting, builders without a repair
+    // ability, stock art paths missing from lib/data/stock-art.json,
+    // clone crowds, imported BTN icons without a DISBTN twin.
     try {
       for (const w of lintObjectData(objectFiles, walk(tmp))) {
         warn(`lint ${w.file} ${w.objectId}`, w.message);

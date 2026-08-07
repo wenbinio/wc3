@@ -49,6 +49,12 @@
 //   imports-resolve  load-time: EVERY war3mapImported\ string in object data
 //                    resolves to an archive member (icons too, not just
 //                    model fields)
+//   stock-art        load-time: every NON-imported art path (umdl/uico/ifil/
+//                    iico/dfil/bfil) cross-checked against the verified
+//                    stock-art facts table (lib/data/stock-art.json, gotcha
+//                    31): per-map counts by status; WARN when any ref is
+//                    unknown to the table (existence unverifiable headlessly
+//                    — a typo renders nothing in-game with no error)
 //   object-lint      WARN row for the remaining lib/objectlint.js heuristics
 //                    (gotchas 23/25 — identity leaks, builder w/o repair)
 //   script-language  runtime: info.json scriptLanguage matches the packed
@@ -108,7 +114,7 @@ const { validate } = require('./validate-map');
 const { extractAll } = require('../lib/mpq');
 const { hasHM3W, parseHeader, readW3iFlags } = require('../lib/header');
 const { byWar, byJson, jsonToWar } = require('../lib/filemap');
-const { lintObjectData } = require('../lib/objectlint');
+const { lintObjectData, collectStockArtRefs } = require('../lib/objectlint');
 const { walk, readJson } = require('../lib/source');
 
 const ROOT = path.join(__dirname, '..');
@@ -120,7 +126,7 @@ const COLOR_NAMES = Object.values(require('wc3maptranslator/dist/src/PlayerBitfi
 const RESIDUAL_RISKS = [
   'ability data-field interpretation (custom abilities on stock bases) — no headless ability engine',
   'pathing / spatial reachability — region triggers assume units can WALK there; the sim teleports',
-  'stock-asset path typos (icons/models referenced by in-game path) — unverifiable without game data',
+  'stock-asset LOOKS (is that path the art you meant?) — existence is table-checked against lib/data/stock-art.json (stock-art check), appearance is not',
   'engine edge behaviors of base unit classes (critter wander, targeting, ...)',
   'multiplayer latency interleavings of chat/commitment ordering',
   'rendering performance of custom MDX under the real client',
@@ -684,6 +690,31 @@ function preflightMap(mapDir, opts) {
       }
       if (soft.length > 0) {
         add('object-lint', 'WARN', soft.slice(0, 3).map((f) => `${f.file} ${f.objectId}: ${f.message.split(' — ')[0].split(' ("')[0]}`).join('; ') + (soft.length > 3 ? ` (+${soft.length - 3})` : ''));
+      }
+    });
+
+    guarded('stock-art', () => {
+      // distinct non-imported art paths vs the verified facts table
+      // (lib/data/stock-art.json, gotcha 31) — WARN-only: existence of an
+      // unknown stock path is exactly what headless tooling cannot prove.
+      const refs = collectStockArtRefs(objectFiles, members);
+      const normStr = (p) => String(p).replace(/\\/g, '/').toLowerCase();
+      const byPath = new Map();
+      for (const r of refs) if (!byPath.has(normStr(r.value))) byPath.set(normStr(r.value), r);
+      const distinct = [...byPath.values()];
+      if (distinct.length === 0) {
+        add('stock-art', 'PASS', 'no stock art references in object data — n/a');
+        return;
+      }
+      const count = (s) => distinct.filter((r) => r.status === s).length;
+      const unknown = distinct.filter((r) => r.status === null || r.status === 'community-doc');
+      const detail = `${distinct.length} stock art ref(s): ${count('game-verified')} game-verified, `
+        + `${count('listfile-verified')} listfile-verified, ${unknown.length} unknown`;
+      if (unknown.length > 0) {
+        add('stock-art', 'WARN', detail + ` — unknown to lib/data/stock-art.json (first: ${unknown[0].value}); `
+          + 'a typo\'d stock path renders NOTHING in-game with no error (gotcha 31)');
+      } else {
+        add('stock-art', 'PASS', detail + ' — every ref existence-verified (looks are not, see residual risks)');
       }
     });
 

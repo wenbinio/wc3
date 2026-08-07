@@ -4,6 +4,41 @@ How to get MDX models / BLP textures / object data into a map built with this
 toolkit — and how to do it legally. For the import mechanism itself see
 docs/PIPELINE.md §4; this doc covers the assets themselves.
 
+## Art doctrine: three tiers (gotcha 31)
+
+Every visible identity in a bundled map comes from one of three tiers, in
+priority order:
+
+1. **Stock art BY PATH** (first choice): reference the game's own models/
+   icons by in-game path — zero bytes shipped, always-correct style, legal
+   by construction. The catch: a typo'd path renders NOTHING in-game with
+   no error, and headless tooling cannot see the game's data. Therefore
+   every stock path used must be in **`lib/data/stock-art.json`** — the
+   verified PATH facts table (paths are facts, not assets; committable).
+   Entry statuses: `community-doc` (weakest — still WARNs) <
+   `listfile-verified` (present in the WurstScript community listfiles,
+   checked at table-build time) < `game-verified` (seen rendering in an
+   in-game playtest of a bundled map). lib/objectlint.js rule (d) WARNs on
+   any object-data art path below listfile-verified; preflight's
+   `stock-art` check reports per-map counts by status.
+2. **Generated models** (signature pieces): when no stock model depicts the
+   thing (a coin-vault Depot, an ore-pit crane), author it with a mdl-lib
+   generator under the map's `assets/` (gotchas 14/19) — sanity-clean,
+   team-color textured, nothing Blizzard-authored.
+3. **Generated icons** (abstractions): when no stock BTN depicts the
+   concept, paint one with `lib/icon.js` (section below) — deterministic,
+   border-baked, DISBTN twin auto-derived.
+
+**Table maintenance (the promotion loop)**: seed new paths only after
+verifying them against a community listfile (record the source and date in
+`verifiedBy`); after every in-game playtest, promote the paths that
+actually rendered to `game-verified` (and note maps pending
+re-verification in `source`). The near-misses the table exists to catch
+are real: the game data has `Buildings\Human\HumanLumberMill\...` (NOT
+`LumberMill`), `BTNHumanWatchTower` (NOT `BTNScoutTower`), `BTNGraveYard`
+(capital Y), `BTNMeatWagon` (capital W). Never commit the raw listfiles —
+only the curated table.
+
 ## MDX/MDL model formats
 
 - **MDL** (text) and **MDX** (binary) encode the same model data; convert
@@ -26,7 +61,12 @@ docs/PIPELINE.md §4; this doc covers the assets themselves.
 - **Pillow** (Python) is the practical PNG→BLP encoder:
   `im.save("out.blp", blp_version="BLP1")` — you **must** pass
   `blp_version="BLP1"`; Pillow's default is BLP2 (a WoW format), which WC3
-  does not read.
+  does not read. **Mode caveat (verified on Pillow 12.3.0)**: the BLP
+  encoder accepts mode `"P"` ONLY (`"Unsupported BLP image mode"` for RGB)
+  — quantize first:
+  `im.convert("RGB").convert("P", palette=Image.ADAPTIVE, colors=256)`.
+  That produces the classic paletted BLP1 the game reads natively
+  (lib/icon.js does exactly this).
 - **Kanma/BLPConverter** (C++ CLI) — alternative for BLP→PNG.
 
 ```js
@@ -46,6 +86,47 @@ from PIL import Image
 im = Image.open("tex.png").convert("RGB")
 im.save("tex.blp", blp_version="BLP1")   # blp_version is REQUIRED
 ```
+
+## Generated icons (lib/icon.js)
+
+Pure-Node 64x64 command-button icons — the tier-3 pipeline for concepts no
+stock BTN depicts. Per-map convention: a committed `assets/generate-icons.mjs`
+generator (exemplar: `maps/coinstead/assets/generate-icons.mjs`) — regen,
+don't hand-edit.
+
+```js
+const { createCanvas, gradient, disc, stroke, noise, borderFrame,
+        writeIconImports } = require('lib/icon.js');
+const c = createCanvas(64);
+gradient(c, [64, 58, 50], [28, 24, 22]);   // primitives: fill/gradient/
+disc(c, 32, 36, 17, [24, 21, 20]);         //   rect/disc/stroke/noise
+noise(c, 0.1, 1007);                       // seeded Schrage LCG (gotcha 29)
+borderFrame(c);                            // beveled frame — ALWAYS last
+const r = writeIconImports('maps/mymap', 'MyThing', c.data);
+// -> imports/ReplaceableTextures/CommandButtons/BTNMyThing.blp
+//    + CommandButtonsDisabled/DISBTNMyThing.blp (auto-derived twin)
+// set uico/iico to r.iconPath
+```
+
+Rules baked into the pipeline:
+
+- **The border frame is painted INTO the texture** as the last pass — the
+  game does not composite button borders (community-documented); a
+  borderless BTN looks flat/wrong next to stock buttons.
+- **The DISBTN twin is auto-derived** (desaturate + multiply 0.5) and
+  written to `ReplaceableTextures\CommandButtonsDisabled\` — the engine
+  shows a green checkerboard for a missing DISBTN (lint rule f WARNs on a
+  lone imported BTN).
+- **Encoding**: PNG intermediate (minimal built-in-zlib encoder) → BLP1
+  via Pillow (mode-"P" quantized, see the Pillow caveat above). Pillow
+  absent → 32-bit uncompressed TGA at the same paths + a "BLP preferred"
+  warning; reference the extension actually imported — **textures get NO
+  .blp/.tga extension swap in-game** (unlike model fields, gotcha 22).
+  Pillow discovery follows the WC3_PJASS pattern: `WC3_PYTHON` is
+  authoritative when set (unusable value = not installed), else `python3`
+  on PATH.
+- **Deterministic**: same generator, same bytes (noise is a seeded
+  Park-Miller/Schrage LCG — gotcha 29's portable form).
 
 ## Converting standard 3D formats (glTF/OBJ/FBX) to MDX
 

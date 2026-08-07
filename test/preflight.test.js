@@ -48,9 +48,9 @@ test('every bundled map preflights with zero FAILs (standing gate; logic tier ru
     // the stable check catalog every map must be measured against
     for (const id of ['build', 'validate', 'w3i-weather', 'header-flags', 'forces',
       'lobby-teams', 'minimap', 'trigstr', 'start-locations', 'model-fields',
-      'imports-resolve', 'script-language', 'create-all-units', 'chunk-locals',
-      'camera-bounds', 'luac-compile', 'prng-portability', 'bitwise-ops',
-      'nondeterminism']) {
+      'stock-art', 'imports-resolve', 'script-language', 'create-all-units',
+      'chunk-locals', 'camera-bounds', 'luac-compile', 'prng-portability',
+      'bitwise-ops', 'nondeterminism']) {
       assert.ok(rows.has(id), `${m.name}: missing check row ${id}`);
     }
     assert.strictEqual(rows.get('build').status, 'PASS', `${m.name}: build`);
@@ -60,9 +60,17 @@ test('every bundled map preflights with zero FAILs (standing gate; logic tier ru
     assert.match(rows.get('lobby-teams').detail, /sim\(config\(\)\)|custom forces .* off/,
       `${m.name}: lobby-teams should be sim-observed`);
   }
+  // the stock-art table cross-check (gotcha 31): coinstead's post-art-fix
+  // refs are fully verified; vaults' pre-table icons WARN with per-status
+  // counts — and stay WARN-only (never a FAIL, checked above)
+  const coin = rowsById(result.maps.find((m) => m.name === 'coinstead'));
+  assert.strictEqual(coin.get('stock-art').status, 'PASS');
+  assert.match(coin.get('stock-art').detail, /\d+ stock art ref\(s\): \d+ game-verified, \d+ listfile-verified, 0 unknown/);
   // the vaults cautions must surface exactly as the preflight doc records them
   const vaults = result.maps.find((m) => m.name === 'vaults-of-ash');
   const vRows = rowsById(vaults);
+  assert.strictEqual(vRows.get('stock-art').status, 'WARN');
+  assert.match(vRows.get('stock-art').detail, /\d+ unknown — unknown to lib\/data\/stock-art\.json/);
   assert.strictEqual(vRows.get('chunk-locals').status, 'WARN');
   assert.match(vRows.get('chunk-locals').detail, /169 declared main-chunk locals/);
   if (LUA53) {
