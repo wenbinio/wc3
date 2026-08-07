@@ -116,8 +116,13 @@ Reference sources (each README documents its own invariants):
   docs/reference/economy-survival-comparison.md (design credits in its
   README: Economy TD — incl. its logistics physicality + price
   multiboard, adopted-and-adapted in phase 3 / Gold TD / Legion TD /
-  Line Tower Wars — mechanics only, nothing copied). Never loaded in
-  the real game — sim-proven only.
+  Line Tower Wars — mechanics only, nothing copied). **VERIFIED WORKING
+  in the real game** (user playtest 2026-08-07, phase-3 build) with one
+  finding: the 8 production buildings all read as Human Farms — clones
+  share the base's model AND icon (umdl/uico un-overridden; gotcha 23's
+  visible-identity set matters even when stats differ). Art-system fix
+  in progress; future maps must give every building-class clone a
+  distinct model+icon from day one.
 
 Scratch builds go to `_build/` (gitignored). Exception: `maps/builds/` holds
 the committed compiled `.w3x` of each bundled source — regenerate via
@@ -639,11 +644,13 @@ or CC0-converted content. Details: docs/ASSETS.md.
   checklist is **automated as `npm run preflight`** (tools/preflight.js +
   test/preflight.test.js, 393 tests).
 - **Bundled maps: in-game playtest status** (the sim is not the game —
-  doctrine above): demo, crossroads-siege, tidewatch-arena **verified
-  working in the real game** by the user; northreach was fixed AFTER its
-  playtest (model paths / item art / truce / builder repair — gotchas
-  22–25 came from it), **re-verification pending**; vaults-of-ash has
-  **never been loaded in the real game** — sim-proven only (81 logic
+  doctrine above): demo, crossroads-siege, tidewatch-arena, **and now
+  coinstead (2026-08-07, phase-3 build: "everything is working" —
+  logistics, links, live board, waves all confirmed; art finding above)**
+  **verified working in the real game** by the user; northreach was fixed
+  AFTER its playtest (model paths / item art / truce / builder repair —
+  gotchas 22–25 came from it), **re-verification pending**; vaults-of-ash
+  has **never been loaded in the real game** — sim-proven only (81 logic
   tests + golden run). **Preflight DONE** (2026-07-12,
   docs/reference/preflight-2026-07.md: all checklist rows PASS, PRNG
   bit-exact over 720k+ states, residual-risk list + in-game protocol
