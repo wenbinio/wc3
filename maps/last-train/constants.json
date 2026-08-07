@@ -1,0 +1,433 @@
+{
+  "_generated": "wc3-map-toolkit: derived from the map source JSON by build-map — regenerated every build, do not hand-edit",
+  "constants": {
+    "UNIT_ABANDONED_CAR": {
+      "kind": "unit",
+      "rawcode": "n025",
+      "base": "ncop",
+      "name": "Abandoned Car",
+      "source": "objects-units.json"
+    },
+    "UNIT_ABANDONED_VAN": {
+      "kind": "unit",
+      "rawcode": "n026",
+      "base": "ncop",
+      "name": "Abandoned Van",
+      "source": "objects-units.json"
+    },
+    "UNIT_AUXILIARY_POLICE_OFFICER": {
+      "kind": "unit",
+      "rawcode": "h001",
+      "base": "hrif",
+      "name": "Auxiliary Police Officer",
+      "source": "objects-units.json"
+    },
+    "UNIT_BARRICADE": {
+      "kind": "unit",
+      "rawcode": "h016",
+      "base": "hhou",
+      "name": "Barricade",
+      "source": "objects-units.json"
+    },
+    "UNIT_BUS_STOP": {
+      "kind": "unit",
+      "rawcode": "n029",
+      "base": "ncop",
+      "name": "Bus Stop",
+      "source": "objects-units.json"
+    },
+    "UNIT_ELEVATED_TRACK": {
+      "kind": "unit",
+      "rawcode": "h019",
+      "base": "hhou",
+      "name": "Elevated Track",
+      "source": "objects-units.json"
+    },
+    "UNIT_ESTATE_GARDENER": {
+      "kind": "unit",
+      "rawcode": "n002",
+      "base": "hpea",
+      "name": "Estate Gardener",
+      "source": "objects-units.json"
+    },
+    "UNIT_HAWKER_STALL_TABLE": {
+      "kind": "unit",
+      "rawcode": "n024",
+      "base": "ncop",
+      "name": "Hawker Stall Table",
+      "source": "objects-units.json"
+    },
+    "UNIT_HDB_BLOCK_POINT": {
+      "kind": "unit",
+      "rawcode": "h011",
+      "base": "htow",
+      "name": "HDB Block (Point)",
+      "source": "objects-units.json"
+    },
+    "UNIT_HDB_BLOCK_SLAB": {
+      "kind": "unit",
+      "rawcode": "h010",
+      "base": "htow",
+      "name": "HDB Block (Slab)",
+      "source": "objects-units.json"
+    },
+    "UNIT_HEARTLANDER": {
+      "kind": "unit",
+      "rawcode": "h000",
+      "base": "hrif",
+      "name": "Heartlander",
+      "source": "objects-units.json"
+    },
+    "UNIT_KAMPONG_NEST": {
+      "kind": "unit",
+      "rawcode": "h018",
+      "base": "hhou",
+      "name": "Kampong Nest",
+      "source": "objects-units.json"
+    },
+    "UNIT_KOPITIAM_UNCLE": {
+      "kind": "unit",
+      "rawcode": "n000",
+      "base": "hpea",
+      "name": "Kopitiam Uncle",
+      "source": "objects-units.json"
+    },
+    "UNIT_MAYFLOWER_HAWKER_CENTRE": {
+      "kind": "unit",
+      "rawcode": "h014",
+      "base": "htow",
+      "name": "Mayflower Hawker Centre",
+      "source": "objects-units.json"
+    },
+    "UNIT_PARAMEDIC": {
+      "kind": "unit",
+      "rawcode": "h002",
+      "base": "hrif",
+      "name": "Paramedic",
+      "source": "objects-units.json"
+    },
+    "UNIT_PARK_CONNECTOR_SPRINTER": {
+      "kind": "unit",
+      "rawcode": "u002",
+      "base": "ugho",
+      "name": "Park Connector Sprinter",
+      "source": "objects-units.json"
+    },
+    "UNIT_PROVISION_SHOP_TOWKAY": {
+      "kind": "unit",
+      "rawcode": "n001",
+      "base": "hpea",
+      "name": "Provision Shop Towkay",
+      "source": "objects-units.json"
+    },
+    "UNIT_PUBLIC_PHONE": {
+      "kind": "unit",
+      "rawcode": "n027",
+      "base": "ncop",
+      "name": "Public Phone",
+      "source": "objects-units.json"
+    },
+    "UNIT_REVENANT": {
+      "kind": "unit",
+      "rawcode": "u004",
+      "base": "ugho",
+      "name": "Revenant",
+      "source": "objects-units.json"
+    },
+    "UNIT_RIOT_WALKER": {
+      "kind": "unit",
+      "rawcode": "u003",
+      "base": "ugho",
+      "name": "Riot Walker",
+      "source": "objects-units.json"
+    },
+    "UNIT_RUBBISH_CHUTE_DUMPSTER": {
+      "kind": "unit",
+      "rawcode": "n021",
+      "base": "ncop",
+      "name": "Rubbish Chute Dumpster",
+      "source": "objects-units.json"
+    },
+    "UNIT_SENTRY_GUN": {
+      "kind": "unit",
+      "rawcode": "h017",
+      "base": "hgtw",
+      "name": "Sentry Gun",
+      "source": "objects-units.json"
+    },
+    "UNIT_SHAMBLING_RESIDENT": {
+      "kind": "unit",
+      "rawcode": "u000",
+      "base": "ugho",
+      "name": "Shambling Resident",
+      "source": "objects-units.json"
+    },
+    "UNIT_STATION_PLATFORM": {
+      "kind": "unit",
+      "rawcode": "h01B",
+      "base": "htow",
+      "name": "Station Platform",
+      "source": "objects-units.json"
+    },
+    "UNIT_STOREROOM_LOCKER": {
+      "kind": "unit",
+      "rawcode": "n022",
+      "base": "ncop",
+      "name": "Storeroom Locker",
+      "source": "objects-units.json"
+    },
+    "UNIT_STREET_LAMP": {
+      "kind": "unit",
+      "rawcode": "n028",
+      "base": "ncop",
+      "name": "Street Lamp",
+      "source": "objects-units.json"
+    },
+    "UNIT_SUBSTATION": {
+      "kind": "unit",
+      "rawcode": "h013",
+      "base": "hhou",
+      "name": "Substation",
+      "source": "objects-units.json"
+    },
+    "UNIT_TECK_GHEE_POLYCLINIC": {
+      "kind": "unit",
+      "rawcode": "h015",
+      "base": "htow",
+      "name": "Teck Ghee Polyclinic",
+      "source": "objects-units.json"
+    },
+    "UNIT_THE_BROODMOTHER": {
+      "kind": "unit",
+      "rawcode": "u005",
+      "base": "uabo",
+      "name": "The Broodmother",
+      "source": "objects-units.json"
+    },
+    "UNIT_THE_LAST_TRAIN": {
+      "kind": "unit",
+      "rawcode": "h01A",
+      "base": "htow",
+      "name": "The Last Train",
+      "source": "objects-units.json"
+    },
+    "UNIT_TOWN_COUNCIL_DESK": {
+      "kind": "unit",
+      "rawcode": "n023",
+      "base": "ncop",
+      "name": "Town Council Desk",
+      "source": "objects-units.json"
+    },
+    "UNIT_TOWN_COUNCIL_TECHNICIAN": {
+      "kind": "unit",
+      "rawcode": "h003",
+      "base": "hrif",
+      "name": "Town Council Technician",
+      "source": "objects-units.json"
+    },
+    "UNIT_VOID_DECK_BENCH": {
+      "kind": "unit",
+      "rawcode": "n020",
+      "base": "ncop",
+      "name": "Void Deck Bench",
+      "source": "objects-units.json"
+    },
+    "UNIT_WITHERED_UNCLE": {
+      "kind": "unit",
+      "rawcode": "u001",
+      "base": "ugho",
+      "name": "Withered Uncle",
+      "source": "objects-units.json"
+    },
+    "UNIT_YIO_CHU_KANG_MRT_STATION": {
+      "kind": "unit",
+      "rawcode": "h012",
+      "base": "htow",
+      "name": "Yio Chu Kang MRT Station",
+      "source": "objects-units.json"
+    },
+    "ITEM_BARRICADE_KIT": {
+      "kind": "item",
+      "rawcode": "I013",
+      "base": "phea",
+      "name": "Barricade Kit",
+      "source": "objects-items.json"
+    },
+    "ITEM_BATTERY": {
+      "kind": "item",
+      "rawcode": "I006",
+      "base": "ches",
+      "name": "Battery",
+      "source": "objects-items.json"
+    },
+    "ITEM_BLOWTORCH": {
+      "kind": "item",
+      "rawcode": "I019",
+      "base": "phea",
+      "name": "Blowtorch",
+      "source": "objects-items.json"
+    },
+    "ITEM_BOTTLE": {
+      "kind": "item",
+      "rawcode": "I004",
+      "base": "ches",
+      "name": "Bottle",
+      "source": "objects-items.json"
+    },
+    "ITEM_BOTTLED_WATER": {
+      "kind": "item",
+      "rawcode": "I007",
+      "base": "ches",
+      "name": "Bottled Water",
+      "source": "objects-items.json"
+    },
+    "ITEM_CLOTH": {
+      "kind": "item",
+      "rawcode": "I002",
+      "base": "ches",
+      "name": "Cloth",
+      "source": "objects-items.json"
+    },
+    "ITEM_FLARE": {
+      "kind": "item",
+      "rawcode": "I015",
+      "base": "phea",
+      "name": "Flare",
+      "source": "objects-items.json"
+    },
+    "ITEM_GENERATOR_PART": {
+      "kind": "item",
+      "rawcode": "I018",
+      "base": "ches",
+      "name": "Generator Part",
+      "source": "objects-items.json"
+    },
+    "ITEM_KEROSENE": {
+      "kind": "item",
+      "rawcode": "I005",
+      "base": "ches",
+      "name": "Kerosene",
+      "source": "objects-items.json"
+    },
+    "ITEM_KOPI_SET": {
+      "kind": "item",
+      "rawcode": "I017",
+      "base": "phea",
+      "name": "Kopi Set",
+      "source": "objects-items.json"
+    },
+    "ITEM_MOBILE_PHONE": {
+      "kind": "item",
+      "rawcode": "I012",
+      "base": "phea",
+      "name": "Mobile Phone",
+      "source": "objects-items.json"
+    },
+    "ITEM_MOLOTOV": {
+      "kind": "item",
+      "rawcode": "I014",
+      "base": "phea",
+      "name": "Molotov",
+      "source": "objects-items.json"
+    },
+    "ITEM_PARANG": {
+      "kind": "item",
+      "rawcode": "I011",
+      "base": "ches",
+      "name": "Parang",
+      "source": "objects-items.json"
+    },
+    "ITEM_PIPE": {
+      "kind": "item",
+      "rawcode": "I001",
+      "base": "ches",
+      "name": "Pipe",
+      "source": "objects-items.json"
+    },
+    "ITEM_PLANK": {
+      "kind": "item",
+      "rawcode": "I000",
+      "base": "ches",
+      "name": "Plank",
+      "source": "objects-items.json"
+    },
+    "ITEM_RATIONS": {
+      "kind": "item",
+      "rawcode": "I008",
+      "base": "ches",
+      "name": "Rations",
+      "source": "objects-items.json"
+    },
+    "ITEM_SENTRY_KIT": {
+      "kind": "item",
+      "rawcode": "I016",
+      "base": "phea",
+      "name": "Sentry Kit",
+      "source": "objects-items.json"
+    },
+    "ITEM_WET_BANDAGE": {
+      "kind": "item",
+      "rawcode": "I010",
+      "base": "phea",
+      "name": "Wet Bandage",
+      "source": "objects-items.json"
+    },
+    "ITEM_WIRE": {
+      "kind": "item",
+      "rawcode": "I003",
+      "base": "ches",
+      "name": "Wire",
+      "source": "objects-items.json"
+    },
+    "DOOD_LTlt": {
+      "kind": "doodad",
+      "rawcode": "LTlt",
+      "source": "doodads.json"
+    },
+    "DOOD_LTrc": {
+      "kind": "doodad",
+      "rawcode": "LTrc",
+      "source": "doodads.json"
+    },
+    "REGION_CHENG_SAN": {
+      "kind": "region",
+      "name": "ChengSan",
+      "source": "regions.json"
+    },
+    "REGION_CLINIC": {
+      "kind": "region",
+      "name": "Clinic",
+      "source": "regions.json"
+    },
+    "REGION_KEBUN_BARU": {
+      "kind": "region",
+      "name": "KebunBaru",
+      "source": "regions.json"
+    },
+    "REGION_LAIR": {
+      "kind": "region",
+      "name": "Lair",
+      "source": "regions.json"
+    },
+    "REGION_PLATFORM": {
+      "kind": "region",
+      "name": "Platform",
+      "source": "regions.json"
+    },
+    "REGION_SELETAR_HILLS": {
+      "kind": "region",
+      "name": "SeletarHills",
+      "source": "regions.json"
+    },
+    "REGION_TECK_GHEE": {
+      "kind": "region",
+      "name": "TeckGhee",
+      "source": "regions.json"
+    },
+    "REGION_YIO_CHU_KANG_GARDENS": {
+      "kind": "region",
+      "name": "YioChuKangGardens",
+      "source": "regions.json"
+    }
+  }
+}

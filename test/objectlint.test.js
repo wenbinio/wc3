@@ -259,7 +259,7 @@ test('validate-map: committed builds carry no FAIL and no WARN outside the expec
   // northreach + vaults-of-ash predate the stock-art table and are
   // EXPECTED to carry gotcha-31 WARNs (unknown stock icons / renamed
   // creep-tier pairs sharing base art) — nothing else.
-  const strictlyClean = new Set(['demo.w3x', 'crossroads-siege.w3x', 'tidewatch-arena.w3x', 'coinstead.w3x']);
+  const strictlyClean = new Set(['demo.w3x', 'crossroads-siege.w3x', 'tidewatch-arena.w3x', 'coinstead.w3x', 'last-train.w3x']);
   const gotcha31 = /not in the verified stock-art table|clone crowd/;
   for (const w3x of builds) {
     const out = runValidate(w3x);

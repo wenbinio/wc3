@@ -29,6 +29,26 @@ priority order:
    concept, paint one with `lib/icon.js` (section below) — deterministic,
    border-baked, DISBTN twin auto-derived.
 
+**Tier 4 — community models (user-authorized 2026-08-07)**: when the
+thing exists as a community-shared Hive Workshop resource and no stock
+path or cheap generator matches it (infected civilians, modern cars,
+urban furniture), the asset MAY be fetched and shipped in a bundled map.
+Non-negotiables (CLAUDE.md Legal): per-author credit recorded three ways
+— the map's **`imports-credits.json`** per-file provenance ledger
+(author/resource/source URL/license note/fetch date; lib/objectlint.js
+**rule (g)** WARNs on uncredited files AND stale entries, wired into
+build-map and preflight's `imports-credits` check), the map README's
+credits section, and an in-game `-credits` command; author terms
+honored; local modifications recorded per-file WITH the committed script
+that made them (e.g. maps/last-train/assets/community-death-fix.mjs —
+the sanity bar's "Missing Death sequence" severe: rename `Death
+Alternate`→`Death` when the rig has one, else append a still-frame
+NonLooping Death; a duplicate overlapping interval trips the tester's
+overlapping-sequence severes); **no bulk mirroring** — fetch only what a
+map ships. Textures referenced inside a community MDX must be imported
+at exactly the TEXS paths (several packs want their .blp at the archive
+ROOT). First consumer + worked example: maps/last-train.
+
 **Table maintenance (the promotion loop)**: seed new paths only after
 verifying them against a community listfile (record the source and date in
 `verifiedBy`); after every in-game playtest, promote the paths that

@@ -1,0 +1,2567 @@
+{
+  "original": {},
+  "custom": {
+    "h000:hrif": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Heartlander"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Heartlander"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "An ordinary resident of the estate with an extraordinary will to catch the last train. Balanced clip, sturdy constitution. Starts with rations from the kopitiam."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\RedJacketCitizen.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNVillagerMan.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 550
+      },
+      {
+        "id": "ua1b",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 22
+      },
+      {
+        "id": "umvs",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 290
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "AInv"
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "h001:hrif": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Auxiliary Police Officer"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Auxiliary Police Officer"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Certis-trained and calm under pressure. The biggest clip and the hardest hits, with spare clips on the belt. The horde remembers its own."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\Citizen_Police.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNAPO.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 500
+      },
+      {
+        "id": "ua1b",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 26
+      },
+      {
+        "id": "umvs",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 300
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "AInv"
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "h002:hrif": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Paramedic"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Paramedic"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "An SCDF paramedic who never clocked out. Small clip, but their Wet Bandages cure infection at ANY health, and they carry two from the start."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\WhiteSuitCitizen.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNParamedic.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 450
+      },
+      {
+        "id": "ua1b",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 16
+      },
+      {
+        "id": "umvs",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 300
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "AInv"
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "h003:hrif": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Town Council Technician"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Town Council Technician"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Keeps the estate running: fixes substations in HALF the time and starts with a generator part and a barricade kit."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\MilitiaCitizen.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNTechnician.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 480
+      },
+      {
+        "id": "ua1b",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 18
+      },
+      {
+        "id": "umvs",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 290
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "AInv"
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "n000:hpea": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Kopitiam Uncle"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Kopitiam Uncle"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Was halfway through his kopi-o when the sirens started. Zombies that catch him will add him to their number — corpses rise after a few seconds unless burned."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\BrownSuitCitizenOld.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNVillagerMan1.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 180
+      },
+      {
+        "id": "umvs",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 220
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "n001:hpea": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Provision Shop Towkay"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Provision Shop Towkay"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Refused to leave the shop. Every civilian still breathing when the train departs is worth score — every one that falls feeds the horde."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\PeasantCitizenOld.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNVillagerMan.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 180
+      },
+      {
+        "id": "umvs",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 220
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "n002:hpea": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Estate Gardener"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Estate Gardener"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Knows every shortcut on the park connector. The horde knows them too, now."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\BlueJacketCitizenOld.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNPeasant.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 180
+      },
+      {
+        "id": "umvs",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 220
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "u000:ugho": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Shambling Resident"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Shambling Resident"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A neighbour, once. Slow, relentless, and every hit spreads the slow-burn infection. Kill-XP shared in a crowd falls off 25% per extra zombie — the horde grows smarter apart."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\Zombie_1.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNZombie.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 220
+      },
+      {
+        "id": "ua1b",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 14
+      },
+      {
+        "id": "umvs",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 150
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "u001:ugho": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Withered Uncle"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Withered Uncle"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Dried out by the long walk from the columbarium end of the estate. Tougher than he looks."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\Zombie_2.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNZombie.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 300
+      },
+      {
+        "id": "ua1b",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 16
+      },
+      {
+        "id": "umvs",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 140
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "u002:ugho": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Park Connector Sprinter"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Park Connector Sprinter"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "It still remembers its morning runs. Fast enough to catch a reloading survivor in the open."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Units\\Undead\\Ghoul\\Ghoul.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNGhoul.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 160
+      },
+      {
+        "id": "ua1b",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 12
+      },
+      {
+        "id": "umvs",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 320
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "u003:ugho": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Riot Walker"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Riot Walker"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "An auxiliary officer who held the line too long. Riot gear still turns aside small-arms fire."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\Zombie_4.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNRiotWalker.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 450
+      },
+      {
+        "id": "ua1b",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 20
+      },
+      {
+        "id": "umvs",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 130
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "udef",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 4
+      }
+    ],
+    "u004:ugho": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Revenant"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Revenant"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A survivor risen with their wits half-intact — a defected player's avatar, played AGAINST the living."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Units\\Creeps\\Zombie\\Zombie.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNRevenant.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 700
+      },
+      {
+        "id": "ua1b",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 30
+      },
+      {
+        "id": "umvs",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 270
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "u005:uabo": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "The Broodmother"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "The Broodmother"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "The brain of the outbreak, nested in the kampong remnant off Lorong Buangkok. Kill it and the horde dies with it — the estate's other way out."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Units\\Undead\\Abomination\\Abomination.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNAbomination.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 3500
+      },
+      {
+        "id": "ua1b",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 60
+      },
+      {
+        "id": "umvs",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 200
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "usca",
+        "type": "unreal",
+        "level": 0,
+        "column": 0,
+        "value": 1.6
+      },
+      {
+        "id": "udef",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 5
+      }
+    ],
+    "h010:htow": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "HDB Block (Slab)"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "HDB Block (Slab)"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Ten storeys of homes over a void deck. The lifts stopped on Tuesday."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\HDBBlockA.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNHDB.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 5000
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Avul"
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "utra",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ures",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "h011:htow": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "HDB Block (Point)"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "HDB Block (Point)"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "The newer point block. Somebody is still hanging laundry on the sixth floor."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\HDBBlockB.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNHDB.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 5000
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Avul"
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "utra",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ures",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "h012:htow": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Yio Chu Kang MRT Station"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Yio Chu Kang MRT Station"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "North-South line, platform B. The board still reads: LAST TRAIN 12:00."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\StationPlatform.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNStation.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 5000
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Avul"
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "utra",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ures",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "h013:hhou": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Substation"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Substation"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A Town Council substation. Restore all three (\"-fix\" beside one) and the station gets power — no power, no doors, no train home."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\Substation.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNSubstation.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 1200
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Avul"
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "utra",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ures",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "h014:htow": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Mayflower Hawker Centre"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Mayflower Hawker Centre"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Fifty stalls, zero queues. The best scavenging in the estate, and the worst sightlines."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\CityBuilding.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNCrate.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 5000
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Avul"
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "utra",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ures",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "h015:htow": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Teck Ghee Polyclinic"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Teck Ghee Polyclinic"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Stand inside the clinic grounds a few seconds and trained hands will flush the infection out of you."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\CityHouse1.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNCrate.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 5000
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Avul"
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "utra",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ures",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "h016:hhou": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Barricade"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Barricade"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Crossed planks and sandbags. It will not hold forever — it only has to hold long enough."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\Barricade.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNBarricadeKit.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 800
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "utra",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ures",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "h017:hgtw": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Sentry Gun"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Sentry Gun"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A technician's field rig on a tripod. Fires its own 40-round belt dry, then stands inert."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\Prop_OfficeDesk.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNSentryKit.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 350
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "utra",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ures",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ua1b",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 18
+      }
+    ],
+    "h018:hhou": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Kampong Nest"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Kampong Nest"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A brood nest heaped against an attap ruin. Burnable, if you can stand the smell."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Buildings\\Other\\GranaryInfected\\GranaryInfected.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNLair.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 800
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "utra",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ures",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "h019:hhou": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Elevated Track"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Elevated Track"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A span of the North-South line viaduct, marching toward the depot."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\TrackSegment.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNTrain.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 5000
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Avul"
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "utra",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ures",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "h01A:htow": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "The Last Train"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "The Last Train"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Six cars, headlights on, doors open. \"Last train leaving. Please mind the platform gap.\""
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\MRTTrain.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNTrain.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 5000
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Avul"
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "utra",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ures",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "h01B:htow": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Station Platform"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Station Platform"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Platform B. The yellow line is a suggestion now."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\StationPlatform.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNStation.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 5000
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Avul"
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "utra",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ures",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "n020:ncop": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Void Deck Bench"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Void Deck Bench"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Somebody left in a hurry. Searchable: stand close and type -search."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\Prop_Bench.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNCrate.blp"
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Avul"
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "n021:ncop": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Rubbish Chute Dumpster"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Rubbish Chute Dumpster"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "One man's trash is one survivor's pipe. Searchable: stand close and type -search."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\Prop_Dumpster.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNCrate.blp"
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Avul"
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "n022:ncop": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Storeroom Locker"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Storeroom Locker"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Town Council padlock, long since bolt-cut. Searchable: stand close and type -search."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\Prop_Locker.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNCrate.blp"
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Avul"
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "n023:ncop": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Town Council Desk"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Town Council Desk"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Forms in triplicate, and sometimes wire. Searchable: stand close and type -search."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\Prop_OfficeDesk.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNCrate.blp"
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Avul"
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "n024:ncop": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Hawker Stall Table"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Hawker Stall Table"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "The chicken rice is gone. The kerosene stove is not. Searchable: stand close and type -search."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\Prop_Table.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNCrate.blp"
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Avul"
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "n025:ncop": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Abandoned Car"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Abandoned Car"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Doors open, hazards blinking, boot full of possibilities. Searchable: stand close and type -search."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\Compact.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNCrate.blp"
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Avul"
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "n026:ncop": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Abandoned Van"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Abandoned Van"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A provision-shop delivery van, still half loaded. Searchable: stand close and type -search."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\Van.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNCrate.blp"
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Avul"
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "n027:ncop": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Public Phone"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Public Phone"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Nobody is answering 995. The parts still work. Searchable: stand close and type -search."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\Prop_Phone.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNCrate.blp"
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Avul"
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "n029:ncop": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Bus Stop"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Bus Stop"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Service 265 is not coming. The timetable glass makes a decent blade. Searchable: stand close and type -search."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\BusStop.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNCrate.blp"
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Avul"
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "n028:ncop": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Street Lamp"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Street Lamp"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "A sodium lamp on the estate grid. The pools of light are where you count your bullets."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\Lamppost.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNCrate.blp"
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Avul"
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ]
+  }
+}

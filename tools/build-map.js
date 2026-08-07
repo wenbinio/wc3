@@ -123,6 +123,19 @@ function buildMap(sourceDir, outW3x, opts) {
   }
   checkImportedModels(sourceDir); // gotcha 14 strict tier: build-time FAIL
 
+  // Imports provenance (lib/objectlint.js rule g): every file under
+  // imports/ needs an imports-credits.json entry (community assets are only
+  // legal to ship with per-author credit); stale entries are flagged too.
+  // WARN-only — provenance gaps do not break the map for players.
+  try {
+    const { lintImportsCredits } = require('../lib/objectlint');
+    for (const w of lintImportsCredits(sourceDir)) {
+      console.error(`warning: imports-credits: ${w.file ? w.file + ': ' : ''}${w.message}`);
+    }
+  } catch (e) {
+    console.error(`warning: imports-credits lint crashed: ${e.message || e}`);
+  }
+
   // Machine-readable index of the generated named constants (the Lua block
   // itself is injected by sourceToExtracted — lib/constants.js): written
   // into the map source dir so agents can grep constant -> rawcode -> file.

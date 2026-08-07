@@ -1,0 +1,241 @@
+{
+  "_doc": "Provenance ledger for every file under imports/ (lib/objectlint.js rule g; consumed by build-map and preflight's imports-credits check). Exact-path keys cover one file; keys ending in '/' cover a directory subtree (the generated-asset convention). Community assets are Hive Workshop resources fetched 2026-08-07 with the user's authorization — per-author credit is mandatory and repeated in README.md and the in-game -credits command; author terms honored; no bulk mirroring. 'modified' records any local change (script committed under assets/).",
+  "entries": {
+    "Zombies_Male.blp": {
+      "author": "HerrDave",
+      "resource": "T-Virus Zombies (shared texture, archive-root import path required by the models' TEXS chunks)",
+      "source": "https://www.hiveworkshop.com/threads/t-virus-zombies.317272/",
+      "license": "Hive Workshop resource — credit the author; no re-hosting",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/Zombie_1.mdx": {
+      "author": "HerrDave",
+      "resource": "T-Virus Zombies (Zombie - Male 1)",
+      "source": "https://www.hiveworkshop.com/threads/t-virus-zombies.317272/",
+      "license": "Hive Workshop resource — credit the author; no re-hosting",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/Zombie_2.mdx": {
+      "author": "HerrDave",
+      "resource": "T-Virus Zombies (Zombie - Male 2)",
+      "source": "https://www.hiveworkshop.com/threads/t-virus-zombies.317272/",
+      "license": "Hive Workshop resource — credit the author; no re-hosting",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/Zombie_4.mdx": {
+      "author": "HerrDave",
+      "resource": "T-Virus Zombies (Zombie - Police)",
+      "source": "https://www.hiveworkshop.com/threads/t-virus-zombies.317272/",
+      "license": "Hive Workshop resource — credit the author; no re-hosting",
+      "fetched": "2026-08-07"
+    },
+    "Citizen_Police.blp": {
+      "author": "HerrDave",
+      "resource": "Police Officer (texture, archive-root import path required by the model's TEXS chunk)",
+      "source": "https://www.hiveworkshop.com/threads/police-officer.328301/",
+      "license": "Hive Workshop resource — credit the author; no re-hosting",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/Citizen_Police.mdx": {
+      "author": "HerrDave",
+      "resource": "Police Officer",
+      "source": "https://www.hiveworkshop.com/threads/police-officer.328301/",
+      "license": "Hive Workshop resource — credit the author; no re-hosting",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/RedJacketCitizen.mdx": {
+      "author": "Ilya Alaric (after Ujimasa Hojo's Villager)",
+      "resource": "Citizen Pack",
+      "source": "https://www.hiveworkshop.com/threads/citizen-pack.370714/",
+      "license": "author grants free use; credit given (readme credits stock-texture donors)",
+      "fetched": "2026-08-07",
+      "modified": "Death/Decay Alternate sequences renamed to plain names (assets/community-death-fix.mjs)"
+    },
+    "war3mapImported/WhiteSuitCitizen.mdx": {
+      "author": "Ilya Alaric (after Ujimasa Hojo's Villager)",
+      "resource": "Citizen Pack",
+      "source": "https://www.hiveworkshop.com/threads/citizen-pack.370714/",
+      "license": "author grants free use; credit given",
+      "fetched": "2026-08-07",
+      "modified": "Death/Decay Alternate sequences renamed to plain names (assets/community-death-fix.mjs)"
+    },
+    "war3mapImported/MilitiaCitizen.mdx": {
+      "author": "Ilya Alaric (after Ujimasa Hojo's Villager)",
+      "resource": "Citizen Pack",
+      "source": "https://www.hiveworkshop.com/threads/citizen-pack.370714/",
+      "license": "author grants free use; credit given",
+      "fetched": "2026-08-07",
+      "modified": "Death/Decay Alternate sequences renamed to plain names (assets/community-death-fix.mjs)"
+    },
+    "war3mapImported/BrownSuitCitizenOld.mdx": {
+      "author": "Ilya Alaric (after Ujimasa Hojo's Villager)",
+      "resource": "Citizen Pack",
+      "source": "https://www.hiveworkshop.com/threads/citizen-pack.370714/",
+      "license": "author grants free use; credit given",
+      "fetched": "2026-08-07",
+      "modified": "Death/Decay Alternate sequences renamed to plain names (assets/community-death-fix.mjs)"
+    },
+    "war3mapImported/PeasantCitizenOld.mdx": {
+      "author": "Ilya Alaric (after Ujimasa Hojo's Villager)",
+      "resource": "Citizen Pack",
+      "source": "https://www.hiveworkshop.com/threads/citizen-pack.370714/",
+      "license": "author grants free use; credit given",
+      "fetched": "2026-08-07",
+      "modified": "Death/Decay Alternate sequences renamed to plain names (assets/community-death-fix.mjs)"
+    },
+    "war3mapImported/BlueJacketCitizenOld.mdx": {
+      "author": "Ilya Alaric (after Ujimasa Hojo's Villager)",
+      "resource": "Citizen Pack",
+      "source": "https://www.hiveworkshop.com/threads/citizen-pack.370714/",
+      "license": "author grants free use; credit given",
+      "fetched": "2026-08-07",
+      "modified": "Death/Decay Alternate sequences renamed to plain names (assets/community-death-fix.mjs)"
+    },
+    "war3mapImported/CityHouse1.mdx": {
+      "author": "bakr",
+      "resource": "Assorted City Buildings (City House 1)",
+      "source": "https://www.hiveworkshop.com/threads/assorted-city-buildings.336823/",
+      "license": "Hive Workshop resource — 'please give proper credits when using this pack'",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/CityBuilding.mdx": {
+      "author": "bakr",
+      "resource": "Assorted City Buildings (City Building)",
+      "source": "https://www.hiveworkshop.com/threads/assorted-city-buildings.336823/",
+      "license": "Hive Workshop resource — 'please give proper credits when using this pack'",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/Compact.mdx": {
+      "author": "Wayshan (readme byline: purparisien; pack credits HerrDave, Systemfre1, KCarHatchback, KCarDealers)",
+      "resource": "Modern Cars Pack (Compact)",
+      "source": "https://www.hiveworkshop.com/threads/modern-cars-pack.331636/",
+      "license": "Hive Workshop resource — credit the author; no re-hosting",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/Van.mdx": {
+      "author": "Wayshan (readme byline: purparisien)",
+      "resource": "Modern Cars Pack (Van)",
+      "source": "https://www.hiveworkshop.com/threads/modern-cars-pack.331636/",
+      "license": "Hive Workshop resource — credit the author; no re-hosting",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/Prop_Bench.mdx": {
+      "author": "HerrDave",
+      "resource": "Urban Prop Pack (Bench)",
+      "source": "https://www.hiveworkshop.com/threads/urban-prop-pack.317120/",
+      "license": "Hive Workshop resource — credit the author; no re-hosting",
+      "fetched": "2026-08-07",
+      "modified": "still-frame NonLooping Death sequence appended (assets/community-death-fix.mjs)"
+    },
+    "war3mapImported/Prop_Dumpster.mdx": {
+      "author": "HerrDave",
+      "resource": "Urban Prop Pack (Dumpster)",
+      "source": "https://www.hiveworkshop.com/threads/urban-prop-pack.317120/",
+      "license": "Hive Workshop resource — credit the author; no re-hosting",
+      "fetched": "2026-08-07",
+      "modified": "still-frame NonLooping Death sequence appended (assets/community-death-fix.mjs)"
+    },
+    "war3mapImported/Prop_Locker.mdx": {
+      "author": "HerrDave",
+      "resource": "Urban Prop Pack (Locker)",
+      "source": "https://www.hiveworkshop.com/threads/urban-prop-pack.317120/",
+      "license": "Hive Workshop resource — credit the author; no re-hosting",
+      "fetched": "2026-08-07",
+      "modified": "still-frame NonLooping Death sequence appended (assets/community-death-fix.mjs)"
+    },
+    "war3mapImported/Prop_OfficeDesk.mdx": {
+      "author": "HerrDave",
+      "resource": "Urban Prop Pack (Office Desk; also the Sentry Gun's field-rig model)",
+      "source": "https://www.hiveworkshop.com/threads/urban-prop-pack.317120/",
+      "license": "Hive Workshop resource — credit the author; no re-hosting",
+      "fetched": "2026-08-07",
+      "modified": "still-frame NonLooping Death sequence appended (assets/community-death-fix.mjs)"
+    },
+    "war3mapImported/Prop_Table.mdx": {
+      "author": "HerrDave",
+      "resource": "Urban Prop Pack (Table)",
+      "source": "https://www.hiveworkshop.com/threads/urban-prop-pack.317120/",
+      "license": "Hive Workshop resource — credit the author; no re-hosting",
+      "fetched": "2026-08-07",
+      "modified": "still-frame NonLooping Death sequence appended (assets/community-death-fix.mjs)"
+    },
+    "war3mapImported/Prop_Phone.mdx": {
+      "author": "HerrDave",
+      "resource": "Urban Prop Pack (Phone)",
+      "source": "https://www.hiveworkshop.com/threads/urban-prop-pack.317120/",
+      "license": "Hive Workshop resource — credit the author; no re-hosting",
+      "fetched": "2026-08-07",
+      "modified": "still-frame NonLooping Death sequence appended (assets/community-death-fix.mjs)"
+    },
+    "war3mapImported/MRTTrain.mdx": {
+      "author": "Serendipity (generated)",
+      "resource": "generated model",
+      "source": "assets/generate-models.mjs",
+      "license": "original, repo license",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/StationPlatform.mdx": {
+      "author": "Serendipity (generated)",
+      "resource": "generated model",
+      "source": "assets/generate-models.mjs",
+      "license": "original, repo license",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/TrackSegment.mdx": {
+      "author": "Serendipity (generated)",
+      "resource": "generated model",
+      "source": "assets/generate-models.mjs",
+      "license": "original, repo license",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/HDBBlockA.mdx": {
+      "author": "Serendipity (generated)",
+      "resource": "generated model",
+      "source": "assets/generate-models.mjs",
+      "license": "original, repo license",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/HDBBlockB.mdx": {
+      "author": "Serendipity (generated)",
+      "resource": "generated model",
+      "source": "assets/generate-models.mjs",
+      "license": "original, repo license",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/Substation.mdx": {
+      "author": "Serendipity (generated)",
+      "resource": "generated model",
+      "source": "assets/generate-models.mjs",
+      "license": "original, repo license",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/Lamppost.mdx": {
+      "author": "Serendipity (generated)",
+      "resource": "generated model",
+      "source": "assets/generate-models.mjs",
+      "license": "original, repo license",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/BusStop.mdx": {
+      "author": "Serendipity (generated)",
+      "resource": "generated model",
+      "source": "assets/generate-models.mjs",
+      "license": "original, repo license",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/Barricade.mdx": {
+      "author": "Serendipity (generated)",
+      "resource": "generated model",
+      "source": "assets/generate-models.mjs",
+      "license": "original, repo license",
+      "fetched": "2026-08-07"
+    },
+    "ReplaceableTextures/": {
+      "author": "Serendipity (generated)",
+      "resource": "generated command-button icons (BTN + auto-derived DISBTN twins)",
+      "source": "assets/generate-icons.mjs (lib/icon.js pipeline)",
+      "license": "original, repo license",
+      "fetched": "2026-08-07"
+    }
+  }
+}

@@ -10,7 +10,7 @@ in docs/ and .claude/skills/; follow the pointers.
 
 ```bash
 bash scripts/setup.sh   # idempotent: npm install + optional smpq fallback + optional pjass build (vendor/pjass)
-npm test                # 483 tests; all must pass before you change anything
+npm test                # 557 tests; all must pass before you change anything
 npm run preflight       # ~13s one-shot gate; 0 FAILs required before AND after any change
 ```
 
@@ -69,6 +69,9 @@ maps/mymap/
 │                      it every build; grep it, don't hand-edit (gotcha 27)
 ├── files/             opaque binaries copied verbatim (wpm/shd/mmp/tga...);
 │                      minimap tga+mmp auto-generated unless provided here
+├── imports-credits.json  per-file provenance ledger for imports/ (author/
+│                      resource/source/license; community assets need it —
+│                      Legal below; lint rule g WARNs on gaps/stale entries)
 ├── imports/           custom assets; path under imports/ IS the archive path;
 │                      war3map.imp auto-generated (unless imports.json exists)
 ├── assets/            committed generator scripts (*.mjs) that reproduce all
@@ -125,6 +128,29 @@ Reference sources (each README documents its own invariants):
   visible-identity set matters even when stats differ). Art-system fix
   in progress; future maps must give every building-class clone a
   distinct model+icon from day one.
+- `maps/last-train/` — **"Last Train from Yio Chu Kang"**, a map by
+  **Serendipity** (the authorship convention for this and future bundled
+  maps): 1–4 player co-op Singapore-set zombie survival (phase 1 —
+  core loop COMPLETE). One permanent monsoon night in an HDB estate:
+  gold-as-bullets/lumber-as-clips ammo (DAMAGING-event draw, 4s reload
+  lockout), curable 1.5-dps infection STATE, 3.5s corpse-rise with
+  Molotov counterplay, death = DEFECTION (the fallen play ON as a
+  controllable zombie pack, alliances flipped both ways), kill-XP with
+  0.75^(n-1) crowd falloff + state-keyed escalation drip, seeded
+  furniture scavenging + 10 combine recipes, 3 substation objectives
+  gating the last train's doors (arrives T+720s, departs T+900s;
+  alternative victory: kill the Broodmother in the kampong lair), 4
+  classes, seeded wandering patrols + dread beats. FIRST CONSUMER of
+  two conventions: community models from Hive Workshop (HerrDave /
+  Ilya Alaric / bakr / Wayshan — per-author credit, imports-credits.json
+  provenance ledger + lint rule g) and the ambience-first-class rule
+  (permanent night, script-side RLlr rain, lamplight pockets, MRT
+  announcement beats). 64 logic tests at 98.2% script line coverage;
+  golden run deferred to phase 2 (documented in its README). Design
+  credits (mechanics only, nothing copied): Zombination v11 (Trinin),
+  Zombie-Simulator 7 (SpirulinaN), Dawn of the Dead (PreViO), NotD:
+  Special Ops, SWAT: Aftermath. Never loaded in the real game —
+  sim-proven only.
 
 Scratch builds go to `_build/` (gitignored). Exception: `maps/builds/` holds
 the committed compiled `.w3x` of each bundled source — regenerate via
@@ -479,7 +505,7 @@ never third-party maps, gotcha 9).
 
 ## Testing & validation doctrine
 
-- `npm test` = 483 tests, 46 files (32 under test/ + 14 map suites under
+- `npm test` = 557 tests, 57 files (33 under test/ + 24 map suites under
   maps/*/tests/, all auto-discovered by `node --test`): source⇄binary fixed
   points for the demo/siege/tidewatch/northreach sources (vaults-of-ash and
   coinstead are covered by their logic suites), build+validate end-to-end, MPQ
@@ -586,11 +612,22 @@ never third-party maps, gotcha 9).
 
 ## Legal (non-negotiable)
 
-Never commit Blizzard-authored or third-party maps/assets (models, textures,
-SLKs). Reference Blizzard assets by in-game path (`units\human\Footman\...`)
-— nothing is redistributed. Hive Workshop: inspiration + per-author credit
-only; no re-hosting, no scraping. Ship only generated (see maps/*/assets/)
-or CC0-converted content. Details: docs/ASSETS.md.
+Never commit Blizzard-authored maps/assets or anything ripped from game
+data (models, textures, SLKs). Reference Blizzard assets by in-game path
+(`units\human\Footman\...`) — nothing is redistributed. Hive Workshop:
+inspiration with per-author credit; **community-shared assets (models/
+textures posted for map use) MAY be fetched and shipped in a bundled map
+— user-authorized 2026-08-07 — under these terms**: per-author credit is
+mandatory and recorded THREE ways (the map's `imports-credits.json`
+per-file provenance ledger — lib/objectlint.js rule (g) WARNs on any
+uncredited or stale entry, wired into build-map and preflight's
+imports-credits check —, the map README's credits section, and an
+in-game `-credits` command), each author's own terms are honored, local
+modifications are recorded per-file with the committed script that made
+them, and there is NO bulk mirroring — fetch only what a map actually
+ships. Ripped/Blizzard-extracted content remains forbidden. First
+consumer: maps/last-train. Otherwise ship only generated (see
+maps/*/assets/) or CC0-converted content. Details: docs/ASSETS.md.
 
 ## Where things live
 

@@ -49,6 +49,10 @@
 //   imports-resolve  load-time: EVERY war3mapImported\ string in object data
 //                    resolves to an archive member (icons too, not just
 //                    model fields)
+//   imports-credits  provenance: every file under the SOURCE imports/ tree
+//                    is covered by an imports-credits.json entry and no
+//                    entry is stale (lib/objectlint.js rule g — community
+//                    assets are only legal to ship with per-author credit)
 //   stock-art        load-time: every NON-imported art path (umdl/uico/ifil/
 //                    iico/dfil/bfil) cross-checked against the verified
 //                    stock-art facts table (lib/data/stock-art.json, gotcha
@@ -114,7 +118,7 @@ const { validate } = require('./validate-map');
 const { extractAll } = require('../lib/mpq');
 const { hasHM3W, parseHeader, readW3iFlags } = require('../lib/header');
 const { byWar, byJson, jsonToWar } = require('../lib/filemap');
-const { lintObjectData, collectStockArtRefs } = require('../lib/objectlint');
+const { lintObjectData, collectStockArtRefs, lintImportsCredits } = require('../lib/objectlint');
 const { walk, readJson } = require('../lib/source');
 
 const ROOT = path.join(__dirname, '..');
@@ -733,6 +737,21 @@ function preflightMap(mapDir, opts) {
         add('imports-resolve', 'FAIL', `unresolved war3mapImported reference(s): ${missing.slice(0, 4).join(', ')}${missing.length > 4 ? ` (+${missing.length - 4})` : ''}`);
       } else {
         add('imports-resolve', 'PASS', `${new Set(refs).size} war3mapImported reference(s) all resolve to archive members`);
+      }
+    });
+
+    guarded('imports-credits', () => {
+      // provenance lint on the SOURCE imports/ tree (lib/objectlint.js
+      // rule g) — WARN-only: a credit gap never breaks the map for players,
+      // but shipping uncredited community assets breaks the Legal rules.
+      const findings = lintImportsCredits(mapDir);
+      if (findings.length === 0) {
+        add('imports-credits', 'PASS', fs.existsSync(path.join(mapDir, 'imports'))
+          ? 'every imports/ file is covered by imports-credits.json (no stale entries)'
+          : 'no imports/ tree — n/a');
+      } else {
+        add('imports-credits', 'WARN', findings.slice(0, 3).map((f) => `${f.file ? f.file + ': ' : ''}${f.message.split(' — ')[0]}`).join('; ')
+          + (findings.length > 3 ? ` (+${findings.length - 3})` : ''));
       }
     });
 

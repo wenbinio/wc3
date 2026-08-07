@@ -259,6 +259,22 @@
       "verifiedBy": "wurstscript-listfile 2026-08-07"
     },
     {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNCloak.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "last-train map set (phase 1)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNCrate.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "last-train map set (phase 1)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
       "path": "ReplaceableTextures\\CommandButtons\\BTNCrypt.blp",
       "kind": "icon",
       "class": "command-button",
@@ -280,6 +296,14 @@
       "class": "command-button",
       "status": "listfile-verified",
       "source": "northreach objects (map re-verification pending after post-playtest fixes)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNFlare.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "last-train map set (phase 1)",
       "verifiedBy": "wurstscript-listfile 2026-08-07"
     },
     {
@@ -328,6 +352,14 @@
       "class": "command-button",
       "status": "listfile-verified",
       "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNManaStone.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "last-train map set (phase 1)",
       "verifiedBy": "wurstscript-listfile 2026-08-07"
     },
     {
@@ -432,6 +464,38 @@
       "class": "command-button",
       "status": "listfile-verified",
       "source": "undead/zombie map set (report section 7)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNVialEmpty.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "last-train map set (phase 1)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNVialFull.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "last-train map set (phase 1)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNVillagerMan.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "last-train map set (phase 1)",
+      "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNVillagerMan1.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "last-train map set (phase 1)",
       "verifiedBy": "wurstscript-listfile 2026-08-07"
     },
     {

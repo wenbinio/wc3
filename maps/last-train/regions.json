@@ -1,0 +1,138 @@
+[
+  {
+    "name": "Platform",
+    "id": 0,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      255,
+      64,
+      64
+    ],
+    "position": {
+      "left": 4280,
+      "bottom": -576,
+      "right": 4830,
+      "top": 576
+    }
+  },
+  {
+    "name": "Clinic",
+    "id": 1,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      64,
+      255,
+      128
+    ],
+    "position": {
+      "left": -3260,
+      "bottom": -1960,
+      "right": -2540,
+      "top": -1240
+    }
+  },
+  {
+    "name": "Lair",
+    "id": 2,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      160,
+      64,
+      200
+    ],
+    "position": {
+      "left": -5900,
+      "bottom": -5700,
+      "right": -4100,
+      "top": -3900
+    }
+  },
+  {
+    "name": "TeckGhee",
+    "id": 3,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      200,
+      200,
+      80
+    ],
+    "position": {
+      "left": -1800,
+      "bottom": -4200,
+      "right": 200,
+      "top": -2200
+    }
+  },
+  {
+    "name": "KebunBaru",
+    "id": 4,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      200,
+      200,
+      80
+    ],
+    "position": {
+      "left": -5200,
+      "bottom": -200,
+      "right": -3200,
+      "top": 1800
+    }
+  },
+  {
+    "name": "YioChuKangGardens",
+    "id": 5,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      200,
+      200,
+      80
+    ],
+    "position": {
+      "left": -600,
+      "bottom": 2200,
+      "right": 1400,
+      "top": 4200
+    }
+  },
+  {
+    "name": "SeletarHills",
+    "id": 6,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      200,
+      200,
+      80
+    ],
+    "position": {
+      "left": 2200,
+      "bottom": 2800,
+      "right": 4200,
+      "top": 4800
+    }
+  },
+  {
+    "name": "ChengSan",
+    "id": 7,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      200,
+      200,
+      80
+    ],
+    "position": {
+      "left": 1200,
+      "bottom": -4400,
+      "right": 3200,
+      "top": -2400
+    }
+  }
+]
