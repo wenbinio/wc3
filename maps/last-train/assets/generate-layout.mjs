@@ -320,6 +320,63 @@ const RACKS = [
 ];
 for (const [v, tx, ty] of RACKS) DX('D00C', tx, ty - RACK_OFFS[v], 270, 232);
 
+// ---------------------- 2026-08-07 Sol round-2 batch (gate-clean, credits
+// in ../imports-credits.json). Ten more PURE-DECOR classes (D00E..D017,
+// objects-doodads.json) — solid:false, sim-invisible, appended AFTER every
+// existing doodad so all round-1 ids stay byte-stable. All pieces are low
+// (max top 140, camera-safe anywhere) and DX-asserted keep-out clean; the
+// one deliberate SD exception is documented below (platform screen doors,
+// the D000 canopy precedent).
+//
+// Kampong lair dressing (the Broodmother's approach — the boss unit u005
+// itself now wears SolBroodmother.mdx, 300x300 at usca 1.0): ruined house
+// shells on the NE/N approach fringe, flesh pods hugging the h018 nests,
+// bone mounds in the open muck between them.
+DX('D010', -4250, -4350, 320, 140);
+DX('D010', -4620, -3950, 290, 140);
+DX('D010', -5480, -3920, 250, 140);
+DX('D010', -5780, -4620, 200, 140);
+DX('D00E', -4780, -4510, 0, 80); DX('D00E', -5230, -5060, 70, 80);
+DX('D00E', -4880, -5240, 140, 80); DX('D00E', -5330, -4420, 210, 80);
+DX('D00E', -4530, -4880, 280, 80);
+DX('D00F', -4430, -4600, 30, 60); DX('D00F', -5560, -4900, 120, 60);
+DX('D00F', -4980, -4080, 200, 60); DX('D00F', -5110, -5350, 300, 60);
+// Station: a fare-gate line across the forecourt walkway, flanking the
+// D00A entrance portal (west of the platform keep-out box).
+DX('D011', 4055, -120, 90, 60);
+DX('D011', 4055, -430, 90, 60);
+// Platform screen doors: three tiling segments along the platform's east
+// (track-side) edge, on the gap line the announcements warn about.
+// Deliberate SD (not DX): dressing the platform IS the point here — the
+// D000 canopy precedent; solid:false, top exactly 100 (camera-safe), the
+// train berths east of them (train body x 4720..4860).
+SD('D012', 4705, -320, 90);
+SD('D012', 4705, 0, 90);
+SD('D012', 4705, 320, 90);
+// Void-deck set: pillar rows, mailbox walls and bike racks at the spawn
+// void deck and the district void decks the round-1 kopitiam clusters
+// didn't fill (Gardens, Cheng San; Seletar + the station each get a lone
+// bike rack).
+DX('D013', -880, -360, 0, 110);   // spawn
+DX('D014', -960, -220, 0, 90);
+DX('D015', -280, -540, 90, 50);
+DX('D013', -160, 2900, 0, 110);   // Yio Chu Kang Gardens
+DX('D014', -260, 3300, 0, 90);
+DX('D015', 380, 3120, 90, 50);
+DX('D013', 1440, -3260, 0, 110);  // Cheng San
+DX('D014', 1560, -2860, 0, 90);
+DX('D015', 1980, -2900, 90, 50);
+DX('D015', 2940, 3700, 45, 50);   // Seletar Hills
+DX('D015', 3980, 340, 0, 50);     // station mouth (commuter racks)
+// Street pieces: abandoned taxis among the round-1 cars (varied angles,
+// shoulder-parked outside the road core), food carts at the hawker
+// forecourt and the main/N-S junction corner.
+DX('D016', -2100, 310, 250, 40);
+DX('D016', 1700, -290, 45, 40);
+DX('D016', -890, -800, 120, 40);
+DX('D017', 430, 1520, 200, 70);
+DX('D017', -1450, 330, 300, 70);
+
 // ------------------------------------------------------------------- units
 // Type ids mirror objects-units.json (the generated UNIT_ constants).
 const units = [];

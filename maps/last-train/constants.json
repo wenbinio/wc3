@@ -414,11 +414,60 @@
       "name": "Wire",
       "source": "objects-items.json"
     },
+    "DOOD_ABANDONED_TAXI": {
+      "kind": "doodad",
+      "rawcode": "D016",
+      "base": "YOtf",
+      "name": "Abandoned Taxi",
+      "source": "objects-doodads.json"
+    },
+    "DOOD_BIKE_RACK": {
+      "kind": "doodad",
+      "rawcode": "D015",
+      "base": "YOtf",
+      "name": "Bike Rack",
+      "source": "objects-doodads.json"
+    },
+    "DOOD_BONE_MOUND": {
+      "kind": "doodad",
+      "rawcode": "D00F",
+      "base": "YOtf",
+      "name": "Bone Mound",
+      "source": "objects-doodads.json"
+    },
     "DOOD_BUS_STOP_SHELTER": {
       "kind": "doodad",
       "rawcode": "D001",
       "base": "YOtf",
       "name": "Bus Stop Shelter",
+      "source": "objects-doodads.json"
+    },
+    "DOOD_FARE_GATE_ROW": {
+      "kind": "doodad",
+      "rawcode": "D011",
+      "base": "YOtf",
+      "name": "Fare Gate Row",
+      "source": "objects-doodads.json"
+    },
+    "DOOD_FLESH_PODS": {
+      "kind": "doodad",
+      "rawcode": "D00E",
+      "base": "YOtf",
+      "name": "Flesh Pods",
+      "source": "objects-doodads.json"
+    },
+    "DOOD_FOOD_CART": {
+      "kind": "doodad",
+      "rawcode": "D017",
+      "base": "YOtf",
+      "name": "Food Cart",
+      "source": "objects-doodads.json"
+    },
+    "DOOD_KAMPONG_HOUSE_SHELL": {
+      "kind": "doodad",
+      "rawcode": "D010",
+      "base": "YOtf",
+      "name": "Kampong House Shell",
       "source": "objects-doodads.json"
     },
     "DOOD_KOPITIAM_SEATING": {
@@ -451,6 +500,13 @@
       "kind": "doodad",
       "rawcode": "LTrc",
       "source": "doodads.json"
+    },
+    "DOOD_MAILBOX_WALL": {
+      "kind": "doodad",
+      "rawcode": "D014",
+      "base": "YOtf",
+      "name": "Mailbox Wall",
+      "source": "objects-doodads.json"
     },
     "DOOD_MONSOON_DRAIN": {
       "kind": "doodad",
@@ -487,6 +543,13 @@
       "name": "Pedestrian Overhead Bridge",
       "source": "objects-doodads.json"
     },
+    "DOOD_PLATFORM_SCREEN_DOORS": {
+      "kind": "doodad",
+      "rawcode": "D012",
+      "base": "YOtf",
+      "name": "Platform Screen Doors",
+      "source": "objects-doodads.json"
+    },
     "DOOD_SKYLINE_TOWER_CROWN_DECK": {
       "kind": "doodad",
       "rawcode": "D007",
@@ -520,6 +583,13 @@
       "rawcode": "D008",
       "base": "YOtf",
       "name": "Skyline Tower (Twin)",
+      "source": "objects-doodads.json"
+    },
+    "DOOD_VOID_DECK_PILLARS": {
+      "kind": "doodad",
+      "rawcode": "D013",
+      "base": "YOtf",
+      "name": "Void Deck Pillars",
       "source": "objects-doodads.json"
     },
     "REGION_CHENG_SAN": {

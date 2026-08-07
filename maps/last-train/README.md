@@ -166,11 +166,41 @@ credited in `-credits` after the human community authors). Shipped as
   decor: platform-end canopies, the monsoon drain run, two road-spanning
   overhead bridges, void-deck/hawker seating clusters.
 
-The five decor classes are custom DOODADS (`objects-doodads.json`,
-D000–D004), which the sim classifies as decorative and never
-instantiates — the Sol pass provably shifts no logic test. All decor is
-`solid:false` and placed clear of roads, pads and the boarding platform
-(pathing-safety keep-out).
+**Sol round 2** (2026-08-07, same commission and gate; ten of the twelve
+delivered models are texture-fix resubmissions — custom BLPs swapped for
+stock `Textures\*.blp` references, gate re-run 0/0/0 — noted per-file in
+the ledger's `modified`):
+
+- **SolBroodmother** (300×300, the big one) — **replaces the stock
+  Abomination as the boss unit's model** (`u005` umdl; the one round-2
+  piece that is a UNIT, not decor): full identity set kept, `usca`
+  dropped 1.6 → 1.0 since the model is authored at boss size, icon stays
+  the game-verified `BTNAbomination` (still reads as the flesh-mass it
+  is). Cosmetic-only: umdl/usca are outside the sim's seeded stat set, so
+  all 64 logic tests and the seeded-replay pins are untouched.
+- **SolFleshPods / SolBoneMound / SolKampongShell** — the kampong lair
+  set: 5 pods hugging the nests, 4 bone mounds in the muck, 4 ruined
+  house shells on the NE/N approach fringe.
+- **SolFareGates / SolPlatformDoor** — the station set: a two-segment
+  fare line flanking the MRT entrance portal on the forecourt; three
+  platform screen-door segments tiling the platform's track-side gap
+  line (the one documented keep-out exception — dressing the platform is
+  the point, the D000 canopy precedent; top exactly 100, camera-safe).
+- **SolVoidDeckPillars / SolMailboxWall / SolBikeRack** — the void-deck
+  set at the spawn deck and the two district decks the round-1 kopitiam
+  clusters didn't fill (Gardens, Cheng San); Seletar and the station
+  mouth each get a lone bike rack.
+- **SolTaxi / SolFoodCart** — street pieces: three shoulder-parked taxis
+  among the round-1 abandoned cars (varied angles), food carts at the
+  hawker forecourt and the main/N-S junction corner.
+
+The Sol decor classes are custom DOODADS (`objects-doodads.json`,
+D000–D004 round 1, D00E–D017 round 2), which the sim classifies as
+decorative and never instantiates — both Sol passes provably shift no
+logic test. All decor is `solid:false` and placed clear of roads, pads
+and the boarding platform (pathing-safety keep-out, asserted in
+`generate-layout.mjs`; the platform screen doors are the documented
+exception above).
 
 Local modifications are recorded per-file: the Citizen Pack rigs death on
 the Villager's "Death Alternate" tag and the Urban props are Stand-only —
@@ -181,8 +211,9 @@ the sanity tester rejects is documented in the script).
 
 **Stock by path** (gotcha 31: every path verified in
 `lib/data/stock-art.json`, 8 new icons promoted listfile-verified):
-Ghoul (Sprinter), Zombie (Revenant), Abomination (Broodmother), infected
-granary (kampong nests), villager/potion/crate/cheese/flare icon set.
+Ghoul (Sprinter), Zombie (Revenant), infected granary (kampong nests),
+villager/potion/crate/cheese/flare icon set (the Broodmother wore the
+stock Abomination until Sol round 2; its `BTNAbomination` icon stays).
 
 **Generated models** (`assets/generate-models.mjs`, mdl-lib, all
 sanity-clean): the **MRT train** (three cars, red cab bands, door rhythm,

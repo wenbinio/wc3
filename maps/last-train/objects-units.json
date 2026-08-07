@@ -962,7 +962,7 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Units\\Undead\\Abomination\\Abomination.mdl"
+        "value": "war3mapImported\\SolBroodmother.mdl"
       },
       {
         "id": "uico",
@@ -1018,7 +1018,7 @@
         "type": "unreal",
         "level": 0,
         "column": 0,
-        "value": 1.6
+        "value": 1
       },
       {
         "id": "udef",

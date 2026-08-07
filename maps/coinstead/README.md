@@ -183,13 +183,22 @@ compiled artifact: `maps/builds/coinstead.w3x`.
   regenerating run `build-map --stabilize` once and commit the
   stabilized JSON):
   - `generate-models.mjs` + `mdl-lib.mjs` (the northreach known-good MDL
-    library) author the **five identity models** under
+    library) author the **four generated identity models** under
     `imports/war3mapImported/` — `CoinsteadDepot`, `MarketStall`,
-    `CoinWatchtower`, `CannonKeep`, `Orepit` (2026-08 art fix: dark pit
+    `CoinWatchtower`, `Orepit` (2026-08 art fix: dark pit
     ring + team-color crane) — all sanityTest-clean (gotcha 14),
     team-color textured (ReplaceableId 1, nothing Blizzard-authored).
     Object-data `umdl` FIELDS use `.mdl`, archive members stay `.mdx`
-    (gotcha 22).
+    (gotcha 22). The fifth identity model, the Cannon Tower's
+    `SolCannonKeep.mdx`, is a **commissioned Sol round-2 model**
+    (AI fleet Sol, GPT 5.6 Codex, 2026-08-07; provenance in
+    `imports-credits.json`): it replaced the generated `CannonKeep.mdx`
+    (the render-read's weakest silhouette) **after the 2026-08-07
+    playtest**, same footprint/height, cosmetic-only (the 159-beat golden
+    run is byte-identical). The generator entry was removed with the file
+    (the SolLampPost precedent). **Next playtest should eyeball it** —
+    the map's art was game-verified with the OLD model, so the
+    Cannon Tower's look is the one un-verified piece.
   - `generate-icons.mjs` (2026-08 art fix) authors `BTNOrepit` +
     auto-derived `DISBTNOrepit` with `lib/icon.js` (BLP1 via Pillow, TGA
     fallback) under `imports/ReplaceableTextures/CommandButtons[Disabled]/`.

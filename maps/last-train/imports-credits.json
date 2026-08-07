@@ -341,6 +341,92 @@
       "source": "assets/generate-models.mjs",
       "license": "original, repo license",
       "fetched": "2026-08-07"
+    },
+    "war3mapImported/SolBroodmother.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models round 2 (commissioned — the Broodmother boss, 300x300)",
+      "source": "user-commissioned delivery 2026-08-07 (round 2)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07",
+      "modified": "accepted as Sol's round-2 texture-fix resubmission (custom BLPs replaced with stock Textures\\*.blp references; gate re-run 0/0/0)"
+    },
+    "war3mapImported/SolFleshPods.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models round 2 (commissioned — lair flesh pods)",
+      "source": "user-commissioned delivery 2026-08-07 (round 2)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07",
+      "modified": "accepted as Sol's round-2 texture-fix resubmission (custom BLPs replaced with stock Textures\\*.blp references; gate re-run 0/0/0)"
+    },
+    "war3mapImported/SolBoneMound.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models round 2 (commissioned — lair bone mound)",
+      "source": "user-commissioned delivery 2026-08-07 (round 2)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07",
+      "modified": "accepted as Sol's round-2 texture-fix resubmission (custom BLPs replaced with stock Textures\\*.blp references; gate re-run 0/0/0)"
+    },
+    "war3mapImported/SolKampongShell.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models round 2 (commissioned — ruined kampong house shell)",
+      "source": "user-commissioned delivery 2026-08-07 (round 2)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07",
+      "modified": "accepted as Sol's round-2 texture-fix resubmission (custom BLPs replaced with stock Textures\\*.blp references; gate re-run 0/0/0)"
+    },
+    "war3mapImported/SolFareGates.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models round 2 (commissioned — MRT fare-gate row)",
+      "source": "user-commissioned delivery 2026-08-07 (round 2)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07",
+      "modified": "accepted as Sol's round-2 texture-fix resubmission (custom BLPs replaced with stock Textures\\*.blp references; gate re-run 0/0/0)"
+    },
+    "war3mapImported/SolPlatformDoor.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models round 2 (commissioned — platform screen-door segment)",
+      "source": "user-commissioned delivery 2026-08-07 (round 2)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07",
+      "modified": "accepted as Sol's round-2 texture-fix resubmission (custom BLPs replaced with stock Textures\\*.blp references; gate re-run 0/0/0)"
+    },
+    "war3mapImported/SolBikeRack.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models round 2 (commissioned — void-deck bike rack)",
+      "source": "user-commissioned delivery 2026-08-07 (round 2)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07",
+      "modified": "accepted as Sol's round-2 texture-fix resubmission (custom BLPs replaced with stock Textures\\*.blp references; gate re-run 0/0/0)"
+    },
+    "war3mapImported/SolTaxi.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models round 2 (commissioned — abandoned taxi)",
+      "source": "user-commissioned delivery 2026-08-07 (round 2)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07",
+      "modified": "accepted as Sol's round-2 texture-fix resubmission (custom BLPs replaced with stock Textures\\*.blp references; gate re-run 0/0/0)"
+    },
+    "war3mapImported/SolFoodCart.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models round 2 (commissioned — hawker food cart)",
+      "source": "user-commissioned delivery 2026-08-07 (round 2)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07",
+      "modified": "accepted as Sol's round-2 texture-fix resubmission (custom BLPs replaced with stock Textures\\*.blp references; gate re-run 0/0/0)"
+    },
+    "war3mapImported/SolMailboxWall.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models round 2 (commissioned — void-deck mailbox wall)",
+      "source": "user-commissioned delivery 2026-08-07 (round 2)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07"
+    },
+    "war3mapImported/SolVoidDeckPillars.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Ambience Models round 2 (commissioned — void-deck pillar row)",
+      "source": "user-commissioned delivery 2026-08-07 (round 2)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-07"
     }
   }
 }

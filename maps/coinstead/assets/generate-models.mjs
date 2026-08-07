@@ -18,8 +18,6 @@
 //                         posts, two-tone awning, hanging coin sign
 //   CoinWatchtower.mdx  — the plank-burning tower: timber shaft, jetty
 //                         platform, corner crenels, amber rack glow
-//   CannonKeep.mdx      — the ingot-burning tower: squat stone drum, cap,
-//                         iron barrel, muzzle ember
 //   Orepit.mdx          — the ore harvester (2026-08 art fix, report §6):
 //                         dark pit ring sunk in a spoil apron, TEAM-COLOR
 //                         crane (untinted geoset = raw ReplaceableId 1) with
@@ -117,25 +115,13 @@ buildModel({
   outFile: path.join(OUT, 'CoinWatchtower.mdx'),
 });
 
-// ------------------------------------------------------------ Cannon keep
-buildModel({
-  name: 'CannonKeep',
-  extents: { min: [-80, -125, 0], max: [80, 80, 205], radius: 260 },
-  geosets: [
-    { name: 'drum', tint: STONE, mesh: merge(
-      box(-66, 66, -66, 66, 0, 128),
-      box(-50, 50, -50, 50, 128, 158),
-    ) },
-    { name: 'cap', tint: STONE_DARK, mesh: box(-74, 74, -74, 74, 158, 178) },
-    { name: 'barrel', tint: IRON, mesh: merge(
-      box(-16, 16, -120, -40, 138, 170),   // the gun, run out to the south
-      box(-22, 22, -52, -36, 130, 178),    // its trunnion block
-    ) },
-    { name: 'muzzle', tint: COIN_GOLD, additive: true,
-      mesh: box(-12, 12, -132, -118, 142, 166) },
-  ],
-  outFile: path.join(OUT, 'CannonKeep.mdx'),
-});
+// NOTE: the Cannon Tower model used to be generated here (CannonKeep.mdx —
+// the render-read's weakest silhouette). The 2026-08-07 Sol round-2 batch
+// replaced it — h00A Cannon Tower now uses war3mapImported\SolCannonKeep.mdx
+// (same 150x200 footprint and 205 top; provenance in ../imports-credits.json).
+// The generator entry was removed WITH the file so this script keeps
+// regenerating exactly what ships (assets doctrine; the SolLampPost
+// precedent in maps/last-train/assets/generate-models.mjs).
 
 // ---------------------------------------------------------------- Ore pit
 // The Orepit harvester (hhou base) — the one coinstead building whose job
@@ -172,4 +158,4 @@ buildModel({
   outFile: path.join(OUT, 'Orepit.mdx'),
 });
 
-console.log('coinstead models regenerated: Depot, MarketStall, Watchtower, CannonKeep, Orepit');
+console.log('coinstead models regenerated: Depot, MarketStall, Watchtower, Orepit (CannonKeep is Sol\'s — see NOTE)');

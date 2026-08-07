@@ -224,6 +224,166 @@
         "column": 0,
         "value": "war3mapImported\\LinkwayCanopy.mdl"
       }
+    ],
+    "D00E:YOtf": [
+      {
+        "id": "dnam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Flesh Pods"
+      },
+      {
+        "id": "dfil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolFleshPods.mdl"
+      }
+    ],
+    "D00F:YOtf": [
+      {
+        "id": "dnam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Bone Mound"
+      },
+      {
+        "id": "dfil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolBoneMound.mdl"
+      }
+    ],
+    "D010:YOtf": [
+      {
+        "id": "dnam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Kampong House Shell"
+      },
+      {
+        "id": "dfil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolKampongShell.mdl"
+      }
+    ],
+    "D011:YOtf": [
+      {
+        "id": "dnam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Fare Gate Row"
+      },
+      {
+        "id": "dfil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolFareGates.mdl"
+      }
+    ],
+    "D012:YOtf": [
+      {
+        "id": "dnam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Platform Screen Doors"
+      },
+      {
+        "id": "dfil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolPlatformDoor.mdl"
+      }
+    ],
+    "D013:YOtf": [
+      {
+        "id": "dnam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Void Deck Pillars"
+      },
+      {
+        "id": "dfil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolVoidDeckPillars.mdl"
+      }
+    ],
+    "D014:YOtf": [
+      {
+        "id": "dnam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Mailbox Wall"
+      },
+      {
+        "id": "dfil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolMailboxWall.mdl"
+      }
+    ],
+    "D015:YOtf": [
+      {
+        "id": "dnam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Bike Rack"
+      },
+      {
+        "id": "dfil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolBikeRack.mdl"
+      }
+    ],
+    "D016:YOtf": [
+      {
+        "id": "dnam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Abandoned Taxi"
+      },
+      {
+        "id": "dfil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolTaxi.mdl"
+      }
+    ],
+    "D017:YOtf": [
+      {
+        "id": "dnam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Food Cart"
+      },
+      {
+        "id": "dfil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolFoodCart.mdl"
+      }
     ]
   }
 }
