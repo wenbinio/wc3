@@ -19,11 +19,19 @@ question it answers, its date, and how it goes stale.
 - **economy-survival-comparison.md** (2026-07, phase-3 update) — same for
   coinstead vs Economy TD / Gold TD / Legion TD / LTW. Coinstead is now
   game-verified; its "proven in game" row predates that playtest.
-- **zombie-survival-comparison.md** (2026-08-07) — same for last-train vs
-  the zombie genre (5 archetypes, 4 decomposed maps with real numbers, 4
-  surveyed). Written from session research reports; sources re-downloadable
-  (EpicWar 246910, 257009, 148016, 2253). Revisit at phase 2 (golden run,
-  horde-side depth).
+- **zombie-survival-comparison.md** (2026-08-07; ZCD appendix added with
+  phase 2A) — same for last-train vs the zombie genre (5 archetypes, 4
+  decomposed maps with real numbers, 4 surveyed), plus the Zombie Defense
+  Custom decomposition (Lions_Blood, EpicWar 258931/296128 — the fun-loop
+  numbers behind the phase-2A transplant). Written from session research
+  reports; sources re-downloadable (EpicWar 246910, 257009, 148016, 2253).
+  Revisit at phase 2B (golden run, horde-side depth).
+- **wc3-canon-invariants.md** (2026-08-07) — what do the most-downloaded
+  AND most-hosted WC3 maps never violate? Four evidence bases, seven
+  graded invariants (I1–I7), rejected theses, the negative space, fleet
+  application and evidence-ranked next builds (tower-wars, random
+  defense). Caveats inline (public-bot-lobby bias); goes stale slowly —
+  re-check the hosted-count rows before citing numbers.
 - **headless-tooling-audit-2026-07.md** (2026-07-12) — what should the
   toolkit improve next? Ranked program; Tiers 1–3 largely landed (status
   notes inline) — only Tier 3 item 7 remains open.

@@ -507,6 +507,21 @@ const SOL_TOWERS = [
 ];
 for (const [t, x, y] of SOL_TOWERS) U(t, x, y, P_PASSIVE);
 
+// Phase 2A (the fun transplant, DESIGN-WALKTHROUGH.md): the four CLASS
+// CIRCLES at the spawn void deck's south edge — a statue of each class
+// stands on its circle; walking a survivor onto the rect transforms them
+// (chat -class is gone, gotcha 33). Plus the PROVISION SHOP (goblin-
+// merchant base, Merchant.mdl — tools priced in clips). APPENDED after
+// everything above so all existing unit ids stay byte-stable.
+const CLASS_CIRCLES = [
+  ['h000', -980, -560],   // Heartlander
+  ['h001', -760, -680],   // Auxiliary Police Officer
+  ['h002', -540, -730],   // Paramedic
+  ['h003', -320, -680],   // Town Council Technician
+];
+for (const [t, x, y] of CLASS_CIRCLES) U(t, x, y, P_PASSIVE);
+U('h01H', -140, -420, P_PASSIVE);  // the Provision Shop
+
 // ----------------------------------------------------------------- regions
 const NUL = '\u0000\u0000\u0000\u0000';
 let rid = 0;
@@ -524,6 +539,13 @@ for (const d of DISTRICTS) {
     { x0: d.x - 1000, y0: d.y - 1000, x1: d.x + 1000, y1: d.y + 1000 },
     [200, 200, 80]));
 }
+// phase 2A class-circle rects (one per statue above; walk in = transform)
+const CIRCLE_NAMES = ['PickHeartlander', 'PickPolice', 'PickParamedic', 'PickTech'];
+CLASS_CIRCLES.forEach(([, cx, cy], i) => {
+  regions.push(region(CIRCLE_NAMES[i],
+    { x0: cx - 120, y0: cy - 120, x1: cx + 120, y1: cy + 120 },
+    [90, 200, 255]));
+});
 
 // ------------------------------------------------------------------- write
 const write = (rel, data) =>

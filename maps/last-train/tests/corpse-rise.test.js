@@ -1,7 +1,8 @@
 'use strict';
 // Corpse-rise (Zombination, credited): the horde's kills stand back up
-// after a visible 3.5s window at the death spot, owned by the horde — and
-// a Molotov burns corpses before they rise (the clean counterplay).
+// after a visible 3.5s window at the death spot — and a Molotov burns
+// corpses before they rise. Phase 2A: burning also DENIES the defectors'
+// Feast (defection.test.js), and a Molotov is a LOUD verb (+15 Noise).
 
 const test = require('node:test');
 const assert = require('node:assert');
@@ -38,7 +39,7 @@ test('a civilian killed by a zombie rises as a shambler at the spot after 3.5s',
   assert.ok(/rise\|x=/.test(sim.global('RUNLOG')));
 });
 
-test('a Molotov burns corpses inside the window: no rise, zombies scorched', () => {
+test('a Molotov burns corpses inside the window: no rise, zombies scorched, +Noise', () => {
   const { sim, hero, zomb, civ } = setup();
   sim.chat(0, '-give molotov');
   sim.kill(civ, zomb);
@@ -46,18 +47,21 @@ test('a Molotov burns corpses inside the window: no rise, zombies scorched', () 
   sim.moveUnit(zomb, civ.x + 100, civ.y);
   const zhp = zomb.life;
   const horde0 = sim.global('HordeCount');
+  const heat0 = sim.run('return NoiseHeat[DistrictAt(' + civ.x + ',' + civ.y + ').key] or 0')[0];
 
   const molotov = [...sim.items.values()].find((i) => !i.removed && i.typeStr === 'I014');
   sim.useItem(hero, molotov);
   assert.ok(/molotov\|pid=0\|burned=1\|hit=1/.test(sim.global('RUNLOG')));
   assert.strictEqual(zomb.life, zhp - 60, 'zombies in the fire take 60');
+  const heat1 = sim.run('return NoiseHeat[DistrictAt(' + civ.x + ',' + civ.y + ').key] or 0')[0];
+  assert.strictEqual(heat1, heat0 + 15, 'fire is LOUD: +15 district noise');
 
   sim.advance(5);
   assert.strictEqual(sim.global('HordeCount'), horde0, 'the burned corpse never rises');
 });
 
 test('molotov damage never draws the thrower\'s ammo (scripted, not a shot)', () => {
-  const { sim, hero, zomb, civ } = setup();
+  const { sim, hero, zomb } = setup();
   sim.chat(0, '-give molotov');
   sim.moveUnit(zomb, hero.x + 100, hero.y);
   const rounds = sim.player(0).gold;
@@ -72,8 +76,6 @@ test('risen zombies scale with the horde level at rise time', () => {
   sim.kill(civ, zomb);
   const calls0 = sim.callsOf('BlzSetUnitMaxHP').length;
   sim.advance(4);
-  // EscHpOf carries the scaling math; BlzSetUnitMaxHP applies it for the
-  // game client (a recorded stub in the sim — coinstead's WaveHpOf pattern)
   const scalar = (v) => (Array.isArray(v) ? v[0] : v);
   assert.strictEqual(scalar(sim.call('EscHpOf', 220)), Math.floor((220 * 140) / 100));
   const calls = sim.callsOf('BlzSetUnitMaxHP');

@@ -10,7 +10,7 @@ in docs/ and .claude/skills/; follow the pointers.
 
 ```bash
 bash scripts/setup.sh   # idempotent: npm install + optional smpq fallback + optional pjass build (vendor/pjass)
-npm test                # 557 tests; all must pass before you change anything
+npm test                # 586 tests; all must pass before you change anything
 npm run preflight       # ~13s one-shot gate; 0 FAILs required before AND after any change
 ```
 
@@ -132,29 +132,47 @@ Reference sources (each README documents its own invariants):
   **Serendipity** (the authorship convention — applied FLEET-WIDE
   2026-08-07: every bundled map now carries author "Serendipity" in its
   w3i, its README byline, and any existing credits/help command; future
-  bundled maps follow suit): 1–4 player co-op Singapore-set zombie survival (phase 1 —
-  core loop COMPLETE). One permanent monsoon night in an HDB estate:
-  gold-as-bullets/lumber-as-clips ammo (DAMAGING-event draw, 4s reload
-  lockout), curable 1.5-dps infection STATE, 3.5s corpse-rise with
-  Molotov counterplay, death = DEFECTION (the fallen play ON as a
-  controllable zombie pack, alliances flipped both ways), kill-XP with
-  0.75^(n-1) crowd falloff + state-keyed escalation drip, seeded
-  furniture scavenging + 10 combine recipes, 3 substation objectives
-  gating the last train's doors (arrives T+720s, departs T+900s;
-  alternative victory: kill the Broodmother in the kampong lair), 4
-  classes, seeded wandering patrols + dread beats. FIRST CONSUMER of
-  two conventions: community models from Hive Workshop (HerrDave /
-  Ilya Alaric / bakr / Wayshan — per-author credit, imports-credits.json
-  provenance ledger + lint rule g; the ledger also covers the 2026-08-07
-  **Sol commissioned ambience batch** — 8 externally-authored gate-clean
-  models by AI fleet "Sol", credited like community authors in the
-  ledger, README and -credits) and the ambience-first-class rule
-  (permanent night, script-side RLlr rain, lamplight pockets, MRT
-  announcement beats). 64 logic tests at 98.2% script line coverage;
-  golden run deferred to phase 2 (documented in its README). Design
-  credits (mechanics only, nothing copied): Zombination v11 (Trinin),
-  Zombie-Simulator 7 (SpirulinaN), Dawn of the Dead (PreViO), NotD:
-  Special Ops, SWAT: Aftermath. Never loaded in the real game —
+  bundled maps follow suit): 1–4 player co-op Singapore-set zombie
+  survival (phase 2A — the FUN TRANSPLANT, playtest-verdict-driven:
+  phase 1's "constant typing is bad" verdict + four studies converged on
+  the reconciled spec its DESIGN-WALKTHROUGH.md gates — the map is
+  gotcha 33's and PIPELINE §10's precedent). One permanent monsoon night
+  in an HDB estate, every combat verb on the mouse: class pick = walk
+  onto a class circle; rummage (stand ~3s, quiet) vs SMASH (props are
+  ~30 HP units; instant loot, +district Noise) scavenging; AUTO-COMBINE
+  crafting on pickup (4 recipes, each material in exactly one); Reload =
+  ability R (4s gun-down, legs work — no PauseUnit), Sprint = E;
+  substation repair = STAND in the yard (progress persists, hits cost
+  3s; fixed districts RELIGHT with lamps); board = walk onto the
+  platform; Provision Shop sells tools for CLIPS (engine-charged ilum).
+  The night's heartbeat: telegraphed SURGES (~120s cycle, siren+dread
+  20s ahead, sized by esc level × living players × district Noise −
+  nests down, targeting the players' district / active repair yards),
+  the Last Mile trickle from T+600, a platform SIEGE across the 180s
+  boarding window, a persistent countdown window from frame one; 8–12
+  seeded rat-king nests (burning trims drip AND surge size), ground
+  spills from surge kills, survivor XP/levels with level-3 signature
+  abilities (Steady Hands / Riot Discipline / Field Triage / Overclock);
+  defectors CONDUCT the horde (Feast raises un-burnt corpses into the
+  pack — Molotov burning is PvP denial; Shriek converges the next
+  surge; board row flips to HUNT). Still here from phase 1:
+  gold-as-bullets/lumber-as-clips, curable 1.5-dps infection, 3.5s
+  corpse-rise, death = DEFECTION, 0.75^(n-1) falloff + state-keyed
+  drip, the T+720/900 train + Broodmother endings. Chat is META ONLY
+  (-help/-status/-recipes/-credits/-seed/-test family). FIRST CONSUMER
+  of community models from Hive Workshop (HerrDave / Ilya Alaric / bakr
+  / Wayshan — per-author credit, imports-credits.json provenance ledger
+  + lint rule g; ledger also covers the Sol commissioned batches) and
+  the ambience-first-class rule (permanent night, script-side RLlr
+  rain, MRT announcement beats; dread now pre-surge only — the 35s
+  metronome is cut). 93 logic tests at 99.2% script line coverage
+  (seeded-replay prefixes deliberately re-pinned per PIPELINE §8 — see
+  escalation.test.js header); golden run deferred to the post-2A
+  balance pass (README). Design credits (mechanics only, nothing
+  copied): Zombie Defense Custom (Lions_Blood) — surge/countdown
+  heartbeat, ground drops, spendable downtime —, Zombination v11
+  (Trinin), Zombie-Simulator 7 (SpirulinaN), Dawn of the Dead (PreViO),
+  NotD: Special Ops, SWAT: Aftermath. Never loaded in the real game —
   sim-proven only.
 
 Scratch builds go to `_build/` (gitignored). Exception: `maps/builds/` holds
@@ -186,6 +204,10 @@ never third-party maps, gotcha 9).
   PIPELINE §8, lib/sim/, tools/test-map-logic.js.
 - **In-game A/B diagnostics**: variants need distinct INTERNAL names
   (gotcha 17) — PIPELINE §7.
+- **Fun gate**: every bundled map needs a DESIGN-WALKTHROUGH.md (player-
+  chair walkthrough, interaction ledger, decision density, growing-numbers
+  list, threat schedule) BEFORE implementation/playtest handoff — PIPELINE
+  §10, gotcha 33; canon evidence in docs/reference/wc3-canon-invariants.md.
 - **Decomposition-driven design**: before cloning/adapting a real map,
   decompose the actual artifact — forum lore got nearly every FoTN mechanic
   wrong; and before DESIGNING against a genre, decompose the competitors and
@@ -522,10 +544,21 @@ never third-party maps, gotcha 9).
     sanityTest, and NEGATIVE-CONTROL the gate before trusting a clean
     sweep (strip a Death sequence / force GeosetAnimId 0 — the expected
     failures must appear). Precedent: first external batch 8/8 clean.
+33. **Interfaces are designed for the PLAYER; the sim adapts, never the
+    reverse.** Any action at combat tempo (>1/min or under pressure) must
+    be clicks/abilities/items/proximity — chat is meta/reference only
+    (setup-typed-once like coinstead's `-link` is fine; per-action typing
+    is not). Enumerate the verb×frequency×input ledger at DESIGN time
+    (docs/PIPELINE.md §10, the fun gate / DESIGN-WALKTHROUGH.md); a chat
+    row at combat tempo = design FAIL. Precedent: Last Train phase 1
+    passed every technical gate and failed its playtest exactly here
+    ("constant typing is bad"). Sim note: sim.cast/pickup/useItem/sell/
+    moveUnit+regions/damage make click-driven design equally testable —
+    chat was never the only assertable surface.
 
 ## Testing & validation doctrine
 
-- `npm test` = 557 tests, 57 files (33 under test/ + 24 map suites under
+- `npm test` = 586 tests, 59 files (33 under test/ + 26 map suites under
   maps/*/tests/, all auto-discovered by `node --test`): source⇄binary fixed
   points for the demo/siege/tidewatch/northreach sources (vaults-of-ash and
   coinstead are covered by their logic suites), build+validate end-to-end, MPQ
@@ -735,7 +768,11 @@ maps/*/assets/) or CC0-converted content. Details: docs/ASSETS.md.
   survival, phases 1–3, Economy TD-decomposition-driven, in-game
   VERIFIED), the art system (gotcha 31: stock-art table + icon pipeline +
   clone-crowd lint, `f405bac`), the community-asset channel + credits
-  ledger (gotcha 32), and Last Train phase 1. Suite 557/557 on both MPQ
+  ledger (gotcha 32), and Last Train phase 1. UNCOMMITTED on top:
+  Last Train phase 2A (the fun transplant: de-chatted verbs, surge
+  heartbeat, Noise, power curve, nests, spills, conductor defection;
+  gotcha 33 + PIPELINE §10 + the canon dossier + the ZCD appendix landed
+  with it). Suite 586/586 on both MPQ
   backends; preflight 7 maps 0 FAIL.
 - **Authorship convention: all bundled maps are credited to
   "Serendipity"** (w3i author field + README byline + in-game credits
@@ -769,12 +806,28 @@ maps/*/assets/) or CC0-converted content. Details: docs/ASSETS.md.
   200 allowed locals** (gotcha 28) — future edits add script-level state
   as globals only. Standing next step: playtest vaults-of-ash in-game
   (solo default-seed run, beat-for-beat vs the 61-beat golden run).
-  **last-train has never been loaded in the real game** — sim-proven only
-  (64 logic tests, 98.2% coverage; golden run = phase 2 — the comparison
-  doc landed 2026-08-07: docs/reference/zombie-survival-comparison.md).
+  **last-train has never been loaded in the real game** — its FIRST
+  playtest (phase-1 build) returned the design verdict "constant typing
+  is bad, core loop is unfun", which phase 2A (the fun transplant) is
+  the systematic answer to; the 2A build is sim-proven only (93 logic
+  tests, 99.2% coverage; golden run lands after the 2A in-game balance
+  pass — the ZCD appendix + comparison doc:
+  docs/reference/zombie-survival-comparison.md). Standing next step:
+  playtest the 2A build (the walkthrough in its DESIGN-WALKTHROUGH.md is
+  the script to play against).
   Coinstead's art fix (`f405bac`) awaits its re-verification eyeball pass
   (Barn/WindMill construction shows no Birth anim — cosmetic, accept or
   swap at next playtest; promote its paths to game-verified after).
+- **Future directions from the canon study** (2026-08-07,
+  docs/reference/wc3-canon-invariants.md — one-liners, don't re-derive):
+  tower-wars/send-and-defend is the highest-evidence next build (every
+  subsystem exists in coinstead); random-defense is the best
+  canon-fit-per-effort (Ordr #1 live; a seeded roll stream IS
+  Park-Miller — "same deck, played better" is a differentiator no canon
+  map has); "no map in the canon ever shipped" — treat bundled maps as
+  franchises with phase roadmaps, not releases; hero-arena and
+  player-paced roguelikes are download-era genres (host poorly) — build
+  them knowingly.
 - **Deferred capabilities** (deliberate, ranked, don't re-derive):
   docs/reference/ambitious-maps-analysis.md §6 (persistence/save-codes,
   wtg/wct, etc.); docs/reference/modern-maps-analysis.md §3 (toolkit-gap

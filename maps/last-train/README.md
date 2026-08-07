@@ -1,30 +1,47 @@
 # Last Train from Yio Chu Kang
 
 **A map by Serendipity.** A **1–4 player co-op zombie survival map** set in
-a rain-soaked Singapore HDB estate on the island's last night — phase 1.
-Scavenge the void decks, craft what the island left you, restore three
-substations, and board the **last North-South line train** when it calls
-at Yio Chu Kang at T+12:00 — or take the long walk into the kampong
-remnant off Lorong Buangkok and kill the **Broodmother** instead. Death
-is not elimination: the fallen **defect to the horde** and play against
-the living.
+a rain-soaked Singapore HDB estate on the island's last night — **phase 2A,
+the fun transplant**. Rummage or smash the void decks, let your pack
+auto-combine what the island left you, hold the substations by STANDING
+at them, survive the siren-led **surges**, and board the **last
+North-South line train** when it calls at Yio Chu Kang at T+12:00 — or
+take the long walk into the kampong remnant off Lorong Buangkok and kill
+the **Broodmother** instead. Death is not elimination: the fallen
+**defect to the horde** and CONDUCT it against the living.
+
+**Phase 2A exists because of a playtest.** The phase-1 verdict was
+"constant typing is bad, core loop is unfun"; four studies (design
+diagnosis, a fun-first redesign, the Zombie Defense Custom decomposition
+in docs/reference/zombie-survival-comparison.md, and the canon study in
+docs/reference/wc3-canon-invariants.md) converged on one reconciled
+spec. **`DESIGN-WALKTHROUGH.md` in this folder is the design gate the
+implementation matches** (PIPELINE §10; CLAUDE.md gotcha 33: chat is
+meta only — every combat-tempo verb is a click, an ability, an item or
+proximity).
 
 In-game name: **"Last Train from Yio Chu Kang"** (distinct internal name,
 CLAUDE.md gotcha 17). Built and validated headlessly with wc3-map-toolkit;
-compiled artifact: `maps/builds/last-train.w3x`. **Never loaded in the
-real game — sim-proven only** (64 logic tests, 98.2% script line
-coverage; the in-game protocol is the standing next step).
+compiled artifact: `maps/builds/last-train.w3x`. **The 2A build has never
+been loaded in the real game — sim-proven only** (93 logic tests, 99.2%
+script line coverage; playtesting it against the walkthrough is the
+standing next step).
 
 ## The two ways out (and the one way down)
 
 - **The train**: arrives at **T+720s**, departs **180s later** (the
-  evacuation-window ending — credit *Zombination v11* by Trinin). The
+  evacuation-window ending — credit *Zombination v11* by Trinin), under a
+  **persistent countdown window running from frame one** (credit *Zombie
+  Defense Custom* — the clock is a metronome, not just a deadline). The
   doors only open if **all three substations** spread across the estate
-  are live (`-fix`, a 10s vulnerable channel — anti-camping by
+  are live (STAND in the yard: progress accrues each un-hit second,
+  PERSISTS per substation, a hit knocks 3s off — anti-camping by
   construction, credit *SWAT: Aftermath*): no power, no doors, no ride.
-  Boarding = standing on the platform while the train waits (or `-board`).
-  Departure with anyone aboard ends the run: boarders **win**, stragglers
-  lose, the horde loses.
+  Boarding = walking onto the platform while the train waits. The whole
+  boarding window is a **platform siege**: everything walking converges
+  on the fare-gate forecourt, and the night's banked barricades and
+  sentries are the chokepoint. Departure with anyone aboard ends the
+  run: boarders **win**, stragglers lose, the horde loses.
 - **The Broodmother**: 3500 HP in the kampong lair on the far corner of
   the map. Kill it any time — before the train, after missing the train —
   and every surviving player wins; defected players lose with the horde.
@@ -34,57 +51,111 @@ coverage; the in-game protocol is the standing next step).
 
 ## Mechanics (adopted with credit, flaws fixed)
 
-- **Death = defection** (credit *Zombie-Simulator 7* by SpirulinaN, and
-  *Zombination*): a dead survivor converts **in place** — their Revenant
-  rises where they fell with a pack of three shamblers, all
-  player-controlled; the alliance flips **both directions** (gotcha 24)
-  and the horde shares its vision with its new mind. No elimination, no
-  spectating.
+- **Death = defection, and the defector CONDUCTS** (credit
+  *Zombie-Simulator 7* by SpirulinaN, and *Zombination*; the buildup is
+  canon I6 — side-switch is the canon's rarest, most prized answer to
+  death): a dead survivor converts **in place** — their Revenant rises
+  where they fell (claws scaled by the horde level) with a pack of three
+  shamblers, all player-controlled; the alliance flips **both
+  directions** (gotcha 24). The Revenant's kit: **Feast (F)** — target
+  an un-burnt corpse and it rises IMMEDIATELY into your pack, making
+  Molotov corpse-burning direct PvP denial — and **Shriek (C, 60s)** —
+  the next surge (and the Last Mile trickle for 90s) converges on your
+  target point: the traitor plays the survivors' vulnerability windows.
+  Their multiboard row flips to `HUNT: no one boards`. No elimination,
+  no spectating; solo death stays a plain defeat — **best with 2+**.
+- **The surge heartbeat** (credit *Zombie Defense Custom* by Lions_Blood
+  — wave clock + warning discipline, adapted): a **siren** (plus one
+  dread line and a minimap ping) warns **20s** ahead of every surge, on
+  a ~120s cycle at T+120/240/360/480/600, then the **Last Mile** — a
+  20s trickle drifting station-ward — and one final oversized surge at
+  T+700 on the forecourt. Surges are sized by **horde level × living
+  survivors × district Noise − nests down**, and target the survivors'
+  district or an ACTIVE repair yard. 1–2-zombie ambient wanderers stay
+  as texture (every 45s from T+90).
+- **District Noise**: smash +10, Molotov +15, every live gunshot and
+  sentry round +1; heat cools ~1 per 6s. The next surge in a district is
+  sized ×(1 + heat/100). Loud is fast, quiet is slow, the siren is
+  always counting. The multiboard shows the hottest district
+  (quiet / uneasy / ROUSED).
+- **Rat-king nests** (credit *ZCD*'s radiation fragments, adapted):
+  8–12 seeded nests dealt across the districts at the seed-lock
+  commitment (plus the 3 lair nests). Burn one (Molotov does 200 to
+  nests) or smash it (150 HP): **the escalation drip AND every future
+  surge shrink one step**, and the burner earns 30 XP. Downtime is
+  spendable; camping has counterplay.
+- **Survivor XP + levels** (canon I2): kills pay by kind (shambler 6 …
+  riot 14, revenant 25), objectives pay more (substation 40, nest 30,
+  cure 10); 80 XP a level, each level +30 max HP / +2 damage; **level 3
+  unlocks the class signature** — Heartlander *Steady Hands* (3s
+  reloads, +2 clip per level), APO *Riot Discipline* (10s half damage),
+  Paramedic *Field Triage* (AoE cure+heal 100), Technician *Overclock*
+  (next substation instant).
+- **The estate relights**: every fixed substation flares 4 street lamps
+  on along its district roads — the map is the progress bar.
+- **The Provision Shop** (void deck): tools priced in CLIPS (lumber),
+  engine-charged — Barricade Kit 2, Mobile Phone 3, Wet Bandage 2,
+  Flare 1. Ammo-vs-tools is the trade. (The reconciled spec's "extra
+  Clips" ware was circular — clips are the currency — so the Wet
+  Bandage is the fourth ware; deviation recorded in
+  DESIGN-WALKTHROUGH.md §6.)
+- **Ground spills** (credit *ZCD*'s bundle economy, adapted): a
+  survivor-credited zombie kill has a 20% seeded chance to spill a
+  visible ground drop — half clip packs (+1 clip on pickup), half
+  materials. Roaming and fighting both pay.
 - **Curable slow-burn infection** (credit *Zombination*; their
   dummy-caster churn replaced with per-unit STATE on the virtual clock):
   zombie damage infects; the DoT runs **1.5 dps** (3 damage every 2s)
   until cured — **Wet Bandage** above 40% health (the Paramedic cures at
   ANY health), or **5 seconds inside the polyclinic grounds**. Untreated,
-  it kills you into defection.
+  it kills you into defection. A cure pays +10 XP.
 - **Corpse-rise** (credit *Zombination*): anything the horde kills stands
   back up as a shambler after a **visible 3.5s window** at the death spot
   — unless a **Molotov** burns the corpse first (fire also scorches
   zombies for 60; scripted damage never draws your ammo).
 - **Gold-as-bullets, lumber-as-clips** (credit *Dawn of the Dead* by
   PreViO): every shot costs **1 round** (gold), drawn on the DAMAGING
-  event; a dry clip zeroes the shot (a carried **Parang** keeps you at
-  half damage); `-reload` burns **1 clip** (lumber), locks you **4s**
-  (the panic window), then seats a full clip. Clips come from scavenging
-  — and every **5th** zombie you kill drops one.
+  event, and makes **1 Noise**; a dry clip zeroes the shot (a carried
+  **Parang** keeps you at half damage); **Reload is ability R** — burns
+  1 clip, **4 seconds with the gun down** (outgoing shots zeroed) but
+  your **legs still work** (phase 1's PauseUnit is gone:
+  reload-while-fleeing is the genre's tension moment), then seats a
+  full clip. Clips come from scavenging, spills and the shop. **Sprint
+  is ability E** (+120 speed, 4s, 20s cooldown).
 - **The anti-snowball pair** (credit *Zombination*, adopted verbatim):
   kill-XP shared with a **0.75^(n−1) falloff** per extra zombie within
   600 of the kill (integer math, crowd capped at 8) **plus** a passive
   drip every 20s so a quiet horde still scales. Escalation is keyed to
   **STATE** — the drip grows with the dead-resident ratio and the
   defection count, never wall-clock alone (fixing *Zombie-Simulator*'s
-  fire-into-the-void timers). Horde levels (+10% zombie hp each) gate
-  patrol size and composition.
-- **Furniture scavenging + crafting** (credit *Zombination*; their
-  discoverability flaw fixed): every bench, dumpster, locker, desk,
-  hawker table, car, van, payphone and bus stop is one **seeded**
-  `-search`; ten two-material combine recipes, ALL listed by `-recipes`,
-  hinted in every material tooltip, and repeated in the quest log:
-  | recipe | makes | | recipe | makes |
-  | --- | --- | --- | --- | --- |
-  | Cloth + Water | **Wet Bandage** | | Cloth + Kerosene | **Flare** |
-  | Plank + Pipe | **Parang** | | Pipe + Battery | **Sentry Kit** (40-round belt) |
-  | Pipe + Wire | **Mobile Phone** (30s horde vision) | | Rations + Water | **Kopi Set** (+200 HP) |
-  | Cloth + Plank | **Barricade Kit** (800 HP wall) | | Wire + Battery | **Generator Part** (instant fix) |
-  | Bottle + Kerosene | **Molotov** | | Pipe + Kerosene | **Blowtorch** (+300 weld) |
-- **Wandering patrols** (anti-camping): from T+90s, every 45s, a seeded
-  patrol walks a seeded district-to-district route (Teck Ghee, Kebun
-  Baru, Yio Chu Kang Gardens, Seletar Hills, Cheng San, the park
-  connector), sized by horde level.
-- **Classes** (genre furniture, Singapore-flavored; pick in the first
-  40s): **Heartlander** (clip 12, 550 HP, rations), **Auxiliary Police
+  fire-into-the-void timers). Horde levels (+10% zombie hp each) feed
+  surge size and composition.
+- **Rummage or SMASH** (credit *Zombination*'s furniture scavenging,
+  de-chatted): every bench, dumpster, locker, desk, hawker table, car,
+  van, payphone and bus stop is one **seeded** draw — **stand within
+  ~250 for ~3s** and your survivor quietly turns it out (loot pops on
+  the ground), or **smash it open** (props are ~30 HP units; shooting
+  one costs rounds) for instant loot at **+10 Noise**. Same seeded
+  table either way.
+- **Auto-combine crafting** (the phase-2A cut: 4 recipes, each material
+  in EXACTLY one — that is what makes crafting safe to run automatically
+  on pickup, chime + floating text, no typing):
+  | recipe | makes |
+  | --- | --- |
+  | Cloth + Bottled Water | **Wet Bandage** |
+  | Plank + Pipe | **Parang** |
+  | Bottle + Kerosene | **Molotov** |
+  | Wire + Battery | **Sentry Kit** (40-round belt) |
+  Cut: Kopi Set, Generator Part (the instant-fix item deleted the best
+  tension beat) and Blowtorch are GONE; Barricade Kit / Mobile Phone /
+  Flare moved to the shop (+ rare desk/locker loot); Rations are simply
+  eaten (+100).
+- **Classes** (genre furniture, Singapore-flavored; walk onto a class
+  circle in the first 40s — the window closes silently, no policing):
+  **Heartlander** (clip 12, 550 HP, rations), **Auxiliary Police
   Officer** (clip 24, hardest hits, 3 clips), **Paramedic** (clip 8,
-  cures at any HP, 2 bandages), **Town Council Technician** (half-time
-  fixes, starts with a Generator Part + Barricade Kit).
+  cures at any HP, 2 bandages), **Town Council Technician** (2× repair
+  rate, starts with a Barricade Kit).
 
 ## Ambience (a first-class deliverable)
 
@@ -99,28 +170,38 @@ see Art): 27-storey point towers over the districts, a purpose-built
 hawker centre, canopies on the platform ends, kerbside bus shelters, a
 monsoon drain running the park-connector flank, two pedestrian overhead
 bridges (non-solid — decor never blocks a road), and kopitiam seating in
-the void decks. **Seeded dread beats** in
-the NotD: Special Ops tradition land every 35s from a data-driven table
-(dying car alarms, laundry still turning on the poles, the 265 timetable
-glass smeared from the inside), and the MRT announcements ride the train
-timeline — "Last train leaving. Please mind the platform gap."
+the void decks. **Dread beats** in
+the NotD: Special Ops tradition draw from a data-driven table (dying car
+alarms, laundry still turning on the poles, the 265 timetable glass
+smeared from the inside) — but phase 2A CUT the 35s metronome: dread now
+speaks only inside surge warnings (seeded) and at scripted timeline
+beats (a fixed line at T+45), so it always means something. The MRT
+announcements ride the train timeline — "Last train leaving. Please
+mind the platform gap."
 
 ## Determinism (gotchas 28–30)
 
-Script state lives in Lua globals (47 chunk locals, headroom 153); EVERY
-random draw — loot, patrol routes, dread beats — flows through **one
-Park-Miller/Schrage stream** (`SeedRNG`/`NextRand`, bit-identical under
-32-bit fengari and the game's 64-bit Lua; ParseNumArg keeps `-seed` to 9
-digits so both widths accept the same strings). The seed **locks at the
-first commitment point** — your first `-search`, or the first patrol at
-T+90 — and `RUNLOG` accumulates machine-readable beats (`seed`, `class`,
-`search`, `craft`, `infect`, `cure`, `rise`, `defect`, `patrol`, `esc`,
-`gen`, `power`, `train|arrive/board/depart/empty`, `brood`, `nest`,
-`verdict`). **The golden-run pin is deferred to phase 2** — deliberately:
-phase 1 pins per-mechanic beats and byte-identical replay of full 200s
-prefixes (`escalation.test.js`, `scavenge-craft.test.js`); the full
-scripted-playthrough transcript lands with phase 2 so it only ever needs
-pinning once against the phase-2 balance pass.
+Script state lives in Lua globals (gotcha 28 — the chunk stays far under
+the 200-local cap); EVERY random draw — loot, spills, surges, wanderers,
+nest deals, siren dread — flows through **one Park-Miller/Schrage
+stream** (`SeedRNG`/`NextRand`, bit-identical under 32-bit fengari and
+the game's 64-bit Lua; ParseNumArg keeps `-seed` to 9 digits so both
+widths accept the same strings). The seed **locks at the first
+commitment point** — the first loot draw (rummage/smash), the first
+spill roll, the first siren, or the first wanderer at T+90 — and the
+lock also DEALS the seeded rat-king nests, so `-seed N` before
+commitment re-deals the night. `RUNLOG` accumulates machine-readable
+beats (`seed`, `class`, `rummage`, `smash`, `craft`, `clip`, `spill`,
+`buy`, `nests`, `nest|down`, `wander`, `siren`, `surge`, `lastmile`,
+`trickle`, `siege`, `lvl`, `sig`, `relight`, `riot`, `triage`,
+`overclock`, `feast`, `shriek`, `infect`, `cure`, `rise`, `defect`,
+`esc`, `gen`, `power`, `train|arrive/board/depart/empty`, `brood`,
+`verdict`). **Phase 2A deliberately re-pinned the seeded-replay
+prefixes** (the loop changed; the beat-diff rationale is in
+`tests/escalation.test.js`'s header, per PIPELINE §8's re-pin doctrine).
+**The golden-run pin stays deferred** until after the 2A in-game balance
+pass, so the full-playthrough transcript is pinned once, not re-pinned
+after tuning.
 
 ## Art (all four tiers of the doctrine) and credits
 
@@ -278,13 +359,17 @@ flush against each tower's own south face — the solid tower is directly
 behind them, so they occlude nothing a unit can stand on. All identity
 pieces are `solid:false` decor: zero pathing, zero logic shift.
 
-## Chat commands
+## Chat commands (META ONLY — gotcha 33)
 
-`-help` `-status` `-recipes` `-credits` `-class <c>` `-search`
-`-craft <r>` `-reload` `-sprint` `-fix` `-board` `-seed N`; `-test`
-toggles debug (northreach convention): `-gold N` `-clips N` `-give <r>`
+`-help` `-status` `-recipes` `-credits` `-seed N`; `-test` toggles debug
+(northreach convention): `-gold N` `-clips N` `-give <r>`
 `-zspawn <kind> [n]` `-esc N` `-clock N` `-power` `-infectme`
-`-clearhorde` `-ff` `-runlog`.
+`-clearhorde` `-ff` `-runlog` `-surge` `-xp N` `-noise N`.
+
+The seven phase-1 gameplay verbs (`-class` `-search` `-craft` `-reload`
+`-sprint` `-fix` `-board`) are DELETED and do not respond — the silence
+is pinned by `tests/commands.test.js`. (`-cam N` was considered and
+declined: the map keeps its zero-GetLocalPlayer doctrine.)
 
 ## Layout
 
@@ -292,32 +377,53 @@ toggles debug (northreach convention): `-gold N` `-clips N` `-give <r>`
 never in doubt): the elevated line is a raised berm on the east edge with
 generated viaduct spans; the platform rect gates boarding. One E-W main
 road to the station, one N-S estate road, and the tree-lined **park
-connector** corridor the patrols favor. Five HDB districts (searchable
+connector** corridor the wanderers favor. Five HDB districts (searchable
 void decks), the Mayflower Hawker Centre (loot-dense), the Teck Ghee
 Polyclinic (the cure region), three substations spread to force
-traversal, and the kampong lair in the far SW. All of it — terrain,
-doodads, preplaced units, regions — comes from ONE committed generator
+traversal, and the kampong lair in the far SW. Phase 2A adds the four **class
+circles** (statue-marked rects at the spawn deck's south edge) and the
+**Provision Shop** at the void deck. All of it — terrain, doodads,
+preplaced units, regions — comes from ONE committed generator
 (`assets/generate-layout.mjs`), so every coordinate agrees.
 
-## Tests (maps/last-train/tests/, 64 tests, 98.2% line coverage)
+## Tests (maps/last-train/tests/, 93 tests, 99.2% line coverage)
 
-`ammo` (draw/dry/Parang/reload/clip-drop/sentry belt), `infection`
-(state, DoT math, both cures, death-into-defection), `corpse-rise`
-(window, Molotov counterplay, esc scaling), `defection` (both-direction
-alliance flips, the pack, wipe verdicts, solo defeat), `escalation`
-(falloff math, state-keyed drip, patrol cadence + seeded replay),
-`scavenge-craft` (seeded loot, all ten recipes, crafted-gear effects),
-`objectives-train` (fix channel/interrupt, tech halving, part instant,
-power gate, timeline, boarding, all three endings), `classes` (picker,
-window, kits, sprint), `commands` (debug gate, credits, seed guard),
-`ambience` (night/rain/fog, dread cadence + seeded replay, multiboard,
-no GetLocalPlayer).
+Every verb is exercised on its REAL input (gotcha 33's sim clause):
+`ammo` (draw/dry/Parang/reload-as-ability-R with gun-down and no
+PauseUnit/sentry belt), `infection` (state, DoT math, both cures + XP,
+death-into-defection), `corpse-rise` (window, Molotov counterplay +
+noise, esc scaling), `defection` (alliance flips, the pack, Feast incl.
+burn-denial, Shriek retargeting, the HUNT board row, wipe verdicts, solo
+defeat), `escalation` (falloff math, state-keyed drip + nest trim,
+wanderer cadence, the deliberately RE-PINNED seeded-replay prefix — see
+its header), `scavenge-craft` (rummage-by-proximity, smash + noise +
+ammo cost, auto-combine ×4, clip packs, the cut list stays cut, seeded
+replay), `objectives-train` (stand-to-repair persistence/knockback/2×/
+Overclock, relighting, power gate, countdown window, timeline, region
+boarding, all three endings, outcomes-only score), `classes` (circles,
+silent window close, kits, sprint-as-E, invulnerable statues),
+`commands` (deleted-verb SILENCE, debug gate, ZCD-credited rolls, seed
+guard), `ambience` (night/rain/fog, the dead metronome, reworked
+multiboard, no GetLocalPlayer), plus NEW `surges` (siren lead, schedule,
+noise/player/nest sizing, repair-yard pull, Last Mile trickle, platform
+siege, spills, seeded replay) and `power-curve` (kill/objective XP,
+level-ups, all four signatures, the shop's SELL flow + clip prices).
 
 ## Honesty notes (sim vs game)
 
-- The sim has no pathing/combat AI: patrol walking, zombie aggro and real
-  boarding runs are game-only. Region boarding, ammo draws, infection and
-  verdicts are exercised for real.
+- The sim has no pathing/combat AI: surge/wanderer walking, zombie
+  aggro and real boarding runs are game-only. Region boarding (and the
+  class circles), ammo draws, infection, noise, XP and verdicts are
+  exercised for real.
+- Abilities are DATA + trigger dispatch: the sim fires the spell events
+  (`sim.cast`) and the script does the work; the ANcl-based buttons'
+  in-game cast feel (hotkeys R/E/F/C, cooldown display) is game-only
+  (preflight's honest-limit list: ability data-field interpretation).
+- The Provision Shop charges its clip prices via item lumber cost
+  (`ilum`) — the ENGINE does the charging in-game; the sim exercises the
+  SELL event flow and pins the prices as object data.
+- The siren/chime `CreateSound` paths are stock and cosmetic — a wrong
+  path is silent, never a crash; unverifiable headlessly.
 - Usable crafted items sit on the `pman` (mana potion) base so they are
   activatable in-game with a harmless engine effect (our units have no
   mana); effects are scripted on the USE event and the script removes the
@@ -331,7 +437,11 @@ no GetLocalPlayer).
 
 ## Phase roadmap
 
-Phase 1 (this): the full core loop, sim-proven. Phase 2: the golden-run
-pin (gotcha 30) after a balance pass, in-game playtest + stock-art
-promotions to game-verified, horde-side play depth for defected players
-(active abilities), and endless/score-attack conventions.
+Phase 1: the full core loop, sim-proven — playtested 2026-08-07, verdict
+"constant typing is bad, core loop is unfun". Phase 2A (this): the fun
+transplant — de-chatted verbs, the surge heartbeat, Noise, the power
+curve, nests, spills, the conductor defection kit; gated by
+DESIGN-WALKTHROUGH.md (PIPELINE §10). Next: the 2A in-game playtest
+(play the walkthrough), a balance pass, THEN the golden-run pin
+(gotcha 30 — deferred so it is pinned once), stock-art promotions to
+game-verified, and endless/score-attack conventions.

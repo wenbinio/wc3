@@ -1,7 +1,9 @@
 'use strict';
-// The class picker (genre furniture, Singapore-flavored): four classes,
-// a 40s pick window at spawn, class-specific clips/kit, and the window
-// closing for good.
+// The class CIRCLES (phase 2A, gotcha 33): four statue-marked rects at the
+// spawn void deck — walk a survivor in, walk a class out. The 40s window
+// keeps its semantics but the policing announcements are cut (it closes
+// silently). Sprint is ability E. Chat -class no longer exists
+// (commands.test.js pins the deleted-verb silence).
 
 const test = require('node:test');
 const assert = require('node:assert');
@@ -9,6 +11,12 @@ const path = require('path');
 const { loadMap } = require('../../../lib/sim');
 
 const MAP = path.join(__dirname, '..');
+
+// circle centers (assets/generate-layout.mjs CLASS_CIRCLES)
+const CIRCLE = {
+  heartlander: [-980, -560], police: [-760, -680],
+  paramedic: [-540, -730], tech: [-320, -680],
+};
 
 test('everyone walks out as a Heartlander with the class clip and rations', () => {
   const sim = loadMap(MAP, { users: [0, 1] });
@@ -23,51 +31,64 @@ test('everyone walks out as a Heartlander with the class clip and rations', () =
   }
 });
 
-test('-class swaps the hero in place with class stats and starting kit', () => {
+test('walking onto a circle swaps the hero in place with class stats and kit', () => {
   const sim = loadMap(MAP, { users: [0] });
   const before = sim.findUnit('h000', 0);
-  const bx = before.x, by = before.y;
-  sim.chat(0, '-class police');
+  sim.moveUnit(before, CIRCLE.police[0], CIRCLE.police[1]);
   assert.strictEqual(sim.findUnit('h000', 0), null, 'the Heartlander is gone');
   const apo = sim.findUnit('h001', 0);
   assert.ok(apo, 'the APO stands in their place');
-  assert.ok(Math.abs(apo.x - bx) < 1 && Math.abs(apo.y - by) < 1, 'same spot');
+  assert.ok(Math.abs(apo.x - CIRCLE.police[0]) < 1 && Math.abs(apo.y - CIRCLE.police[1]) < 1,
+    'transformed on the circle');
   assert.strictEqual(sim.player(0).gold, 24, 'the big clip');
   assert.strictEqual(sim.player(0).lumber, 3, 'spare clips on the belt');
   assert.ok(/class\|pid=0\|police/.test(sim.global('RUNLOG')));
   assert.ok(sim.messagesMatching(/steps up as the Auxiliary Police Officer/).length > 0);
 });
 
-test('the Technician starts with a Generator Part and a Barricade Kit', () => {
+test('circle statues are invulnerable scenery, one per class', () => {
   const sim = loadMap(MAP, { users: [0] });
-  sim.chat(0, '-class tech');
+  for (const t of ['h000', 'h001', 'h002', 'h003']) {
+    assert.strictEqual(sim.unitsOf(27, t).length, 1, t + ' statue placed');
+  }
+  assert.ok(sim.callsOf('SetUnitInvulnerable').length >= 4, 'statues made invulnerable');
+});
+
+test('the Technician steps off their circle with a Barricade Kit (no Generator Part — it is GONE)', () => {
+  const sim = loadMap(MAP, { users: [0] });
+  sim.moveUnit(sim.findUnit('h000', 0), CIRCLE.tech[0], CIRCLE.tech[1]);
   const tech = sim.findUnit('h003', 0);
   const kit = [...sim.items.values()].filter((i) => !i.removed && i.ownerUnit === tech.handle)
     .map((i) => i.typeStr).sort();
-  assert.deepStrictEqual(kit, ['I013', 'I018'], 'barricade kit + generator part');
+  assert.deepStrictEqual(kit, ['I013'], 'barricade kit only — the instant-fix item was cut');
   assert.strictEqual(sim.player(0).gold, 10);
 });
 
-test('an unknown class names the four; the window closes at 40s for good', () => {
+test('re-picking inside the window works; after 40s the circles go dark SILENTLY', () => {
   const sim = loadMap(MAP, { users: [0] });
-  sim.chat(0, '-class durian');
-  assert.ok(sim.messagesTo(0).some((m) => /heartlander, police, paramedic, tech/.test(m.text)));
+  sim.moveUnit(sim.findUnit('h000', 0), CIRCLE.police[0], CIRCLE.police[1]);
+  assert.ok(sim.findUnit('h001', 0), 'first pick');
+  sim.moveUnit(sim.findUnit('h001', 0), CIRCLE.paramedic[0], CIRCLE.paramedic[1]);
+  assert.ok(sim.findUnit('h002', 0), 'second thoughts are free inside the window');
 
   sim.advance(41);
-  assert.ok(sim.messagesMatching(/second thoughts is over/).length > 0);
-  sim.chat(0, '-class police');
-  assert.ok(sim.messagesTo(0).some((m) => /pick window is closed/.test(m.text)));
-  assert.ok(sim.findUnit('h000', 0), 'still the Heartlander');
+  assert.strictEqual(sim.messagesMatching(/second thoughts is over/).length, 0,
+    'the old policing announcement is cut');
+  assert.ok(/pick\|closed/.test(sim.global('RUNLOG')), 'window close is logged, not nagged');
+  sim.moveUnit(sim.findUnit('h002', 0), CIRCLE.tech[0], CIRCLE.tech[1]);
+  assert.ok(sim.findUnit('h002', 0), 'still the Paramedic — circle inert, no scolding');
+  assert.strictEqual(sim.findUnit('h003', 0), null);
 });
 
-test('-sprint bursts the legs and cools down 20s', () => {
+test('Sprint (ability E) bursts the legs and cools down 20s', () => {
   const sim = loadMap(MAP, { users: [0] });
-  sim.chat(0, '-sprint');
+  const hero = sim.findUnit('h000', 0);
+  sim.cast(hero, 'A001');
   const calls = sim.callsOf('SetUnitMoveSpeed');
   assert.ok(calls.length > 0, 'speed set');
-  sim.chat(0, '-sprint');
+  sim.cast(hero, 'A001');
   assert.ok(sim.messagesTo(0).some((m) => /Legs are jelly/.test(m.text)), 'cooldown holds');
   sim.advance(21);
-  sim.chat(0, '-sprint');
+  sim.cast(hero, 'A001');
   assert.ok(sim.messagesMatching(/You RUN/).length >= 2, 'ready again after 20s');
 });

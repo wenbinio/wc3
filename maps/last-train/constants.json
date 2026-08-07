@@ -148,6 +148,13 @@
       "name": "Park Connector Sprinter",
       "source": "objects-units.json"
     },
+    "UNIT_PROVISION_SHOP": {
+      "kind": "unit",
+      "rawcode": "h01H",
+      "base": "ngme",
+      "name": "Provision Shop",
+      "source": "objects-units.json"
+    },
     "UNIT_PROVISION_SHOP_TOWKAY": {
       "kind": "unit",
       "rawcode": "n001",
@@ -295,13 +302,6 @@
       "name": "Battery",
       "source": "objects-items.json"
     },
-    "ITEM_BLOWTORCH": {
-      "kind": "item",
-      "rawcode": "I019",
-      "base": "phea",
-      "name": "Blowtorch",
-      "source": "objects-items.json"
-    },
     "ITEM_BOTTLE": {
       "kind": "item",
       "rawcode": "I004",
@@ -314,6 +314,13 @@
       "rawcode": "I007",
       "base": "ches",
       "name": "Bottled Water",
+      "source": "objects-items.json"
+    },
+    "ITEM_CLIP_PACK": {
+      "kind": "item",
+      "rawcode": "I01A",
+      "base": "ches",
+      "name": "Clip Pack",
       "source": "objects-items.json"
     },
     "ITEM_CLOTH": {
@@ -330,25 +337,11 @@
       "name": "Flare",
       "source": "objects-items.json"
     },
-    "ITEM_GENERATOR_PART": {
-      "kind": "item",
-      "rawcode": "I018",
-      "base": "ches",
-      "name": "Generator Part",
-      "source": "objects-items.json"
-    },
     "ITEM_KEROSENE": {
       "kind": "item",
       "rawcode": "I005",
       "base": "ches",
       "name": "Kerosene",
-      "source": "objects-items.json"
-    },
-    "ITEM_KOPI_SET": {
-      "kind": "item",
-      "rawcode": "I017",
-      "base": "phea",
-      "name": "Kopi Set",
       "source": "objects-items.json"
     },
     "ITEM_MOBILE_PHONE": {
@@ -389,7 +382,7 @@
     "ITEM_RATIONS": {
       "kind": "item",
       "rawcode": "I008",
-      "base": "ches",
+      "base": "phea",
       "name": "Rations",
       "source": "objects-items.json"
     },
@@ -592,6 +585,62 @@
       "name": "Void Deck Pillars",
       "source": "objects-doodads.json"
     },
+    "ABIL_FEAST": {
+      "kind": "ability",
+      "rawcode": "A006",
+      "base": "ANcl",
+      "name": "Feast",
+      "source": "objects-abilities.json"
+    },
+    "ABIL_FIELD_TRIAGE": {
+      "kind": "ability",
+      "rawcode": "A004",
+      "base": "ANcl",
+      "name": "Field Triage",
+      "source": "objects-abilities.json"
+    },
+    "ABIL_OVERCLOCK": {
+      "kind": "ability",
+      "rawcode": "A005",
+      "base": "ANcl",
+      "name": "Overclock",
+      "source": "objects-abilities.json"
+    },
+    "ABIL_RELOAD": {
+      "kind": "ability",
+      "rawcode": "A000",
+      "base": "ANcl",
+      "name": "Reload",
+      "source": "objects-abilities.json"
+    },
+    "ABIL_RIOT_DISCIPLINE": {
+      "kind": "ability",
+      "rawcode": "A003",
+      "base": "ANcl",
+      "name": "Riot Discipline",
+      "source": "objects-abilities.json"
+    },
+    "ABIL_SHRIEK": {
+      "kind": "ability",
+      "rawcode": "A007",
+      "base": "ANcl",
+      "name": "Shriek",
+      "source": "objects-abilities.json"
+    },
+    "ABIL_SPRINT": {
+      "kind": "ability",
+      "rawcode": "A001",
+      "base": "ANcl",
+      "name": "Sprint",
+      "source": "objects-abilities.json"
+    },
+    "ABIL_STEADY_HANDS": {
+      "kind": "ability",
+      "rawcode": "A002",
+      "base": "AId1",
+      "name": "Steady Hands",
+      "source": "objects-abilities.json"
+    },
     "REGION_CHENG_SAN": {
       "kind": "region",
       "name": "ChengSan",
@@ -610,6 +659,26 @@
     "REGION_LAIR": {
       "kind": "region",
       "name": "Lair",
+      "source": "regions.json"
+    },
+    "REGION_PICK_HEARTLANDER": {
+      "kind": "region",
+      "name": "PickHeartlander",
+      "source": "regions.json"
+    },
+    "REGION_PICK_PARAMEDIC": {
+      "kind": "region",
+      "name": "PickParamedic",
+      "source": "regions.json"
+    },
+    "REGION_PICK_POLICE": {
+      "kind": "region",
+      "name": "PickPolice",
+      "source": "regions.json"
+    },
+    "REGION_PICK_TECH": {
+      "kind": "region",
+      "name": "PickTech",
       "source": "regions.json"
     },
     "REGION_PLATFORM": {

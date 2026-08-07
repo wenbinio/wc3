@@ -3,7 +3,7 @@
 // per-unit state): zombie damage infects, the DoT runs 1.5 dps on the
 // virtual clock, Wet Bandage cures above the threshold (Paramedic: any),
 // the polyclinic cures in 5s, and an untreated survivor dies into
-// defection.
+// defection. Phase 2A: a cure pays +10 survivor XP.
 
 const test = require('node:test');
 const assert = require('node:assert');
@@ -38,7 +38,7 @@ test('a second bite does not stack a second DoT', () => {
   assert.strictEqual(logged.length, 1, 'one infect beat, one state');
 });
 
-test('Wet Bandage cures above 40% health, refuses below (and is kept)', () => {
+test('Wet Bandage cures above 40% health, refuses below (and is kept); +10 XP on cure', () => {
   const { sim, hero } = infected();
   sim.chat(0, '-give bandage');
   const bandage = () => [...sim.items.values()].find((i) => !i.removed && i.typeStr === 'I010');
@@ -50,10 +50,12 @@ test('Wet Bandage cures above 40% health, refuses below (and is kept)', () => {
   assert.strictEqual(hero.life, 100, 'no heal on refusal either');
 
   hero.life = 400; // above 40%
+  const xp0 = sim.run('return SurvXP[0]')[0];
   sim.useItem(hero, bandage());
   assert.ok(/cure\|pid=0\|bandage/.test(sim.global('RUNLOG')));
   assert.strictEqual(hero.life, 550, 'heals 150, capped at max');
   assert.strictEqual(bandage(), undefined, 'consumed on success');
+  assert.strictEqual(sim.run('return SurvXP[0]')[0], xp0 + 10, 'the cure pays XP');
 
   sim.advance(10);
   assert.strictEqual(hero.life, 550, 'no DoT after the cure');
@@ -61,7 +63,7 @@ test('Wet Bandage cures above 40% health, refuses below (and is kept)', () => {
 
 test('the Paramedic cures at ANY health and starts with two bandages', () => {
   const sim = loadMap(MAP, { users: [0] });
-  sim.chat(0, '-class paramedic');
+  sim.moveUnit(sim.findUnit('h000', 0), -540, -730); // the paramedic circle
   const hero = sim.findUnit('h002', 0);
   assert.ok(hero, 'paramedic hero swapped in');
   const bandages = [...sim.items.values()].filter((i) => !i.removed && i.typeStr === 'I010'

@@ -669,3 +669,47 @@ still applies. Slow tiers are opt-out-able, never cut: --no-logic,
 --no-validate, --no-crossexec. The stable check catalog lives in the
 tools/preflight.js header; test/preflight.test.js pins all bundled maps at
 zero FAILs.
+
+## 10. The fun gate: DESIGN-WALKTHROUGH.md before any playtest handoff
+
+Structural validity, logic tests and preflight prove a map RUNS; none of
+them prove it is a game anyone wants to play. Last Train phase 1 passed
+every technical gate and failed its first playtest on design ("constant
+typing is bad, core loop is unfun") — the class of failure none of §§1–9
+can catch. The fun gate exists so that failure class is met BEFORE code,
+not after a playtest.
+
+**Rule: every bundled map carries a `maps/<name>/DESIGN-WALKTHROUGH.md`,
+written (or re-written) BEFORE the implementation it describes, and the
+implementation must match it.** Required contents (exemplar:
+maps/last-train/DESIGN-WALKTHROUGH.md):
+
+1. **The minute-by-minute walkthrough** — the opening minutes, one
+   representative mid-game 60 seconds, the endgame crunch, the finale.
+   Written from the PLAYER's chair (what they see, decide and press),
+   never from the implementation's.
+2. **The 60-seconds test** — the mid-game minute must survive being read
+   aloud: if a designer can't narrate an interesting minute, the players
+   won't play one.
+3. **The interaction ledger** — every verb × input × expected uses/min ×
+   under-pressure?. Gotcha 33 applies: a chat row at combat tempo
+   (>1/min or under pressure) is a design FAIL, full stop.
+4. **Decision density per phase** — counted against the 20–60s canon band
+   (docs/reference/wc3-canon-invariants.md I5); no phase below one
+   meaningful decision per minute without an explicit reason.
+5. **The player-owned growing numbers list** — what visibly compounds
+   (canon I2, the zero-exception invariant). An empty list is a design
+   FAIL.
+6. **The threat schedule on a timeline** — plotted, with the longest safe
+   gap stated; no unexplained gap over ~90s.
+
+Sequencing: walkthrough → vertical slice of the core loop → logic tests
+on the slice → ONLY THEN content, art passes and (for seeded maps) the
+golden-run pin. Pinning a golden run before the loop survives the fun
+gate wastes a re-pin (§8's re-pin doctrine).
+
+The sim makes the fun gate testable, not aspirational: sim.cast /
+sim.pickup / sim.sell / sim.moveUnit + region events / sim.damage cover
+click-driven verbs exactly as well as chat ever was — the interface is
+designed for the player and the SIM adapts, never the reverse
+(gotcha 33's sim clause).

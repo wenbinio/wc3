@@ -1,0 +1,448 @@
+{
+  "original": {},
+  "custom": {
+    "A000:ANcl": [
+      {
+        "id": "anam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Reload"
+      },
+      {
+        "id": "ahky",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "R"
+      },
+      {
+        "id": "atp1",
+        "type": "string",
+        "level": 1,
+        "column": 0,
+        "value": "Reload (|cffffcc00R|r)"
+      },
+      {
+        "id": "aub1",
+        "type": "string",
+        "level": 1,
+        "column": 0,
+        "value": "Seats a fresh clip: burns 1 spare clip (lumber) and takes 4 seconds with your gun down — your legs still work. Steady Hands shortens the rack and deepens the clip."
+      },
+      {
+        "id": "aart",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNReload.blp"
+      },
+      {
+        "id": "acdn",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 5
+      },
+      {
+        "id": "Ncl2",
+        "type": "int",
+        "level": 1,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "Ncl1",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "A001:ANcl": [
+      {
+        "id": "anam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Sprint"
+      },
+      {
+        "id": "ahky",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "E"
+      },
+      {
+        "id": "atp1",
+        "type": "string",
+        "level": 1,
+        "column": 0,
+        "value": "Sprint (|cffffcc00E|r)"
+      },
+      {
+        "id": "aub1",
+        "type": "string",
+        "level": 1,
+        "column": 0,
+        "value": "A 4-second burst of speed (+120 move speed). 20 second cooldown. The rain does not slow; you can."
+      },
+      {
+        "id": "aart",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNSprint.blp"
+      },
+      {
+        "id": "acdn",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 20
+      },
+      {
+        "id": "Ncl2",
+        "type": "int",
+        "level": 1,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "Ncl1",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "A002:AId1": [
+      {
+        "id": "anam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Steady Hands"
+      },
+      {
+        "id": "atp1",
+        "type": "string",
+        "level": 1,
+        "column": 0,
+        "value": "Steady Hands"
+      },
+      {
+        "id": "aub1",
+        "type": "string",
+        "level": 1,
+        "column": 0,
+        "value": "The Heartlander signature (level 3): reloads take 3 seconds instead of 4, and every survivor level packs 2 extra rounds into the clip."
+      },
+      {
+        "id": "aart",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNReload.blp"
+      },
+      {
+        "id": "Idef",
+        "type": "int",
+        "level": 1,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "A003:ANcl": [
+      {
+        "id": "anam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Riot Discipline"
+      },
+      {
+        "id": "ahky",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "F"
+      },
+      {
+        "id": "atp1",
+        "type": "string",
+        "level": 1,
+        "column": 0,
+        "value": "Riot Discipline (|cffffcc00F|r)"
+      },
+      {
+        "id": "aub1",
+        "type": "string",
+        "level": 1,
+        "column": 0,
+        "value": "The APO signature (level 3): 10 seconds of shield drill — incoming damage halved. 45 second cooldown."
+      },
+      {
+        "id": "aart",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNAPO.blp"
+      },
+      {
+        "id": "acdn",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 45
+      },
+      {
+        "id": "Ncl2",
+        "type": "int",
+        "level": 1,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "Ncl1",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "A004:ANcl": [
+      {
+        "id": "anam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Field Triage"
+      },
+      {
+        "id": "ahky",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "F"
+      },
+      {
+        "id": "atp1",
+        "type": "string",
+        "level": 1,
+        "column": 0,
+        "value": "Field Triage (|cffffcc00F|r)"
+      },
+      {
+        "id": "aub1",
+        "type": "string",
+        "level": 1,
+        "column": 0,
+        "value": "The Paramedic signature (level 3): cures the infection and closes 100 damage of wounds for every survivor within 400. 45 second cooldown."
+      },
+      {
+        "id": "aart",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNWetBandage.blp"
+      },
+      {
+        "id": "acdn",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 45
+      },
+      {
+        "id": "Ncl2",
+        "type": "int",
+        "level": 1,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "Ncl1",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "A005:ANcl": [
+      {
+        "id": "anam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Overclock"
+      },
+      {
+        "id": "ahky",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "F"
+      },
+      {
+        "id": "atp1",
+        "type": "string",
+        "level": 1,
+        "column": 0,
+        "value": "Overclock (|cffffcc00F|r)"
+      },
+      {
+        "id": "aub1",
+        "type": "string",
+        "level": 1,
+        "column": 0,
+        "value": "The Technician signature (level 3): the next substation you stand at completes INSTANTLY. 60 second cooldown."
+      },
+      {
+        "id": "aart",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNRepair.blp"
+      },
+      {
+        "id": "acdn",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 60
+      },
+      {
+        "id": "Ncl2",
+        "type": "int",
+        "level": 1,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "Ncl1",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "A006:ANcl": [
+      {
+        "id": "anam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Feast"
+      },
+      {
+        "id": "ahky",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "F"
+      },
+      {
+        "id": "atp1",
+        "type": "string",
+        "level": 1,
+        "column": 0,
+        "value": "Feast (|cffffcc00F|r)"
+      },
+      {
+        "id": "aub1",
+        "type": "string",
+        "level": 1,
+        "column": 0,
+        "value": "The Revenant claims a corpse: target an unburned corpse and it rises IMMEDIATELY into your pack. Burned corpses are denied to you."
+      },
+      {
+        "id": "aart",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNZombie.blp"
+      },
+      {
+        "id": "acdn",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 15
+      },
+      {
+        "id": "Ncl2",
+        "type": "int",
+        "level": 1,
+        "column": 0,
+        "value": 2
+      },
+      {
+        "id": "Ncl1",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "A007:ANcl": [
+      {
+        "id": "anam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Shriek"
+      },
+      {
+        "id": "ahky",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "C"
+      },
+      {
+        "id": "atp1",
+        "type": "string",
+        "level": 1,
+        "column": 0,
+        "value": "Shriek (|cffffcc00C|r)"
+      },
+      {
+        "id": "aub1",
+        "type": "string",
+        "level": 1,
+        "column": 0,
+        "value": "The Revenant conducts the horde: the next surge (and the last-mile trickle for 90 seconds) converges on the target point. 60 second cooldown."
+      },
+      {
+        "id": "aart",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNBanshee.blp"
+      },
+      {
+        "id": "acdn",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 60
+      },
+      {
+        "id": "Ncl2",
+        "type": "int",
+        "level": 1,
+        "column": 0,
+        "value": 2
+      },
+      {
+        "id": "Ncl1",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 0
+      }
+    ]
+  }
+}

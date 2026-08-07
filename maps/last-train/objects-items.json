@@ -21,14 +21,14 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Scavenged shelving timber. Combines: Pipe (Parang), Cloth (Barricade Kit)."
+        "value": "Scavenged shelving timber. Combines with a Pipe into a Parang (automatic on pickup)."
       },
       {
         "id": "ides",
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Scavenged shelving timber. Combines: Pipe (Parang), Cloth (Barricade Kit)."
+        "value": "Scavenged shelving timber. Combines with a Pipe into a Parang (automatic on pickup)."
       },
       {
         "id": "ifil",
@@ -86,14 +86,14 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "A length of galvanised pipe. Combines: Plank (Parang), Wire (Mobile Phone), Battery (Sentry Kit), Kerosene (Blowtorch)."
+        "value": "A length of galvanised pipe. Combines with a Plank into a Parang (automatic on pickup)."
       },
       {
         "id": "ides",
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "A length of galvanised pipe. Combines: Plank (Parang), Wire (Mobile Phone), Battery (Sentry Kit), Kerosene (Blowtorch)."
+        "value": "A length of galvanised pipe. Combines with a Plank into a Parang (automatic on pickup)."
       },
       {
         "id": "ifil",
@@ -151,14 +151,14 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Laundry off the bamboo poles. Combines: Water (Wet Bandage), Plank (Barricade Kit), Kerosene (Flare)."
+        "value": "Laundry off the bamboo poles. Combines with Bottled Water into a Wet Bandage (automatic on pickup)."
       },
       {
         "id": "ides",
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Laundry off the bamboo poles. Combines: Water (Wet Bandage), Plank (Barricade Kit), Kerosene (Flare)."
+        "value": "Laundry off the bamboo poles. Combines with Bottled Water into a Wet Bandage (automatic on pickup)."
       },
       {
         "id": "ifil",
@@ -216,14 +216,14 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Copper wire from a gutted letterbox bank. Combines: Pipe (Mobile Phone), Battery (Generator Part)."
+        "value": "Copper wire from a gutted letterbox bank. Combines with a Battery into a Sentry Kit (automatic on pickup)."
       },
       {
         "id": "ides",
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Copper wire from a gutted letterbox bank. Combines: Pipe (Mobile Phone), Battery (Generator Part)."
+        "value": "Copper wire from a gutted letterbox bank. Combines with a Battery into a Sentry Kit (automatic on pickup)."
       },
       {
         "id": "ifil",
@@ -281,14 +281,14 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "A thick glass bottle, deposit unclaimed. Combines: Kerosene (Molotov)."
+        "value": "A thick glass bottle, deposit unclaimed. Combines with Kerosene into a Molotov (automatic on pickup)."
       },
       {
         "id": "ides",
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "A thick glass bottle, deposit unclaimed. Combines: Kerosene (Molotov)."
+        "value": "A thick glass bottle, deposit unclaimed. Combines with Kerosene into a Molotov (automatic on pickup)."
       },
       {
         "id": "ifil",
@@ -346,14 +346,14 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "A hawker stall's stove fuel. Combines: Bottle (Molotov), Cloth (Flare), Pipe (Blowtorch)."
+        "value": "A hawker stall's stove fuel. Combines with a Bottle into a Molotov (automatic on pickup)."
       },
       {
         "id": "ides",
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "A hawker stall's stove fuel. Combines: Bottle (Molotov), Cloth (Flare), Pipe (Blowtorch)."
+        "value": "A hawker stall's stove fuel. Combines with a Bottle into a Molotov (automatic on pickup)."
       },
       {
         "id": "ifil",
@@ -411,14 +411,14 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "A car battery with some life left. Combines: Pipe (Sentry Kit), Wire (Generator Part)."
+        "value": "A car battery with some life left. Combines with Wire into a Sentry Kit (automatic on pickup)."
       },
       {
         "id": "ides",
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "A car battery with some life left. Combines: Pipe (Sentry Kit), Wire (Generator Part)."
+        "value": "A car battery with some life left. Combines with Wire into a Sentry Kit (automatic on pickup)."
       },
       {
         "id": "ifil",
@@ -476,14 +476,14 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "NEWater, ice-cold no more. Combines: Cloth (Wet Bandage), Rations (Kopi Set)."
+        "value": "NEWater, ice-cold no more. Combines with Cloth into a Wet Bandage (automatic on pickup)."
       },
       {
         "id": "ides",
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "NEWater, ice-cold no more. Combines: Cloth (Wet Bandage), Rations (Kopi Set)."
+        "value": "NEWater, ice-cold no more. Combines with Cloth into a Wet Bandage (automatic on pickup)."
       },
       {
         "id": "ifil",
@@ -498,71 +498,6 @@
         "level": 0,
         "column": 0,
         "value": "ReplaceableTextures\\CommandButtons\\BTNVialFull.blp"
-      },
-      {
-        "id": "igol",
-        "type": "int",
-        "level": 0,
-        "column": 0,
-        "value": 0
-      },
-      {
-        "id": "ipaw",
-        "type": "int",
-        "level": 0,
-        "column": 0,
-        "value": 0
-      },
-      {
-        "id": "iabi",
-        "type": "string",
-        "level": 0,
-        "column": 0,
-        "value": ""
-      }
-    ],
-    "I008:ches": [
-      {
-        "id": "unam",
-        "type": "string",
-        "level": 0,
-        "column": 0,
-        "value": "Rations"
-      },
-      {
-        "id": "utip",
-        "type": "string",
-        "level": 0,
-        "column": 0,
-        "value": "Rations"
-      },
-      {
-        "id": "utub",
-        "type": "string",
-        "level": 0,
-        "column": 0,
-        "value": "Biscuits and a tin of kaya. Combines: Bottled Water (Kopi Set)."
-      },
-      {
-        "id": "ides",
-        "type": "string",
-        "level": 0,
-        "column": 0,
-        "value": "Biscuits and a tin of kaya. Combines: Bottled Water (Kopi Set)."
-      },
-      {
-        "id": "ifil",
-        "type": "string",
-        "level": 0,
-        "column": 0,
-        "value": "Objects\\InventoryItems\\TreasureChest\\treasurechest.mdl"
-      },
-      {
-        "id": "iico",
-        "type": "string",
-        "level": 0,
-        "column": 0,
-        "value": "ReplaceableTextures\\CommandButtons\\BTNCheese.blp"
       },
       {
         "id": "igol",
@@ -606,14 +541,14 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Use: cures the slow-burn infection when your health is above 40% (a Paramedic cures at ANY health) and closes 150 damage of wounds. Craft: Cloth + Bottled Water."
+        "value": "Use: cures the slow-burn infection when your health is above 40% (a Paramedic cures at ANY health) and closes 150 damage of wounds. Craft: Cloth + Bottled Water (automatic on pickup); the Provision Shop sells them for 2 clips."
       },
       {
         "id": "ides",
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Use: cures the slow-burn infection when your health is above 40% (a Paramedic cures at ANY health) and closes 150 damage of wounds. Craft: Cloth + Bottled Water."
+        "value": "Use: cures the slow-burn infection when your health is above 40% (a Paramedic cures at ANY health) and closes 150 damage of wounds. Craft: Cloth + Bottled Water (automatic on pickup); the Provision Shop sells them for 2 clips."
       },
       {
         "id": "ifil",
@@ -656,6 +591,13 @@
         "level": 0,
         "column": 0,
         "value": 1
+      },
+      {
+        "id": "ilum",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 2
       }
     ],
     "I011:ches": [
@@ -743,14 +685,14 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Use: 30 seconds of shared vision of the whole horde — every zombie on the minimap. Craft: Pipe + Wire."
+        "value": "Use: 30 seconds of shared vision of the whole horde — every zombie on the minimap. Sold at the Provision Shop (3 clips); sometimes scavenged."
       },
       {
         "id": "ides",
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Use: 30 seconds of shared vision of the whole horde — every zombie on the minimap. Craft: Pipe + Wire."
+        "value": "Use: 30 seconds of shared vision of the whole horde — every zombie on the minimap. Sold at the Provision Shop (3 clips); sometimes scavenged."
       },
       {
         "id": "ifil",
@@ -793,6 +735,13 @@
         "level": 0,
         "column": 0,
         "value": 1
+      },
+      {
+        "id": "ilum",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 3
       }
     ],
     "I013:phea": [
@@ -815,14 +764,14 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Use: raises an 800 HP barricade at your feet. The horde will chew through it — eventually. Craft: Cloth + Plank."
+        "value": "Use: raises an 800 HP barricade at your feet. The horde will chew through it — eventually. Sold at the Provision Shop (2 clips)."
       },
       {
         "id": "ides",
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Use: raises an 800 HP barricade at your feet. The horde will chew through it — eventually. Craft: Cloth + Plank."
+        "value": "Use: raises an 800 HP barricade at your feet. The horde will chew through it — eventually. Sold at the Provision Shop (2 clips)."
       },
       {
         "id": "ifil",
@@ -865,6 +814,13 @@
         "level": 0,
         "column": 0,
         "value": 1
+      },
+      {
+        "id": "ilum",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 2
       }
     ],
     "I014:phea": [
@@ -959,14 +915,14 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Use: lights the area for 30 seconds. The dark is where the moaning comes from. Craft: Cloth + Kerosene."
+        "value": "Use: lights the area for 30 seconds. The dark is where the moaning comes from. Sold at the Provision Shop (1 clip); sometimes scavenged."
       },
       {
         "id": "ides",
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Use: lights the area for 30 seconds. The dark is where the moaning comes from. Craft: Cloth + Kerosene."
+        "value": "Use: lights the area for 30 seconds. The dark is where the moaning comes from. Sold at the Provision Shop (1 clip); sometimes scavenged."
       },
       {
         "id": "ifil",
@@ -1009,6 +965,13 @@
         "level": 0,
         "column": 0,
         "value": 1
+      },
+      {
+        "id": "ilum",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 1
       }
     ],
     "I016:phea": [
@@ -1031,14 +994,14 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Use: deploys a Sentry Gun with a 40-round belt at your feet. It guards; it does not follow. Craft: Pipe + Battery."
+        "value": "Use: deploys a Sentry Gun with a 40-round belt at your feet. It guards; it does not follow. Craft: Wire + Battery (automatic on pickup)."
       },
       {
         "id": "ides",
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Use: deploys a Sentry Gun with a 40-round belt at your feet. It guards; it does not follow. Craft: Pipe + Battery."
+        "value": "Use: deploys a Sentry Gun with a 40-round belt at your feet. It guards; it does not follow. Craft: Wire + Battery (automatic on pickup)."
       },
       {
         "id": "ifil",
@@ -1083,34 +1046,34 @@
         "value": 1
       }
     ],
-    "I017:phea": [
+    "I008:phea": [
       {
         "id": "unam",
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Kopi Set"
+        "value": "Rations"
       },
       {
         "id": "utip",
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Kopi Set"
+        "value": "Rations"
       },
       {
         "id": "utub",
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Use: kopi, kaya toast, two soft-boiled eggs. Restores 200 health. Some things the end of the world cannot take. Craft: Rations + Bottled Water."
+        "value": "Use: biscuits and a tin of kaya. Restores 100 health."
       },
       {
         "id": "ides",
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Use: kopi, kaya toast, two soft-boiled eggs. Restores 200 health. Some things the end of the world cannot take. Craft: Rations + Bottled Water."
+        "value": "Use: biscuits and a tin of kaya. Restores 100 health."
       },
       {
         "id": "ifil",
@@ -1124,79 +1087,7 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "ReplaceableTextures\\CommandButtons\\BTNKopi.blp"
-      },
-      {
-        "id": "igol",
-        "type": "int",
-        "level": 0,
-        "column": 0,
-        "value": 0
-      },
-      {
-        "id": "ipaw",
-        "type": "int",
-        "level": 0,
-        "column": 0,
-        "value": 0
-      },
-      {
-        "id": "iuse",
-        "type": "int",
-        "level": 0,
-        "column": 0,
-        "value": 1
-      },
-      {
-        "id": "iper",
-        "type": "int",
-        "level": 0,
-        "column": 0,
-        "value": 1
-      }
-    ],
-    "I018:ches": [
-      {
-        "id": "unam",
-        "type": "string",
-        "level": 0,
-        "column": 0,
-        "value": "Generator Part"
-      },
-      {
-        "id": "utip",
-        "type": "string",
-        "level": 0,
-        "column": 0,
-        "value": "Generator Part"
-      },
-      {
-        "id": "utub",
-        "type": "string",
-        "level": 0,
-        "column": 0,
-        "value": "Carried: -fix beside a substation consumes this part and restores it INSTANTLY. Craft: Wire + Battery."
-      },
-      {
-        "id": "ides",
-        "type": "string",
-        "level": 0,
-        "column": 0,
-        "value": "A rewound rotor coil, Town Council spec."
-      },
-      {
-        "id": "ifil",
-        "type": "string",
-        "level": 0,
-        "column": 0,
-        "value": "Objects\\InventoryItems\\TreasureChest\\treasurechest.mdl"
-      },
-      {
-        "id": "iico",
-        "type": "string",
-        "level": 0,
-        "column": 0,
-        "value": "ReplaceableTextures\\CommandButtons\\BTNGenPart.blp"
+        "value": "ReplaceableTextures\\CommandButtons\\BTNCheese.blp"
       },
       {
         "id": "igol",
@@ -1218,36 +1109,50 @@
         "level": 0,
         "column": 0,
         "value": ""
+      },
+      {
+        "id": "iuse",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 1
+      },
+      {
+        "id": "iper",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 1
       }
     ],
-    "I019:phea": [
+    "I01A:ches": [
       {
         "id": "unam",
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Blowtorch"
+        "value": "Clip Pack"
       },
       {
         "id": "utip",
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Blowtorch"
+        "value": "Clip Pack"
       },
       {
         "id": "utub",
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Use: welds the nearest barricade, sentry or substation for 300 HP of repairs. Craft: Pipe + Kerosene."
+        "value": "A taped pair of magazines. Picking it up banks 1 spare clip (lumber)."
       },
       {
         "id": "ides",
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Use: welds the nearest barricade, sentry or substation for 300 HP of repairs. Craft: Pipe + Kerosene."
+        "value": "A taped pair of magazines. Picking it up banks 1 spare clip (lumber)."
       },
       {
         "id": "ifil",
@@ -1261,7 +1166,7 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "ReplaceableTextures\\CommandButtons\\BTNBlowtorch.blp"
+        "value": "ReplaceableTextures\\CommandButtons\\BTNBundleOfLumber.blp"
       },
       {
         "id": "igol",
@@ -1278,18 +1183,11 @@
         "value": 0
       },
       {
-        "id": "iuse",
-        "type": "int",
+        "id": "iabi",
+        "type": "string",
         "level": 0,
         "column": 0,
-        "value": 1
-      },
-      {
-        "id": "iper",
-        "type": "int",
-        "level": 0,
-        "column": 0,
-        "value": 1
+        "value": ""
       }
     ]
   }

@@ -2484,5 +2484,90 @@
     },
     "player": 27,
     "id": 145
+  },
+  {
+    "type": "h000",
+    "position": [
+      -980,
+      -560,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 27,
+    "id": 146
+  },
+  {
+    "type": "h001",
+    "position": [
+      -760,
+      -680,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 27,
+    "id": 147
+  },
+  {
+    "type": "h002",
+    "position": [
+      -540,
+      -730,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 27,
+    "id": 148
+  },
+  {
+    "type": "h003",
+    "position": [
+      -320,
+      -680,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 27,
+    "id": 149
+  },
+  {
+    "type": "h01H",
+    "position": [
+      -140,
+      -420,
+      0
+    ],
+    "rotation": 269.9777130656439,
+    "hero": {
+      "level": 1,
+      "str": 0,
+      "agi": 0,
+      "int": 0
+    },
+    "player": 27,
+    "id": 150
   }
 ]

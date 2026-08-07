@@ -418,3 +418,71 @@ credited per-author in its `imports-credits.json` ledger (a different
 channel — see the map README's Art section). The inspiration recorded
 here is mechanical, from decomposition-driven study (CLAUDE.md
 "Decomposition-driven design").
+
+## Appendix (2026-08-07): the Zombie Defense Custom decomposition
+
+Added with phase 2A (the fun transplant): after Last Train's first
+playtest verdict ("constant typing is bad, core loop is unfun"), the
+most-played *survivor-vs-AI* lineage on EpicWar was decomposed to learn
+what the genre's proven fun loop actually does minute to minute. Credit:
+**Zombie Defense Custom, by Lions_Blood** (EpicWar 258931 / 296128) —
+mechanics only, nothing copied.
+
+**Acquisition record.** A 93-version EpicWar lineage. Decomposed: **v6.1
+Final** (EpicWar 258931, 2016, 10,585 downloads — canonical by an order
+of magnitude over its siblings; 8 players) and **v9.87** (EpicWar 296128,
+2019, 418 downloads, 16 players; adds a quest log, 25 radiation
+fragments — each of 5 collected weakens the horde —, wandering shops
+repathed every 19s, a drunk system, votekick). Both protected (mangled
+MPQ header + fake listfile); `--recover-names` recovered 485 member
+names (gotcha 4's pipeline, working as designed).
+
+**The loop, with real numbers.**
+
+- Class pick = **wisp onto a rect** spawns hero + a personal Builder.
+  No typing anywhere in the loop.
+- The speed inversion: heroes are FAST (305–500 ms) and long-ranged
+  (450–1800) vs slow 800 HP / 100 ms base zombies — horror ramps by
+  making later spawns faster and tankier (Headless 2200 HP/130 ms, Bone
+  Head 4400/190, Rotten 6000/220, Ancient Warrior 3800/265, bosses
+  16k–95k), never by slowing the player down.
+- Economy: **+2 gold per kill** (trigger bounty); gold+75-wood bundles
+  spawn as GROUND ITEMS every 80s (roaming pays); barricade costs 2g /
+  4s / 2000 HP — ONE kill's bounty, so building is a constant verb, not
+  a savings goal; turret 3g/250 HP; spotlight 10g; healing station 5g;
+  inn 20g; bunker 50g/8000 HP; artillery 70g/3000 HP.
+- Weapon shop: a flat damage ladder — Deagle 75g/+200 through FN-Minimi
+  600g/+1600; armor 100–300g. Permanent, visible, player-owned growth.
+- Anti-snowball: an XP **handicap ramp** — 200% at T+600 → 400% at
+  T+1200 → 700% at T+1800, climbing every 600s.
+- The clock: 260s of free setup, then waves at
+  350/400/500/700/940/1140/1340/1440/1600/1780/1880/1980/2080/2240/
+  2450/2550/2750/2850/2950/3190/3290/3490(/3590/3780) — 50–240s gaps —
+  under a **"Final Wave In..." countdown window running from game
+  start** (4528s). The finale floods the map, then a 300s Evacuation
+  timer resolves to CustomVictory.
+- Texture between waves: a graveyard trickle every 60s (75s in v9.87);
+  every death corpse-rises after 7s.
+- The hero kit is ALL command-card actives: Jump, Critical Shot,
+  Evasion, Grenade (F), Throwing Knife (T), Sneak, Lay Down.
+- Difficulty is typed by red at the LOBBY stage only — chat as setup,
+  never as play.
+- Scars, recorded for honesty: a hidden `-b` godmode backdoor for red,
+  and banned-name triggers — the author-backdoor class this repo's
+  `-test` convention (identical for every player, documented in -help)
+  exists to replace.
+
+**Why it is fun (the transplantable shape).** (1) A permanent positive
+feedback loop the player OWNS: kills → gold → guns/turrets → more
+kills, in visible steps. (2) Something asks for a click every 60–90
+seconds. (3) Downtime is SPENDABLE — build, roam for bundles, shop —
+never idle, never typing. (4) The fort is a shared team artifact that
+waves visibly crash against, on a visible clock. (5) Chat is
+camera/music/pings only; the loop is 100% mouse + hotkeys.
+
+**UX catalog conclusion** (now CLAUDE.md gotcha 33): across the whole
+decomposed genre, chat = meta, mouse = game. Phase 2A's transplants
+into Last Train, adapted not copied: the surge/countdown heartbeat and
+persistent timer window, ground-drop spills, the wisp-rect class pick
+(as class circles), spendable downtime (rat-king nests standing in for
+radiation fragments), and the fort-as-chokepoint platform siege.

@@ -236,4 +236,27 @@ paint('Lair', (c) => {
   stroke(c, 54, 52, 42, 44, 3, [90, 70, 45]);
 });
 
-console.log(`last-train icons regenerated (21 BTN + DISBTN twins, format ${fmt})`);
+// ---- abilities (phase 2A: the de-chatted verbs) -----------------------
+// APPENDED after every phase-1 icon so the shared noise-seed sequence —
+// and therefore every existing icon's bytes — stays untouched.
+paint('Reload', (c) => {
+  gradient(c, [26, 30, 26], [10, 12, 10]);
+  rect(c, 14, 20, 30, 52, [90, 96, 92]);           // the magazine body
+  rect(c, 14, 20, 30, 26, [120, 126, 122]);
+  rect(c, 18, 46, 26, 52, [70, 74, 70]);           // baseplate
+  for (let i = 0; i < 3; i++) {
+    disc(c, 40, 24 + i * 10, 4, [210, 170, 60]);   // loose rounds arcing in
+    disc(c, 48, 20 + i * 10, 3, [180, 145, 50]);
+  }
+  stroke(c, 36, 44, 50, 44, 3, [200, 200, 205]);   // the rack pull
+});
+paint('Sprint', (c) => {
+  gradient(c, [22, 30, 40], [8, 12, 18]);
+  for (let i = 0; i < 3; i++) {
+    stroke(c, 12 + i * 12, 16, 24 + i * 12, 32, 5, [120, 200, 230]); // chevrons
+    stroke(c, 24 + i * 12, 32, 12 + i * 12, 48, 5, [90, 170, 210]);
+  }
+  stroke(c, 10, 52, 54, 52, 3, [60, 100, 130]);    // wet tarmac line
+});
+
+console.log(`last-train icons regenerated (23 BTN + DISBTN twins, format ${fmt})`);

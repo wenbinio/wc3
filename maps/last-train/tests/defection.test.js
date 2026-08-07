@@ -1,8 +1,10 @@
 'use strict';
 // Death = defection (Zombie-Simulator 7, credited): no elimination — the
 // fallen convert in place with a controllable pack, the alliance flips
-// BOTH directions (gotcha 24), the horde shares its vision, and the last
-// survivor's fall hands the estate to the earlier defectors.
+// BOTH directions (gotcha 24). Phase 2A makes the traitor a CONDUCTOR
+// (canon I6 — the map's crown mechanic): Feast raises un-burnt corpses
+// into the pack, Shriek converges the next surge, the board row flips to
+// "HUNT: no one boards", and the Revenant's claws ride the horde level.
 
 const test = require('node:test');
 const assert = require('node:assert');
@@ -43,9 +45,71 @@ test('a survivor\'s death flips the alliance both ways and spawns their pack', (
   assert.strictEqual(packShamblers.length, 3, 'plus a pack of three');
   assert.ok(Math.abs(revenants[0].x - hx) < 1 && Math.abs(revenants[0].y - hy) < 1,
     'the Revenant rises where they fell');
-  // the horde shows its new mind the board
-  assert.ok(sim.callsOf('SetPlayerAlliance').some((c) => c.args && c.args.length >= 0), 'alliance calls recorded');
   assert.ok(sim.messagesMatching(/They hunt with the horde now/).length > 0);
+  assert.ok(sim.messagesTo(0).some((m) => /FEASTS a corpse/.test(m.text)),
+    'the conductor kit is explained to the defector');
+});
+
+test('the defector\'s board row flips to HUNT: no one boards', () => {
+  const { sim, zomb } = twoPlayer();
+  sim.kill(sim.findUnit('h000', 0), zomb);
+  sim.advance(5);
+  const values = sim.callsOf('MultiboardSetItemValue').map((c) => String(c.args[1]));
+  assert.ok(values.some((v) => /HUNT: no one boards/.test(v)), 'the hunt row');
+});
+
+test('Feast raises an un-burnt corpse into the defector\'s pack immediately', () => {
+  const { sim, zomb } = twoPlayer();
+  sim.kill(sim.findUnit('h000', 0), zomb);
+  const rev = sim.unitsOf(0, 'u004')[0];
+  // a civilian falls near the revenant: a fresh corpse inside the window
+  const civ = sim.allUnits('n000').find((u) => u.alive);
+  sim.kill(civ, zomb);
+  const packBefore = sim.unitsOf(0, 'u000').filter((u) => u.alive).length;
+  sim.cast(rev, 'A006', { x: civ.x, y: civ.y });
+  assert.ok(/feast\|pid=0/.test(sim.global('RUNLOG')));
+  const pack = sim.unitsOf(0, 'u000').filter((u) => u.alive);
+  assert.strictEqual(pack.length, packBefore + 1, 'the corpse rises for the DEFECTOR');
+  assert.ok(pack.some((u) => Math.abs(u.x - civ.x) < 1 && Math.abs(u.y - civ.y) < 1));
+  sim.advance(4);
+  assert.ok(!/rise\|x=/.test(sim.global('RUNLOG')), 'no second natural rise of the claimed corpse');
+});
+
+test('a burned corpse is DENIED to Feast (Molotov as direct PvP denial)', () => {
+  const { sim, zomb } = twoPlayer();
+  const hero1 = sim.findUnit('h000', 1);
+  sim.kill(sim.findUnit('h000', 0), zomb);
+  const rev = sim.unitsOf(0, 'u004')[0];
+  const civ = sim.allUnits('n000').find((u) => u.alive);
+  sim.kill(civ, zomb);
+  // the living burn the corpse first
+  sim.chat(1, '-test');
+  sim.chat(1, '-give molotov');
+  sim.moveUnit(hero1, civ.x + 50, civ.y);
+  const molotov = [...sim.items.values()].find((i) => !i.removed && i.typeStr === 'I014');
+  sim.useItem(hero1, molotov);
+  const packBefore = sim.unitsOf(0, 'u000').filter((u) => u.alive).length;
+  sim.cast(rev, 'A006', { x: civ.x, y: civ.y });
+  assert.strictEqual(sim.unitsOf(0, 'u000').filter((u) => u.alive).length, packBefore,
+    'nothing rises from ash');
+  assert.ok(sim.messagesTo(0).some((m) => /the living burn what they cannot carry/.test(m.text)));
+});
+
+test('Shriek converges the next surge on the target point', () => {
+  const { sim, zomb } = twoPlayer();
+  sim.kill(sim.findUnit('h000', 0), zomb);
+  const rev = sim.unitsOf(0, 'u004')[0];
+  sim.cast(rev, 'A007', { x: 2200, y: -3400 }); // Cheng San, far from the living
+  assert.ok(/shriek\|pid=0/.test(sim.global('RUNLOG')));
+  sim.chat(1, '-test');
+  sim.chat(1, '-surge');
+  const m = sim.global('RUNLOG').match(/surge\|k=\d+\|(\w+)\|/);
+  assert.ok(m, 'a surge fired');
+  assert.strictEqual(m[1], 'chengsan', 'the surge broke where the Shriek called it');
+  // consumed: a second surge falls back to the survivors' district
+  sim.chat(1, '-surge');
+  const all = [...sim.global('RUNLOG').matchAll(/surge\|k=\d+\|(\w+)\|/g)];
+  assert.notStrictEqual(all[all.length - 1][1], 'chengsan', 'the Shriek is spent on use');
 });
 
 test('two defectors are allied to each other with shared vision', () => {
@@ -80,11 +144,15 @@ test('a solo death is a plain defeat (no self-victory as a zombie)', () => {
   assert.strictEqual(sim.player(0).result, 'defeat');
 });
 
-test('a survivor kill feeds the horde 50 XP through the crowd falloff', () => {
+test('a survivor kill feeds the horde 50 XP; the Revenant\'s claws ride the horde level', () => {
   const { sim, zomb } = twoPlayer();
+  sim.chat(0, '-esc 5');
   const xp0 = sim.global('HordeXP');
   const hero = sim.findUnit('h000', 0);
   sim.moveUnit(zomb, hero.x + 50, hero.y); // the only zombie near the kill
   sim.kill(hero, zomb);
   assert.strictEqual(sim.global('HordeXP'), xp0 + 50, 'lone killer learns the full 50');
+  const dmgCalls = sim.callsOf('BlzSetUnitBaseDamage');
+  assert.ok(dmgCalls.some((c) => c.args[1] === 30 + 4 * 4),
+    'revenant damage scaled by EscLevel 5');
 });
