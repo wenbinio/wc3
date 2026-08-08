@@ -41,3 +41,8 @@ question it answers, its date, and how it goes stale.
 - **ai-model-workorder.md** (2026-08) — reusable work-order template for
   commissioning MDL models from an external code LLM (gotchas 14+19 baked
   in). Update the skeleton if the sanity gate ever tightens.
+- **translation-candidates-2026-08.md** (2026-08-08) — which non-English
+  maps are worth a full EN translation pass (KR/CN + RU/EU/JP/VN sweep,
+  concept-forward non-RPG criterion)? Merged top-5 + decomposition
+  candidates + scene sourcing notes; staleness: hosting/obtainability
+  facts decay fast — re-verify URLs before starting a pass.
