@@ -115,6 +115,13 @@ function syntheticAbilities(version) {
   };
 }
 
+// The trailing-zero-dword dialect: the same hand-assembled v2 units file plus
+// ONE extra all-zero u32 after the custom table (23 of 43 object files across
+// six unrelated authors' maps ship this; see the codec header).
+function syntheticUnitsV2BytesWithTrailer() {
+  return Buffer.concat([syntheticUnitsV2Bytes(), Buffer.alloc(4)]);
+}
+
 function codecFixpoint(t, type, buf) {
   const json1 = objects2.warToJson(type, buf).json;
   const back = objects2.jsonToWar(type, json1).buffer;
@@ -241,6 +248,107 @@ test('objects2: malformed input is rejected with clear errors', () => {
   assert.throws(() => objects2.warToJson('units', built.subarray(0, built.length - 6)), RangeError);
   const trailing = Buffer.concat([built, Buffer.from([1, 2, 3])]);
   assert.throws(() => objects2.warToJson('units', trailing), /trailing byte/);
+});
+
+// -------------------------------------------------- trailing-zero-dword dialect
+
+test('objects2: a trailing all-zero dword reads, exposes the _trailer sidecar and round-trips byte-exact', () => {
+  const withTrailer = syntheticUnitsV2BytesWithTrailer();
+  const json = objects2.warToJson('units', withTrailer).json;
+  assert.strictEqual(json._trailer, '00000000', 'the dialect is recorded as a sidecar key');
+  assert.strictEqual(json.version, 2, 'version marker unaffected');
+  // the sidecar is NOT an object entry: the tables are exactly what the
+  // trailer-less file yields
+  const plain = objects2.warToJson('units', syntheticUnitsV2Bytes()).json;
+  assert.deepStrictEqual(json.original, plain.original);
+  assert.deepStrictEqual(json.custom, plain.custom);
+  // and the write path re-emits the bytes -> byte-exact fixpoint + JSON-stable
+  const back = objects2.jsonToWar('units', json).buffer;
+  assert.ok(back.equals(withTrailer), 'read -> write must reproduce the trailing dword');
+  assert.deepStrictEqual(objects2.warToJson('units', back).json, json, 'JSON-stable');
+  // the independent parser stack agrees on the payload (it simply stops
+  // reading after the custom table — which is why nothing else ever noticed)
+  const viewer = new w3x.w3u.File();
+  viewer.load(new Uint8Array(withTrailer));
+  assert.strictEqual(viewer.version, 2);
+  assert.strictEqual(viewer.originalTable.objects.length, 1);
+  assert.strictEqual(viewer.customTable.objects.length, 1);
+});
+
+test('objects2: files WITHOUT the trailer are unchanged — no sidecar key, still byte-exact', () => {
+  for (const version of [1, 2]) {
+    for (const [type, src] of [['units', syntheticUnits(version)], ['abilities', syntheticAbilities(version)]]) {
+      const built = objects2.jsonToWar(type, src).buffer;
+      const json = objects2.warToJson(type, built).json;
+      assert.ok(!('_trailer' in json), `v${version} ${type}: no sidecar emitted when there is no trailer`);
+      assert.deepStrictEqual(json, src, 'JSON identical to the trailer-free source');
+      assert.ok(objects2.jsonToWar(type, json).buffer.equals(built), 'byte fixpoint');
+    }
+  }
+  // ... and the trailer costs exactly 4 bytes over the plain layout
+  assert.strictEqual(syntheticUnitsV2BytesWithTrailer().length,
+    syntheticUnitsV2Bytes().length + 4);
+});
+
+test('objects2: only an all-zero trailing dword is tolerated — any other trailing bytes still throw', () => {
+  const plain = syntheticUnitsV2Bytes();
+  const cases = [
+    ['four non-zero bytes', Buffer.from([1, 0, 0, 0])],
+    ['four 0xff bytes', Buffer.from([0xff, 0xff, 0xff, 0xff])],
+    ['a zero byte in the high position only', Buffer.from([0, 0, 0, 1])],
+    ['three zero bytes (wrong length)', Buffer.alloc(3)],
+    ['five zero bytes (wrong length)', Buffer.alloc(5)],
+    ['eight zero bytes (two dwords)', Buffer.alloc(8)],
+  ];
+  for (const [label, tail] of cases) {
+    assert.throws(() => objects2.warToJson('units', Buffer.concat([plain, tail])),
+      /unexpected trailing byte/, `${label} must still be rejected as corruption`);
+  }
+});
+
+test('objects2: the _trailer sidecar is optional on write — deleting it emits no trailer', () => {
+  const json = objects2.warToJson('units', syntheticUnitsV2BytesWithTrailer()).json;
+  delete json._trailer; // a user stripped the sidecar by hand
+  const back = objects2.jsonToWar('units', json).buffer;
+  assert.ok(back.equals(syntheticUnitsV2Bytes()),
+    'writing without the sidecar must succeed and produce the plain layout');
+  // an explicit null is the same as absent; a bogus value is a clear error
+  const nulled = objects2.warToJson('units', syntheticUnitsV2BytesWithTrailer()).json;
+  nulled._trailer = null;
+  assert.ok(objects2.jsonToWar('units', nulled).buffer.equals(syntheticUnitsV2Bytes()));
+  const bogus = objects2.warToJson('units', syntheticUnitsV2BytesWithTrailer()).json;
+  bogus._trailer = 'deadbeef';
+  assert.throws(() => objects2.jsonToWar('units', bogus), /"_trailer" must be "00000000"/);
+});
+
+test('pipeline: an object file with the trailing dword becomes EDITABLE json, not a raw copy', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'objects2-trailer-'));
+  try {
+    const extracted = path.join(tmp, 'extracted');
+    fs.mkdirSync(extracted, { recursive: true });
+    const w3uBin = syntheticUnitsV2BytesWithTrailer();
+    fs.writeFileSync(path.join(extracted, 'war3map.w3u'), w3uBin);
+    fs.writeFileSync(path.join(extracted, 'war3map.lua'),
+      'function config() end\nfunction main() end\n');
+
+    const source = path.join(tmp, 'source');
+    const manifest = extractedToSource(extracted, source);
+    // the regression this guards: the codec used to throw, so map-to-json
+    // copied the file raw and every downstream reader saw ZERO object data
+    assert.strictEqual(manifest.translated['war3map.w3u'], 'objects-units.json');
+    assert.strictEqual(manifest.errors.length, 0, 'no translator error recorded');
+    const units = readJson(path.join(source, 'objects-units.json'));
+    assert.strictEqual(units._trailer, '00000000', 'sidecar survives into the map source');
+    assert.strictEqual(units.original.hfoo[1].value, 'Süßwasser-Soldat',
+      'the object-data text is actually readable now');
+
+    const out = path.join(tmp, 'out');
+    sourceToExtracted(source, out);
+    assert.ok(fs.readFileSync(path.join(out, 'war3map.w3u')).equals(w3uBin),
+      'json-to-map reproduces the original member byte-for-byte');
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
 });
 
 test('objects2: v3 files are refused (they belong to the upstream translator)', () => {

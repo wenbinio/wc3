@@ -272,7 +272,15 @@ never third-party maps, gotcha 9).
    source JSON** — deleting it makes json-to-map write the NEWEST format
    (v12/v33/objects v3), silently changing the on-disk version. Only
    versions no codec covers (w3i v18, classic doo, ...) still take the old
-   path: map-to-json catches ANY
+   path. **Object-data v1/v2 dialect (2026-08)**: one writer lineage
+   appends a single all-zero dword after the custom table. objects2.js
+   tolerates it and records a `"_trailer"` sidecar (same contract as
+   wts `_dialect`, gotcha 16) — KEEP the sidecar, it is not an object
+   entry; any OTHER trailing bytes still throw (that error is the only
+   drifted-cursor signal — do not widen it). Measured on 6 unrelated
+   authors' maps; before the fix the file was copied raw, so text-volume
+   audits reported 0 non-ASCII for object data holding 215K chars.
+   map-to-json catches ANY
    translator throw — file copied raw (manifest.json → `errors`) plus a
    READ-ONLY mdx-m3-viewer-th parse under `_viewer/` (viewer schema, never
    repacked — not build-source); viewer failures land in
