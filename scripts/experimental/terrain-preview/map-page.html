@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>map preview rig</title>
+<style>body{margin:0;background:#14161a}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="c" width="1400" height="950"></canvas>
+<script src="/viewer.min.js"></script>
+<script>
+const canvas = document.getElementById('c');
+const V = ModelViewer.viewer;
+window.__errors = [];
+window.__logs = [];
+const origWarn = console.warn.bind(console);
+console.warn = (...a) => { window.__logs.push(a.join(' ').slice(0, 200)); origWarn(...a); };
+
+// path solver: everything not in the map archive comes from /data/
+const wc3PathSolver = (src) => {
+  if (typeof src !== 'string') return src;
+  if (src.startsWith('/') || src.startsWith('http')) return src;
+  return '/data/' + src.replace(/\\/g, '/');
+};
+
+let viewer;
+try {
+  viewer = new V.handlers.War3MapViewer(canvas, wc3PathSolver);
+  viewer.on('error', (e) => {
+    try { window.__errors.push(String(e && (e.error || e.fetchUrl || e)).slice(0, 200)); } catch (_) {}
+  });
+} catch (e) {
+  window.__fatal = String(e);
+}
+
+window.loadMapOnce = async function (url) {
+  window.__errors = [];
+  if (!viewer.loadedBaseFiles) {
+    await new Promise((resolve, reject) => {
+      viewer.once('loadedbasefiles', resolve);
+      setTimeout(() => reject(new Error('base files timeout')), 20000);
+    }).catch((e) => { window.__errors.push(String(e)); });
+  }
+  if (!viewer.loadedBaseFiles) return { ok: false, errors: window.__errors, logs: window.__logs };
+  const resp = await fetch(url);
+  if (!resp.ok) return { ok: false, errors: ['map fetch failed ' + resp.status] };
+  const buf = new Uint8Array(await resp.arrayBuffer()); // NEVER a plain view quirk: fresh copy
+  viewer.loadMap(buf);
+  const map = viewer.map;
+  if (!map) return { ok: false, errors: window.__errors.concat(['loadMap made no map']) };
+  // wait for terrain + cliffs + all queued resources
+  const t0 = Date.now();
+  while ((!map.terrainReady || !map.cliffsReady) && Date.now() - t0 < 30000) {
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  await viewer.whenAllLoaded();
+  map.worldScene.color.fill(0.08);
+  // UPSTREAM BUG WORKAROUND (mdx-m3-viewer-th): corner.water on w3e v12 is
+  // bit 0x100 (256); map.js stores `isWater()` (a truthy 256) straight into
+  // a Uint8Array -> truncates to 0, so water never renders on v12 maps.
+  // Recompute the per-tile water flags as 0/1 and re-upload the GL buffer.
+  if (map.terrainReady && map.waterBuffer) {
+    const gl = viewer.gl;
+    const cols = map.columns, rows = map.rows, c = map.corners;
+    const flags = new Uint8Array(cols * rows);
+    let i = 0;
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++, i++) {
+        flags[i] = (c[y][x].water || c[y][x + 1].water || c[y + 1][x].water || c[y + 1][x + 1].water) ? 1 : 0;
+      }
+    }
+    gl.bindBuffer(gl.ARRAY_BUFFER, map.waterBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flags, gl.STATIC_DRAW);
+  }
+  return {
+    ok: map.terrainReady,
+    terrainReady: map.terrainReady,
+    cliffsReady: map.cliffsReady,
+    doodads: map.doodads.length,
+    units: map.units.length,
+    waterTex: map.waterTextures.map((t) => t ? `${t.constructor.name} ${t.width}x${t.height} gl:${!!t.webglResource}` : 'null'),
+    waterOffset: map.waterHeightOffset,
+    deep: Array.from(map.maxDeepColor),
+    errors: window.__errors.slice(),
+    logs: window.__logs.slice(-30),
+  };
+};
+
+// cam: { eye:[x,y,z], target:[x,y,z], fov, near, far }
+window.shootView = async function (cam) {
+  const map = viewer.map;
+  if (!map) return { ok: false, errors: ['no map loaded'] };
+  const scene = map.worldScene;
+  scene.camera.perspective(cam.fov || Math.PI / 4, canvas.width / canvas.height,
+    cam.near || 64, cam.far || 100000);
+  scene.camera.moveToAndFace(cam.eye, cam.target, [0, 0, 1]);
+  // give doodad models a moment to finish streaming in, then render
+  await viewer.whenAllLoaded();
+  for (let i = 0; i < 20; i++) viewer.updateAndRender(1000 / 60);
+  return { ok: true, errors: window.__errors.slice(), dataURL: canvas.toDataURL('image/png') };
+};
+window.__ready = true;
+</script>
+</body>
+</html>

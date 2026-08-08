@@ -448,6 +448,104 @@
       "source": "user-commissioned delivery 2026-08-07 (round 3)",
       "license": "commissioned for this project",
       "fetched": "2026-08-07"
+    },
+    "war3mapImported/SolHDBWallSegment.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Interior Models round 4 (commissioned HDB interior + buildable-defense set — corridor wall segment, two-tone dado + skirting, tiles end-to-end (the tower pocket wall skin))",
+      "source": "user-commissioned delivery 2026-08-08 (round 4; gate-clean 0/0/0, negative-controlled; Sol's generator source is archived in the intake scratchpad only — not yet self-contained, deliberately not committed)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-08"
+    },
+    "war3mapImported/SolHDBWallCorner.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Interior Models round 4 (commissioned HDB interior + buildable-defense set — corridor wall corner column, datum-matched to the wall segment)",
+      "source": "user-commissioned delivery 2026-08-08 (round 4; gate-clean 0/0/0, negative-controlled; Sol's generator source is archived in the intake scratchpad only — not yet self-contained, deliberately not committed)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-08"
+    },
+    "war3mapImported/SolHDBFlatDoor.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Interior Models round 4 (commissioned HDB interior + buildable-defense set — HDB flat door with gate grille and unit-number plaque)",
+      "source": "user-commissioned delivery 2026-08-08 (round 4; gate-clean 0/0/0, negative-controlled; Sol's generator source is archived in the intake scratchpad only — not yet self-contained, deliberately not committed)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-08"
+    },
+    "war3mapImported/SolHDBLiftDead.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Interior Models round 4 (commissioned HDB interior + buildable-defense set — dead lift bank, steel leaves + out-of-order dots (the 6F fiction anchor))",
+      "source": "user-commissioned delivery 2026-08-08 (round 4; gate-clean 0/0/0, negative-controlled; Sol's generator source is archived in the intake scratchpad only — not yet self-contained, deliberately not committed)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-08"
+    },
+    "war3mapImported/SolStairwellFlight.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Interior Models round 4 (commissioned HDB interior + buildable-defense set — stairwell flight, 7 treads + handrail (landing-transition dressing))",
+      "source": "user-commissioned delivery 2026-08-08 (round 4; gate-clean 0/0/0, negative-controlled; Sol's generator source is archived in the intake scratchpad only — not yet self-contained, deliberately not committed)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-08"
+    },
+    "war3mapImported/SolHDBBedFrame.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Interior Models round 4 (commissioned HDB interior + buildable-defense set — flat bed frame with rumpled sheet (searchable furniture))",
+      "source": "user-commissioned delivery 2026-08-08 (round 4; gate-clean 0/0/0, negative-controlled; Sol's generator source is archived in the intake scratchpad only — not yet self-contained, deliberately not committed)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-08"
+    },
+    "war3mapImported/SolHDBWardrobe.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Interior Models round 4 (commissioned HDB interior + buildable-defense set — flat wardrobe, one leaf ajar on a dark interior (searchable furniture))",
+      "source": "user-commissioned delivery 2026-08-08 (round 4; gate-clean 0/0/0, negative-controlled; Sol's generator source is archived in the intake scratchpad only — not yet self-contained, deliberately not committed)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-08"
+    },
+    "war3mapImported/SolHDBKitchenUnit.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Interior Models round 4 (commissioned HDB interior + buildable-defense set — kitchen unit with sink void and wok (searchable furniture))",
+      "source": "user-commissioned delivery 2026-08-08 (round 4; gate-clean 0/0/0, negative-controlled; Sol's generator source is archived in the intake scratchpad only — not yet self-contained, deliberately not committed)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-08"
+    },
+    "war3mapImported/SolHDBTVConsole.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Interior Models round 4 (commissioned HDB interior + buildable-defense set — CRT TV console with additive standby glow (searchable furniture))",
+      "source": "user-commissioned delivery 2026-08-08 (round 4; gate-clean 0/0/0, negative-controlled; Sol's generator source is archived in the intake scratchpad only — not yet self-contained, deliberately not committed)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-08"
+    },
+    "war3mapImported/SolHDBAltarShrine.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Interior Models round 4 (commissioned HDB interior + buildable-defense set — family altar shelf, candle flames + incense bowl, deliberately plaque-free (searchable furniture))",
+      "source": "user-commissioned delivery 2026-08-08 (round 4; gate-clean 0/0/0, negative-controlled; Sol's generator source is archived in the intake scratchpad only — not yet self-contained, deliberately not committed)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-08"
+    },
+    "war3mapImported/SolTubeLightFlicker.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Interior Models round 4 (commissioned HDB interior + buildable-defense set — ceiling tube light with down-facing underglow (static; script owns any flicker))",
+      "source": "user-commissioned delivery 2026-08-08 (round 4; gate-clean 0/0/0, negative-controlled; Sol's generator source is archived in the intake scratchpad only — not yet self-contained, deliberately not committed)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-08"
+    },
+    "war3mapImported/SolCorpseCovered.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Interior Models round 4 (commissioned HDB interior + buildable-defense set — covered body under a sheet, no gore geometry (somber decor))",
+      "source": "user-commissioned delivery 2026-08-08 (round 4; gate-clean 0/0/0, negative-controlled; Sol's generator source is archived in the intake scratchpad only — not yet self-contained, deliberately not committed)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-08"
+    },
+    "war3mapImported/SolSpikeWire.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Interior Models round 4 (commissioned HDB interior + buildable-defense set — spike-wire buildable, sagging wire courses + team-color posts (the build-verb result art))",
+      "source": "user-commissioned delivery 2026-08-08 (round 4; gate-clean 0/0/0, negative-controlled; Sol's generator source is archived in the intake scratchpad only — not yet self-contained, deliberately not committed)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-08"
+    },
+    "war3mapImported/SolWatchfire.mdx": {
+      "author": "Sol (GPT 5.6 Codex fleet)",
+      "resource": "Warcraft3 Interior Models round 4 (commissioned HDB interior + buildable-defense set — oil-drum watchfire with crossed flame planes (the build-verb result art))",
+      "source": "user-commissioned delivery 2026-08-08 (round 4; gate-clean 0/0/0, negative-controlled; Sol's generator source is archived in the intake scratchpad only — not yet self-contained, deliberately not committed)",
+      "license": "commissioned for this project",
+      "fetched": "2026-08-08"
     }
   }
 }

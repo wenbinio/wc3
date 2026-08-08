@@ -3183,7 +3183,7 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Doodads\\LordaeronSummer\\Terrain\\Barricade\\Barricade0.mdl"
+        "value": "war3mapImported\\SolSpikeWire.mdl"
       },
       {
         "id": "uico",
@@ -3262,7 +3262,7 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Doodads\\LordaeronSummer\\Props\\brazierOmni\\brazierOmni.mdl"
+        "value": "war3mapImported\\SolWatchfire.mdl"
       },
       {
         "id": "uico",
@@ -3498,6 +3498,331 @@
         "level": 0,
         "column": 0,
         "value": ""
+      }
+    ],
+    "n02A:ncop": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Flat Bed Frame"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Flat Bed Frame"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "The sheets are still rumpled from the last sleep anyone got here. Stand close a moment to rummage it -- or smash it and let the whole block hear."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolHDBBedFrame.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNCrate.blp"
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 30
+      }
+    ],
+    "n02B:ncop": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Flat Wardrobe"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Flat Wardrobe"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "One door hangs ajar on the dark inside. Stand close a moment to rummage it -- or smash it open and let the whole block hear."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolHDBWardrobe.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNCrate.blp"
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 30
+      }
+    ],
+    "n02C:ncop": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Kitchen Unit"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Kitchen Unit"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "The wok is still on the ring and the kerosene is under the sink. Stand close a moment to rummage it -- or smash it and let the whole block hear."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolHDBKitchenUnit.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNCrate.blp"
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 30
+      }
+    ],
+    "n02D:ncop": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "TV Console"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "TV Console"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "The set died mid-broadcast; the standby light never blinked off. Stand close a moment to rummage it -- or smash it and let the whole block hear."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolHDBTVConsole.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNCrate.blp"
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 30
+      }
+    ],
+    "n02E:ncop": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Family Altar"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Family Altar"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "The joss sticks burned down hours ago; the candles have not. Stand close a moment to rummage it -- quietly, if you can."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolHDBAltarShrine.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNCrate.blp"
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 30
       }
     ]
   }

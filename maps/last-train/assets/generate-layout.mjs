@@ -30,11 +30,14 @@
 //     bounds, below every estate system: 6F corridor -> 5F flat warren ->
 //     4F dark corridor -> 3F blocked landing -> 2F nest floor -> 1F void
 //     deck), connected by TRIGGER-TELEPORT stairwell doors (region rects;
-//     no waygate ability — the robust, sim-testable form). Walls are
-//     solid LTrc rock ranks (game-verified blocking; NO cliffs — the
-//     pathing-safety doctrine; a Sol round-4 interior set replaces the
-//     look later). The four class circles + slocs moved INTO the 6F
-//     corridor: you pick your neighbour identity as you flee your flat.
+//     no waygate ability — the robust, sim-testable form). Walls keep
+//     the game-verified LTrc rock-rank BLOCKING geometry (NO cliffs —
+//     the pathing-safety doctrine) but wear the Sol round-4 interior
+//     skin: LTrc-based clone classes carrying SolHDBWallSegment/Corner
+//     art (pathing inherited — zero behavior change; the wall block
+//     below documents why). The four class circles + slocs moved INTO
+//     the 6F corridor: you pick your neighbour identity as you flee
+//     your flat.
 //
 // NOTE (CLAUDE.md gotcha 6): committed JSON is a translator FIXED POINT —
 // after regenerating run build-map --stabilize once and commit. wpm/shd/
@@ -472,18 +475,31 @@ SD('D01A', 4400, 430, 0);
 
 // ---------------------- phase 2B: the Block 6A interior (tower-escape
 // slice; APPENDED after every existing doodad so all prior ids stay
-// byte-stable). Walls are SOLID LTrc rock ranks — game-verified blocking,
-// no cliffs (pathing-safety doctrine); interior dressing reuses the Sol
-// void-deck decor classes (pillars/mailbox walls/bike racks, solid:false).
-// The look is a placeholder until the commissioned Sol round-4 interior
-// set lands (corridor walls, flat doors, dead lifts, tube lights).
-const TW = (x, y) => {
-  // wall rock: solid, slightly oversized, deterministic scale
+// byte-stable). WALL SKIN (Sol round 4, 2026-08-08): the blockers keep the
+// PROVEN rock-rank geometry — same positions, same counts, same
+// solid:true flags — but each post is re-typed from stock LTrc to an
+// LTrc-BASED custom doodad class (D01B segment / objects-doodads.json)
+// wearing SolHDBWallSegment.mdl. Pathing is UNCHANGED by construction:
+// a clone inherits LTrc's pathing texture (the blocking authority — only
+// dnam/dfil/dvar are overridden), doodad pathing footprints neither scale
+// nor change with the model, and square footprints are rotation-proof.
+// dvar is pinned to 1 on the clone: LTrc has multiple variations and the
+// engine appends the variation digit to multi-variation doodad model
+// paths — inherited dvar would make it load SolHDBWallSegment0.mdl,
+// i.e. render NOTHING (gotcha 31's silent-miss class).
+// Skin geometry: segments are 128 long and tile end-to-end (0 end-cap
+// faces), so local-x scale 112/128 = 0.875 makes the 112-pitch posts
+// tile EXACTLY — no co-planar overlap to z-fight. N/S runs lie at angle
+// 0 (long axis E-W), W/E columns at angle 90. The 48-unit face slivers
+// where perpendicular runs meet are masked by non-solid D01C corner
+// columns (SolHDBWallCorner, scaled 3x) at the four pocket corners.
+const TW = (x, y, horiz) => {
+  // wall post: solid, proven blocking (see the block comment above)
   if (y < -5632 + 32) throw new Error(`tower wall below camera bounds: ${x},${y}`);
   if (!inTowerBand(x, y)) throw new Error(`tower wall outside the band: ${x},${y}`);
   doodads.push({
-    type: 'LTrc', position: [x, y, 0], angle: 270,
-    scale: [1.25, 1.25, 1.45],
+    type: 'D01B', position: [x, y, 0], angle: horiz ? 0 : 90,
+    scale: [0.875, 1, 1],
     flags: { visible: true, solid: true, fixedZ: false },
     id: did++, variation: 0,
   });
@@ -491,16 +507,68 @@ const TW = (x, y) => {
 for (const p of TOWER_POCKETS) {
   const x0 = p.cx - TOWER_HALF_W, x1 = p.cx + TOWER_HALF_W;
   const y0 = TOWER_Y - TOWER_HALF_H, y1 = TOWER_Y + TOWER_HALF_H;
-  for (let x = x0; x <= x1; x += 112) { TW(x, y0); TW(x, y1); }   // S + N walls
-  for (let y = y0 + 112; y <= y1 - 112; y += 112) { TW(x0, y); TW(x1, y); } // W + E
+  for (let x = x0; x <= x1; x += 112) { TW(x, y0, true); TW(x, y1, true); }   // S + N walls
+  for (let y = y0 + 112; y <= y1 - 112; y += 112) { TW(x0, y, false); TW(x1, y, false); } // W + E
+  // corner columns: decor patches over the run junctions (non-solid)
+  for (const [cx, cy] of [[x0, y0], [x1, y0], [x0, y1], [x1, y1]]) {
+    SD('D01C', cx, cy, 0, [3, 3, 1]);
+  }
 }
-// interior dressing (non-solid Sol decor): the 6F dead lift doors (pillar
-// pair — the spark effect anchors in war3map.lua sit between them), 5F
+// interior dressing (non-solid Sol decor; the round-4 interior set):
+// the 6F dead lift bank flush on the N wall (war3map.lua's TOWER[1].lift
+// spark anchor sits just in front of its doors — keep in sync), 5F
 // mailbox wall, 1F void-deck pillars + bike rack at the exit mouth.
-SD('D013', -3760, -5100, 0);            // 6F: the dead lift bank
+SD('D01E', -3760, -4998, 0);            // 6F: the dead lift bank (r4)
 SD('D014', -2600, -5100, 0);            // 5F: corridor mailbox wall
 SD('D013', 1400, -5100, 0);             // 1F: void-deck pillar row
 SD('D015', 1860, -5150, 90);            // 1F: bike rack by the exit
+
+// ---- Sol round-4 corridor dressing (2026-08-08, all non-solid decor,
+// APPENDED last so every prior doodad id stays byte-stable). The tower
+// pockets get their interior read: flat doors in a decor rhythm along the
+// corridor walls, stairwell flights hugging the west/east walls at every
+// arrival/door (the teleport fiction made visible), tube lights on the
+// ceiling of the LIT floors only (6F/5F/1F — dark floors 4F/3F/2F stay
+// dark until their DB box, and map-placed doodads cannot be shown/hidden
+// from script, so the tubes are static and honest: no glow where the
+// fiction says none), and two-three covered bodies as somber texture.
+const TOWER_WALL_N = TOWER_Y + TOWER_HALF_H;    // -4980 (wall centerline)
+const TOWER_WALL_S = TOWER_Y - TOWER_HALF_H;    // -5540
+const TD = (type, x, y, angle, scale) => {
+  if (!inTowerBand(x, y)) throw new Error(`tower decor outside the band: ${x},${y}`);
+  SD(type, x, y, angle, scale);
+};
+// flat doors flush on the wall interior faces (door slab is 12 deep; the
+// N-wall row faces south = angle 0, the S-wall row faces north = 180)
+for (const [dx2] of [[-3480], [-3200], [-2560], [-2280], [-1520], [-480], [480]]) {
+  TD('D01D', dx2, TOWER_WALL_N - 14, 0);
+}
+for (const [dx2] of [[-3060], [-2480], [-2160], [-1280]]) {
+  TD('D01D', dx2, TOWER_WALL_S + 14, 180);
+}
+// stairwell flights: one against the east wall at every stair DOOR
+// (pockets 6F..2F), one against the west wall at every ARRIVAL (5F..1F);
+// the flight rises INTO the wall it hugs, reading as the next half-turn
+for (const p of TOWER_POCKETS.slice(0, 5)) TD('D01F', p.cx + 370, TOWER_Y, 0);
+for (const p of TOWER_POCKETS.slice(1)) TD('D01F', p.cx - 370, TOWER_Y, 180);
+// ceiling tube lights (fixedZ at z 128, just under the 140 wall top;
+// underglow faces down per the model) — LIT floors only, see above
+for (const p of [TOWER_POCKETS[0], TOWER_POCKETS[1], TOWER_POCKETS[5]]) {
+  for (const ox of [-250, 0, 250]) {
+    if (!inTowerBand(p.cx + ox, TOWER_Y)) throw new Error('tube light outside the band');
+    doodads.push({
+      type: 'D01G', position: [p.cx + ox, TOWER_Y, 128], angle: 0,
+      scale: [1, 1, 1],
+      flags: { visible: true, solid: false, fixedZ: true },
+      id: did++, variation: 0,
+    });
+  }
+}
+// covered bodies: the neighbours who waited for the lift, the one nobody
+// went back for in the dark, the one at the exit who almost made it
+TD('D01H', -3620, -5090, 320);          // 6F: by the dead lift
+TD('D01H', -1300, -5340, 40);           // 4F: the dark corridor
+TD('D01H', 1210, -5150, 290);           // 1F: the void deck
 
 // ------------------------------------------------------------------- units
 // Type ids mirror objects-units.json (the generated UNIT_ constants).
@@ -655,17 +723,27 @@ U('h01H', -140, -420, P_PASSIVE);  // the Provision Shop
 // Furniture goes where furniture lives (playtest-2 placement verdict):
 // every interior prop sits inside its pocket; the encounters mirror
 // war3map.lua's TOWER table and DESIGN-WALKTHROUGH.md's floor beats.
-// 6F corridor: the dead neighbour's flat (locker holds the seeded draw;
+// Sol round-4 re-art note (2026-08-08): the interior FLAT furniture slots
+// are re-pointed to the round-4 flat-furniture classes (n02A bed / n02B
+// wardrobe / n02C kitchen / n02D TV / n02E altar) IN PLACE — same
+// positions, same unit-id order, and each new class keeps its slot's
+// ORIGINAL loot kind in war3map.lua's PROP_KINDS, so rummage proximity,
+// PropRec registration order and every seeded draw are byte-stable. The
+// 3F blocker group and the tower benches STAY n020/n021 — tests select
+// them by type (tower-escape/tower-activity), and a bench barricade is
+// the right fiction anyway.
+// 6F corridor: the dead neighbour's flat (wardrobe holds the seeded draw;
 // the guaranteed Parang is a ground item placed by main()), one riser.
-U('n022', -3400, -5100, P_PASSIVE);   // 6F: the neighbour's locker (>250 from every sloc)
+U('n02B', -3400, -5100, P_PASSIVE);   // 6F: the neighbour's wardrobe (>250 from every sloc; locker slot -> "locker" loot kind kept)
 U('n020', -3260, -5380, P_PASSIVE);   // 6F: corridor bench
 U('u000', -3300, -5160, P_HORDE);     // 6F: what's left of the neighbour
-// 5F flat warren: rummage-rich, the trapped neighbour (the rescue beat)
-U('n020', -2780, -5400, P_PASSIVE);
-U('n022', -2700, -5120, P_PASSIVE);
-U('n023', -2340, -5400, P_PASSIVE);
-U('n024', -2260, -5120, P_PASSIVE);
-U('n021', -2060, -5300, P_PASSIVE);
+// 5F flat warren: rummage-rich, the trapped neighbour (the rescue beat) —
+// the full flat set: bed, wardrobe, TV console, kitchen unit, the altar
+U('n02A', -2780, -5400, P_PASSIVE);   // bed frame (bench slot)
+U('n02B', -2700, -5120, P_PASSIVE);   // wardrobe (locker slot)
+U('n02D', -2340, -5400, P_PASSIVE);   // TV console (desk slot)
+U('n02C', -2260, -5120, P_PASSIVE);   // kitchen unit (table slot)
+U('n02E', -2060, -5300, P_PASSIVE);   // family altar (dumpster slot)
 U('n000', -2200, -5100, P_VICTIM);    // 5F: Uncle Heng, trapped
 U('u000', -2560, -5260, P_HORDE);
 U('u001', -2140, -5180, P_HORDE);

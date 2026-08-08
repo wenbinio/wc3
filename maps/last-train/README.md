@@ -36,8 +36,8 @@ is the standing next step).
 Block 6A's interior is six walled pockets on the map's south margin,
 linked by **trigger-teleport stairwell doors** (region enter →
 `SetUnitPosition` + camera pan — the robust, sim-testable form of the
-"waygate" pitch; walls are solid rock ranks until the commissioned Sol
-round-4 interior set lands):
+"waygate" pitch; the walls wear the commissioned **Sol round-4 interior
+set** over the proven rock-rank blocking geometry — see Art):
 
 - **6F corridor** — spawn, the four **class circles** (pick your
   neighbour identity as you flee), the sparking dead lift, the dead
@@ -414,10 +414,66 @@ silhouette, replacing the scaled duplicate slab —, **SolViaductBent**
 Sol's wall-flush −y frame, and the linkway tile stretches ×2.11 to the
 old 270 slot so the runs stay flush without churning a single id.
 
+**Sol round 4 — the Block 6A interior set** (2026-08-08, same commission
+and gate, 14/14 accepted 0/0/0, negative-controlled; Sol's generator
+source is archived in the intake scratchpad only — not yet
+self-contained, deliberately not committed, noted per-file in the
+ledger): the tower's placeholder art pass. Per-piece wiring:
+
+- **SolHDBWallSegment / SolHDBWallCorner** — the corridor-architecture
+  centerpiece. The pocket walls keep the PROVEN rock-rank blocking
+  geometry (same posts, positions, counts, `solid:true`), but each post
+  is re-typed from stock `LTrc` to an **LTrc-BASED clone doodad class**
+  (`D01B`) wearing the wall model: pathing is inherited from the base
+  (only `dnam`/`dfil`/`dvar` overridden; doodad pathing footprints
+  neither scale nor rotate away — zero pathing/keep-out change by
+  construction). `dvar` is pinned to 1 — LTrc is multi-variation and the
+  engine appends the variation digit to multi-variation doodad model
+  paths, so inherited `dvar` would silently load `...Segment0.mdl` =
+  nothing (gotcha 31's failure class). Segments tile end-to-end at
+  local-x scale 0.875 (112-pitch, no co-planar z-fighting); non-solid
+  `D01C` corner columns (scaled 3×) mask the run junctions.
+- **SolHDBFlatDoor** (D01D) — eleven doors flush on the wall interior
+  faces in a decor rhythm (7 north row, 4 south row).
+- **SolHDBLiftDead** (D01E) — the 6F fiction anchor, flush on the north
+  wall by the spawn; it replaces the pillar-row stand-in, and
+  `TOWER[1].lift` (the scripted spark anchor) moved to sit just in
+  front of its doors.
+- **SolStairwellFlight** (D01F) — a flight hugging the east wall at
+  every stair door and the west wall at every arrival (the teleport
+  fiction made visible).
+- **SolTubeLightFlicker** (D01G) — ceiling tubes at fixed z 128, LIT
+  floors only (6F/5F/1F). Map-placed doodads cannot be shown/hidden
+  from script, so the tubes are static and honest: no glow where the
+  fiction says dark; the dark floors keep the scripted spark flicker.
+- **SolHDBBedFrame / SolHDBWardrobe / SolHDBKitchenUnit /
+  SolHDBTVConsole / SolHDBAltarShrine** — five new searchable furniture
+  classes (`n02A`–`n02E`, 30-HP ncop clones with the full identity set)
+  re-pointed IN PLACE over six interior prop slots (the 5F flat warren's
+  full set + the 6F neighbour's wardrobe). Each keeps its slot's
+  ORIGINAL loot kind in `PROP_KINDS`, so rummage proximity, prop
+  registration order and every seeded draw are byte-stable; the 3F
+  blocker group and the tower benches stay `n020`/`n021` (tests select
+  them by type, and a bench barricade is the right fiction).
+- **SolCorpseCovered** (D01H) — three somber covered bodies (6F lift,
+  4F dark corridor, 1F void deck). Evaluated as the corpse-window
+  marker too and DECLINED: the marker must read as a ticking clock and
+  the animated `RaiseSkeleton` effect telegraphs that; the covered body
+  is inert scenery.
+- **SolSpikeWire / SolWatchfire** — the two buildables re-arted (`umdl`
+  on `h01I`/`h01J`); the wire finally reads "mine, buildable" via
+  team-color posts, distinct from the round-2 Barricade.
+- **Still stand-ins, deliberately**: the DB box keeps the scaled
+  Substation cabinet and the Old Radio keeps its barrel — round 4
+  shipped no electrical-cabinet or radio model, and nothing in-hand
+  fits better; both stay on the commission list.
+
 The Sol decor classes are custom DOODADS (`objects-doodads.json`,
 D000–D004 round 1, D00E–D017 round 2, D018–D01A round 3, D005–D00D
-re-pointed to round-3 models), which the sim classifies as decorative and
-never instantiates — all three Sol passes provably shift no logic test. All decor is `solid:false` and placed clear of roads, pads
+re-pointed to round-3 models, D01B–D01H round 4 — the wall clones D01B/
+D01C being LTrc-based so blocking is inherited), which the sim classifies
+as decorative and never instantiates — all four Sol passes provably shift
+no logic test. All decor is `solid:false` and placed clear of roads, pads
 and the boarding platform (pathing-safety keep-out, asserted in
 `generate-layout.mjs`; the platform screen doors are the documented
 exception above).
@@ -580,9 +636,10 @@ level-ups, all four signatures, the shop's SELL flow + clip prices).
   exercised as real orders + spawns, but the in-game AGGRO FEEL (walkers
   actually pressing a braced door, the decoy's crowd turn) is game-only;
   the gas blast, chute damage, breaker lighting and dark-rummage timing
-  are fully sim-exercised; the DB box's visual (a scaled substation
-  cabinet) and the radio's barrel stand-in await the Sol round-4
-  interior art pass.
+  are fully sim-exercised. The round-4 interior art landed (walls,
+  doors, lift, stairs, tubes, furniture, spike wire, watchfire — see
+  Art); the DB box's substation cabinet and the radio's barrel remain
+  the two deliberate stand-ins (no matching model shipped in round 4).
 - Abilities are DATA + trigger dispatch: the sim fires the spell events
   (`sim.cast`) and the script does the work; the ANcl-based buttons'
   in-game cast feel (hotkeys R/E/F/C, cooldown display) is game-only

@@ -90,9 +90,12 @@ test('Watchfire: 1 Kerosene buys a pool of light with real night vision data', (
   const units = JSON.parse(fs.readFileSync(path.join(MAP, 'objects-units.json'), 'utf8'));
   const usin = units.custom['h01J:hhou'].find((f) => f.id === 'usin').value;
   assert.strictEqual(usin, 900, 'night sight radius');
+  // art pin RE-TARGETED 2026-08-08 (Sol round 4): the stock brazier
+  // stand-in gave way to the commissioned SolWatchfire model (.mdl field
+  // dialect per gotcha 22; the archive member is the .mdx)
   const umdl = units.custom['h01J:hhou'].find((f) => f.id === 'umdl').value;
-  assert.strictEqual(umdl, 'Doodads\\LordaeronSummer\\Props\\brazierOmni\\brazierOmni.mdl',
-    'stock brazier by path (gotcha 31; listfile-verified in lib/data/stock-art.json)');
+  assert.strictEqual(umdl, 'war3mapImported\\SolWatchfire.mdl',
+    'the round-4 commissioned watchfire art (gotcha 22 .mdl dialect)');
 });
 
 test('Field Sentry: plants a carried kit at the point; a second kit REARMS a dry gun', () => {

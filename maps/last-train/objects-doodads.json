@@ -432,6 +432,132 @@
         "column": 0,
         "value": "war3mapImported\\SolStationClock.mdl"
       }
+    ],
+    "D01B:LTrc": [
+      {
+        "id": "dnam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "HDB Corridor Wall"
+      },
+      {
+        "id": "dfil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolHDBWallSegment.mdl"
+      },
+      {
+        "id": "dvar",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 1
+      }
+    ],
+    "D01C:LTrc": [
+      {
+        "id": "dnam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "HDB Corridor Wall Corner"
+      },
+      {
+        "id": "dfil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolHDBWallCorner.mdl"
+      },
+      {
+        "id": "dvar",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 1
+      }
+    ],
+    "D01D:YOtf": [
+      {
+        "id": "dnam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "HDB Flat Door"
+      },
+      {
+        "id": "dfil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolHDBFlatDoor.mdl"
+      }
+    ],
+    "D01E:YOtf": [
+      {
+        "id": "dnam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Dead Lift Bank"
+      },
+      {
+        "id": "dfil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolHDBLiftDead.mdl"
+      }
+    ],
+    "D01F:YOtf": [
+      {
+        "id": "dnam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Stairwell Flight"
+      },
+      {
+        "id": "dfil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolStairwellFlight.mdl"
+      }
+    ],
+    "D01G:YOtf": [
+      {
+        "id": "dnam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Corridor Tube Light"
+      },
+      {
+        "id": "dfil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolTubeLightFlicker.mdl"
+      }
+    ],
+    "D01H:YOtf": [
+      {
+        "id": "dnam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Covered Body"
+      },
+      {
+        "id": "dfil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\SolCorpseCovered.mdl"
+      }
     ]
   }
 }

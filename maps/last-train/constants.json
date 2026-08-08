@@ -57,6 +57,27 @@
       "name": "Estate Gardener",
       "source": "objects-units.json"
     },
+    "UNIT_FAMILY_ALTAR": {
+      "kind": "unit",
+      "rawcode": "n02E",
+      "base": "ncop",
+      "name": "Family Altar",
+      "source": "objects-units.json"
+    },
+    "UNIT_FLAT_BED_FRAME": {
+      "kind": "unit",
+      "rawcode": "n02A",
+      "base": "ncop",
+      "name": "Flat Bed Frame",
+      "source": "objects-units.json"
+    },
+    "UNIT_FLAT_WARDROBE": {
+      "kind": "unit",
+      "rawcode": "n02B",
+      "base": "ncop",
+      "name": "Flat Wardrobe",
+      "source": "objects-units.json"
+    },
     "UNIT_HAWKER_STALL_TABLE": {
       "kind": "unit",
       "rawcode": "n024",
@@ -125,6 +146,13 @@
       "rawcode": "h018",
       "base": "hhou",
       "name": "Kampong Nest",
+      "source": "objects-units.json"
+    },
+    "UNIT_KITCHEN_UNIT": {
+      "kind": "unit",
+      "rawcode": "n02C",
+      "base": "ncop",
+      "name": "Kitchen Unit",
       "source": "objects-units.json"
     },
     "UNIT_KOPITIAM_UNCLE": {
@@ -286,6 +314,13 @@
       "rawcode": "h003",
       "base": "hrif",
       "name": "Town Council Technician",
+      "source": "objects-units.json"
+    },
+    "UNIT_TV_CONSOLE": {
+      "kind": "unit",
+      "rawcode": "n02D",
+      "base": "ncop",
+      "name": "TV Console",
       "source": "objects-units.json"
     },
     "UNIT_VOID_DECK_BENCH": {
@@ -463,6 +498,27 @@
       "name": "Bus Stop Shelter",
       "source": "objects-doodads.json"
     },
+    "DOOD_CORRIDOR_TUBE_LIGHT": {
+      "kind": "doodad",
+      "rawcode": "D01G",
+      "base": "YOtf",
+      "name": "Corridor Tube Light",
+      "source": "objects-doodads.json"
+    },
+    "DOOD_COVERED_BODY": {
+      "kind": "doodad",
+      "rawcode": "D01H",
+      "base": "YOtf",
+      "name": "Covered Body",
+      "source": "objects-doodads.json"
+    },
+    "DOOD_DEAD_LIFT_BANK": {
+      "kind": "doodad",
+      "rawcode": "D01E",
+      "base": "YOtf",
+      "name": "Dead Lift Bank",
+      "source": "objects-doodads.json"
+    },
     "DOOD_FARE_GATE_ROW": {
       "kind": "doodad",
       "rawcode": "D011",
@@ -482,6 +538,27 @@
       "rawcode": "D017",
       "base": "YOtf",
       "name": "Food Cart",
+      "source": "objects-doodads.json"
+    },
+    "DOOD_HDB_CORRIDOR_WALL": {
+      "kind": "doodad",
+      "rawcode": "D01B",
+      "base": "LTrc",
+      "name": "HDB Corridor Wall",
+      "source": "objects-doodads.json"
+    },
+    "DOOD_HDB_CORRIDOR_WALL_CORNER": {
+      "kind": "doodad",
+      "rawcode": "D01C",
+      "base": "LTrc",
+      "name": "HDB Corridor Wall Corner",
+      "source": "objects-doodads.json"
+    },
+    "DOOD_HDB_FLAT_DOOR": {
+      "kind": "doodad",
+      "rawcode": "D01D",
+      "base": "YOtf",
+      "name": "HDB Flat Door",
       "source": "objects-doodads.json"
     },
     "DOOD_KAMPONG_HOUSE_SHELL": {
@@ -611,6 +688,13 @@
       "rawcode": "D008",
       "base": "YOtf",
       "name": "Skyline Tower (Twin)",
+      "source": "objects-doodads.json"
+    },
+    "DOOD_STAIRWELL_FLIGHT": {
+      "kind": "doodad",
+      "rawcode": "D01F",
+      "base": "YOtf",
+      "name": "Stairwell Flight",
       "source": "objects-doodads.json"
     },
     "DOOD_STATION_CLOCK": {
