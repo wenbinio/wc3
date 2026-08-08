@@ -111,6 +111,11 @@ X Hero Siege F-Day was substituted as the classic-genre representative.
 - **w3e v11 terrain is universal** — all four maps, including the one saved
   by the 2.0.3 editor. Nobody ships v12. w3i splits by ambition: v31
   (1.36-editor strategy/RPG maps), v33 (2.0 editor), v25 (classic).
+  **[STALE for 2026 starts — 2026-08 new-maps scout]**: maps STARTED in
+  2025–2026 now ship w3e v12 + w3i v33 (measured: Poker Strike V4.9.6,
+  Iron Sceptre CCG v1.87, Wild-Hunt 1.2.0); classic-profile authoring
+  (v25/objects v2) coexists (Hold my own Castle 0.2.1). The v11 datum
+  stays true for the 2023–2024 sample above.
 - **MDX v800 + BLP1 are still the asset baseline** in 2026; Reforged-era
   formats appear only homeopathically (2 MDX v1000 in NB, one DDS per map
   in three of four).

@@ -160,3 +160,25 @@ votes, mode picks at t=0), never combat input.
 - Downloads (A) measure acquisition; a 2006 download and a 2026 hosted
   game are not the same act. Where A and B disagree, B was trusted for
   "what people play".
+
+## 2026-08-08 addendum (new-maps scout, measured)
+
+- **I7 ("no map ever ships") holds, stronger**: the hosted top are
+  INSTITUTIONS — Pumpkin TD (own domain + Patreon + Discord savecode
+  escrow, 934k group hosted), NOTD Aftermath (GitHub org + issue
+  tracker + domain, 22-year lineage still in beta), Legion TD OZE (two
+  versions in live rotation), ORDR (seasons). New maps reach hosting
+  within weeks via Discord-first communities; Hive is where maps get
+  REVIEWED, not played.
+- **New infrastructure post-dating this study**: W3Champions runs
+  RANKED LADDERS for custom maps (Legion TD ×2, Direct Strike, Castle
+  Fight, Survival Chaos, Risk Europe, MiniDota — live API). Codeless
+  persistence (FileIO + BlzSendSyncData) is the standard stack; Wild-
+  Hunt 1.2.0 ships a clean open-source reference implementation.
+- **Hosted-canon snapshot 2026-08**: Zombie Defense 0.25z6 at 18,011
+  hosted/month is #1–2; Pumpkin TD, Legion TD OZE, Direct Strike,
+  HELLHALT follow. Genre spread unchanged (defense/autobattler/TD; no
+  deduction/sim/board game in the top — novel concepts live in the
+  long tail). Notable novel 2026 entries: Poker Strike (autobattler ×
+  poker hands, 1,141 hosted/mo), Iron Sceptre (full CCG, WE-open),
+  Particle Party (N-body physics arena on the ALICE framework).

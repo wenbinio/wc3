@@ -486,3 +486,8 @@ into Last Train, adapted not copied: the surge/countdown heartbeat and
 persistent timer window, ground-drop spills, the wisp-rect class pick
 (as class circles), spendable downtime (rat-king nests standing in for
 radiation fragments), and the fort-as-chokepoint platform siege.
+
+**Status bump (2026-08-08, measured)**: Zombie Defense 0.25z6
+(Frotty/Eejin, Wurst) is now at the TOP of the hosted canon — 42,658
+hosted total, 18,011 this month, #1–2 of all custom maps. When the
+zombie program resumes, decompose a fresh version first.

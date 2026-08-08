@@ -361,3 +361,23 @@ auto-movement, pathing.
 - **The highest-value open item is not tooling**: vaults-of-ash has still
   never been loaded in the real game. The sim-is-not-the-game doctrine says
   that playtest outranks every row above.
+
+## 2026-08-08 addendum: new protection classes + frontier (new-maps scout)
+
+- **WC3Fuscator V2.1** (seen in Poker Strike V4.9.6): Lua-map protector
+  shipping the whole script as a runtime-decrypting blob (LCG-keyed XOR
+  + base64). Parses as valid Lua (our gate passes) but defeats content
+  analysis AND recover.js (no plaintext paths — 0 names recovered vs
+  730 on a conventionally protected map). Gap class: "encrypted-Lua
+  maps — extraction fine, decomposition needs a decryptor" (statically
+  decryptable in principle; the decoder is in the file).
+- **MPQ header-size-field mangling** (`0x504f7856` stamp) seen on two
+  more 2026 maps (Particle Party, Hold my own Castle) and on this
+  session's RU/KR protected translations — extractor already detects +
+  tolerates; splice passes repair it to true v1 values when writing.
+- **Frame-UI (BlzCreateFrame/FDF) confirmed as the production UI
+  standard** (Particle Party: ~1,060 frame calls) — audit gap #11 (no
+  FDF authoring/lint) remains the biggest open hole for matching 2026
+  production quality. ALICE 2.12.3 (Lua/TS physics/interaction
+  framework) and StateSaver (full-game-state save/load, 2026-03) are
+  the ecosystem pieces to watch.
