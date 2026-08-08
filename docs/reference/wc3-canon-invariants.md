@@ -182,3 +182,45 @@ votes, mode picks at t=0), never combat input.
   long tail). Notable novel 2026 entries: Poker Strike (autobattler ×
   poker hands, 1,141 hosted/mo), Iron Sceptre (full CCG, WE-open),
   Particle Party (N-body physics arena on the ALICE framework).
+
+## 2026-08-08 CORRECTION + scope warning (blind-spot scout, measured)
+
+**Pumpkin TD is a KOREAN map.** The addendum above lists it as a
+Western hosted-canon institution; that is wrong by omission. From the
+artifacts' own w3i fields: 호박숲디펜스 (id 279453) reads
+`*PumpkinForestDefence / *제작 : king50` and still hosts 1,012/mo in
+Korean; `Pumpkin TD v1.12-ENG` (363950) has author `king50 (소쩍새
+#31549)` and credits `*English Version: kvickan#1134`; the current
+Pumpkin TD v2.3b (429910) — **#2 in the entire live hosted canon at
+11,597 games/month** — lists `Advy, ABlackDeath, kvickan` and has
+**dropped king50 from the byline**. So the #2 map in the canon is a
+translated Korean map whose localization outgrew and then de-credited
+its original author. Lineage is a four-branch forest: KR original
+(king50), EN fork (kvickan→Advy), 호박숲리버스 (미로즈), 호박숲디펜스Z
+(주디).
+
+**Scope warning — this dossier under-models the Korean scene.** It was
+built from EpicWar downloads, w3reforged and wc3tracker, all
+Latin-facing. Ranking the ENTIRE live hosted canon via
+`wc3maps /api/search?order=hosted_month` (1,199 maps hosted in the last
+month) measures: Latin-script 926 maps / 301,541 games (79.5%),
+**Korean 211 / 71,219 (18.8%)**, Chinese 51 / 6,200, Russian 11 / 438.
+126 non-Latin maps host ≥100 games/month. Two Korean maps sit in the
+top 25 (동물과 벽 짓고 살아남기 #13, 뿔레전쟁 #22). Any claim here
+about "what the canon plays" should be read as "what the LATIN canon
+plays" until re-derived over the full ranking.
+
+**Corollary on translation vs maintainership** [M]: Korean authors DO
+ship their own English builds (navia2, loveisanswer, king50 all did) and
+those builds die at 0–935 hosted while the Korean lines run in the
+thousands. The one that thrived is the one a separate Western
+maintainer adopted with community infrastructure. The scarce resource
+is maintainership, not translation.
+
+**Era-divergence evidence upgrade** [M]: the archive.org `wc3_maps_2002`
+snapshot (5,359 maps, per-file browsable with pre-parsed metadata
+sidecars) shows genres the modern canon has abandoned were alive in
+2002 — Mario Kart, Monopoly (6 point-versions), Musical Chairs (5
+versions), Stealth Operations, a weapons-factory automation map. The
+diversity existed and DIED; that is stronger support for §3 than
+anything currently cited there.
