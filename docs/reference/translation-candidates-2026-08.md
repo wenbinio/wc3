@@ -440,3 +440,188 @@ Apartment_1.45a.w3x; 데스노트 108673/0.7ver.w3x; TRPG S05_BH 407813;
 호성의 미궁 178978. m16tool CDN verified live for AHKSS1FIX194.2.w3x
 and PG_whoisca13.5.w3x. Artifacts (26 maps, 705MB) in ephemeral
 scratchpad kr-ru-scout/.
+
+---
+
+# Fifth wave — BLIND-SPOT scout (2026-08-08)
+
+Briefed against our METHOD, not another region: waves 1–4 all browsed a
+known host, keyword-searched, and ranked what surfaced. This wave
+attacked what that procedure cannot see. Fifteen maps shipped by now.
+
+## The unblock: wc3maps' FULL search contract [M]
+
+Prior waves knew `?query=`. The site's own JS bundle exposes the rest:
+`/api/search?page=&order=<hosted_month|hosted_total|downloads|id>
+&desc=true&query=&author=&script=<0 JASS|1 Lua|2 TS|3 C#>&min_players=
+&max_players=&groups=<""|false>&count=<-1|0>` — 24/page; `count=0`
+returns ONLY a total (69,803 latest-version groups) with zero rows,
+which is why a naive sweep looks empty; `groups=false` gives every
+point-version. Also live: `/api/lobbies`, `/api/lobbies?map_id=`,
+`/api/map/<id>`, `/api/map/<id>/history`, `/api/activity?range=`,
+`/api/stats`. The `saves` field = w3i editor save-count, a free
+authoring-effort metric. **`order=hosted_month` + page-walk ranks the
+ENTIRE live hosted canon** (bottoms out at 1,199 maps hosted in the
+last month).
+
+## The headline measurement [M]
+
+Of those 1,199 live maps: Latin-script 926 maps / 301,541 games (79.5%),
+**Korean 211 maps / 71,219 games (18.8%)**, Chinese 51 / 6,200 (1.6%),
+Russian 11 / 438 (0.1%). 126 non-Latin maps host ≥100 games/month.
+**Nearly one in five games of WC3 played in public bot lobbies right now
+is on a Korean-language map** — a scene wc3-canon-invariants.md does not
+model at all (it was built from EpicWar downloads + w3reforged +
+wc3tracker, all Latin-facing).
+
+## Hosted-but-undocumented (played, but nobody wrote about them)
+
+1. **윷놀이얌 v.라** (id 359876) — authentic Korean Yut Nori board game
+   (도/개/걸/윷/모 + 빽도, capture, stacking, team modes). Open archive,
+   **~365 non-ASCII chars TOTAL** — the cheapest artifact in five waves
+   (beats Сила слова). Zero English footprint anywhere. TRANSLATE.
+2. **턴제카드깸 v.차** (262966, 226/mo) — 5p turn-based card duel; ~1.2K
+   chars. Procedurally generates Korean personal names from surname +
+   syllable tables (in EN that table is a DESIGN decision, not a
+   translation). Zero EN footprint. TRANSLATE.
+3. **뿔레전쟁 v.리버스** (447336, **3,351/mo — #22 in the live canon**)
+   — 2.28MB/48K-line JASS, 31 versions, 16,958 editor saves, save-code
+   persistence, skill mastery tree, boss damage meters. The author
+   shipped his OWN English builds; both are dead at 0–9 hosted.
+   RE-SYNC candidate, ~63K chars.
+4. **동물과 벽 짓고 살아남기 1.13d** (343184, **4,392/mo — #13**) —
+   ranch/wall survival with a real MARKET (daily price ticks, aging,
+   per-species herb pricing), 6 difficulty tiers paying graded rewards,
+   and save-code persistence INTEROPERABLE with the author's other map.
+   ~218K chars. DECOMPOSE-first (market + reward-grade design is
+   coinstead-adjacent).
+5. **건물 지어 막기 3.1 Plus** (106624, 937/mo) — CAUTION: the
+   top-hosted build is the CHEAT FORK (40+ `@`-commands behind a
+   치트팩 gate). Confirms wave 3's CN cheat-fork ecology on the KR side.
+6. **문재앙디펜스** (117848) — political-satire zombie defense, 96% of
+   text in wts, **wtg present** → a war3net --dump-triggers study target.
+   Obvious content warning.
+7. **우한 폐렴에서 살아남기 3.2** (96357, 621/mo) — protected; a
+   trap-stub w3r (8 bytes declaring 1.26bn regions) fired gotcha 26
+   correctly; needs --recover-names before judging.
+Unopenable: **닭 농장 2.3C** (286852) — header-size mangled to
+0x6f725053, archive size overshoots by 1.95GB, nothing extracted.
+Rejected by provenance: 쥬라기서바이벌 G20 (KR fork of an EN map),
+수건돌리기 (=Hungry Hungry Felhounds KR line; still a good wtg/wct
+study), 심해온라인 RE (already translated).
+
+**New provenance heuristic [M]**: extend wave 3's "check the author
+field" to **"check the `path` field"** — the internal filename survives
+localization and is a provenance oracle (`HHF2021`, `meandyou_survival`,
+`DeepSeaOnline..._translated1`, `PumpkinTD_v1.12-ENG`). Four of twelve
+candidates were disqualified by path alone, before download.
+
+## Author-graph traversal (`author=` is a first-class API param)
+
+- **king50 — 91 maps.** A one-man traditional-and-party-games studio
+  who single-handedly occupies six genre rows: Yut Nori, Tuho,
+  Blue-Marble/Monopoly, auction defense ×2, street-vendor tycoon ×2,
+  pretend-play house, hide-and-seek, dodge ×4, a card game themed on a
+  Korean YouTuber. Also authors **호박숲디펜스 = the ORIGIN of Pumpkin
+  TD** (see correction 1). And `捉迷藏 v.Proto`, which wave 3 flagged
+  under the 汉化 trap, is HIS — Korean, not Chinese.
+- **loveisanswer — 43 maps.** Explains why keyword search fails: ONE
+  map is published by its own author under **eight different English
+  titles** plus 繁體/简体/Vietnamese. No stable English name ⇒ no
+  English community ⇒ invisible to search. KR line 17,942 hosted; every
+  EN/CN/VN build 0–935. Catalog is a coherent shop/farm-management
+  family (plant farm, animal farm, blacksmith, potion shop, factory
+  tycoon), six still live in the top 300.
+- **z1z1z1 — 72 maps.** Platformers and escape rooms in WC3 (Platform
+  Escape series, BOUND, Death Maze, World's Hardest Game), plus
+  **캐치마인드 = Korean Pictionary** and a dating map. Self-translates
+  into EN/繁/简/RU. Wave 4 credited him with one quiz map.
+- **navia2 — 8 maps**: same shape as loveisanswer (own EN builds, dead).
+
+**The structural finding [M]**: **KR authors DO ship their own English
+builds, and the English builds die.** The one that didn't — Pumpkin TD
+— is the one a separate WESTERN MAINTAINER took over (own domain,
+Patreon, Discord savecode escrow) and then dropped the original author
+from the byline. The bottleneck is not translation, it is
+**maintainership**. The deliverable that has ever worked in this scene
+is a maintained fork, not a translated file.
+
+## Video-first + the dead layer
+
+- Video-first thesis CONFIRMED measurably: of 7 CN maps visible in
+  bilibili gameplay video, **6 are absent from wc3maps' 69,803-group
+  index** (《一座岛》 — a TD where land itself is the budgeted resource;
+  《生死苍茫》; 《大王派俺去巡山》; 《谜窟求生记》; 《源世界》;
+  《百万小狗》). The CN long tail lives entirely outside indexed hosts.
+  **Exists-but-unobtainable**: distribution is QQ group numbers in video
+  descriptions + bilibili `opus` posts, which return `code:-352` (risk
+  control) with a JS-shell fallback. No headless path exists.
+- **`archive.org` is NOT blocked — only `web.archive.org` is** [M].
+  `advancedsearch.php?...&output=json`, `/metadata/<id>`, and
+  `curl -sL /download/<id>/<file>` all work. This is a permanent
+  capability, not a one-off. Found: **`epicwar_map_and_meta_dump`**
+  (121.5GB — EVERY map ever uploaded to EpicWar through 2021, with
+  per-map meta.json AND the original HTML page); **`wc3_maps_2002`**
+  (1.76GB, 26,824 files, PER-FILE downloadable — 5,359 maps each with a
+  pre-parsed .txt sidecar carrying name/author/full description/save
+  count, so **the pre-2010 dead layer is grep-able without downloading a
+  single map**); `wc3_maps_2003`; MakeMeHost's rescued archive; Gamefront's
+  collection; and mirrors of four DEAD RU hosts (wc3-maps.ru,
+  wc3.3dn.ru, warcraft3ft.clan.su, war3-team.ucoz.ru).
+- 2002 filename scan: 674 novel-genre matches. Confirmed early
+  occupancy of genres the modern canon ABANDONED — Mario Kart, Monopoly
+  (6 versions), Musical Chairs (5 versions), Stealth Operations,
+  Inferno's Weapons Factory. The genre diversity existed and DIED:
+  stronger evidence for canon-invariants' era-divergence thesis than
+  anything currently in that dossier.
+
+## Genre negative space (measured against the 69,803-group index)
+
+AUDITED ABSENT (zero results across all terms tried) — these are design
+openings with NO incumbent:
+- **Programming / automation (Factorio-shaped)** — the largest untouched
+  genre found. Nearest relatives are a 2002 weapons factory and one
+  KR "factory random defense".
+- **Co-op puzzle requiring literal simultaneous cooperation** — nothing
+  under puzzle/maze/escape terms. Violates the canon's "parallel
+  solitaire" caveat in a good way.
+- **Courtroom / trial** (재판/법정: 0) — a verdict-vote loop is exactly
+  our multiboard + alliance surface.
+- **Deckbuilding as a RUN STRUCTURE** (덱빌딩: 0) — card maps exist, but
+  none is a roguelike deckbuilder. Strongest opening in the table:
+  vaults-of-ash's seeded PRNG + Poker Strike's proven 1,173/mo demand.
+- **Elections / voting-as-government** (선거/투표: 0 — diplomacy maps
+  exist and are alive at 71/mo, but nobody votes).
+- **Train/logistics puzzles** (기차/지하철: 0; Microtrain is a
+  micro-drill, not logistics) — coinstead's `-link` routing is 80% of
+  the engine already.
+- **Karaoke** (노래방: 0), **golf** (골프: 0).
+Thin-but-occupied openings: rhythm (2 maps, ≤21 hosted — timing windows
+are click-native and sim-testable), cooking/restaurant (1 map, 3
+hosted), city planning (1 KR SimCity, 6 hosted), incremental/idle
+(CN platform-driven only), drawing/Pictionary (one dead artifact; and
+inherently typing-at-tempo, gotcha 33).
+Occupied, don't bother: farming/shop (the loveisanswer family),
+asymmetric 1-vs-many (Kodo Tag 4,591/mo, Troll & Elves 1,877/mo),
+survival-crafting, diplomacy, racing (occupied but hosted-dead),
+physics toys (occupied, dead), sports (soccer real at 133/mo).
+**Correction to wave 4**: quiz/trivia is not "one KR case" — Korea runs
+a whole quiz shelf with at least six independent maintainers (anime-title,
+dubbed-song, BGM, K-pop, game-name). Content-IS-the-language ⇒
+untranslatable; steal the format.
+
+## Wave-5 re-download index
+
+API as documented above. Artifacts:
+`storagebox.wc3maps.com/maps/<id>/<urlencoded path>` — 343184/
+`meandyou_survival_1.13d.w3x`; 447336/`BbulleReversev.16987.w3x`;
+262966/`(K)턴제카드깸v.차.w3x`; 359876/`(K)윷놀이얌v.라.w3x`;
+106624/`asdfwq.w3x`; 96357/`320.w3x`; 117848/`_1.0.w3x`;
+207090/`HHF2021.w3x`; 286852/`chickenfarm_2.3c.w3x` (unopenable).
+Author re-runs: `&author=king50` (91) / `loveisanswer` (43) /
+`z1z1z1` (72) / `navia2` (8). Pumpkin lineage: 429910 (EN current),
+363950+146151 (king50's own EN), 279453+182342 (KR), 331209+445331
+(리버스), 440919 (Z). archive.org: `/metadata/{epicwar_map_and_meta_
+dump, wc3_maps_2002, wc3_maps_2003, warcraft3-map-archive, ...}`.
+Bilibili: `api.bilibili.com/x/web-interface/search/all/v2?keyword=`
+(parse result_type=="video"); `/x/web-interface/view?bvid=`.
