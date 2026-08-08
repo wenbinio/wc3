@@ -563,6 +563,20 @@ never third-party maps, gotcha 9).
     ("constant typing is bad"). Sim note: sim.cast/pickup/useItem/sell/
     moveUnit+regions/damage make click-driven design equally testable —
     chat was never the only assertable surface.
+34. **An ASCII apostrophe inside a JASS string literal breaks the parse.**
+    `'...'` is rawcode syntax and the JASS lexer does NOT treat `"..."`
+    as opaque, so `"don't"` in a war3map.j string makes the map
+    UNLOADABLE — while still passing member-diff, markup-parity and CJK
+    sweeps (they only compare text shape). Only pjass catches it
+    (lib/jasscheck.js; verified both ways: same string parses clean
+    without the apostrophe, fails with it). Cost: a translation build
+    injected 91 apostrophes across 17 literals and looked perfect on
+    every other check. Rule: when WRITING English text into a JASS map,
+    rephrase to apostrophe-free wording (or use a typographic ’ if the
+    font renders it), and make the build hard-fail on any `'` inside a
+    double-quoted literal. Lua maps are unaffected — this is JASS-only.
+    Corollary for the translation program: pjass parity is not a
+    formality, it is the ONLY gate that sees this class.
 
 ## Testing & validation doctrine
 
