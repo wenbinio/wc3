@@ -3,9 +3,11 @@
 English translation of **학교괴담 (School Ghost Story) v1.4z** by **Eri**
 (cafe.naver.com/gghot22) — an asymmetric 7-students-vs-1-ghost Korean
 school-horror map. Full player-facing translation (2,890 object-data
-strings, 336 script literals, recipes/rituals/quests/chat-commands);
-gameplay byte-identical to the original; original authorship credited
-in-map (F9 Creator quest + w3i). Translated by Serendipity.
+strings, 336 script literals, recipes/rituals/quests/chat-commands),
+followed by an editorial pass that tightens the horror register of the
+kill/verdict/ghost-event lines and the F9 how-to-play texts; gameplay
+byte-identical to the original; original authorship credited in-map
+(F9 Creator quest + w3i). Translated by Serendipity.
 
 **Status**: repo-owner-directed exception (2026-08-08) to the "never
 commit third-party maps" rule (CLAUDE.md gotcha 9 / Legal) — placed here
