@@ -285,3 +285,158 @@ Blocked-but-located wc3maps IDs: 密室惊魂 204135, 富甲天下英雄集结
 342999 / 貳繁體 118868, 疯狂小偷 264831, 麻将TD 241883, 自走棋 101687,
 農場大亨 267089, 警察抓小偷 262419. ra216 pan.baidu codes in the
 wave-3 scout report (session context).
+
+---
+
+# Fourth wave — KR/RU/other scenes deep sweep (2026-08-08, Opus researcher)
+
+Shipped since wave 3: Find Hoseong (whoisc) landed; nine CN passes in
+flight. All items below download-verified + extracted; text volumes
+toolkit-measured via map-to-json (NOT raw byte scans — see corrections).
+
+## Sourcing corrections (the biggest yield of the wave)
+
+- **wc3maps.com search param is `query=`** — `q=`/`search=`/`name=`/
+  `term=` are silently ignored and return the same generic 24-map list,
+  which reads exactly like "no KR results". This mistake is why waves
+  1–2 thought the KR scene was unsourceable. Downloads:
+  `storagebox.wc3maps.com/maps/<id>/<path>` where <path> comes from the
+  viewer link's `path=` param (`/api/download/<id>` 302s to a WRONG URL).
+- **xgm pagination is path-based** (`/p/wc3/resources/<page>?...`, not
+  `?page=`): wave 2 swept page 1 only — MiniGame is 86 items not 34;
+  the 232-item Other bucket (attr 2191) was never opened. Language
+  attr exists (attr[1086]) but uploaders don't use it (all ~0). Runtime
+  attr[1378] distinguishes нет/JN Loader/dzApi/UjAPI.
+- namu.wiki fully blocked (curl AND WebFetch 403; mirrors dead).
+  dcinside readable but list bodies are JS-only. Naver/Daum cafes still
+  login-walled; KR TRPG hubs identified: 4rum.co.kr, cafe.naver.com/
+  w3trpg, /m16trpg. m16tool.xyz portals confirmed live; slugs found
+  via search engines, not the GameList.
+
+## Ranked shortlist (wave 4)
+
+1. **Культисты 3.5** (RU, xgm DetectiveWarcraft3) — Murder-family
+   social deduction where SECONDARY ROLES ARE EARNED MID-ROUND by
+   completing hidden tasks (Lawyer/Spy/Ambassador/Double Agent, each
+   with stated difficulty + concrete power); the Cult Leader is the
+   only player allowed to TYPE during the investigation day and keeps
+   helping after death; mana = action currency. ~34.4K Cyrillic,
+   object-data-heavy. Best concept-per-byte of the wave. TRANSLATE.
+2. **아파트 1.45a** (KR, 스티치, wc3maps 83252) — THE KR-original
+   deduction map waves 1–2 hunted: serial killer in your apartment
+   block, alarm locks front doors 00:00–06:00, evidence is PHYSICAL
+   AND DESTRUCTIBLE (burn a paper to read it — once). 55.7K hangul,
+   96% in wts (ideal shape). TRANSLATE.
+3. **Шизофрения 1.23.21c** (RU) — "interactive film": 1–3p branching
+   story, 85+ decision points, NPC attitude encoded in dialogue text
+   COLOR. ~48.5K Cyr. Medium priority; mental-illness-as-horror
+   content warning; check for later episodes.
+4. **Взлом Системы v1.1** (RU) — knowledge-deduction race: the
+   password is a WC3 hero, question the Scientist (who can FAIL to
+   remember; re-asking can jog him). Wordle-by-lore. ~23.3K Cyr;
+   needs the RU hero-name answer set remapped to EN spellings.
+   Deliberately typing-driven BY DESIGN (gotcha-33 exception).
+5. **Сила слова** (RU, 2008) — Typing of the Dead in WC3: kill undead
+   by typing the word over their heads. ~665 Cyrillic chars TOTAL —
+   the cheapest artifact in four waves. EN word pool = balance
+   decision (word length is the difficulty curve).
+6. **데스노트 0.7ver** (KR, AngelDragon+크레아, wc3maps 108673) — the
+   KR-original Death Note, unprotected, <6K hangul (20× cheaper than
+   the RU one we shipped). Higher build 3.21fix7 is indexed but its
+   file 404s server-side.
+7. **Мутация V:0:05** (RU) — 87K Cyr all-wts, unprotected; shape
+   ideal, concept unverified. Cheap to re-open.
+8. **Monopoly v1.01 AI** (RU) — trivial (~6.7K); pipeline warm-up tier.
+
+DECOMPOSE-not-translate: **Челябинск r12fix3** (Lord_Tomat — same
+author as Gomel; open-world life-sim roguelike of the real city;
+magazine-capacity-IS-mana guns with jamming, reputation triangle,
+learn-by-doing skills, NPCs that live while you're away; >250K Cyr,
+86MB, plus an ethnic-slur faction name that is unshippable in EN
+without content changes). **Тараканья схватка 3: Metal Gear Insectus**
+(cockroach stealth trilogy; UNPROTECTED WITH WTG — the best RU
+trigger-architecture study via war3net --dump-triggers; 222K Cyr).
+Passed: 주식게임 Q (thin), 너의 대학은? (joke is 수능-literate,
+untranslatable culturally), 연상 퀴즈 (word-association DB — the
+content IS the language), Игра в кальмара (ships official EN since
+v1.1 — fails criterion).
+
+## Scene ideas (Stream B)
+
+- **M16 per-map portals are a GOVERNANCE layer** [M]: admin, clan
+  channel, ban list, patch feed, walkthrough board, and a WHITELIST of
+  accepted map builds (one map: 24 exact filenames, 5 versions in ten
+  weeks). Version control lives in the HOST. Canon-invariants
+  material: franchise-with-phases + host-side build whitelisting.
+- **KR TRPG genre: human dungeon masters as player slots** [M]: "6 PC
+  & 3 DM" declared in player config; 24+ sibling maps; fork genealogy
+  credited per-ROLE (author/porter/balance-patcher). STEAL: an
+  asymmetric GM slot (one player with authoring powers) — sim-testable,
+  nothing in our fleet has it. Decompose TRPG S05_BH (unprotected+wtg).
+- **눈치 ("reading the room") is a native KR genre** [M], 7+ maps:
+  your own units are AMMUNITION fed into a shared destructible "life"
+  (feeding your own included), upgrade-by-tile-drop at 70% odds,
+  combine recipes WITHHELD as clan-rank knowledge (social gating of
+  game information), losers ejected from the session. STEALS: (a)
+  army-as-ammo objective, (b) secret-recipe economy where knowledge is
+  the socially-distributed resource. Both coinstead-shaped.
+- **호성 is a scene-wide shared character** across four unrelated
+  authors (find-him maps ×3 maintainers, a 289-room escape maze,
+  freeze-tag). Caution: our +13.5 build is one branch of a version
+  FOREST, not a linear history.
+- **Творцы Миров: the .w3x as a play-by-post board** [M]: 306-square
+  grid, forum queue, terrain-only turns, +1 version per move, 3-day
+  shot clock; 75 versions, 62% done. STEAL: maps perfectly onto our
+  git pipeline (turn = commit).
+- **LLM NPCs via file bridge** [M]: xgm "deepseek" project — Python
+  writes situation.txt, map reads via MemoryHack, executes
+  commands.txt back; demo is a murder mystery with LLM interrogation.
+  Outside vanilla (MemoryHack+API key); note the two-file poll
+  protocol; first artifact that is un-simulatable by lib/sim by
+  construction.
+- **FRAMETRIS**: tetris rendered on Reforged FRAME UI, not units —
+  the one rendering surface we've never used. XGM 72-hour Map Jams +
+  the Mini-Game Contest drive the RU board-game shelf (backgammon,
+  chess, roulette, Mario-Party, Flappy Bird, hockey...).
+- **VN scene identity = deprotection-and-republication**, advertised
+  in map titles ("Deprotect by Luu Them"). "Protected" is a soft
+  state in practice.
+
+## Folklore corrections (wave 4)
+
+1. **The KR mafia/killer-deduction "concept ceiling" claim is CLOSED
+   NEGATIVE**: KR 마피아 1.570a and 위상의 살인마 both carry
+   Dark.Revenant in their w3i author fields — they're localizations
+   of his EN Mafia/Phase Killer, the same lineage excluded on the RU
+   side in wave 2. The genuinely KR-original deduction maps are 호성을
+   찾아라, 아파트, and 데스노트 — all now sourced.
+2. **Darwin Evolution Island's mechanic is convergent, not
+   CN-invented**: RU Эволюция 1.4 (2006) has the same loop INCLUDING
+   the level-11 no-respawn flip; EN Natural Selection (Callex) is the
+   visible ancestor. Downgrade "best novelty-per-hour" accordingly.
+3. **Encoding hazard for the translation pipeline**: 아파트, 위상의
+   살인마, TRPG S05_BH, Тараканья 3, Поймай вампира all ship wts
+   files that are UTF-8 WITH 1–43 INVALID BYTES — strict utf-8 decode
+   throws; naive cp949/cp1251 fallback produces silent mojibake (and
+   fake "Cyrillic in a KR map" counts). lib/wts.js gotcha-16 path
+   assumes clean UTF-8: any pass on these needs a lossy-decode +
+   byte-preserving strategy. ALSO: never byte-scan object-data
+   binaries for text volume — binary noise decodes as plausible
+   CJK/Cyrillic; route through map-to-json.
+4. xgm titles can mislie: Лавка "Старьёвщик" is actually Выжить в
+   пустыне in its header. Check the header, not the listing.
+
+## Wave-4 re-download index
+
+xgm (anonymous /p/wc3/<slug>/download): DetectiveWarcraft3,
+schizophrenia (direct: xgm.guru/files/100/219108/Schizophrenia_
+1.23.21c.w3x), vzlomsys, Sila-Slova-c4k, chelyabinsk,
+Tarakanya-skhvatka-3-...-chast-1 (и -2), monopolywc3, Mutatsia-E4s,
+Evolyutsiya-14-tOg, tvorcy-mirov-igra-dlya-landshafterov, deepseek,
+Uther-Party-Ultima-V-OoQ (CLOSED — 55-byte JSON; hunt EpicWar).
+wc3maps (storagebox.wc3maps.com/maps/<id>/<path>): 아파트 83252/
+Apartment_1.45a.w3x; 데스노트 108673/0.7ver.w3x; TRPG S05_BH 407813;
+눈치보며 강퇴하기 318740; 호성 sibling builds 209715/294136/90354;
+호성의 미궁 178978. m16tool CDN verified live for AHKSS1FIX194.2.w3x
+and PG_whoisca13.5.w3x. Artifacts (26 maps, 705MB) in ephemeral
+scratchpad kr-ru-scout/.
