@@ -5,7 +5,7 @@ English translation of **학교괴담 (School Ghost Story) v1.4z** by **Eri**
 school-horror map. Full player-facing translation (2,890 object-data
 strings, 336 script literals, recipes/rituals/quests/chat-commands);
 gameplay byte-identical to the original; original authorship credited
-in-map (F9 Creator quest + w3i).
+in-map (F9 Creator quest + w3i). Translated by Serendipity.
 
 **Status**: repo-owner-directed exception (2026-08-08) to the "never
 commit third-party maps" rule (CLAUDE.md gotcha 9 / Legal) — placed here
