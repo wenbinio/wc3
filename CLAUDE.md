@@ -567,16 +567,22 @@ never third-party maps, gotcha 9).
     `'...'` is rawcode syntax and the JASS lexer does NOT treat `"..."`
     as opaque, so `"don't"` in a war3map.j string makes the map
     UNLOADABLE — while still passing member-diff, markup-parity and CJK
-    sweeps (they only compare text shape). Only pjass catches it
-    (lib/jasscheck.js; verified both ways: same string parses clean
-    without the apostrophe, fails with it). Cost: a translation build
-    injected 91 apostrophes across 17 literals and looked perfect on
-    every other check. Rule: when WRITING English text into a JASS map,
-    rephrase to apostrophe-free wording (or use a typographic ’ if the
-    font renders it), and make the build hard-fail on any `'` inside a
-    double-quoted literal. Lua maps are unaffected — this is JASS-only.
-    Corollary for the translation program: pjass parity is not a
-    formality, it is the ONLY gate that sees this class.
+    sweeps (they only compare text shape). **Detection is harder than it
+    looks** (two passes, two different outcomes): whole-file pjass
+    parity catches it only when the script otherwise parses clean; on a
+    map that ALREADY has thousands of grammar-only errors (protected /
+    no common.j) the new errors vanish into the noise and parity still
+    "passes" — a second translation build shipped 40 apostrophes across
+    13 literals past member-diff, markup parity, CJK sweep AND whole-file
+    pjass parity. Reliable detectors, in order: (a) a direct lint —
+    assert the EN script introduces no `'` inside a double-quoted literal
+    beyond what the original had (cheapest, always works); (b) a
+    full-mode per-literal pjass probe, NEGATIVE-CONTROLLED (plant a known
+    bad literal and confirm it fires — gotcha 32b's discipline).
+    Rule when WRITING English into JASS: rephrase to apostrophe-free
+    wording (or a typographic ’ if the font renders it) and hard-fail the
+    build on recurrence. Only war3map.j is parsed — wts and object data
+    keep apostrophes safely (CN originals ship them). Lua maps unaffected.
 
 ## Testing & validation doctrine
 
