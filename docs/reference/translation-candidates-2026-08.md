@@ -176,3 +176,112 @@ Runners-up: Death Note v0.4b, Соль и Сахар, Маньяк с пилой
 Re-download URLs for every item are recorded in the second-wave scout
 report (session context) and inline above; artifacts live in the
 ephemeral scratchpad (`scout2/`).
+
+---
+
+# Third wave — CN deep sweep (2026-08-08, dedicated CN researcher)
+
+Shipped since wave 2: РКН БАНИТ, Кто чужой?, Death Note v0.4b all
+translated into test/ (whoisc in flight). Everything below is
+download-verified + extracted unless marked otherwise.
+
+## CN sourcing map (corrections to prior waves)
+
+- **jdrts.com is the MVP**: TW/HK WordPress archive, 300+-entry
+  其他地圖 (concept/misc) category, per-map mediafire links that serve
+  raw .w3x to plain `curl -L`, WP search (`/?s=`), huge walkthrough
+  base. Ten artifacts pulled end-to-end this wave.
+- **wc3maps.com search API**: `/api/search?query=<CJK>` (param is
+  `query`, NOT `q`) → structured JSON incl. hosted_total/hosted_month
+  (aliveness). BUT downloads are bot-walled (storagebox Cloudflare
+  challenge disguised as nginx 404) — metadata/discovery only.
+- **KK平台 is NOT fully geo-blocked** (prior-wave error): kkdzpt.com
+  web catalog + forum + developer portal reachable; only the game
+  network is walled. ra216.com (魔兽基地, alive 2026-07) reachable but
+  downloads route to pan.baidu (codes recorded in scout report).
+  war3.uuu9.com is dead DNS (U9 apex is a shell). s.32r.com search is
+  proxy-blocked (32r usable by known ID only). curl+browser-UA works
+  where WebFetch 403s on CN sites.
+- **汉化 trap**: CN archives interleave originals and translations of
+  WESTERN maps with no marking — 痛苦的聚会 = Arohk's (DE) Party of
+  Pain; 电锯惊魂8 = Purparisien's (FR) SAW VIII; 模擬人生/捉迷藏
+  v.Proto likewise. CHECK THE AUTHOR FIELD before shortlisting
+  anything CN-labeled.
+
+## CN ranked shortlist (all w3i v25 classic, JASS)
+
+1. **天黑請閉眼 v2.9A** (jimmybow, TW) — werewolf/Mafia deduction,
+   the CJK-native lineage, supports AI werewolf players. 342 wts +
+   14.4K CJK script chars. Translate the base first; its CN
+   **扩展版 fork bolts a full economy on** (stock market with
+   crash-to-waste-paper, wandering merchants; 1,565 wts) — phase 2.
+2. **阿瓦隆 1.4d** — The Resistance: Avalon in WC3, dedicated
+   role/vote-card art, WE-open, tiny text (274 wts). No EN equivalent
+   exists (audited). Top tractability-per-novelty.
+3. **魔兽模拟主题公园 测版13** ("WC3 Theme Park", author "L") —
+   competitive Bullfrog-style park-management sim (visitor archetypes,
+   satisfaction curves, rival parks). The CN Gomel. 303 wts, WE-open.
+4. **小镇暗斗 1.6.1.8** (邪魔ご木衍) — Town-of-Salem-scale hidden-role
+   town (roles incl. a venture-capital firm); live 开黑 community on
+   bilibili 2025. HEAVY: 6,979 wts / 132.7K CJK (학교괴담-class++);
+   protected (smpq extracted where stormlib errored). Decompose now,
+   translate only with a dedicated budget.
+5. **誰是兇手? 1.08** (721220war & RPGMAGIC, TW) — killer-among-
+   friends castle deduction. 79 wts, 4 CJK chars in script — the most
+   tractable artifact in three waves; a weekend pass.
+6. **撕名牌 0.4** — Running Man name-tag battle: rip the tag off an
+   opponent's BACK (positional PvP), stamina drain, run-to-heal
+   anti-camping, 3D camera with -2D fallback. Early-stage; concept >
+   polish; translate-or-steal borderline.
+7. **小鸡-斗地主** — real Dou Dizhu in WC3 with card textures (a 2018
+   bilibili WC3-DouDizhu showcase pulled 197K plays).
+8. **大富豪·艾泽拉斯之旅** — compact Monopoly-like. The deeper line is
+   富甲天下 (Monopoly×Three-Kingdoms, forks actively updated 2025-08)
+   — acquisition currently blocked, walkthroughs on jdrts.
+9. **全員逃走中 1.5** — Run-for-Money TV format (caught = prize
+   resets). Tiny; licensed-format caveat.
+10. **密室惊魂** (乐哥出塞) — CN-original escape-room deduction: ONLY
+    ONE may escape and one player is the traitor. Download blocked
+    (wc3maps 204135) — promote the moment a mirror surfaces.
+
+## CN scene ideas (Stream B — decompose / steal / note)
+
+- **Platform persistence made maps live-service** [M]: Netease cloud
+  saves + per-map account levels → maps ship BATTLE PASSES (刀圈TD
+  seasonal pass) and daily-activity systems; low-save players get
+  lobby-kicked. Demand-side evidence for our deferred save-code
+  capability (ambitious-maps §6).
+- **KK平台 is a mini-Steam** [M]: studio authors, pre-registration,
+  experimental shelf, revenue-share co-creation, esports arm. CN
+  professionalized; explains maps-as-franchises.
+- **挂机图**: an idle-lobby GENRE created purely by platform XP
+  incentives. **无CD/BT cheat-fork ecology** [M]: ra216 has whole
+  categories of cracked no-cooldown editions + injection tools — a
+  provenance hazard: top-hosted copies are often the cheat fork.
+- **隐藏英雄密码 culture** [M]: secret chat-codes as first-class
+  community content (password catalogs, viewer tools). Cheap,
+  sim-testable, drives walkthrough engagement — steal for an original.
+- **Werewolf×economy hybridization** (扩展版's market), **TV-variety
+  formats** (tag-rip positional PvP is click-native and sim-testable),
+  **university-series maps** (华理TD thief-TD: creeps that STEAL
+  towers, not leak — decompose 小偷疯狂科技), **viral-mobile demakes**
+  (Flappy Bird/2048/Piano Tiles), **board-game depth** (Chinese chess,
+  Sudoku, Minesweeper, 麻将TD tile-logic towers, an MTG map),
+  **打字競賽** (typing-race: chat AS the verb, on purpose), **80平台**
+  as a third, nostalgia-segmented platform.
+- **三国杀 does NOT exist in WC3** [audited zero] — the license holder
+  litigates; an original role+equip+judgement-card design would have
+  no incumbent. 狼人杀-branded maps also absent (the slot is held by
+  天黑请闭眼/小镇暗斗/密室惊魂 lineages).
+
+## CN re-download index (scratchpad is ephemeral)
+
+jdrts→mediafire (curl -L works): 天黑請閉眼 v2.9A
+mediafire.com/file/2jnxhl2tr5ums15; 扩展版 /yl6jgbmv7mkqsxi; 阿瓦隆
+/yzmek755r6n0zrg; 主題公園 /yr3i866d71sdb5z; 小鎮暗鬥 /w6zsk622hmjah89;
+誰是兇手 /c5726w59hpj6tz8; 撕名牌 /di7u8v1n4okqq2q; 鬥地主
+/v06379glrh8f1g1; 大富豪 /1bd7bvn031mi1ap; 全員逃走中 /x9gglbviwh8kc84.
+Blocked-but-located wc3maps IDs: 密室惊魂 204135, 富甲天下英雄集结
+342999 / 貳繁體 118868, 疯狂小偷 264831, 麻将TD 241883, 自走棋 101687,
+農場大亨 267089, 警察抓小偷 262419. ra216 pan.baidu codes in the
+wave-3 scout report (session context).
