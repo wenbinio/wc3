@@ -4,6 +4,11 @@
 // dry-clip zero, the Parang half-damage fallback, RELOAD AS ABILITY R
 // (gun-down 4s, NO PauseUnit — the legs still work), gunshot Noise, and
 // the sentry belt.
+// RE-TARGET NOTE (phase 2B text diet, PIPELINE §8): the reload/gun-down/
+// full-clip/sentry-dry CHAT lines were deliberately deleted — the state
+// now reads as floating text at the unit (SetTextTagText). The asserts
+// moved from sim.messages to the text-tag call record; the MECHANICS
+// pinned here (draw, zero, refund, belt) are unchanged.
 
 const test = require('node:test');
 const assert = require('node:assert');
@@ -34,8 +39,8 @@ test('every shot burns one round and makes one Noise; a dry clip zeroes the dama
   sim.chat(0, '-gold 0');
   sim.damage(hero, zomb, 20);
   assert.strictEqual(zomb.life, hp0 - 20, 'dry clip: the shot is zeroed');
-  assert.ok(sim.messagesTo(0).some((m) => /Click\. Clip's dry/.test(m.text)));
-  assert.ok(sim.messagesTo(0).some((m) => /hit \|cffffcc00R\|r to reload/.test(m.text)),
+  assert.ok(sim.messagesTo(0).some((m) => /Click -- dry/.test(m.text)));
+  assert.ok(sim.messagesTo(0).some((m) => /\|cffffcc00R\|r reloads/.test(m.text)),
     'the dry-clip hint points at the R ability, not a chat command');
 });
 
@@ -62,10 +67,10 @@ test('Reload (ability R): burns one clip, gun down 4s but NOT paused, then refil
   const hp0 = zomb.life;
   sim.damage(hero, zomb, 20);
   assert.strictEqual(zomb.life, hp0, 'mid-reload shots land nothing');
-  assert.ok(sim.messagesTo(0).some((m) => /Gun's down mid-rack/.test(m.text)));
+  assert.ok(sim.callsOf('SetTextTagText').some((c) => /gun down/.test(String(c.args[1]))),
+    'the gun-down state reads as floating text (text diet)');
 
-  sim.cast(hero, 'A000');
-  assert.ok(sim.messagesTo(0).some((m) => /Already racking/.test(m.text)));
+  sim.cast(hero, 'A000'); // double-cast mid-rack is silently ignored
   assert.strictEqual(sim.player(0).lumber, 1, 'no double spend');
 
   sim.advance(5);
@@ -79,7 +84,8 @@ test('Reload (ability R): burns one clip, gun down 4s but NOT paused, then refil
 test('Reload refuses on a full clip and with no spare clips', () => {
   const { sim, hero } = setup();
   sim.cast(hero, 'A000');
-  assert.ok(sim.messagesTo(0).some((m) => /already full/.test(m.text)));
+  assert.ok(sim.callsOf('SetTextTagText').some((c) => /clip full/.test(String(c.args[1]))),
+    'full-clip refusal is floating text');
   assert.strictEqual(sim.player(0).lumber, 2);
 
   sim.chat(0, '-gold 1');
@@ -101,6 +107,7 @@ test('a deployed sentry draws its own 40-round belt and goes inert dry', () => {
   const hp = zomb.life;
   sim.damage(sentry, zomb, 5);
   assert.strictEqual(zomb.life, hp, 'dry belt: shots are zeroed');
-  assert.ok(sim.messagesMatching(/runs its belt dry/).length > 0);
+  assert.ok(sim.callsOf('SetTextTagText').some((c) => /belt dry/.test(String(c.args[1]))),
+    'the dry belt reads at the gun, not in chat');
   assert.ok(/sentry\|dry/.test(sim.global('RUNLOG')));
 });

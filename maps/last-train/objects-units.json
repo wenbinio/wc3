@@ -70,7 +70,7 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "AInv,A000,A001"
+        "value": "AInv,A000,A001,A008,A009,A00A,A00B,A00C"
       },
       {
         "id": "ubui",
@@ -149,7 +149,7 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "AInv,A000,A001"
+        "value": "AInv,A000,A001,A008,A009,A00A,A00B,A00C"
       },
       {
         "id": "ubui",
@@ -228,7 +228,7 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "AInv,A000,A001"
+        "value": "AInv,A000,A001,A008,A009,A00A,A00B,A00C"
       },
       {
         "id": "ubui",
@@ -307,7 +307,7 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "AInv,A000,A001"
+        "value": "AInv,A000,A001,A008,A009,A00A,A00B,A00C"
       },
       {
         "id": "ubui",
@@ -1285,7 +1285,7 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "A Town Council substation. Restore all three (\"-fix\" beside one) and the station gets power — no power, no doors, no train home."
+        "value": "A Town Council substation. STAND in the yard to repair it -- progress keeps, a hit costs 3 seconds. All three live and the station doors will open."
       },
       {
         "id": "umdl",
@@ -2003,7 +2003,7 @@
         "type": "string",
         "level": 0,
         "column": 0,
-        "value": "Somebody left in a hurry. Searchable: stand close and type -search."
+        "value": "Somebody left in a hurry. Stand close a moment to rummage it -- or smash it open and let the whole district hear."
       },
       {
         "id": "umdl",
@@ -3154,6 +3154,350 @@
         "level": 0,
         "column": 0,
         "value": 1500
+      }
+    ],
+    "h01I:hhou": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Spike Wire"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Spike Wire"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Sharpened pipe and wire. Anything that claws it gets clawed back."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Doodads\\LordaeronSummer\\Terrain\\Barricade\\Barricade0.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNSpikedBarricades.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 250
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "utra",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ures",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "h01J:hhou": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Watchfire"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Watchfire"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "An oil drum fire: a pool of light, a little vision, and something like courage."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Doodads\\LordaeronSummer\\Props\\brazierOmni\\brazierOmni.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNFire.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 150
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "usid",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 900
+      },
+      {
+        "id": "usin",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 900
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "utra",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ures",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "h01K:hhou": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "DB Box"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "DB Box"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "The floor's distribution board. Stand at it a few seconds to flip the breaker -- light for the whole floor, and a hum the stairwell can hear."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\Substation.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNSubstation.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 120
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "usca",
+        "type": "unreal",
+        "level": 0,
+        "column": 0,
+        "value": 0.4
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Avul"
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "utra",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ures",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      }
+    ],
+    "h01L:hhou": [
+      {
+        "id": "unam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Old Radio"
+      },
+      {
+        "id": "utip",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Old Radio"
+      },
+      {
+        "id": "utub",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Somebody's kitchen radio, volume knob snapped off at maximum. Everything walking wants it to stop."
+      },
+      {
+        "id": "umdl",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "buildings\\Other\\BarrelsUnit0\\BarrelsUnit0.mdl"
+      },
+      {
+        "id": "uico",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNCrate.blp"
+      },
+      {
+        "id": "uhpm",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 30
+      },
+      {
+        "id": "ufoo",
+        "type": "int",
+        "level": 0,
+        "column": 0,
+        "value": 0
+      },
+      {
+        "id": "usca",
+        "type": "unreal",
+        "level": 0,
+        "column": 0,
+        "value": 0.6
+      },
+      {
+        "id": "uabi",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ubui",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "utra",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
+      },
+      {
+        "id": "ures",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": ""
       }
     ]
   }

@@ -1,31 +1,113 @@
 # Last Train from Yio Chu Kang
 
 **A map by Serendipity.** A **1–4 player co-op zombie survival map** set in
-a rain-soaked Singapore HDB estate on the island's last night — **phase 2A,
-the fun transplant**. Rummage or smash the void decks, let your pack
-auto-combine what the island left you, hold the substations by STANDING
-at them, survive the siren-led **surges**, and board the **last
-North-South line train** when it calls at Yio Chu Kang at T+12:00 — or
-take the long walk into the kampong remnant off Lorong Buangkok and kill
-the **Broodmother** instead. Death is not elimination: the fallen
-**defect to the horde** and CONDUCT it against the living.
+a rain-soaked Singapore HDB estate on the island's last night — **phase
+2B, THE TOWER**. You wake on the **sixth floor of Block 6A with every
+lift dead**, and the playable slice this phase is fighting, sneaking,
+building and bleeding your way DOWN the stairwell — six interior floors
+of survival horror — until the void deck lets you out into the rain.
+Beyond that door the whole phase-2A estate loop still runs (surges,
+Noise, substations, the last train at T+12:00, the Broodmother, death =
+defection), anchored to the moment you step outside — but it received no
+new design work this phase.
 
-**Phase 2A exists because of a playtest.** The phase-1 verdict was
-"constant typing is bad, core loop is unfun"; four studies (design
-diagnosis, a fun-first redesign, the Zombie Defense Custom decomposition
-in docs/reference/zombie-survival-comparison.md, and the canon study in
-docs/reference/wc3-canon-invariants.md) converged on one reconciled
-spec. **`DESIGN-WALKTHROUGH.md` in this folder is the design gate the
-implementation matches** (PIPELINE §10; CLAUDE.md gotcha 33: chat is
-meta only — every combat-tempo verb is a click, an ability, an item or
-proximity).
+**Phase 2B exists because of playtest 2** (verbatim): *"Take heavier
+inspiration from Zombie Custom Defence. There's a very rich wealth of
+triggers and custom effects out there. Things are placed kind of
+nonsensically. Think waygates, first you have to survive & fight your way
+out of a HDB, on the sixth floor, all lifts are down. Intense survival
+horror vibe. You put too much work into the text."* — plus the mid-phase
+directives *"There's not enough to do at all. Maybe let players build &
+survive"* and *"We'll focus entirely on the HDB interior for now."* An
+activity audit then located the "not enough to do" failures and its
+mandatory fixes shipped (darkness with teeth, brace, chute, gas, decoy,
+the graded loudness repair). **`DESIGN-WALKTHROUGH.md` is the fun gate
+the implementation matches** (PIPELINE §10; gotcha 33: chat is meta only).
 
 In-game name: **"Last Train from Yio Chu Kang"** (distinct internal name,
 CLAUDE.md gotcha 17). Built and validated headlessly with wc3-map-toolkit;
-compiled artifact: `maps/builds/last-train.w3x`. **The 2A build has never
-been loaded in the real game — sim-proven only** (93 logic tests, 99.2%
-script line coverage; playtesting it against the walkthrough is the
-standing next step).
+compiled artifact: `maps/builds/last-train.w3x`. **The 2B build has never
+been loaded in the real game — sim-proven only** (145 logic tests, 99%
+script line coverage; playtesting the tower slice against the walkthrough
+is the standing next step).
+
+## The tower (phase 2B — the playable slice)
+
+Block 6A's interior is six walled pockets on the map's south margin,
+linked by **trigger-teleport stairwell doors** (region enter →
+`SetUnitPosition` + camera pan — the robust, sim-testable form of the
+"waygate" pitch; walls are solid rock ranks until the commissioned Sol
+round-4 interior set lands):
+
+- **6F corridor** — spawn, the four **class circles** (pick your
+  neighbour identity as you flee), the sparking dead lift, the dead
+  neighbour's guaranteed **Parang** (the descent never NEEDS a bullet).
+- **5F flat warren** — rummage-rich; **Uncle Heng** is trapped in a flat
+  (2s presence frees him; +25 XP, +25 more if he reaches the rain; he
+  follows through doors but NOT down the chute).
+- **4F dark corridor** — **darkness with teeth**: unlit floors rummage in
+  5s not 3 and add a body to every spawn event. Remedies: flip the
+  floor's **DB box** (5s presence; lights it for good, but the breaker
+  hums +1 loudness/min) or drop a **Watchfire** (silent, lasts while it
+  burns, costs the Kerosene that was half a Molotov).
+- **3F blocked landing** — furniture squats on the stair door, and the
+  floor **leaks gas**: chop the blockers with a Parang on an EMPTY clip
+  (silent, each blocker pays out a Plank, exempt from loudness) or let
+  one live round / a Molotov **detonate the landing** (blockers blown,
+  walkers cooked, all un-drawn prop loot destroyed, +4 loudness, you get
+  singed). Any live round fired indoors on that floor is the spark.
+- **2F nest floor** — a rat-king nest breeds in the dark (burning it
+  slows the whole estate night after); the **rubbish-chute bin alcove**
+  is here too: chute mouths on 6F–3F drop you straight down for 60
+  damage and a +2 THUMP, skipping every floor between.
+- **1F void deck** — the densest fight, then the exit door IS the slice's
+  victory beat: the rain, one kept relief line, and the estate heartbeat
+  starts counting from YOUR exit (wanderers +90s, first siren +100s —
+  the 2A schedule, exit-anchored). The train clock never waited.
+
+**Pressure works both directions**: cleared floors raise **risers**
+behind you on every door transit (capped per floor; a barricade braced
+at the door absorbs the event — the door takes the thuds), and
+**climbers** come up every 30s at the deepest occupied floor — 1 base,
++1 per 3 points of **stairwell loudness** (smashes +2, every 8th round
++1, chute thumps +2, gas +4, decoy deaths +2; decays 1/20s; DISPLAYED on
+the multiboard), +1 on dark floors, +1 with 3+ players. One free
+**peek** per floor: a beat at the stair door reads the next floor's
+walkers and lights as floating text.
+
+**Tower death is a setback, not the traitor system** (and not spectator
+purgatory): your corpse rises where you fell (standard burnable window),
+and ~18s later you stagger back in at your floor's landing, one clip
+poorer, gun half-seated. If the LAST living survivor drops indoors the
+night ends (solo death = a plain defeat). **Death = defection remains
+the ESTATE's rule** beyond the door, fully functional and tested — it
+just got no new design work this phase, per directive.
+
+## Build & survive (phase 2B)
+
+The ZCD lesson applied fully — their barricade costs one kill's bounty,
+so building is CONSTANT, not a savings goal. Every survivor carries five
+point-cast verbs (ANcl, data-driven via `uabi`):
+
+| verb | key | cost | what stands |
+| --- | --- | --- | --- |
+| Build Barricade | Z | 1 Plank | 800 HP wall; braces stair doors |
+| Lay Spike Wire | X | 1 Pipe | 250 HP; claws attackers back 15 |
+| Light Watchfire | V | 1 Kerosene | light pool + 900 night vision; lights dark pockets |
+| Set Field Sentry | B | 1 Sentry Kit | the 40-round gun; a 2nd kit REARMS a dry one |
+| Place Noisemaker | N | 1 Battery | 15s radio blare: pulls every walker within 900, dies at +2 loudness |
+
+**Raw halves build the fort; pairs auto-combine into tools** — the same
+material pool feeds both mouths, so every pickup is a decision
+(Plank: barricade or half a Parang; Kerosene: light or fire; Battery:
+decoy now or Sentry Kit later). **Repair is presence**: stand beside any
+damaged work and it heals 20/s (Technician 40/s). The fort persists all
+night, shows on the board (**Fort row**), feeds the horde a little XP
+when it falls, and every work standing at the verdict scores 25.
+
+**Trade quirk (documented, accepted)**: crafting runs on PICKUP — hand a
+teammate a raw half and it auto-combines the moment they hold the
+partner half. Handing someone a Plank can cost them their build fuel.
 
 ## The two ways out (and the one way down)
 
@@ -156,6 +238,43 @@ standing next step).
   Officer** (clip 24, hardest hits, 3 clips), **Paramedic** (clip 8,
   cures at any HP, 2 bandages), **Town Council Technician** (2× repair
   rate, starts with a Barricade Kit).
+
+## The juice and the text diet (phase 2B, ZCD-mined)
+
+Playtest 2: *"a very rich wealth of triggers and custom effects out
+there ... you put too much work into the text."* The Zombie Defense
+Custom scripts were decomposed for their effect vocabulary (AnimateDead
+raise flashes on every spawn, item-acquire loot pops, revive flashes,
+camera-shake ladders, minimap pings, fire-and-forget `DestroyEffect`
+hygiene) and the map now TALKS through the world instead of the chat:
+
+- **every scripted zombie spawn** wears the AnimateDead raise flash (one
+  grammar for surges, risers, climbers, corpse-rise, Feast);
+- **kills bleed** (HumanBloodLarge0); **level-ups** are a burst + sting;
+  **loot pops** at the prop (AIemTarget) with a floating "rummaging..."
+  channel; **crafting** is chime + floating name; **infection** drips
+  green every DoT tick; **cures** flash dispel; **corpse windows** are a
+  VISIBLE ground marker destroyed at rise/burn/Feast (the one persistent
+  handle family — nothing leaks, pinned by test);
+- **builds** land with dust + the placement sound; **substation yards
+  spark** while worked and flash on completion; the **dead lift sparks**;
+  unlit floors flicker;
+- **screen shake, sparingly**: train arrival (with a breath of
+  CinematicFade black), the platform siege, the Broodmother, the gas
+  blast, a shiver on Shriek;
+- sounds (all listfile-verified into `lib/data/stock-art.json`, kinds
+  `effect`/`sound` — the table grew script-side kinds this phase): the
+  siren, the combine chime, Levelupcaster, BuildingPlacement,
+  QuestCompleted, DoorSlam, the Elevator drone, the Warning sting.
+
+**The text diet**: every per-action chat line is DELETED — rummage
+start/finish, craft, clip-bank, level-up, corpse-rise, smash, molotov
+report, shop receipt, sprint, reload flow (now floating text at the
+unit), sentry-dry, triage/riot self-reports (~21 recurring callsites).
+KEPT: the siren warning + dread line, PA/train beats, verdicts,
+defection announces, one-time teaches, and meta commands. The
+`effects-text` suite pins BOTH directions (deleted lines stay deleted;
+the spine still speaks; a scripted 200s estate run emits ≤10 lines).
 
 ## Ambience (a first-class deliverable)
 
@@ -411,7 +530,22 @@ circles** (statue-marked rects at the spawn deck's south edge) and the
 preplaced units, regions — comes from ONE committed generator
 (`assets/generate-layout.mjs`), so every coordinate agrees.
 
-## Tests (maps/last-train/tests/, 93 tests, 99.2% line coverage)
+## Tests (maps/last-train/tests/, 145 tests, 99% line coverage)
+
+Phase 2B adds four suites and re-targets the rest: **`tower-escape`**
+(pockets, door teleports, risers/climbers, blocked landing, nest floor,
+rescue, exit-starts-the-estate, tower death/respawn, `-deck`),
+**`tower-activity`** (A1 darkness/breakers/watchfire-light, A2 brace,
+A3 chute, A4 gas — all three routes, A5 decoy, A8 peek, loudness
+display/decay/exemption), **`build`** (all five verbs, costs, clamp,
+spike retaliation, rearm, presence repair, fort persistence/board/score)
+and **`effects-text`** (effect presence + destroy hygiene, deleted-line
+pins, kept-spine pins, the ≤10-lines/200s volume pin). The estate suites
+below were **deliberately re-targeted** (PIPELINE §8 notes in each
+header): the estate heartbeat is now EstateClock-anchored, so they open
+the estate with the `-deck` debug door at t=0 — every 2A schedule pin
+then holds unchanged; message asserts moved to floating-text/effect
+records where the text diet deleted lines.
 
 Every verb is exercised on its REAL input (gotcha 33's sim clause):
 `ammo` (draw/dry/Parang/reload-as-ability-R with gun-down and no
@@ -440,6 +574,15 @@ level-ups, all four signatures, the shop's SELL flow + clip prices).
   aggro and real boarding runs are game-only. Region boarding (and the
   class circles), ammo draws, infection, noise, XP and verdicts are
   exercised for real.
+- **Tower additions (2B)**: the pocket WALLS block by doodad pathing —
+  game-only (the sim teleports; preflight's honest-limit list covers
+  pathing); the noisemaker's pull and the climbers'/risers' pressure are
+  exercised as real orders + spawns, but the in-game AGGRO FEEL (walkers
+  actually pressing a braced door, the decoy's crowd turn) is game-only;
+  the gas blast, chute damage, breaker lighting and dark-rummage timing
+  are fully sim-exercised; the DB box's visual (a scaled substation
+  cabinet) and the radio's barrel stand-in await the Sol round-4
+  interior art pass.
 - Abilities are DATA + trigger dispatch: the sim fires the spell events
   (`sim.cast`) and the script does the work; the ANcl-based buttons'
   in-game cast feel (hotkeys R/E/F/C, cooldown display) is game-only
@@ -460,13 +603,35 @@ level-ups, all four signatures, the shop's SELL flow + clip prices).
 - `Zombies_Male.blp` and `Citizen_Police.blp` must stay at the **archive
   root** — the models' TEXS chunks name them bare.
 
+## Parked this phase (deliberate, per directive)
+
+- **Estate-wide layout coherence**: only the cheap pass shipped — hawker
+  tables pulled into stall rows under the pavilion, a generator-time
+  **furniture-anchor assert** (every searchable prop must sit in a tower
+  pocket or within reach of a building anchor — it caught the exact
+  "tables on lawns" the playtest screenshot showed), and the tower's own
+  keep-outs. A full estate dressing pass waits.
+- **Estate-wide juice** beyond the spine beats (surge/train/brood/
+  substation effects shipped; per-district flavor waits).
+- **Traitor/defection design work** (system intact + tested, no new
+  design; the tower slice does not depend on it).
+- **Advisor items A6/A7/A9–A12** (locked doors+keys, the crying child,
+  joss sticks, balcony shimmy, mahjong tiles, electrified puddle) — the
+  TOWER table is field-per-feature so each lands as one field + one
+  handler; A7/A9 first next pass.
+- **Golden-run pin** — still deferred until after the first tower
+  playtest + balance pass (pin once, not re-pin after tuning).
+
 ## Phase roadmap
 
 Phase 1: the full core loop, sim-proven — playtested 2026-08-07, verdict
-"constant typing is bad, core loop is unfun". Phase 2A (this): the fun
+"constant typing is bad, core loop is unfun". Phase 2A: the fun
 transplant — de-chatted verbs, the surge heartbeat, Noise, the power
-curve, nests, spills, the conductor defection kit; gated by
-DESIGN-WALKTHROUGH.md (PIPELINE §10). Next: the 2A in-game playtest
-(play the walkthrough), a balance pass, THEN the golden-run pin
-(gotcha 30 — deferred so it is pinned once), stock-art promotions to
-game-verified, and endless/score-attack conventions.
+curve, nests, spills, the conductor defection kit. **Phase 2B (this):
+THE TOWER** — playtest-2-driven: the Block 6A interior slice (six-floor
+survival-horror descent) as the whole playable focus, build & survive
+indoors, the activity pass (darkness/brace/chute/gas/decoy/loudness),
+ZCD-grade juice, the ~70% text diet, tower-respawn death rule; gated by
+DESIGN-WALKTHROUGH.md (PIPELINE §10). Next: playtest the tower slice
+against the walkthrough, balance, THEN the golden-run pin (gotcha 30),
+stock-art promotions, and the estate's own 2C pass.

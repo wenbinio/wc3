@@ -1,6 +1,7 @@
 'use strict';
-// The class CIRCLES (phase 2A, gotcha 33): four statue-marked rects at the
-// spawn void deck — walk a survivor in, walk a class out. The 40s window
+// The class CIRCLES (phase 2A, gotcha 33; phase 2B moved them INTO the 6F
+// corridor of Block 6A — you pick your neighbour identity as you flee
+// your flat) — walk a survivor in, walk a class out. The 40s window
 // keeps its semantics but the policing announcements are cut (it closes
 // silently). Sprint is ability E. Chat -class no longer exists
 // (commands.test.js pins the deleted-verb silence).
@@ -12,10 +13,10 @@ const { loadMap } = require('../../../lib/sim');
 
 const MAP = path.join(__dirname, '..');
 
-// circle centers (assets/generate-layout.mjs CLASS_CIRCLES)
+// circle centers (assets/generate-layout.mjs CLASS_CIRCLES — 6F corridor)
 const CIRCLE = {
-  heartlander: [-980, -560], police: [-760, -680],
-  paramedic: [-540, -730], tech: [-320, -680],
+  heartlander: [-3560, -5420], police: [-3420, -5420],
+  paramedic: [-3280, -5420], tech: [-3140, -5420],
 };
 
 test('everyone walks out as a Heartlander with the class clip and rations', () => {
@@ -84,11 +85,14 @@ test('Sprint (ability E) bursts the legs and cools down 20s', () => {
   const sim = loadMap(MAP, { users: [0] });
   const hero = sim.findUnit('h000', 0);
   sim.cast(hero, 'A001');
-  const calls = sim.callsOf('SetUnitMoveSpeed');
-  assert.ok(calls.length > 0, 'speed set');
+  const speedCalls = () => sim.callsOf('SetUnitMoveSpeed')
+    .filter((c) => c.args[1] === 290 + 120);
+  assert.strictEqual(speedCalls().length, 1, 'burst speed set');
   sim.cast(hero, 'A001');
-  assert.ok(sim.messagesTo(0).some((m) => /Legs are jelly/.test(m.text)), 'cooldown holds');
+  assert.strictEqual(speedCalls().length, 1, 'cooldown holds (no second burst)');
+  assert.ok(sim.callsOf('SetTextTagText').some((c) => /legs are jelly/.test(String(c.args[1]))),
+    'the refusal is floating text (2B text diet — the You RUN line is deleted)');
   sim.advance(21);
   sim.cast(hero, 'A001');
-  assert.ok(sim.messagesMatching(/You RUN/).length >= 2, 'ready again after 20s');
+  assert.strictEqual(speedCalls().length, 2, 'ready again after 20s');
 });

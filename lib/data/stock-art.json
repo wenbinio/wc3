@@ -1,13 +1,13 @@
 {
   "_meta": {
-    "doc": "Verified stock-art PATH facts (no assets are stored or redistributed — paths reference the user's own game data; CLAUDE.md Legal). Consumed by lib/objectlint.js rule (d) and tools/preflight.js (stock-art check). Maintenance doctrine: docs/ASSETS.md \"Stock art by path\". Model paths use the .mdl field-value dialect (gotcha 22); the archive members behind them are .mdx.",
+    "doc": "Verified stock-art PATH facts (no assets are stored or redistributed — paths reference the user's own game data; CLAUDE.md Legal). Consumed by lib/objectlint.js rule (d) and tools/preflight.js (stock-art check). Maintenance doctrine: docs/ASSETS.md \"Stock art by path\". Model paths use the .mdl field-value dialect (gotcha 22); the archive members behind them are .mdx. 2026-08 (last-train 2B): kinds 'effect' (script AddSpecialEffect model paths, .mdl dialect) and 'sound' (script CreateSound .wav paths) join 'model'/'icon' — same fact discipline, listfile-verified at entry time; script-side kinds are a registry (not scanned by lint rule d, which covers object-data art fields).",
     "statuses": {
       "community-doc": "path copied from community documentation only — weakest tier, still WARNs",
       "listfile-verified": "path present in the WurstScript community listfiles (existence in game data confirmed)",
       "game-verified": "art seen rendering in an in-game playtest of a bundled map (strongest tier)"
     },
     "verification": "WurstScript community listfiles: github.com/wurstscript/WurstScript, de.peeeq.wurstscript/src/main/resources rocfile+tftfile, fetched 2026-08-07 (16455 distinct entries). Listfiles are consulted at table-build time only and are NOT committed.",
-    "updated": "2026-08-07"
+    "updated": "2026-08-08"
   },
   "entries": [
     {
@@ -921,6 +921,238 @@
       "status": "listfile-verified",
       "source": "undead/zombie map set (report section 7)",
       "verifiedBy": "wurstscript-listfile 2026-08-07"
+    },
+    {
+      "path": "Abilities\\Spells\\Undead\\AnimateDead\\AnimateDeadTarget.mdl",
+      "kind": "effect",
+      "class": "spawn/raise flash (ZCD signature)",
+      "status": "listfile-verified",
+      "source": "last-train phase 2B (ZCD-mined juice pass)",
+      "verifiedBy": "wurstscript-listfile 2026-08-08"
+    },
+    {
+      "path": "Objects\\Spawnmodels\\Human\\HumanBlood\\HumanBloodLarge0.mdl",
+      "kind": "effect",
+      "class": "kill blood",
+      "status": "listfile-verified",
+      "source": "last-train phase 2B (ZCD-mined juice pass)",
+      "verifiedBy": "wurstscript-listfile 2026-08-08"
+    },
+    {
+      "path": "Abilities\\Spells\\Other\\Levelup\\Levelupcaster.mdl",
+      "kind": "effect",
+      "class": "level-up burst",
+      "status": "listfile-verified",
+      "source": "last-train phase 2B (ZCD-mined juice pass)",
+      "verifiedBy": "wurstscript-listfile 2026-08-08"
+    },
+    {
+      "path": "Abilities\\Spells\\Items\\AIem\\AIemTarget.mdl",
+      "kind": "effect",
+      "class": "loot pop (ZCD item flash)",
+      "status": "listfile-verified",
+      "source": "last-train phase 2B (ZCD-mined juice pass)",
+      "verifiedBy": "wurstscript-listfile 2026-08-08"
+    },
+    {
+      "path": "Abilities\\Spells\\Human\\Resurrect\\Resurrecttarget.mdl",
+      "kind": "effect",
+      "class": "victory/completion flash (ZCD revive)",
+      "status": "listfile-verified",
+      "source": "last-train phase 2B (ZCD-mined juice pass)",
+      "verifiedBy": "wurstscript-listfile 2026-08-08"
+    },
+    {
+      "path": "Abilities\\Spells\\Human\\ReviveHuman\\ReviveHuman.mdl",
+      "kind": "effect",
+      "class": "rescue beat",
+      "status": "listfile-verified",
+      "source": "last-train phase 2B (ZCD-mined juice pass)",
+      "verifiedBy": "wurstscript-listfile 2026-08-08"
+    },
+    {
+      "path": "Objects\\Spawnmodels\\Other\\NeutralBuildingExplosion\\NeutralBuildingExplosion.mdl",
+      "kind": "effect",
+      "class": "breakthrough/boss boom (ZCD)",
+      "status": "listfile-verified",
+      "source": "last-train phase 2B (ZCD-mined juice pass)",
+      "verifiedBy": "wurstscript-listfile 2026-08-08"
+    },
+    {
+      "path": "Abilities\\Spells\\Human\\DispelMagic\\DispelMagicTarget.mdl",
+      "kind": "effect",
+      "class": "cure dispel",
+      "status": "listfile-verified",
+      "source": "last-train phase 2B (ZCD-mined juice pass)",
+      "verifiedBy": "wurstscript-listfile 2026-08-08"
+    },
+    {
+      "path": "Abilities\\Spells\\Orc\\Purge\\PurgeBuffTarget.mdl",
+      "kind": "effect",
+      "class": "electric sparks (lift/substation)",
+      "status": "listfile-verified",
+      "source": "last-train phase 2B (ZCD-mined juice pass)",
+      "verifiedBy": "wurstscript-listfile 2026-08-08"
+    },
+    {
+      "path": "Abilities\\Spells\\Undead\\UnholyFrenzy\\UnholyFrenzyTarget.mdl",
+      "kind": "effect",
+      "class": "infection drip",
+      "status": "listfile-verified",
+      "source": "last-train phase 2B (ZCD-mined juice pass)",
+      "verifiedBy": "wurstscript-listfile 2026-08-08"
+    },
+    {
+      "path": "Objects\\Spawnmodels\\Undead\\ImpaleTargetDust\\ImpaleTargetDust.mdl",
+      "kind": "effect",
+      "class": "build dust",
+      "status": "listfile-verified",
+      "source": "last-train phase 2B (ZCD-mined juice pass)",
+      "verifiedBy": "wurstscript-listfile 2026-08-08"
+    },
+    {
+      "path": "Abilities\\Spells\\Human\\FlameStrike\\FlameStrike1.mdl",
+      "kind": "effect",
+      "class": "molotov/corpse fire",
+      "status": "listfile-verified",
+      "source": "last-train phase 2B (ZCD-mined juice pass)",
+      "verifiedBy": "wurstscript-listfile 2026-08-08"
+    },
+    {
+      "path": "Abilities\\Spells\\Undead\\RaiseSkeletonWarrior\\RaiseSkeleton.mdl",
+      "kind": "effect",
+      "class": "corpse-rise window marker (persistent)",
+      "status": "listfile-verified",
+      "source": "last-train phase 2B (ZCD-mined juice pass)",
+      "verifiedBy": "wurstscript-listfile 2026-08-08"
+    },
+    {
+      "path": "Abilities\\Spells\\Human\\Defend\\DefendCaster.mdl",
+      "kind": "effect",
+      "class": "riot discipline shield",
+      "status": "listfile-verified",
+      "source": "last-train phase 2B (ZCD-mined juice pass)",
+      "verifiedBy": "wurstscript-listfile 2026-08-08"
+    },
+    {
+      "path": "Abilities\\Spells\\Human\\HolyBolt\\HolyBoltSpecialArt.mdl",
+      "kind": "effect",
+      "class": "heal flash",
+      "status": "listfile-verified",
+      "source": "last-train phase 2B (ZCD-mined juice pass)",
+      "verifiedBy": "wurstscript-listfile 2026-08-08"
+    },
+    {
+      "path": "Abilities\\Spells\\NightElf\\BattleRoar\\RoarCaster.mdl",
+      "kind": "effect",
+      "class": "shriek roar",
+      "status": "listfile-verified",
+      "source": "last-train phase 2B (ZCD-mined juice pass)",
+      "verifiedBy": "wurstscript-listfile 2026-08-08"
+    },
+    {
+      "path": "Sound\\Ambient\\DoodadEffects\\TheHornOfCenarius.wav",
+      "kind": "sound",
+      "class": "the siren (phase 2A, now tabled)",
+      "status": "listfile-verified",
+      "source": "last-train phase 2B (ZCD-mined juice pass)",
+      "verifiedBy": "wurstscript-listfile 2026-08-08"
+    },
+    {
+      "path": "Sound\\Interface\\SecretFound.wav",
+      "kind": "sound",
+      "class": "combine chime (phase 2A, now tabled)",
+      "status": "listfile-verified",
+      "source": "last-train phase 2B (ZCD-mined juice pass)",
+      "verifiedBy": "wurstscript-listfile 2026-08-08"
+    },
+    {
+      "path": "Abilities\\Spells\\Other\\Levelup\\Levelupcaster.wav",
+      "kind": "sound",
+      "class": "level-up sting",
+      "status": "listfile-verified",
+      "source": "last-train phase 2B (ZCD-mined juice pass)",
+      "verifiedBy": "wurstscript-listfile 2026-08-08"
+    },
+    {
+      "path": "Sound\\Buildings\\Shared\\BuildingPlacement.wav",
+      "kind": "sound",
+      "class": "build placement",
+      "status": "listfile-verified",
+      "source": "last-train phase 2B (ZCD-mined juice pass)",
+      "verifiedBy": "wurstscript-listfile 2026-08-08"
+    },
+    {
+      "path": "Sound\\Interface\\QuestCompleted.wav",
+      "kind": "sound",
+      "class": "victory beat (power/tower exit)",
+      "status": "listfile-verified",
+      "source": "last-train phase 2B (ZCD-mined juice pass)",
+      "verifiedBy": "wurstscript-listfile 2026-08-08"
+    },
+    {
+      "path": "Sound\\Ambient\\DoodadEffects\\DoorSlam1.wav",
+      "kind": "sound",
+      "class": "stairwell door",
+      "status": "listfile-verified",
+      "source": "last-train phase 2B (ZCD-mined juice pass)",
+      "verifiedBy": "wurstscript-listfile 2026-08-08"
+    },
+    {
+      "path": "Sound\\Ambient\\DoodadEffects\\Elevator.wav",
+      "kind": "sound",
+      "class": "dead lift intro",
+      "status": "listfile-verified",
+      "source": "last-train phase 2B (ZCD-mined juice pass)",
+      "verifiedBy": "wurstscript-listfile 2026-08-08"
+    },
+    {
+      "path": "Sound\\Interface\\Warning.wav",
+      "kind": "sound",
+      "class": "infection/climber warning (ZCD Warning label)",
+      "status": "listfile-verified",
+      "source": "last-train phase 2B (ZCD-mined juice pass)",
+      "verifiedBy": "wurstscript-listfile 2026-08-08"
+    },
+    {
+      "path": "Doodads\\LordaeronSummer\\Terrain\\Barricade\\Barricade0.mdl",
+      "kind": "model",
+      "class": "doodad",
+      "status": "listfile-verified",
+      "source": "last-train phase 2B build system (spike wire umdl)",
+      "verifiedBy": "wurstscript-listfile 2026-08-08"
+    },
+    {
+      "path": "Doodads\\LordaeronSummer\\Props\\brazierOmni\\brazierOmni.mdl",
+      "kind": "model",
+      "class": "doodad",
+      "status": "listfile-verified",
+      "source": "last-train phase 2B build system (watchfire umdl, omni light)",
+      "verifiedBy": "wurstscript-listfile 2026-08-08"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNHumanBuild.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "last-train phase 2B build system",
+      "verifiedBy": "wurstscript-listfile 2026-08-08"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNSpikedBarricades.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "last-train phase 2B build system",
+      "verifiedBy": "wurstscript-listfile 2026-08-08"
+    },
+    {
+      "path": "ReplaceableTextures\\CommandButtons\\BTNFire.blp",
+      "kind": "icon",
+      "class": "command-button",
+      "status": "listfile-verified",
+      "source": "last-train phase 2B build system",
+      "verifiedBy": "wurstscript-listfile 2026-08-08"
     }
   ]
 }

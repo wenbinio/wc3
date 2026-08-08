@@ -78,8 +78,8 @@
     {
       "name": "Player 1",
       "startingPos": {
-        "x": -700,
-        "y": -400,
+        "x": -3740,
+        "y": -5290,
         "fixed": true
       },
       "playerNum": 0,
@@ -93,8 +93,8 @@
     {
       "name": "Player 2",
       "startingPos": {
-        "x": -500,
-        "y": -400,
+        "x": -3640,
+        "y": -5290,
         "fixed": true
       },
       "playerNum": 1,
@@ -108,8 +108,8 @@
     {
       "name": "Player 3",
       "startingPos": {
-        "x": -700,
-        "y": 0,
+        "x": -3740,
+        "y": -5210,
         "fixed": true
       },
       "playerNum": 2,
@@ -123,8 +123,8 @@
     {
       "name": "Player 4",
       "startingPos": {
-        "x": -500,
-        "y": 0,
+        "x": -3640,
+        "y": -5210,
         "fixed": true
       },
       "playerNum": 3,

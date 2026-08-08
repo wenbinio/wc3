@@ -1,7 +1,11 @@
 'use strict';
 // Death = defection (Zombie-Simulator 7, credited): no elimination — the
 // fallen convert in place with a controllable pack, the alliance flips
-// BOTH directions (gotcha 24). Phase 2A makes the traitor a CONDUCTOR
+// BOTH directions (gotcha 24).
+// 2B RE-TARGET (PIPELINE §8): defection is now the ESTATE death rule only
+// — indoors the tower respawn rule applies (tower-escape suite). These
+// tests open the estate with '-deck' first; the defection SEMANTICS
+// pinned here are unchanged. Phase 2A makes the traitor a CONDUCTOR
 // (canon I6 — the map's crown mechanic): Feast raises un-burnt corpses
 // into the pack, Shriek converges the next surge, the board row flips to
 // "HUNT: no one boards", and the Revenant's claws ride the horde level.
@@ -16,6 +20,7 @@ const MAP = path.join(__dirname, '..');
 function twoPlayer() {
   const sim = loadMap(MAP, { users: [0, 1] });
   sim.chat(0, '-test');
+  sim.chat(0, '-deck');
   sim.chat(0, '-zspawn shambler 1');
   const zomb = sim.unitsOf(24, 'u000').filter((u) => u.alive).pop();
   return { sim, zomb };
@@ -86,7 +91,8 @@ test('a burned corpse is DENIED to Feast (Molotov as direct PvP denial)', () => 
   sim.chat(1, '-test');
   sim.chat(1, '-give molotov');
   sim.moveUnit(hero1, civ.x + 50, civ.y);
-  const molotov = [...sim.items.values()].find((i) => !i.removed && i.typeStr === 'I014');
+  const molotov = [...sim.items.values()].find((i) => !i.removed
+    && i.typeStr === 'I014' && i.ownerUnit === hero1.handle); // not the 4F ground drop
   sim.useItem(hero1, molotov);
   const packBefore = sim.unitsOf(0, 'u000').filter((u) => u.alive).length;
   sim.cast(rev, 'A006', { x: civ.x, y: civ.y });
@@ -136,6 +142,7 @@ test('the wipe verdict: earlier defectors win as the horde, the last faller lose
 test('a solo death is a plain defeat (no self-victory as a zombie)', () => {
   const sim = loadMap(MAP, { users: [0] });
   sim.chat(0, '-test');
+  sim.chat(0, '-deck');
   sim.chat(0, '-zspawn shambler 1');
   const zomb = sim.unitsOf(24, 'u000').filter((u) => u.alive).pop();
   sim.kill(sim.findUnit('h000', 0), zomb);
@@ -149,6 +156,7 @@ test('a survivor kill feeds the horde 50 XP; the Revenant\'s claws ride the hord
   sim.chat(0, '-esc 5');
   const xp0 = sim.global('HordeXP');
   const hero = sim.findUnit('h000', 0);
+  sim.moveUnit(hero, 0, 0); // clear of the 2B tower's seeded zombies (crowd falloff)
   sim.moveUnit(zomb, hero.x + 50, hero.y); // the only zombie near the kill
   sim.kill(hero, zomb);
   assert.strictEqual(sim.global('HordeXP'), xp0 + 50, 'lone killer learns the full 50');

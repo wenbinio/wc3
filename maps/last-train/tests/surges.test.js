@@ -13,8 +13,19 @@ const { loadMap } = require('../../../lib/sim');
 
 const MAP = path.join(__dirname, '..');
 
+// 2B RE-TARGET (PIPELINE §8): the estate heartbeat is EstateClock-anchored
+// (it waits for the tower exit). These suites open the estate with the
+// '-deck' debug door at t=0 — EstateClock then equals the wall clock and
+// every 2A schedule pin holds unchanged.
+const opened = (users) => {
+  const sim = loadMap(MAP, { users });
+  sim.chat(0, '-test');
+  sim.chat(0, '-deck');
+  return sim;
+};
+
 test('the siren warns 20s ahead with a ping and a dread line; the surge lands on schedule', () => {
-  const sim = loadMap(MAP, { users: [0] });
+  const sim = opened([0]);
   sim.advance(99);
   assert.strictEqual(sim.messagesMatching(/THE SIREN/).length, 0, 'quiet at 99');
   sim.advance(1);
@@ -32,7 +43,7 @@ test('the siren warns 20s ahead with a ping and a dread line; the surge lands on
 });
 
 test('the surge targets the district where the survivors STAND (converges on a survivor)', () => {
-  const sim = loadMap(MAP, { users: [0] });
+  const sim = opened([0]);
   const hero = sim.findUnit('h000', 0);
   sim.moveUnit(hero, 2200, -3400); // Cheng San
   sim.advance(120);
@@ -74,7 +85,7 @@ test('surge size scales with the LIVING player count', () => {
 });
 
 test('an active repair yard pulls the surge (anti-camping stays honest)', () => {
-  const sim = loadMap(MAP, { users: [0, 1] });
+  const sim = opened([0, 1]);
   const hero1 = sim.findUnit('h000', 1);
   sim.moveUnit(hero1, -800, -3200); // pid 1 idles in Teck Ghee
   sim.advance(94);
@@ -124,7 +135,8 @@ test('surge kills seed ground spills through the ONE stream (clip packs + materi
   for (const z of zombs) sim.kill(z, hero);
   const spills = sim.global('RUNLOG').match(/spill\|\w+/g) || [];
   assert.ok(spills.length >= 1, '24 kills at 20% seed at least one spill (deterministic seed)');
-  const ground = [...sim.items.values()].filter((i) => !i.removed && !i.ownerUnit);
+  const ground = [...sim.items.values()].filter((i) => !i.removed && !i.ownerUnit
+    && i.typeStr !== 'I011' && i.typeStr !== 'I014'); // minus the authored tower drops (2B)
   assert.strictEqual(ground.length, spills.length, 'every spill is a VISIBLE ground item');
 });
 

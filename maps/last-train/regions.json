@@ -146,10 +146,10 @@
       255
     ],
     "position": {
-      "left": -1100,
-      "bottom": -680,
-      "right": -860,
-      "top": -440
+      "left": -3630,
+      "bottom": -5490,
+      "right": -3490,
+      "top": -5350
     }
   },
   {
@@ -163,10 +163,10 @@
       255
     ],
     "position": {
-      "left": -880,
-      "bottom": -800,
-      "right": -640,
-      "top": -560
+      "left": -3490,
+      "bottom": -5490,
+      "right": -3350,
+      "top": -5350
     }
   },
   {
@@ -180,10 +180,10 @@
       255
     ],
     "position": {
-      "left": -660,
-      "bottom": -850,
-      "right": -420,
-      "top": -610
+      "left": -3350,
+      "bottom": -5490,
+      "right": -3210,
+      "top": -5350
     }
   },
   {
@@ -197,10 +197,180 @@
       255
     ],
     "position": {
-      "left": -440,
-      "bottom": -800,
-      "right": -200,
-      "top": -560
+      "left": -3210,
+      "bottom": -5490,
+      "right": -3070,
+      "top": -5350
+    }
+  },
+  {
+    "name": "TowerDoorA",
+    "id": 12,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      255,
+      160,
+      60
+    ],
+    "position": {
+      "left": -3130,
+      "bottom": -5320,
+      "right": -3010,
+      "top": -5200
+    }
+  },
+  {
+    "name": "TowerDoorB",
+    "id": 13,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      255,
+      160,
+      60
+    ],
+    "position": {
+      "left": -2130,
+      "bottom": -5320,
+      "right": -2010,
+      "top": -5200
+    }
+  },
+  {
+    "name": "TowerDoorC",
+    "id": 14,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      255,
+      160,
+      60
+    ],
+    "position": {
+      "left": -1130,
+      "bottom": -5320,
+      "right": -1010,
+      "top": -5200
+    }
+  },
+  {
+    "name": "TowerDoorD",
+    "id": 15,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      255,
+      160,
+      60
+    ],
+    "position": {
+      "left": -130,
+      "bottom": -5320,
+      "right": -10,
+      "top": -5200
+    }
+  },
+  {
+    "name": "TowerDoorE",
+    "id": 16,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      255,
+      160,
+      60
+    ],
+    "position": {
+      "left": 870,
+      "bottom": -5320,
+      "right": 990,
+      "top": -5200
+    }
+  },
+  {
+    "name": "TowerExit",
+    "id": 17,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      120,
+      255,
+      120
+    ],
+    "position": {
+      "left": 1870,
+      "bottom": -5320,
+      "right": 1990,
+      "top": -5200
+    }
+  },
+  {
+    "name": "ChuteA",
+    "id": 18,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      255,
+      220,
+      90
+    ],
+    "position": {
+      "left": -3700,
+      "bottom": -5120,
+      "right": -3620,
+      "top": -5040
+    }
+  },
+  {
+    "name": "ChuteB",
+    "id": 19,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      255,
+      220,
+      90
+    ],
+    "position": {
+      "left": -2140,
+      "bottom": -5090,
+      "right": -2060,
+      "top": -5010
+    }
+  },
+  {
+    "name": "ChuteC",
+    "id": 20,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      255,
+      220,
+      90
+    ],
+    "position": {
+      "left": -1700,
+      "bottom": -5100,
+      "right": -1620,
+      "top": -5020
+    }
+  },
+  {
+    "name": "ChuteD",
+    "id": 21,
+    "weatherEffect": "\u0000\u0000\u0000\u0000",
+    "ambientSound": "",
+    "color": [
+      255,
+      220,
+      90
+    ],
+    "position": {
+      "left": -600,
+      "bottom": -5090,
+      "right": -520,
+      "top": -5010
     }
   }
 ]

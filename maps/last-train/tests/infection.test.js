@@ -25,7 +25,8 @@ function infected(users) {
 test('zombie damage applies the infection STATE and the 1.5 dps DoT', () => {
   const { sim, hero } = infected();
   assert.ok(/infect\|pid=0/.test(sim.global('RUNLOG')));
-  assert.ok(sim.messagesTo(0).some((m) => /You are INFECTED/.test(m.text)));
+  assert.ok(sim.messagesTo(0).some((m) => /INFECTED/.test(m.text)),
+    'the state-change line is KEPT (short) in the 2B text diet');
   const hp0 = hero.life;
   sim.advance(10); // 5 DoT ticks of 3 = 15 damage (1.5 dps)
   assert.strictEqual(hero.life, hp0 - 15, 'the slow burn runs at 1.5 dps');
@@ -63,7 +64,7 @@ test('Wet Bandage cures above 40% health, refuses below (and is kept); +10 XP on
 
 test('the Paramedic cures at ANY health and starts with two bandages', () => {
   const sim = loadMap(MAP, { users: [0] });
-  sim.moveUnit(sim.findUnit('h000', 0), -540, -730); // the paramedic circle
+  sim.moveUnit(sim.findUnit('h000', 0), -3280, -5420); // the paramedic circle (6F corridor, 2B)
   const hero = sim.findUnit('h002', 0);
   assert.ok(hero, 'paramedic hero swapped in');
   const bandages = [...sim.items.values()].filter((i) => !i.removed && i.typeStr === 'I010'
@@ -100,6 +101,7 @@ test('leaving the clinic resets the cure timer', () => {
 
 test('an untreated infection kills into defection (the rise IS the Revenant)', () => {
   const { sim, hero } = infected([0, 1]);
+  sim.chat(0, '-deck'); // estate rules: defection is the OUTDOOR death (2B)
   hero.life = 4; // two DoT ticks from the end
   sim.advance(5);
   assert.ok(!hero.alive, 'the slow burn took them');

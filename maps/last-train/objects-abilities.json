@@ -443,6 +443,331 @@
         "column": 0,
         "value": 0
       }
+    ],
+    "A008:ANcl": [
+      {
+        "id": "anam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Build Barricade"
+      },
+      {
+        "id": "ahky",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Z"
+      },
+      {
+        "id": "atp1",
+        "type": "string",
+        "level": 1,
+        "column": 0,
+        "value": "Build Barricade (|cffffcc00Z|r) -- 1 Plank"
+      },
+      {
+        "id": "aub1",
+        "type": "string",
+        "level": 1,
+        "column": 0,
+        "value": "Crossed planks and sandbags at the target point. Costs 1 Plank from your pack. Cheap enough to build EVERY window -- the fort you bank tonight is the chokepoint at the fare gates."
+      },
+      {
+        "id": "aart",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNHumanBuild.blp"
+      },
+      {
+        "id": "acdn",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 2
+      },
+      {
+        "id": "aran",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 500
+      },
+      {
+        "id": "Ncl2",
+        "type": "int",
+        "level": 1,
+        "column": 0,
+        "value": 2
+      },
+      {
+        "id": "Ncl1",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "A009:ANcl": [
+      {
+        "id": "anam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Lay Spike Wire"
+      },
+      {
+        "id": "ahky",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "X"
+      },
+      {
+        "id": "atp1",
+        "type": "string",
+        "level": 1,
+        "column": 0,
+        "value": "Lay Spike Wire (|cffffcc00X|r) -- 1 Pipe"
+      },
+      {
+        "id": "aub1",
+        "type": "string",
+        "level": 1,
+        "column": 0,
+        "value": "A tangle of sharpened pipe and wire at the target point. Costs 1 Pipe. Anything that claws it gets clawed back -- cheap area denial for doorways and stair mouths."
+      },
+      {
+        "id": "aart",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNSpikedBarricades.blp"
+      },
+      {
+        "id": "acdn",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 2
+      },
+      {
+        "id": "aran",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 500
+      },
+      {
+        "id": "Ncl2",
+        "type": "int",
+        "level": 1,
+        "column": 0,
+        "value": 2
+      },
+      {
+        "id": "Ncl1",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "A00A:ANcl": [
+      {
+        "id": "anam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Light Watchfire"
+      },
+      {
+        "id": "ahky",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "V"
+      },
+      {
+        "id": "atp1",
+        "type": "string",
+        "level": 1,
+        "column": 0,
+        "value": "Light Watchfire (|cffffcc00V|r) -- 1 Kerosene"
+      },
+      {
+        "id": "aub1",
+        "type": "string",
+        "level": 1,
+        "column": 0,
+        "value": "An oil drum fire at the target point: a pool of light and a little vision in a dark estate. Costs 1 Kerosene (the Molotov's other half -- light or fire, your call)."
+      },
+      {
+        "id": "aart",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNFire.blp"
+      },
+      {
+        "id": "acdn",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 2
+      },
+      {
+        "id": "aran",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 500
+      },
+      {
+        "id": "Ncl2",
+        "type": "int",
+        "level": 1,
+        "column": 0,
+        "value": 2
+      },
+      {
+        "id": "Ncl1",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "A00B:ANcl": [
+      {
+        "id": "anam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Set Field Sentry"
+      },
+      {
+        "id": "ahky",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "B"
+      },
+      {
+        "id": "atp1",
+        "type": "string",
+        "level": 1,
+        "column": 0,
+        "value": "Set Field Sentry (|cffffcc00B|r) -- 1 Sentry Kit"
+      },
+      {
+        "id": "aub1",
+        "type": "string",
+        "level": 1,
+        "column": 0,
+        "value": "Plants a carried Sentry Kit as a tripod gun at the target point: 40 rounds on the belt, then inert. Use another kit ON a dry sentry to rearm it."
+      },
+      {
+        "id": "aart",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNSentryKit.blp"
+      },
+      {
+        "id": "acdn",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 2
+      },
+      {
+        "id": "aran",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 500
+      },
+      {
+        "id": "Ncl2",
+        "type": "int",
+        "level": 1,
+        "column": 0,
+        "value": 2
+      },
+      {
+        "id": "Ncl1",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 0
+      }
+    ],
+    "A00C:ANcl": [
+      {
+        "id": "anam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Place Noisemaker"
+      },
+      {
+        "id": "ahky",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "N"
+      },
+      {
+        "id": "atp1",
+        "type": "string",
+        "level": 1,
+        "column": 0,
+        "value": "Place Noisemaker (|cffffcc00N|r) -- 1 Battery"
+      },
+      {
+        "id": "aub1",
+        "type": "string",
+        "level": 1,
+        "column": 0,
+        "value": "An old radio at full blare: everything walking nearby turns to it for 15 seconds, then the batteries (or the radio) die loudly. The Battery's other life is the Sentry Kit -- decoy now or gun later."
+      },
+      {
+        "id": "aart",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "ReplaceableTextures\\CommandButtons\\BTNCrate.blp"
+      },
+      {
+        "id": "acdn",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 8
+      },
+      {
+        "id": "aran",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 500
+      },
+      {
+        "id": "Ncl2",
+        "type": "int",
+        "level": 1,
+        "column": 0,
+        "value": 2
+      },
+      {
+        "id": "Ncl1",
+        "type": "unreal",
+        "level": 1,
+        "column": 0,
+        "value": 0
+      }
     ]
   }
 }

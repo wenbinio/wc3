@@ -22,13 +22,18 @@ test('table integrity: entry shape, statuses, .mdl dialect, no duplicates', () =
   for (const e of TABLE.entries) {
     assert.deepStrictEqual(Object.keys(e).sort(),
       ['class', 'kind', 'path', 'source', 'status', 'verifiedBy'], JSON.stringify(e));
-    assert.ok(['model', 'icon'].includes(e.kind), e.path);
+    // 2026-08 (last-train 2B): the table also registers SCRIPT-side stock
+    // paths — 'effect' (AddSpecialEffect models) and 'sound' (CreateSound
+    // files) — same fact discipline, listfile-verified at entry time
+    assert.ok(['model', 'icon', 'effect', 'sound'].includes(e.kind), e.path);
     assert.ok(STATUSES.includes(e.status), e.path);
     assert.ok(e.path.includes('\\'), `archive paths are backslash-separated: ${e.path}`);
     assert.ok(!/^war3mapimported\\/i.test(e.path), `imports are not stock art: ${e.path}`);
-    if (e.kind === 'model') {
+    if (e.kind === 'model' || e.kind === 'effect') {
       // the field-value dialect (gotcha 22): .mdl in the table, never .mdx
       assert.match(e.path, /\.mdl$/, e.path);
+    } else if (e.kind === 'sound') {
+      assert.match(e.path, /\.wav$/, e.path);
     } else {
       assert.match(e.path, /^ReplaceableTextures\\/, e.path);
       assert.match(e.path, /\.blp$/, e.path);

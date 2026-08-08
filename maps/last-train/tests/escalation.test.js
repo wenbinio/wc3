@@ -16,6 +16,12 @@
 // removed beat (patrol|, craft-by-chat, search|) maps to a designed
 // replacement (wander|, craft| on pickup, rummage|/smash|), no beat
 // vanished silently.
+// 2B RE-TARGET (PIPELINE §8): the estate heartbeat now waits for the
+// tower exit (EstateClock). These suites open the estate with the '-deck'
+// debug door at t=0, which makes EstateClock == wall clock — the 2A
+// schedule, drip math and replay property are then pinned UNCHANGED
+// (the '-test'/'-deck' acks and the debug|deck beat join the determinism
+// envelope; the census line moves 18 -> 19 for the tower neighbour).
 
 const test = require('node:test');
 const assert = require('node:assert');
@@ -53,6 +59,7 @@ test('a crowded kill teaches the horde less than a lone kill', () => {
 test('the passive drip is state-keyed: dead residents raise it, dead nests lower it', () => {
   const sim = loadMap(MAP, { users: [0] });
   sim.chat(0, '-test');
+  sim.chat(0, '-deck');
   const xp0 = sim.global('HordeXP');
   sim.advance(20); // one drip tick, nobody dead: 2 + 0
   const quiet = sim.global('HordeXP') - xp0;
@@ -67,7 +74,8 @@ test('the passive drip is state-keyed: dead residents raise it, dead nests lower
   const xp1 = sim.global('HordeXP');
   sim.advance(20);
   const loud = sim.global('HordeXP') - xp1;
-  assert.strictEqual(loud, 2 + Math.floor((8 * 9) / 18), 'drip scales with the dead ratio');
+  const total = sim.global('CivTotal'); // 19 with the 2B tower neighbour
+  assert.strictEqual(loud, 2 + Math.floor((8 * 9) / total), 'drip scales with the dead ratio');
 
   // burn three nests: the drip is trimmed one step each (min 1)
   const hero = sim.findUnit('h000', 0);
@@ -96,6 +104,8 @@ test('horde levels gate zombie hp and announce themselves', () => {
 
 test('wanderers: first at t=90 (a seed-lock commitment), 1-2 zombies, then every 45s', () => {
   const sim = loadMap(MAP, { users: [0] });
+  sim.chat(0, '-test');
+  sim.chat(0, '-deck');
   const horde0 = sim.global('HordeCount');
   sim.advance(89);
   assert.ok(!/wander\|/.test(sim.global('RUNLOG')), 'quiet before 90');
@@ -116,6 +126,8 @@ test('wanderers: first at t=90 (a seed-lock commitment), 1-2 zombies, then every
 test('same seed, same night: the whole 200s beat log replays byte-identically', () => {
   const run = () => {
     const sim = loadMap(MAP, { users: [0] });
+    sim.chat(0, '-test');
+    sim.chat(0, '-deck');
     const hero = sim.findUnit('h000', 0);
     sim.moveUnit(hero, -300, -80);   // rummage the spawn bench (a seed lock)
     sim.advance(200);                 // through nests, wanderers, siren 1, surge 1
@@ -133,6 +145,8 @@ test('same seed, same night: the whole 200s beat log replays byte-identically', 
 test('a different seed is a different night', () => {
   const night = (seed) => {
     const sim = loadMap(MAP, { users: [0] });
+    sim.chat(0, '-test');
+    sim.chat(0, '-deck');
     sim.chat(0, '-seed ' + seed);
     sim.advance(200);
     return sim.global('RUNLOG');

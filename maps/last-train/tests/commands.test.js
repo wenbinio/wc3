@@ -117,7 +117,8 @@ test('debug: -zspawn/-esc/-clearhorde/-clock/-ff/-runlog/-xp/-noise/-surge', () 
   const before = sim.global('HordeCount');
   sim.chat(0, '-zspawn sprinter 3');
   assert.strictEqual(sim.global('HordeCount'), before + 3);
-  assert.strictEqual(sim.unitsOf(24, 'u002').length, 3);
+  // 3 spawned + the preplaced 2F stairwell sprinter (phase 2B tower seed)
+  assert.strictEqual(sim.unitsOf(24, 'u002').length, 4);
 
   sim.chat(0, '-esc 4');
   assert.strictEqual(sim.global('EscLevel'), 4);

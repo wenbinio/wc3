@@ -1,255 +1,270 @@
-# Last Train from Yio Chu Kang — phase 2A design walkthrough (the fun gate)
+# Last Train from Yio Chu Kang — phase 2B design walkthrough (the fun gate)
 
-Written BEFORE the phase-2A implementation, per docs/PIPELINE.md §10: the
-implementation must match this document, not the other way round. Phase 1's
-playtest verdict was blunt — **"constant typing is bad, core loop is
-unfun."** Four studies (design diagnosis, fun-first redesign, the Zombie
-Defense Custom decomposition, the WC3 canon-invariants study) converged on
-one reconciled spec; this walkthrough is that spec played out minute by
-minute, then audited: interaction ledger, decision density, the
-player-owned growing numbers, and the threat schedule with no safe gap
-over 90 seconds.
+Written per docs/PIPELINE.md §10: the implementation must match this
+document, not the other way round. **Phase 2B's gate is the TOWER LOOP** —
+playtest 2's verdict, verbatim: *"Take heavier inspiration from Zombie
+Custom Defence. There's a very rich wealth of triggers and custom effects
+out there. Things are placed kind of nonsensically. Think waygates, first
+you have to survive & fight your way out of a HDB, on the sixth floor,
+all lifts are down. Intense survival horror vibe. You put too much work
+into the text."* — plus the mid-phase directives: *"There's not enough to
+do at all. Maybe let players build & survive"* and *"We'll focus entirely
+on the HDB interior for now and making that loop fun."* An activity-audit
+pass then located the "not enough to do" failures precisely (inert
+watchfire, invisible/saturating noise, single-exit floors) and its
+mandatory fixes (A1–A5 + the noise repair) are IN this walkthrough.
 
-Doctrine (CLAUDE.md gotcha 33): **chat is meta only.** Every verb at
-combat tempo is a click, an ability, an item, or proximity. A chat row at
-combat tempo in the ledger below would be a design FAIL.
+Doctrine unchanged (CLAUDE.md gotcha 33): **chat is meta only.** Every
+combat-tempo verb is a click, an ability, an item, or proximity.
 
-## 1. The minute-by-minute walkthrough
+**The playable slice this phase is Block 6A's interior.** Six pockets:
+6F corridor → 5F flat warren → 4F dark corridor → 3F blocked landing →
+2F nest floor → 1F void deck → the rain. The estate loop (surges, noise,
+substations, train, defection) stays compiled and live BEYOND the exit —
+anchored to the exit (EstateClock) — but got no new design work; it is
+"after the slice" content this phase.
 
-### Minutes 0–3 (T+0 to T+180): wake up, choose, arm up
+## 1. The tower loop, minute by minute (competent 2-player descent)
 
-- **T+0.** Four survivors walk out of the void deck into the rain. A
-  **countdown window** is already on screen: *"Last train: 12:00"* — the
-  clock is a metronome from the first frame (ZCD's "Final Wave In..."
-  pattern), not a distant deadline. The multiboard shows Train / Power
-  0/3 / SURGE — / estate quiet.
-- **T+0–40.** Four **class circles** glow at the void deck's south edge,
-  each with a statue of the class standing on it (Heartlander, Auxiliary
-  Police Officer, Paramedic, Town Council Technician). **Walk onto a
-  circle → you transform.** No typing; second thoughts are free inside
-  the 40s window; after 40s the circles go dark, silently (no scolding
-  — the old policing announcements are cut). Anyone who never steps on a
-  circle stays a Heartlander (the default keeps its semantics).
-- **T+0–90.** The spawn deck is furniture-dense. **Stand near a bench for
-  ~3 seconds and your survivor rummages it** — loot pops out on the
-  ground, you click it up. Or **shoot/chop the bench open** (props are
-  ~30 HP): instant loot, but the district's **Noise** climbs (+10 per
-  smash, +1 per gunshot). Loud is fast, quiet is slow — the first real
-  decision, and it's made with the mouse in the first minute (canon
-  negative space: first decision under 60s).
-- **Pickup = craft.** Grab Cloth then Bottled Water and they **snap into
-  a Wet Bandage in your pack** — chime, floating text. Four recipes, each
-  material in exactly one recipe, so a pickup is never ambiguous:
-  Cloth+Water=Wet Bandage · Plank+Pipe=Parang · Bottle+Kerosene=Molotov ·
-  Wire+Battery=Sentry Kit. The recipe book stays in the quest log and
-  `-recipes` (reference, not a verb).
-- **T+45.** One scripted dread line (a car alarm dies mid-wail). The 35s
-  dread metronome is gone — dread now only speaks when it means something.
-- **T+90.** First **ambient wanderers** drift between districts (1–2
-  zombies, texture, not pressure; this draw locks the seed).
-- **T+100. The SIREN.** Twenty seconds of warning, one dread line, a
-  minimap ping: the first **surge** is coming for the survivors'
-  district. Decision under pressure: stand at the void deck barricades,
-  or scatter? (All of it mouse-driven: move, attack, R to reload.)
-- **T+120. Surge 1 lands** — small (escalation level 1, scaled by player
-  count and district Noise). Shots draw rounds; **R reloads** (4s of no
-  attacks — but your legs still work: reload-while-fleeing is the
-  genre's tension moment, so the old PauseUnit is gone); **E sprints**.
-  Kills pay **XP** and sometimes **spill** a clip pack or a material on
-  the ground — roaming and fighting both pay (ZCD's bundle economy,
-  adapted).
-- **T+120–180.** Loot the spill drops, auto-combine a Molotov, watch the
-  first level-up land (+HP, +damage). The multiboard shows it all.
+### 6F — wake, choose, arm (T+0 → ~T+50)
 
-### A mid-game 60 seconds (T+340 → T+400): the loop at full tempo
+- **T+0.** You wake in a sixth-floor corridor. The lift doors at the west
+  end SPARK every few seconds (they will spark all night; the lifts are
+  dead). The countdown window already reads *"Last train: 12:00"* — the
+  clock started without you. One intro line; then the world talks.
+- **Live options in the first 30 seconds** (≥2 at all times — the density
+  rule): step onto a **class circle** (four, south wall — pick your
+  neighbour identity as you flee your flat); grab the dead neighbour's
+  **Parang** (guaranteed floor item — the escape never needs a bullet);
+  **rummage** the locker (3s, quiet) or the corridor bench; **smash**
+  either (instant, +2 stairwell loudness — and the stairwell is COUNTING
+  now: its state is on the board, it decays 1/20s, and every 3 points is
+  an extra climber per wave); put one beat at the **stair door** to
+  **peek** the 5F (one free floating-text read: walkers + lights); or
+  skip everything and take the **rubbish chute** (instant drop to the 2F
+  bin alcove — 60 damage, +2 loudness, every floor's loot skipped, and
+  anyone you rescue won't follow).
+- **~T+30.** One shambler that used to be your neighbour stands mid-
+  corridor. Parang it (silent), shoot it (a round + creeping loudness),
+  or walk around it. From T+40 the stairwell breathes: **climbers** every
+  30s at the deepest occupied floor — 1 base, +1 per 3 loudness (capped),
+  +1 if that floor is dark, +1 with 3+ players alive.
+- **The door.** Walking onto the stair door rect takes you down (door
+  slam, camera pan, floating floor-name). Behind you the floor does NOT
+  stay clear: a **riser** stands up on the floor you left and follows
+  through the door — unless you spent a Plank to **brace** (a barricade
+  built at the door absorbs the whole event; the door takes the thuds).
 
-- **T+340.** SIREN — surge 3 warned, targeting Cheng San, where the
-  Technician is standing in a **substation yard**: repair is now
-  **presence, not typing** — progress accrues every second you stand in
-  the yard un-hit; a bite knocks 3 seconds off (progress persists;
-  damage is a setback, not a reset). The rest of the team has 20
-  seconds to decide: reinforce Cheng San, or trust the Technician's
-  sprint?
-- **T+345.** The Paramedic, two districts away, rummages a locker while
-  the window ticks — quiet, zero Noise, worth one more draw before
-  running. The Heartlander smashes a car open instead: instant Plank,
-  +10 Noise — the NEXT surge here will be bigger. Same verb budget,
-  opposite tempo choices.
-- **T+352.** The APO pops **Riot Discipline** (level-3 signature) and
-  holds the yard mouth; the Technician keeps repairing THROUGH the surge
-  — every un-hit second counts, every hit costs three.
-- **T+360.** Surge lands on the yard. Reload rhythm: 12 shots, R, 4
-  vulnerable seconds, repeat. A Molotov burns the corpse pile before it
-  stands back up (denies the rise AND the defector's Feast).
-- **T+370.** Substation completes: **the district relights** — lamp
-  posts flare on along the roads, the map itself is the progress bar.
-  Power 2/3 on the board. +40 XP to the fixer; the Technician hits
-  level 3 and unlocks **Overclock** (next repair instant).
-- **T+385.** A nest reveals itself on the minimap ping of the spill: the
-  team detours, Molotovs the **rat-king nest** (+XP, escalation drip
-  trimmed one step) — downtime is spendable (ZCD's radiation fragments,
-  adapted).
-- **T+395.** Back to the Provision Shop at the void deck: clips are
-  lumber, and the shop sells tools FOR clips — a Barricade Kit banked
-  for the finale, at the price of two reloads. Ammo-vs-tools, every
-  purchase a real trade.
+### 5F — the flat warren (~T+50 → T+150)
 
-### The pre-train crunch (T+580 → T+720)
+- Five props (bench/locker/desk/table/dumpster) and two walkers. The
+  rummage-vs-smash tempo choice runs every prop, with the loudness ledger
+  now visible on the board. Two zombies patrol between you and the loot.
+- **Uncle Heng is trapped in the far flat.** Stand with him ~2s and he
+  joins whoever freed him (+25 XP; another +25 if he steps into the rain
+  alive). He follows through stair doors — but NOT down the chute: the
+  shortcut costs the escort.
+- **Auto-combine is running the whole time** — Cloth+Water snapped into a
+  Wet Bandage the moment you carried both (chime + floating name, zero
+  text). But raw halves are also **build fuel** now: the Plank you're
+  holding is a barricade or half a Parang, the Pipe is spike wire, the
+  Kerosene is a Watchfire or half a Molotov, the Battery is a Sentry Kit
+  half or a **noisemaker radio**. One economy, two mouths — every pickup
+  is a fort-vs-pack decision.
+- The 5F chute mouth is the second bail-out point.
 
-- **T+580.** SIREN — the LAST cyclical surge (T+600) is the night's
-  biggest; from here the **Last Mile** begins: a continuous trickle
-  spawns at the map edges and drifts station-ward, and the ambient horde
-  turns toward Yio Chu Kang station. The countdown window reads 2:00.
-- **T+600–700.** The team fights ITS way east along the main road,
-  spending the night's bank: barricades at the fare-gate forecourt,
-  sentries on the flanks, Molotovs on the corpse piles. Power 3/3 or
-  bust — an unpowered platform means sealed doors.
-- **T+680.** SIREN — the **final oversized surge** converges on the
-  forecourt.
-- **T+700–720.** Hold the line at the fare gates. The Paramedic triages
-  (AoE cure/heal); the defected teammate (if any) **Shrieks** the surge
-  onto the platform mouth — the traitor conducts the horde at the exact
-  vulnerability window.
+### 4F — the dark corridor (~T+150 → T+240)
 
-### The boarding window (T+720 → T+900): the platform siege
+- **The lights are OUT (A1 — darkness with teeth).** Unlit: rummage takes
+  5s instead of 3, and every climber/riser event on this floor brings one
+  extra body. The floor flickers (spark effects); two walkers you can
+  barely afford to shoot (loudness) stand between you and a locker + desk.
+- **Three remedies, all real trades:** flip the **DB box** (5s of
+  presence at the breaker cabinet — the substation pattern — lights the
+  floor for good, but a running breaker HUMS: +1 loudness/minute); drop a
+  **Watchfire** (1 Kerosene — silent, floor counts as lit while it burns,
+  but that Kerosene was half a Molotov and the nest floor is next); or
+  work blind and pay in seconds and bodies.
+- The authored **Molotov** lies here in the dark — the nest floor's
+  counterplay, if you didn't burn its half on light.
 
-- **T+720.** The train slides in; the countdown window flips to *"Doors
-  close: 3:00."* The whole horde converges on the forecourt — the
-  night's banked barricades and sentries ARE the chokepoint now (the
-  fort as shared team artifact, ZCD's deepest lesson).
-- **T+720–900.** Board = walk onto the platform. The decision is
-  per-player and continuous: step over the gap now (safe, selfish), or
-  hold the gate so the Paramedic can drag the infected Heartlander
-  through a cure first? A defector's Feast raises every unburned corpse
-  in the kill zone; their Shriek re-aims the trickle at the platform.
-- **T+900.** Doors close. Boarders win; the platform lights gutter out
-  on everyone else. (Or nobody made it — and the kampong walk remains.)
+### 3F — the blocked landing (~T+240 → T+320)
+
+- The stair door is barricaded with furniture — and the floor **smells of
+  gas (A4)**. The blockers must go, and there are three honest ways:
+  - **Chop them with the Parang on an empty clip** — slow, silent, and
+    the mandatory beat PAYS: each blocker drops a **Plank** (brace fuel),
+    and blocker smashes are **exempt** from loudness (the forced beat is
+    never punished).
+  - **Fire one live round in the pocket** — the landing goes up in a
+    sheet of flame: blockers blown, every walker cooked, every un-drawn
+    prop draw destroyed, +4 loudness, and you're singed for 60. Fast,
+    total, scorched-earth. (Any live shot indoors is a spark — empty your
+    gun before the landing, or use it as a weapon.)
+  - **Toss the Molotov from the arrival edge** — same blast, saves your
+    skin, spends the nest counterplay.
+- A withered uncle guards the barricade either way. The 3F DB box sits on
+  the south wall for those who want to see what they're chopping.
+
+### 2F — the nest floor (~T+320 → T+420)
+
+- A **rat-king nest** breeds in the dark (this floor is dark too), with a
+  sprinter napping by the chute-fed bin alcove and two search pulls
+  (dumpster, bench) competing with it for your attention. Burn the nest
+  (Molotov: it dies AND the estate's whole night gets slower — NestsDown
+  carries out of the tower) or sneak the south edge past it.
+- The bin alcove is where every chute lands: chuters arrive HERE, bruised
+  and loud, next to the nest. The stairs and the chute converge — the
+  floor is the funnel.
+- **If someone goes down** (anywhere in the tower): no spectating, no
+  traitor. Their corpse gets the standard 3.5s rise-marker (burnable) and
+  rises where they fell; ~18s later they stagger back in at their floor's
+  landing, one clip poorer, gun half-seated. If the LAST living survivor
+  drops, the night ends there (solo death = a plain defeat). Death =
+  defection remains the ESTATE's rule, beyond the door.
+
+### 1F — the void deck, and the rain (~T+420 → T+500)
+
+- The densest fight: five walkers between you and the exit, pillars and a
+  mailbox wall to fight around, a bench and the storeroom locker for the
+  greedy. This is where the night's banked builds spend: wire the
+  chokepoint, brace the door behind, watchfire the corner, radio-decoy
+  the pack into a corner and WALK.
+- **Walking onto the exit door IS the victory beat**: teleport into the
+  void deck, the QuestCompleted sting, a small shake, the ONE relief
+  line — *"OUT. The rain hits you like applause."* — and the estate
+  opens: wanderers from EstateClock+90, first siren at +100, the whole
+  phase-2A loop with its own schedule intact, relative to YOUR exit.
+  The train clock, of course, never waited.
 
 ## 2. Interaction ledger (verb × input × uses/min × pressure)
 
-Every gameplay verb, its input, expected uses per minute at peak, and
-whether it happens under combat pressure. **Zero chat rows at combat
-tempo** — chat is meta/reference only.
+Zero chat rows at combat tempo. Per the activity audit, pure-feedback
+rows (auto-combine firing, floating text) are NOT counted as verbs.
 
 | Verb | Input | Uses/min (peak) | Under pressure? |
 | --- | --- | --- | --- |
 | Move / flee | right-click | 10–30 | yes |
-| Attack | right-click / A-click | 10–20 | yes |
-| Reload | **ability R** | 1–2 | yes — the panic window |
-| Sprint | **ability E** | 1–3 | yes |
-| Rummage | **proximity** (~3s stand) | 2–6 (downtime) | no — the quiet verb |
-| Smash a prop | attack the prop | 2–6 | optional — the loud verb |
-| Pick up loot / spill | click item | 2–8 | yes |
-| Craft | **automatic on pickup** | 0 (free) | n/a |
-| Use Molotov / Bandage / kit | item click | 1–3 | yes |
-| Repair substation | **stand in yard** | continuous | yes |
-| Buy at Provision Shop | click shop, click ware | 0–2 (downtime) | no |
-| Class pick | **walk onto circle** | once | no (first 40s) |
-| Board the train | walk onto platform | once | yes |
-| Signature ability | ability hotkey | 0.5–2 | yes |
-| Feast / Shriek (defector) | ability on point | 1–2 | yes |
+| Attack (gun/Parang) | right-click / A-click | 10–20 | yes |
+| Reload | ability R | 1–2 | yes — and indoors it counts loudness |
+| Sprint | ability E | 1–3 | yes |
+| Rummage (which prop) | proximity ~3s (5s dark) | 2–6 | the quiet verb |
+| Smash a prop | attack it | 2–6 | the loud verb (ledger visible) |
+| Take the stair door | walk onto rect | ~1/floor | yes (risers answer) |
+| Take the chute | walk onto mouth | 0–1 | yes — the bail-out |
+| Peek the next floor | 1s at the door edge | ~1/floor | no |
+| Flip a DB box | 5s presence | 0–1/floor | yes (dark around you) |
+| Build Barricade / brace | ability Z (1 Plank) | 1–2 | yes |
+| Lay Spike Wire | ability X (1 Pipe) | 0–2 | yes |
+| Light Watchfire | ability V (1 Kerosene) | 0–1 | yes |
+| Set Field Sentry | ability B (Sentry Kit) | 0–1 | yes |
+| Place Noisemaker | ability N (1 Battery) | 0–1 | yes — the panic button |
+| Repair a work | proximity | continuous | yes |
+| Rescue the neighbour | 2s presence | once | yes |
+| Burn nest / corpses | Molotov item | 0–2 | yes |
+| Pick up loot | click item | 2–8 | yes |
+| Class pick | walk onto circle | once | no (first 40s) |
 | — meta only — | | | |
-| `-seed N` | chat (pre-commit only) | once/never | no |
-| `-help` `-status` `-recipes` `-credits` | chat (reference) | rare | no |
-| `-test` debug family | chat (dev only) | n/a | no |
+| `-help` `-status` `-recipes` `-credits` `-seed` | chat | rare | no |
+| `-test` debug family (incl. `-deck`) | chat | dev only | no |
 
-Deleted phase-1 chat verbs (all responded at combat tempo — the design
-FAIL the playtest named): `-class` `-search` `-craft` `-reload` `-sprint`
-`-fix` `-board`. They no longer respond at all.
+## 3. Decision density (target: ≥2 live options per 20–30s beat)
 
-## 3. Decision density per phase
+- **6F (0–50s)**: class choice ×4; Parang-vs-locker order; rummage-vs-
+  smash ×2; peek-or-push; chute-or-stairs; brace-or-save the first Plank
+  → **~8 decisions/50s.**
+- **5F (per 30s)**: which prop next; loud or quiet on each; fight or
+  walk the two zombies; detour for Uncle Heng now or on the way back;
+  spend the Plank on brace vs carry for Parang; chute bail-out
+  → **3–5 per 30s.**
+- **4F (per 30s)**: breaker vs watchfire vs blind; who stands the 5s
+  flip while walkers close; shoot (loud spark budget) vs Parang; take
+  the Molotov or leave the Kerosene fuel question open
+  → **3–4 per 30s.**
+- **3F**: THE set-piece choice (chop / shoot / Molotov) + empty-the-gun
+  timing + where to stand for the blast + a withered on you meanwhile
+  → **the whole floor is one layered decision under pressure.**
+- **2F**: nest burn-vs-sneak; dark remedies again; two loot pulls vs the
+  sprinter's patrol; hold the alcove for chuting teammates or push
+  → **3–5 per 30s.**
+- **1F**: spend-the-bank placement (wire/brace/fire/radio), fight-vs-
+  decoy-vs-run, greed pulls (locker) vs the exit
+  → **4–6 per 30s, then the beat of release.**
+- The climber cadence (30s) + riser events keep a THREAT decision inside
+  every window; no beat over ~30s is single-option.
 
-Target band: a meaningful decision every 20–60s (canon invariant I5).
+## 4. The player-owned growing numbers (canon I2)
 
-- **Setup (0–120s)**: class choice; rummage-vs-smash per prop (~6
-  props); what to carry (4-recipe pack planning); stand or scatter at
-  the first siren → **~8–10 decisions / 2 min.**
-- **Mid-game (120–600s, per 60s)**: surge response (fight/kite/split),
-  reload timing under contact, noise budget (smash or rummage), repair
-  window (who stands, who guards), nest detour (yes/now/later), shop
-  trade (clips→tool?), spill pickup routing → **4–7 decisions / min.**
-- **Crunch (600–720s)**: route east now vs one more substation; spend
-  banked kits where; Molotov the pile or save it → **~5 / min.**
-- **Boarding (720–900s)**: board now vs hold the gate (continuous,
-  per-player); cure-then-board sequencing; defense placement →
-  **3–5 / min plus one standing dilemma.**
-- No phase falls under one decision per 60s; no phase demands typing.
+1. **Hero level + XP** — kills, rescue (+25/+50), escape (+40), nests,
+   objectives; signature at level 3.
+2. **The pack→tool pipeline AND the fort** — the same materials, two
+   mouths: crafted tools carried out vs works standing (Fort row on the
+   board, 25 score each at the verdict).
+3. **The clip bank** (lumber) — and the respawn penalty spends it.
+4. **Floors lit** — each DB box flipped is territory that STAYS won
+   (at a hum cost).
+5. **Nests burned** — 2F's nest trims the whole estate night after.
+6. **Uncle Heng** — a live, walking bonus you can lose to one chute.
+7. (Threat mirror, visible: stairwell loudness, the train clock.)
 
-## 4. The player-owned growing numbers (canon I2 — zero-exception)
-
-Phase 1's deepest canon violation: nothing the player owned visibly
-compounded. Phase 2A's owned, legible, growing numbers:
-
-1. **Hero level + XP** (kills, substations, nests, cures) — small stats
-   each level, a signature ability at level 3.
-2. **The clip bank** (lumber) — scavenged, spilled, spent at the shop.
-3. **The pack → tool pipeline** — materials auto-combining into named
-   tools (Parang, Molotov, Sentry Kit, Wet Bandage) that persist.
-4. **Power 0/3 → 3/3** — and the estate **visibly relights** district by
-   district: the map is the progress bar.
-5. **Banked defenses** — barricades and sentries standing at the finale
-   are score, chokepoint, and monument ("defenses standing" is a scored
-   outcome).
-6. **Nests burned** — each one permanently trims the horde's growth.
-7. (Threat-side mirror, legible on the board: escalation level, district
-   Noise, surge countdown.)
-
-## 5. The threat schedule (no safe gap > 90s)
+## 5. The threat schedule (no safe gap > 30s indoors)
 
 ```
-T+0    intro; countdown window running from frame one
-T+45   scripted dread beat (tone-setter)
-T+90   first ambient wanderers (texture; seed lock)      gap 0→90 = 90s  ✓
-T+100  SIREN + dread line (surge 1 warned)               gap 10s
-T+120  SURGE 1 (players' district; noise-scaled)
-T+135+ wanderers every 45s between surges                max gap ≤ 45s
-T+220  SIREN        T+240  SURGE 2
-T+300  train PA timeline beat ("...departs Tampines...")
-T+340  SIREN        T+360  SURGE 3
-T+460  SIREN        T+480  SURGE 4
-T+540  train PA: "the last train departs Yishun" (T-180)
-T+580  SIREN        T+600  SURGE 5 (the big one) → LAST MILE:
-       trickle every 20s, ambient horde drifts station-ward
-T+660  train PA: one minute (T-60)
-T+680  SIREN        T+700  FINAL SURGE (fare-gate forecourt)
-T+720  train arrives → PLATFORM SIEGE: everything converges
-       on the forecourt for the whole 180s boarding window
-T+900  doors close
+T+0     lift sparks running; intro line; countdown window live
+T+0-40  seeded floor zombies (1 on 6F) + the loudness ledger arms
+T+40    first CLIMBER wave (then every 30s at the deepest floor;
+        1 + noise//3 (cap +2) + dark +1 + headcount +1)
+each door transit   RISER event behind you (cap 2/floor; brace absorbs)
+each chute use      +2 loudness THUMP (echoes into bigger waves)
+3F      the gas set-piece + the withered guard
+2F      the nest drip (it is a live nest: the estate pays later if spared)
+1F      the five-walker finale
+exit    the estate heartbeat starts at EstateClock 0: wanderers +90,
+        siren +100, surge +120 ... (the 2A schedule, exit-anchored)
 ```
 
-Longest quiet stretch: the opening 90 seconds (deliberate setup grace,
-exactly at the limit, textured by the T+45 beat). After T+90 no gap
-exceeds 45s without either a wanderer, a siren, a surge, a PA beat, or
-the trickle. Surges target the players' district or an active repair
-yard — camping is answered by the schedule; Noise makes loud play answer
-itself.
+The longest quiet stretch indoors is the climber period itself (30s),
+and only if you are silent, lit, and not descending. The train clock
+runs through everything — 12:00 of it, spent or wasted.
 
-## 6. What was cut, and why (the fun transplant's debit side)
+## 6. What was cut, added, or ruled (the debit side)
 
-- All 7 gameplay chat verbs (the playtest verdict, verbatim).
-- 6 of 10 recipes — ambiguity kills auto-crafting; each material now
-  appears in exactly one recipe. Blowtorch and Kopi Set are gone;
-  **Generator Part is gone entirely** (the instant-fix item deleted the
-  best tension beat in the map — the vulnerable repair stand);
-  Barricade Kit / Flare / Mobile Phone moved to shop/loot.
-- The 35s dread metronome (dread now only pre-surge + scripted beats).
-- Searches×5 score term (score = outcomes only: aboard, brood, power,
-  defenses standing).
-- The residents multiboard row (civvies stay as ambience and rise fuel).
-- The pick-window policing announcements (the window stays; the nagging
-  goes).
-- The every-5th-kill invisible clip strip → replaced by **visible ground
-  spills** (same economy, on the ground where roaming pays).
-- Deviation from the reconciled spec, documented: the shop's "extra
-  Clips" ware is circular (clips are the currency) — the fourth ware is
-  the **Wet Bandage** instead (ammo-vs-medicine is the same trade); and
-  `-cam N` is declined to keep the map's zero-GetLocalPlayer doctrine.
+- **The defection dependence is CUT from the slice** (directive): tower
+  death = setback respawn (18s, −1 clip, half gun; corpse rises,
+  burnable; last-one-down = wipe; solo = plain defeat). Estate death =
+  defection, unchanged and still fully tested — but it received no new
+  design work this phase.
+- **Text diet (playtest 2)**: all per-prop/per-craft/per-buy/per-level/
+  per-rise chat lines DELETED (~70% volume cut; the effects-text suite
+  pins both directions). Kept: siren/PA/train spine, verdicts, defection
+  announces, one-time teaches, meta responses.
+- **Hold-to-craft / inventory management rows** are delisted from the
+  density accounting (advisor ruling: feedback and friction, not
+  choices).
+- **Flare / Mobile Phone** are estate tools; they are not part of the
+  indoor accounting (usable, just not load-bearing there).
+- **Trade quirk (documented, accepted)**: a raw half handed to a teammate
+  auto-combines on THEIR pickup if they hold the partner half — handing
+  someone a Plank can cost them their build fuel. README notes it.
+- **Advisor items deferred** (capacity, honest list): A6 locked
+  doors+keys, A7 the crying child, A9 joss sticks, A10 balcony shimmy,
+  A11 mahjong tiles, A12 electrified puddle. The TOWER table is
+  field-per-feature so each lands as one field + one handler; A7/A9 are
+  the first candidates for the next pass.
+- **Estate-wide layout coherence and estate juice beyond the spine are
+  PARKED** (directive): done only where cheap (hawker stall rows, the
+  furniture-anchor assert in the generator, the coherence keep-outs).
 
 ## 7. Sim-testability note (gotcha 33's sim clause)
 
-Every verb above lands on a sim-exercisable event: circles/rummage/
-repair/boarding = `sim.moveUnit` + region/proximity ticks; smash =
-`sim.damage`/`sim.kill` on the prop; auto-combine = `sim.pickup`; R/E/
-signatures/Feast/Shriek = `sim.cast`; shop = `sim.sell`; spills/surges/
-noise = PRNG-driven state asserted via RUNLOG. The interface is designed
-for the player; the sim adapts — never the reverse.
+Every verb lands on a sim surface: doors/chutes/circles/exit =
+region-enter events (`sim.moveUnit`); rummage/breakers/repair/rescue/
+peek = presence scans on the virtual clock; builds/decoy = `sim.cast`
+point casts; gas = the DAMAGING round-draw path or `sim.useItem`;
+climbers/risers/loudness = deterministic counters asserted via RUNLOG;
+the whole slice is pinned by `tests/tower-escape.test.js` (14 tests),
+`tests/tower-activity.test.js` (15), `tests/build.test.js` (11) and
+`tests/effects-text.test.js` (11). Sim honesty: zombie AGGRO/pathing
+(walkers actually pressing the chokepoints, the decoy's in-game pull
+feel, wall-blocking) is game-only — the orders and spawns are what the
+sim pins; the in-game feel is what the next playtest is for.

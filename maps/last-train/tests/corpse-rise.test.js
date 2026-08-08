@@ -27,7 +27,7 @@ test('a civilian killed by a zombie rises as a shambler at the spot after 3.5s',
   const horde0 = sim.global('HordeCount');
   sim.kill(civ, zomb);
   assert.strictEqual(sim.global('CivDead'), 1);
-  assert.ok(/civdead\|1\/18/.test(sim.global('RUNLOG')));
+  assert.ok(/civdead\|1\/19/.test(sim.global('RUNLOG'))); // 19: the 2B tower neighbour joined the census
 
   sim.advance(3); // inside the window: nothing yet
   assert.strictEqual(sim.global('HordeCount'), horde0, 'still down at 3s');
@@ -49,7 +49,8 @@ test('a Molotov burns corpses inside the window: no rise, zombies scorched, +Noi
   const horde0 = sim.global('HordeCount');
   const heat0 = sim.run('return NoiseHeat[DistrictAt(' + civ.x + ',' + civ.y + ').key] or 0')[0];
 
-  const molotov = [...sim.items.values()].find((i) => !i.removed && i.typeStr === 'I014');
+  const molotov = [...sim.items.values()].find((i) => !i.removed
+    && i.typeStr === 'I014' && i.ownerUnit === hero.handle); // NOT the authored 4F ground drop
   sim.useItem(hero, molotov);
   assert.ok(/molotov\|pid=0\|burned=1\|hit=1/.test(sim.global('RUNLOG')));
   assert.strictEqual(zomb.life, zhp - 60, 'zombies in the fire take 60');
@@ -65,7 +66,8 @@ test('molotov damage never draws the thrower\'s ammo (scripted, not a shot)', ()
   sim.chat(0, '-give molotov');
   sim.moveUnit(zomb, hero.x + 100, hero.y);
   const rounds = sim.player(0).gold;
-  const molotov = [...sim.items.values()].find((i) => !i.removed && i.typeStr === 'I014');
+  const molotov = [...sim.items.values()].find((i) => !i.removed
+    && i.typeStr === 'I014' && i.ownerUnit === hero.handle);
   sim.useItem(hero, molotov);
   assert.strictEqual(sim.player(0).gold, rounds, 'no round drawn by the burst');
 });

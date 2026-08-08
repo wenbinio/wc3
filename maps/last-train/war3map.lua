@@ -1,6 +1,37 @@
 -- =========================================================================
--- Last Train from Yio Chu Kang — war3map.lua (phase 2A)  a map by Serendipity
+-- Last Train from Yio Chu Kang — war3map.lua (phase 2B)  a map by Serendipity
 -- =========================================================================
+-- PHASE 2B — THE TOWER (playtest-2 verdict: "first you have to survive &
+-- fight your way out of a HDB, on the sixth floor, all lifts are down.
+-- Intense survival horror vibe. You put too much work into the text." plus
+-- mid-phase: "There's not enough to do at all. Maybe let players build &
+-- survive." / "We'll focus entirely on the HDB interior for now").
+-- The playable slice this phase is BLOCK 6A'S INTERIOR:
+--   * all survivors wake on the SIXTH FLOOR; the lifts are dead (sparking
+--     doors); the only way is DOWN the stairwell — six interior pockets
+--     (6F corridor -> 5F flat warren -> 4F dark corridor -> 3F blocked
+--     landing -> 2F nest floor -> 1F void deck) linked by trigger-teleport
+--     stairwell doors (region enter -> SetUnitPosition + camera pan);
+--   * class circles are IN the 6F corridor: pick your neighbour identity
+--     as you flee your flat (first 40s);
+--   * pressure works BOTH directions: cleared floors raise RISERS behind
+--     you (they chase through the doors), and CLIMBERS come up from below
+--     on a cadence that grows with the noise you make indoors;
+--   * BUILD & SURVIVE (the ZCD lesson applied fully — their barricade
+--     costs one kill's bounty; building is CONSTANT): every survivor
+--     carries four build verbs — Barricade (1 Plank), Spike Wire (1 Pipe,
+--     claws back), Watchfire (1 Kerosene, a pool of light), Field Sentry
+--     (plants a Sentry Kit; a second kit rearms a dry gun) — and repairs
+--     any damaged structure by STANDING beside it. Raw materials feed the
+--     fort; pairs feed the pack (auto-combine) — one economy, two mouths;
+--   * the TEXT DIET: the world talks (effects, sounds, floating text),
+--     chat lines are cut ~70%; what remains is the flavor spine (siren,
+--     PA/train beats, verdicts, defection) and one-time teaches;
+--   * reaching the void deck IS the slice's victory beat — the rain, the
+--     estate, the countdown; the whole phase-2A estate loop (surges,
+--     noise, nests, substations, train, defection) stays compiled and
+--     LIVE beyond the door, anchored to tower exit (EstateClock), but got
+--     no new design work this phase (parked: estate-wide layout/juice).
 -- 1-4 player co-op zombie survival in a rain-soaked Singapore HDB estate,
 -- one permanent night before the network shuts down. Scavenge the void
 -- decks, let your pack auto-combine what the island left you, restore
@@ -114,6 +145,31 @@ local RATIONS_HEAL    = 100.0
 local BANDAGE_HEAL    = 150.0
 local FF_SCALE        = 4
 local rngState        = 1
+-- phase 2B tower + build tuning (GLOBALS — gotcha 28 headroom discipline)
+TOWER_Y         = -5260   -- pocket centerline (generate-layout.mjs mirror)
+TOWER_HALF_W    = 420
+TOWER_HALF_H    = 280
+RESCUE_RANGE    = 250.0   -- stand this close to free the trapped neighbour
+RESCUE_TIME     = 2       -- seconds of presence
+CLIMB_PERIOD    = 30      -- stairwell climbers while indoors
+CLIMB_FROM      = 40      -- first climbers after this many seconds
+RISER_CAP       = 2       -- riser events per cleared pocket
+-- the 2B activity pass (advisor audit: darkness with teeth, brace, chute,
+-- gas, decoy, graded stairwell loudness)
+TOWER_NOISE_DECAY_T = 20  -- stairwell loudness cools 1 per this many seconds
+BREAKER_TIME    = 5       -- presence seconds to flip a floor's DB box
+BREAKER_HUM_T   = 60      -- a running breaker hums +1 loudness per this
+DARK_RUMMAGE_EXTRA = 2    -- rummaging blind takes this many extra seconds
+CHUTE_DMG       = 60.0    -- the rubbish chute is not a slide
+GAS_DMG_SURV    = 60.0    -- the 3F gas blast: survivors singed,
+GAS_DMG_ZOMB    = 160.0   -- zombies cooked, prop loot destroyed
+DECOY_LIFE      = 15      -- the noisemaker blares this long
+DECOY_PULL      = 900.0   -- and pulls everything walking inside this
+PEEK_RANGE      = 150.0   -- stand at the door edge to peek downstairs
+SPIKE_DMG       = 15.0    -- spike wire claws back per hit taken
+REPAIR_RANGE    = 200.0   -- stand-to-repair damaged structures
+REPAIR_RATE     = 20.0    -- hp/s (Technician 2x)
+BUILD_RANGE     = 500.0   -- build casts clamp to this reach
 
 -- -------------------------------------------------------------- game state
 -- Script-level state is GLOBAL (gotcha 28); these are also the sim's
@@ -200,6 +256,32 @@ SndSiren       = nil
 SndChime       = nil
 InScriptedDamage = false
 InAutoCombine  = false
+-- phase 2B state
+TowerPhase     = true   -- the interior slice; flips false at the first exit
+EstateClock    = 0      -- estate heartbeat clock: ticks only OUTSIDE the tower
+TowerPocketOf  = {}     -- pid -> pocket index (1..6) while inside
+TowerNoise     = 0      -- graded stairwell loudness: decays, displays, feeds climbers
+TowerNoiseClock = 0
+TowerShots     = 0      -- every 8th indoor round = +1 loudness
+ClimbClock     = 0
+RiserEvents    = {}     -- pocket index -> riser events spawned so far
+TowerBlockers  = {}     -- unit -> true (the 3F furniture barricade)
+RescueRec      = {}     -- unit -> {pid=nil|rescuer, ticks={}} trapped neighbours
+BreakerRec     = {}     -- DB-box unit -> pocket index (dark floors)
+BreakerTicks   = {}     -- DB-box unit -> presence seconds
+PocketLit      = {}     -- pocket index -> true once its breaker is flipped
+GasLive        = true   -- the 3F leak: one spark and the landing goes up
+InGasBlast     = false
+DecoyRec       = {}     -- noisemaker unit -> true
+PeekTold       = {}     -- "pid|pocket" -> true after the one free read
+FirstRepairTold = false
+BuildTold      = {}     -- pid -> true after the first refused build (teach once)
+SndLevel       = nil
+SndBuild       = nil
+SndVictory     = nil
+SndDoor        = nil
+SndLift        = nil
+SndWarn        = nil
 
 -- ---------------------------------------------------------------- the PRNG
 -- Park-Miller LCG via Schrage's algorithm — the ONLY randomness in the map
@@ -285,12 +367,59 @@ function FloatText(x, y, msg)
   SetTextTagFadepoint(tt, 2.0)
 end
 
+-- ---------------------------------------------------------------- the juice
+-- ZCD-mined effect vocabulary (docs: the 2026-08 decomposition; every path
+-- listfile-verified into lib/data/stock-art.json, kinds effect/sound).
+-- Fx/FxOn are FIRE-AND-FORGET (create + DestroyEffect immediately — ZCD's
+-- dummy hygiene: the death animation still plays, nothing leaks); the only
+-- persistent handles are the corpse-window markers, destroyed at
+-- burn/rise/feast. The world talks so the chat can shut up (text diet).
+FX = {
+  RISE    = "Abilities\\Spells\\Undead\\AnimateDead\\AnimateDeadTarget.mdl", -- ZCD's raise signature
+  BLOOD   = "Objects\\Spawnmodels\\Human\\HumanBlood\\HumanBloodLarge0.mdl",
+  LEVEL   = "Abilities\\Spells\\Other\\Levelup\\Levelupcaster.mdl",
+  LOOT    = "Abilities\\Spells\\Items\\AIem\\AIemTarget.mdl",               -- ZCD's item pop
+  VICTORY = "Abilities\\Spells\\Human\\Resurrect\\Resurrecttarget.mdl",     -- ZCD's revive flash
+  RESCUE  = "Abilities\\Spells\\Human\\ReviveHuman\\ReviveHuman.mdl",
+  BOOM    = "Objects\\Spawnmodels\\Other\\NeutralBuildingExplosion\\NeutralBuildingExplosion.mdl",
+  CURE    = "Abilities\\Spells\\Human\\DispelMagic\\DispelMagicTarget.mdl",
+  SPARK   = "Abilities\\Spells\\Orc\\Purge\\PurgeBuffTarget.mdl",
+  INFECT  = "Abilities\\Spells\\Undead\\UnholyFrenzy\\UnholyFrenzyTarget.mdl",
+  DUST    = "Objects\\Spawnmodels\\Undead\\ImpaleTargetDust\\ImpaleTargetDust.mdl",
+  FIRE    = "Abilities\\Spells\\Human\\FlameStrike\\FlameStrike1.mdl",
+  MARKER  = "Abilities\\Spells\\Undead\\RaiseSkeletonWarrior\\RaiseSkeleton.mdl",
+  SHIELD  = "Abilities\\Spells\\Human\\Defend\\DefendCaster.mdl",
+  HEAL    = "Abilities\\Spells\\Human\\HolyBolt\\HolyBoltSpecialArt.mdl",
+  ROAR    = "Abilities\\Spells\\NightElf\\BattleRoar\\RoarCaster.mdl",
+}
+
+function Fx(path, x, y)
+  DestroyEffect(AddSpecialEffect(path, x, y))
+end
+
+function FxOn(path, u, attach)
+  if u == nil then return end
+  DestroyEffect(AddSpecialEffectTarget(path, u, attach or "origin"))
+end
+
+-- screen shake, sparingly (ZCD's CameraSetTargetNoiseForPlayer ladder):
+-- the BJ is per-player and camera-local — desync-safe by construction
+function ShakeAll(mag, dur)
+  for _, pid in ipairs(Users) do
+    CameraSetTargetNoiseForPlayer(Player(pid), mag, mag * 0.02)
+  end
+  After(dur, function()
+    for _, pid in ipairs(Users) do
+      CameraClearNoiseForPlayer(Player(pid))
+    end
+  end)
+end
+
 function LockSeed(reason)
   if SeedLocked then return end
   SeedLocked = true
   LogRun("seedlock|" .. reason)
-  AnnounceAll("|cffaaaaaaThe night has you now (" .. reason .. ") -- seed "
-    .. RunSeed .. " is locked for this run.|r")
+  AnnounceAll("|cffaaaaaaSeed " .. RunSeed .. " locked (" .. reason .. ").|r")
   SpawnNests()
 end
 
@@ -386,7 +515,9 @@ function GrantSurvXP(pid, amt, why)
         GetUnitState(u, UNIT_STATE_MAX_LIFE)))
     end
     LogRun("lvl|pid=" .. pid .. "|l=" .. lvl .. "|" .. why)
-    Tell(pid, "|cffffcc00Level " .. lvl .. ".|r Harder to kill, harder hitting.")
+    -- text diet: the level-up SHOWS (stock levelup burst + sound) — no line
+    FxOn(FX.LEVEL, u)
+    StartSound(SndLevel)
     if lvl == SIG_LEVEL then
       LogRun("sig|pid=" .. pid .. "|" .. (ClassOf[pid] or "heartlander"))
       Tell(pid, "|cff88ccffSignature unlocked: " .. SIG_NAME[ClassOf[pid] or "heartlander"] .. ".|r")
@@ -431,6 +562,9 @@ function SpawnZombie(kind, x, y, ownerPid)
   BlzSetUnitMaxHP(u, hp)
   SetWidgetLife(u, hp)
   RegisterZombie(u, kind)
+  -- every scripted spawn wears ZCD's AnimateDead raise flash: surges,
+  -- risers, climbers, corpse-rise and Feast all read as ONE grammar
+  FxOn(FX.RISE, u)
   return u
 end
 
@@ -499,14 +633,21 @@ end
 -- Phase 2A: the Revenant's Feast claims a corpse EARLY, so burning is
 -- direct PvP denial too.
 function RecordCorpse(x, y)
-  local rec = { x = x, y = y, risen = false, burned = false }
+  -- the 3.5s window is VISIBLE: a persistent raise-marker effect stands on
+  -- the corpse until it rises, burns or is Feasted — the Molotov counterplay
+  -- is readable without a single line of text (the one persistent-handle
+  -- family in the map; destroyed at every resolution, never leaked)
+  local rec = { x = x, y = y, risen = false, burned = false,
+    fx = AddSpecialEffect(FX.MARKER, x, y) }
   CorpseList[#CorpseList + 1] = rec
   After(RISE_DELAY, function()
-    if GameOver or rec.burned or rec.risen then return end
+    if GameOver or rec.burned or rec.risen then
+      return
+    end
     rec.risen = true
+    DestroyEffect(rec.fx)
     SpawnZombie("shambler", rec.x, rec.y)
     LogRun("rise|x=" .. math.floor(rec.x) .. "|y=" .. math.floor(rec.y))
-    AnnounceAll("|cffff8866Something that was a neighbour stands back up.|r")
   end)
 end
 
@@ -516,6 +657,8 @@ function BurnCorpsesNear(x, y, radius)
     if not rec.risen and not rec.burned
       and Dist2(rec.x, rec.y, x, y) <= radius * radius then
       rec.burned = true
+      DestroyEffect(rec.fx)
+      Fx(FX.FIRE, rec.x, rec.y)
       burned = burned + 1
     end
   end
@@ -529,9 +672,10 @@ function InfectSurvivor(pid)
   InfectTick[pid] = 0
   ClinicTicks[pid] = 0
   LogRun("infect|pid=" .. pid)
-  Tell(pid, "|cffcc66ffThe bite burns. You are INFECTED -- a Wet Bandage above "
-    .. CURE_HP_PCT .. "% health cures it, or stand in the polyclinic grounds "
-    .. CLINIC_CURE_T .. "s. Untreated, it will take you -- and give you back.|r")
+  StartSound(SndWarn)
+  FxOn(FX.INFECT, Survivors[pid])
+  Tell(pid, "|cffcc66ffINFECTED. Wet Bandage above " .. CURE_HP_PCT
+    .. "%, or the polyclinic -- untreated, it takes you.|r")
   BoardDirty = true
 end
 
@@ -540,7 +684,8 @@ function CureSurvivor(pid, how)
   Infected[pid] = nil
   ClinicTicks[pid] = 0
   LogRun("cure|pid=" .. pid .. "|" .. how)
-  Tell(pid, "|cff88ff88The fever breaks (" .. how .. "). You are clean.|r")
+  FxOn(FX.CURE, Survivors[pid])
+  Tell(pid, "|cff88ff88The fever breaks.|r")
   GrantSurvXP(pid, 10, "cure")
   BoardDirty = true
 end
@@ -556,6 +701,7 @@ function InfectionTick()
         UnitDamageTarget(u, u, INFECT_DMG + 0.0, true, false,
           ATTACK_TYPE_NORMAL, DAMAGE_TYPE_NORMAL, WEAPON_TYPE_WHOKNOWS)
         InScriptedDamage = false
+        FxOn(FX.INFECT, u, "chest") -- the green drip: the state is visible
       end
       -- the polyclinic cure: hold your ground inside the grounds
       if ClinicRegion ~= nil and IsUnitInRegion(ClinicRegion, u) then
@@ -601,7 +747,7 @@ function GiveItem(pid, itemType)
     end
   end
   CreateItem(itemType, GetUnitX(u), GetUnitY(u))
-  Tell(pid, "|cffaaaaaaYour hands are full -- it lands at your feet.|r")
+  Tell(pid, "|cffaaaaaaHands full -- it drops at your feet.|r")
 end
 
 MATERIAL_NAMES = {
@@ -630,10 +776,10 @@ function AutoCombine(pid)
       TakeItemOfType(u, r.b)
       GiveItem(pid, r.out)
       LogRun("craft|pid=" .. pid .. "|" .. r.key)
+      -- text diet: chime + floating name carry the craft — no chat line
       StartSound(SndChime)
+      FxOn(FX.LOOT, u)
       FloatText(GetUnitX(u), GetUnitY(u), "|cff88ccff" .. r.name .. "|r")
-      Tell(pid, "|cff88ccffYour hands know this one: " .. MATERIAL_NAMES[r.a]
-        .. " + " .. MATERIAL_NAMES[r.b] .. " -> " .. r.name .. ".|r")
     end
   end
   InAutoCombine = false
@@ -646,6 +792,7 @@ function ShowRecipes(pid)
       .. "|r -> " .. r.name)
   end
   Tell(pid, "|cffaaddffThe Provision Shop|r at the void deck sells Barricade Kit (2 clips), Mobile Phone (3), Wet Bandage (2), Flare (1). Rations you just eat.")
+  Tell(pid, "|cffaaddffBuilding|r spends the RAW halves: Barricade = 1 Plank, Spike Wire = 1 Pipe, Watchfire = 1 Kerosene, Field Sentry plants a Sentry Kit. Stand beside a damaged work to repair it.")
 end
 
 -- ---------------------------------------------------------------- scavenge
@@ -697,7 +844,9 @@ end
 
 function DropLoot(kind, x, y)
   -- the seeded draw, popped onto the ground at the prop (click to take;
-  -- pickup handles auto-combine and clip-pack banking)
+  -- pickup handles auto-combine and clip-pack banking). The pop itself is
+  -- the feedback: ZCD's item-acquire flash, no log line (text diet).
+  Fx(FX.LOOT, x, y)
   local loot = DrawLoot(kind)
   if loot == "clips" then
     CreateItem(ITEM_CLIP_PACK, x, y)
@@ -724,18 +873,23 @@ function RummageScan()
       elseif RummageProp[pid] ~= best then
         RummageProp[pid] = best
         RummageTicks[pid] = 1
-        Tell(pid, "|cffaaaaaaYou start going through the " .. GetUnitName(best) .. "...|r")
+        -- text diet: the channel reads as floating text AT the prop
+        FloatText(GetUnitX(best), GetUnitY(best), "|cffaaaaaarummaging...|r")
       else
         RummageTicks[pid] = (RummageTicks[pid] or 0) + 1
-        if RummageTicks[pid] >= RUMMAGE_TIME then
+        -- A1: rummaging BLIND takes longer — light the floor or pay time
+        local need = RUMMAGE_TIME
+        local pi = PocketIndexAt(GetUnitX(best), GetUnitY(best))
+        if pi ~= nil and not PocketIsLit(pi) then
+          need = need + DARK_RUMMAGE_EXTRA
+        end
+        if RummageTicks[pid] >= need then
           LockSeed("rummage")
           local rec = PropRec[best]
           rec.searched = true
           Searches = Searches + 1
           local got = DropLoot(rec.kind, GetUnitX(best), GetUnitY(best))
           LogRun("rummage|pid=" .. pid .. "|" .. rec.kind .. "|" .. got)
-          Tell(pid, "|cff88ccffYou turn out the " .. GetUnitName(best) .. ": "
-            .. got .. " -- it drops at the foot of it.|r")
           RummageProp[pid] = nil
         end
       end
@@ -812,10 +966,21 @@ function HandleDamaging()
           GetUnitX(tgt), GetUnitY(tgt)) <= FIX_RANGE * FIX_RANGE then
         rec.progress = rec.progress - FIX_KNOCK
         if rec.progress < 0 then rec.progress = 0 end
-        Tell(tpid, "|cffff8866The hit costs you " .. FIX_KNOCK
-          .. "s of repair work (" .. rec.progress .. "/" .. FIX_TIME .. " held).|r")
+        FloatText(GetUnitX(rec.unit), GetUnitY(rec.unit),
+          "|cffff8866-" .. FIX_KNOCK .. "s|r")
       end
     end
+  end
+
+  -- spike wire claws back (build system): the structure retaliates on the
+  -- thing chewing it — scripted damage, so it never draws anyone's ammo
+  local trec = BarricadeRec[tgt]
+  if trec ~= nil and trec.kind == "spikes" and ZombieRec[src] ~= nil
+    and GetEventDamage() > 0.0 and not InScriptedDamage then
+    InScriptedDamage = true
+    UnitDamageTarget(tgt, src, SPIKE_DMG, true, false,
+      ATTACK_TYPE_NORMAL, DAMAGE_TYPE_NORMAL, WEAPON_TYPE_WHOKNOWS)
+    InScriptedDamage = false
   end
 
   -- sentry guns draw their own belt (+1 Noise per live round)
@@ -827,7 +992,7 @@ function HandleDamaging()
       BlzSetEventDamage(0.0)
       if not SentryDry[src] then
         SentryDry[src] = true
-        AnnounceAll("|cffff8866A sentry gun runs its belt dry and stands inert.|r")
+        FloatText(GetUnitX(src), GetUnitY(src), "|cffff8866belt dry|r")
         LogRun("sentry|dry")
       end
     end
@@ -841,11 +1006,19 @@ function HandleDamaging()
       BlzSetEventDamage(0.0)
       if not ReloadTold[spid] then
         ReloadTold[spid] = true
-        Tell(spid, "|cffaaaaaaGun's down mid-rack -- run, don't shoot.|r")
+        FloatText(GetUnitX(src), GetUnitY(src), "|cffaaaaaagun down|r")
       end
     elseif RoundsOf(spid) > 0 then
       AddRounds(spid, -1)
       AmmoSpent[spid] = (AmmoSpent[spid] or 0) + 1
+      if TowerPhase then
+        TowerShots = TowerShots + 1
+        if TowerShots % 8 == 0 then TowerNoiseAdd(1) end
+        -- A4: a live round fired INSIDE the leaking landing is the spark
+        if GasLive and PocketIndexAt(GetUnitX(src), GetUnitY(src)) == TOWER_GAS then
+          IgniteGas(spid)
+        end
+      end
       NoiseAdd(GetUnitX(src), GetUnitY(src), NOISE_SHOT)
     elseif CountItemOfType(src, ITEM_PARANG) > 0 then
       BlzSetEventDamage(GetEventDamage() / 2.0)
@@ -853,8 +1026,7 @@ function HandleDamaging()
       BlzSetEventDamage(0.0)
       if not ClickTold[spid] then
         ClickTold[spid] = true
-        Tell(spid, "|cffff8866Click. Clip's dry -- hit |cffffcc00R|r to reload (1 clip, "
-          .. ReloadTimeOf(spid) .. "s), or carry a Parang to keep swinging.|r")
+        Tell(spid, "|cffff8866Click -- dry. |cffffcc00R|r reloads; a Parang keeps you swinging.|r")
       end
     end
   end
@@ -873,17 +1045,14 @@ end
 function HandleReload(pid)
   local u = Survivors[pid]
   if u == nil or not Alive(u) or Defected[pid] then return end
-  if Reloading[pid] ~= nil and GameClock < Reloading[pid] then
-    Tell(pid, "|cffaaaaaaAlready racking it -- hands are shaking.|r")
-    return
-  end
+  if Reloading[pid] ~= nil and GameClock < Reloading[pid] then return end
   local clip = ClipSizeOf(pid)
   if RoundsOf(pid) >= clip then
-    Tell(pid, "|cffaaaaaaClip is already full (" .. clip .. " rounds).|r")
+    FloatText(GetUnitX(u), GetUnitY(u), "|cffaaaaaaclip full|r")
     return
   end
   if ClipsOf(pid) < 1 then
-    Tell(pid, "|cffaaaaaaNo spare clips -- rummage lockers, desks and cars, buy none: the shop sells tools, the estate sells clips.|r")
+    Tell(pid, "|cffaaaaaaNo spare clips -- the estate sells them: lockers, desks, cars.|r")
     return
   end
   AddClips(pid, -1)
@@ -891,14 +1060,17 @@ function HandleReload(pid)
   Reloading[pid] = GameClock + rt
   ReloadTold[pid] = nil
   LogRun("reload|pid=" .. pid)
-  Tell(pid, "|cffffff66Racking a fresh clip -- " .. rt .. " seconds with the gun down. Your legs still work.|r")
+  FloatText(GetUnitX(u), GetUnitY(u), "|cffffff66RELOADING " .. rt .. "s|r")
   local rpid = pid
   After(rt + 0.0, function()
     if GameOver or Defected[rpid] then return end
     SetPlayerState(Player(rpid), PLAYER_STATE_RESOURCE_GOLD, ClipSizeOf(rpid))
     ClickTold[rpid] = nil
     Reloading[rpid] = nil
-    Tell(rpid, "|cff88ff88Fresh clip seated (" .. ClipSizeOf(rpid) .. " rounds).|r")
+    local ru = Survivors[rpid]
+    if ru ~= nil then
+      FloatText(GetUnitX(ru), GetUnitY(ru), "|cff88ff88clip seated|r")
+    end
   end)
 end
 
@@ -908,13 +1080,13 @@ function HandleSprint(pid)
   if u == nil or not Alive(u) or Defected[pid] then return end
   local ready = SprintReady[pid] or 0
   if GameClock < ready then
-    Tell(pid, "|cffaaaaaaLegs are jelly -- sprint again in " .. (ready - GameClock) .. "s.|r")
+    FloatText(GetUnitX(u), GetUnitY(u),
+      "|cffaaaaaalegs are jelly (" .. (ready - GameClock) .. "s)|r")
     return
   end
   SprintReady[pid] = GameClock + SPRINT_CD
   local base = ClassDefOf(pid).ms
   SetUnitMoveSpeed(u, base + SPRINT_BONUS + 0.0)
-  Tell(pid, "|cff88ccffYou RUN.|r")
   local rpid = pid
   After(SPRINT_TIME + 0.0, function()
     local ru = Survivors[rpid]
@@ -928,7 +1100,9 @@ function HandleRiotDiscipline(pid)
   SigReady[pid] = GameClock + RIOT_CD
   RiotUntil[pid] = GameClock + RIOT_TIME
   LogRun("riot|pid=" .. pid)
-  Tell(pid, "|cff88ccffShield drill: " .. RIOT_TIME .. " seconds of half damage.|r")
+  FxOn(FX.SHIELD, Survivors[pid], "chest")
+  FloatText(GetUnitX(Survivors[pid]), GetUnitY(Survivors[pid]),
+    "|cff88ccffRIOT DISCIPLINE|r")
 end
 
 function HandleFieldTriage(pid)
@@ -944,6 +1118,7 @@ function HandleFieldTriage(pid)
       and Dist2(GetUnitX(ou), GetUnitY(ou), cx, cy) <= TRIAGE_RANGE * TRIAGE_RANGE then
       SetWidgetLife(ou, math.min(GetWidgetLife(ou) + TRIAGE_HEAL,
         GetUnitState(ou, UNIT_STATE_MAX_LIFE)))
+      FxOn(FX.HEAL, ou)
       healed = healed + 1
       if Infected[other] then
         CureSurvivor(other, "triage")
@@ -952,7 +1127,6 @@ function HandleFieldTriage(pid)
     end
   end
   LogRun("triage|pid=" .. pid .. "|healed=" .. healed .. "|cured=" .. cured)
-  Tell(pid, "|cff88ff88Field triage: " .. healed .. " patched, " .. cured .. " cured.|r")
 end
 
 function HandleOverclock(pid)
@@ -960,7 +1134,8 @@ function HandleOverclock(pid)
   SigReady[pid] = GameClock + OVERCLOCK_CD
   OverclockArmed[pid] = true
   LogRun("overclock|pid=" .. pid)
-  Tell(pid, "|cff88ccffOverclocked: the next substation you stand at completes INSTANTLY.|r")
+  FxOn(FX.SPARK, Survivors[pid])
+  Tell(pid, "|cff88ccffOverclocked: the next substation completes INSTANTLY.|r")
 end
 
 -- ------------------------------------------------------------ the defector
@@ -983,9 +1158,9 @@ function HandleFeast(pid, tx, ty)
   end
   FeastReady[pid] = GameClock + FEAST_CD
   best.risen = true
+  DestroyEffect(best.fx)
   SpawnZombie("shambler", best.x, best.y, pid)
   LogRun("feast|pid=" .. pid)
-  Tell(pid, "|cffcc66ffIt rises for YOU.|r")
   AnnounceAll("|cffff8866A corpse is claimed before it cools. The dead have a shepherd now.|r")
 end
 
@@ -995,7 +1170,8 @@ function HandleShriek(pid, tx, ty)
   ShriekReady[pid] = GameClock + SHRIEK_CD
   ShriekPoint = { x = tx, y = ty, till = GameClock + SHRIEK_HOLD }
   LogRun("shriek|pid=" .. pid)
-  Tell(pid, "|cffcc66ffYou shriek. The horde turns its head.|r")
+  Fx(FX.ROAR, tx, ty)
+  ShakeAll(4.0, 1.0)
   AnnounceAll("|cffff8866A shriek rolls across the blocks -- something is CALLING them.|r")
 end
 
@@ -1029,8 +1205,10 @@ function FixGenerator(pid, rec)
   rec.fixed = true
   GensFixed = GensFixed + 1
   LogRun("gen|fixed=" .. GensFixed .. "/3|pid=" .. pid)
-  AnnounceAll("|cff88ff88A substation hums back to life (" .. GensFixed
-    .. "/3). Somewhere, a lift lobby light flickers on.|r")
+  -- completion = the big flash + the relight; one announce carries it
+  Fx(FX.VICTORY, GetUnitX(rec.unit), GetUnitY(rec.unit))
+  StartSound(SndVictory)
+  AnnounceAll("|cff88ff88A substation hums back to life (" .. GensFixed .. "/3).|r")
   GrantSurvXP(pid, 40, "gen")
   RelightDistrict(rec)
   BoardDirty = true
@@ -1051,23 +1229,130 @@ function RepairScan()
           if OverclockArmed[pid] then
             OverclockArmed[pid] = nil
             rec.progress = FIX_TIME
-            Tell(pid, "|cff88ccffThe overclocked rig slams the breakers home.|r")
+            Fx(FX.SPARK, GetUnitX(rec.unit), GetUnitY(rec.unit))
           else
             local was = rec.progress or 0
             rec.progress = was + (ClassDefOf(pid).fastFix and 2 or 1)
-            if was == 0 then
-              Tell(pid, "|cffffff66You crack the cabinet -- stay in the yard and the work adds up. A hit costs "
-                .. FIX_KNOCK .. "s; the progress KEEPS.|r")
+            if was == 0 and not FirstRepairTold then
+              FirstRepairTold = true
+              Tell(pid, "|cffffff66Stay in the yard -- the work adds up and KEEPS. A hit costs "
+                .. FIX_KNOCK .. "s.|r")
             end
           end
           local d = DistrictAt(GetUnitX(rec.unit), GetUnitY(rec.unit))
           LastRepairKey = d.key
           LastRepairAt = GameClock
+          -- the yard sparks while the work runs (every other second)
+          if rec.progress % 2 == 0 then
+            Fx(FX.SPARK, GetUnitX(rec.unit), GetUnitY(rec.unit))
+          end
           FloatText(GetUnitX(rec.unit), GetUnitY(rec.unit),
             "|cffffff66" .. math.min(rec.progress, FIX_TIME) .. "/" .. FIX_TIME .. "|r")
           if rec.progress >= FIX_TIME then
             FixGenerator(pid, rec)
           end
+        end
+      end
+    end
+  end
+end
+
+-- ------------------------------------------------------- build & survive
+-- The ZCD lesson applied fully (their barricade costs one kill's bounty —
+-- building is CONSTANT, not a savings goal): four cheap build verbs on
+-- every survivor, costs in RAW materials (a held half that never met its
+-- recipe partner), placed at a point (ANcl cast, clamped to reach), all
+-- feeding one fort that persists to the fare-gate finale. Repair is
+-- PRESENCE, like everything else in this map: stand beside damaged work.
+function PlaceStructure(pid, kind, unitType, x, y)
+  local b = CreateUnit(Player(pid), unitType, x, y, 270.0)
+  BarricadeRec[b] = { kind = kind, pid = pid }
+  LogRun("build|pid=" .. pid .. "|" .. kind)
+  Fx(FX.DUST, x, y)
+  StartSound(SndBuild)
+  BoardDirty = true
+  return b
+end
+
+function HandleBuild(pid, kind, unitType, costItem, costName, tx, ty)
+  local u = Survivors[pid]
+  if u == nil or not Alive(u) or Defected[pid] then return end
+  -- clamp the placement to arm's reach (no trig — integer-safe midpoint walk)
+  local ux, uy = GetUnitX(u), GetUnitY(u)
+  local guard = 0
+  while Dist2(ux, uy, tx, ty) > BUILD_RANGE * BUILD_RANGE and guard < 8 do
+    tx = (tx + ux) / 2.0
+    ty = (ty + uy) / 2.0
+    guard = guard + 1
+  end
+  if not TakeItemOfType(u, costItem) then
+    if not BuildTold[pid] then
+      BuildTold[pid] = true
+      Tell(pid, "|cffaaaaaaBuilding spends raw materials -- that one wants a " .. costName .. ".|r")
+    else
+      FloatText(ux, uy, "|cffaaaaaaneeds a " .. string.lower(costName) .. "|r")
+    end
+    return
+  end
+  local b = PlaceStructure(pid, kind, unitType, tx, ty)
+  if kind == "sentry" then SentryAmmoOf[b] = SENTRY_AMMO end
+end
+
+-- A5 the noisemaker decoy: a Battery becomes an old radio turned ALL the
+-- way up — everything walking nearby turns to it; when it dies (or the
+-- batteries do) the thump is loud too. The Battery now has two mouths:
+-- Wire+Battery = Sentry (auto-combine on pickup) vs a held single
+-- Battery = decoy. Placement mirrors the build verbs (point cast).
+function HandleDecoy(pid, tx, ty)
+  local u = Survivors[pid]
+  if u == nil or not Alive(u) or Defected[pid] then return end
+  local ux, uy = GetUnitX(u), GetUnitY(u)
+  local guard = 0
+  while Dist2(ux, uy, tx, ty) > BUILD_RANGE * BUILD_RANGE and guard < 8 do
+    tx = (tx + ux) / 2.0
+    ty = (ty + uy) / 2.0
+    guard = guard + 1
+  end
+  if not TakeItemOfType(u, ITEM_BATTERY) then
+    FloatText(ux, uy, "|cffaaaaaaneeds a battery|r")
+    return
+  end
+  local r = CreateUnit(Player(pid), UNIT_OLD_RADIO, tx, ty, 270.0)
+  DecoyRec[r] = true
+  StartSound(SndWarn)
+  Fx(FX.DUST, tx, ty)
+  FloatText(tx, ty, "|cffff8866...IT'S BLARING|r")
+  local pulled = 0
+  for z, _ in pairs(ZombieRec) do
+    if Alive(z) and Dist2(GetUnitX(z), GetUnitY(z), tx, ty) <= DECOY_PULL * DECOY_PULL then
+      IssuePointOrder(z, "attack", tx, ty)
+      pulled = pulled + 1
+    end
+  end
+  LogRun("decoy|pid=" .. pid .. "|pulled=" .. pulled)
+  After(DECOY_LIFE + 0.0, function()
+    if DecoyRec[r] ~= nil and Alive(r) then
+      DecoyRec[r] = nil
+      RemoveUnit(r) -- the batteries die quietly
+      LogRun("decoy|out")
+    end
+  end)
+end
+
+-- stand-to-repair: every second beside a damaged structure closes
+-- REPAIR_RATE hp (Technician double) — the fort is maintained by presence
+function RepairStructScan()
+  for _, pid in ipairs(Users) do
+    local u = Survivors[pid]
+    if Alive(u) and not Defected[pid] and not Aboard[pid] then
+      local rate = ClassDefOf(pid).fastFix and REPAIR_RATE * 2.0 or REPAIR_RATE
+      for b, _ in pairs(BarricadeRec) do
+        if Alive(b) and GetWidgetLife(b) < GetUnitState(b, UNIT_STATE_MAX_LIFE)
+          and Dist2(GetUnitX(b), GetUnitY(b), GetUnitX(u), GetUnitY(u))
+            <= REPAIR_RANGE * REPAIR_RANGE then
+          SetWidgetLife(b, math.min(GetWidgetLife(b) + rate,
+            GetUnitState(b, UNIT_STATE_MAX_LIFE)))
+          Fx(FX.DUST, GetUnitX(b), GetUnitY(b))
         end
       end
     end
@@ -1094,10 +1379,11 @@ function HandleUseItem()
       return -- the bandage is NOT consumed on a refused cure
     end
     SetWidgetLife(u, math.min(GetWidgetLife(u) + BANDAGE_HEAL, GetUnitState(u, UNIT_STATE_MAX_LIFE)))
+    FxOn(FX.HEAL, u)
     RemoveItem(it)
   elseif t == ITEM_RATIONS then
     SetWidgetLife(u, math.min(GetWidgetLife(u) + RATIONS_HEAL, GetUnitState(u, UNIT_STATE_MAX_LIFE)))
-    Tell(pid, "|cff88ff88Biscuits and kaya in the rain. It helps more than it should.|r")
+    FxOn(FX.HEAL, u)
     RemoveItem(it)
   elseif t == ITEM_MOLOTOV then
     local burned = BurnCorpsesNear(x, y, MOLOTOV_RADIUS)
@@ -1119,33 +1405,46 @@ function HandleUseItem()
     InScriptedDamage = false
     NoiseAdd(x, y, NOISE_MOLOTOV)
     LogRun("molotov|pid=" .. pid .. "|burned=" .. burned .. "|hit=" .. hits)
-    Tell(pid, "|cffff8866Fire blooms across the wet tarmac -- " .. burned
-      .. " corpse(s) burned before they could stand, " .. hits .. " zombie(s) scorched.|r")
+    Fx(FX.FIRE, x, y) -- the fire IS the report (text diet)
+    -- A4: open flame in the leaking landing
+    if TowerPhase and GasLive and PocketIndexAt(x, y) == TOWER_GAS then
+      IgniteGas(pid)
+    end
     RemoveItem(it)
   elseif t == ITEM_MOBILE_PHONE then
     PhoneUntil[pid] = GameClock + 30
     SetPlayerAlliance(Player(PLAYER_NEUTRAL_AGGRESSIVE_ID), Player(pid),
       ALLIANCE_SHARED_VISION, true)
     LogRun("phone|pid=" .. pid)
-    Tell(pid, "|cff88ccffOne bar of signal. For 30 seconds the estate's cameras are yours -- the whole horde on the minimap.|r")
+    Tell(pid, "|cff88ccffOne bar of signal: 30 seconds of estate cameras.|r")
     RemoveItem(it)
   elseif t == ITEM_FLARE then
     FlareUntil = GameClock + 30
     LogRun("flare|pid=" .. pid)
-    AnnounceAll("|cffffff66A flare soars over the blocks and everything is red daylight for 30 seconds.|r")
+    AnnounceAll("|cffffff66A flare soars over the blocks -- red daylight for 30 seconds.|r")
     RemoveItem(it)
   elseif t == ITEM_BARRICADE_KIT then
-    local b = CreateUnit(Player(pid), UNIT_BARRICADE, x, y, 270.0)
-    BarricadeRec[b] = { kind = "barricade", pid = pid }
-    LogRun("barricade|pid=" .. pid)
-    Tell(pid, "|cff88ff88Planks up, sandbags down. It will hold -- for a while.|r")
+    PlaceStructure(pid, "barricade", UNIT_BARRICADE, x, y)
     RemoveItem(it)
   elseif t == ITEM_SENTRY_KIT then
-    local s = CreateUnit(Player(pid), UNIT_SENTRY_GUN, x, y, 270.0)
-    SentryAmmoOf[s] = SENTRY_AMMO
-    BarricadeRec[s] = { kind = "sentry", pid = pid }
-    LogRun("sentry|pid=" .. pid)
-    Tell(pid, "|cff88ff88The sentry spins up: " .. SENTRY_AMMO .. " rounds on the belt, then it is furniture.|r")
+    -- a kit used NEAR a dry(ing) sentry REARMS it instead of placing anew
+    local best, bestD = nil, 300.0 * 300.0 + 1
+    for s, rec in pairs(BarricadeRec) do
+      if rec.kind == "sentry" and Alive(s) and (SentryAmmoOf[s] or 0) < SENTRY_AMMO then
+        local d = Dist2(GetUnitX(s), GetUnitY(s), x, y)
+        if d < bestD then best, bestD = s, d end
+      end
+    end
+    if best ~= nil then
+      SentryAmmoOf[best] = SENTRY_AMMO
+      SentryDry[best] = nil
+      LogRun("sentry|rearm|pid=" .. pid)
+      FxOn(FX.SPARK, best)
+      FloatText(GetUnitX(best), GetUnitY(best), "|cff88ff88rearmed: " .. SENTRY_AMMO .. "|r")
+    else
+      local s = PlaceStructure(pid, "sentry", UNIT_SENTRY_GUN, x, y)
+      SentryAmmoOf[s] = SENTRY_AMMO
+    end
     RemoveItem(it)
   end
 end
@@ -1161,7 +1460,7 @@ function HandlePickup()
     RemoveItem(it)
     AddClips(pid, 1)
     LogRun("clip|pid=" .. pid)
-    Tell(pid, "|cff88ccffA clip pack -- banked (+1 clip).|r")
+    FloatText(GetUnitX(u), GetUnitY(u), "|cff88ccff+1 clip|r")
     return
   end
   AutoCombine(pid)
@@ -1179,7 +1478,7 @@ function HandleSell()
   if pid == nil then return end
   local token = SHOP_TOKENS[GetItemTypeId(it)] or "ware"
   LogRun("buy|pid=" .. pid .. "|" .. token)
-  Tell(pid, "|cff88ccffThe towkay nods. (" .. token .. " -- paid in clips.)|r")
+  -- text diet: the ware landing in the pack is the receipt
 end
 
 -- --------------------------------------------------------------- defection
@@ -1291,6 +1590,10 @@ function BroodmotherSlain()
   BroodDead = true
   GameOver = true
   LogRun("brood|slain")
+  if BroodUnit ~= nil then
+    Fx(FX.BOOM, GetUnitX(BroodUnit), GetUnitY(BroodUnit))
+  end
+  ShakeAll(15.0, 2.5)
   AnnounceAll("|cff88ff88The Broodmother bursts like a rotten mangosteen. Across the estate, every zombie simply... sits down.|r")
   local line = ScoreLine("VICTORY -- THE BROOD IS DEAD")
   AnnounceAll("|cffffcc00" .. line .. "|r")
@@ -1386,6 +1689,7 @@ function PlatformSiege()
     end
   end
   LogRun("siege")
+  ShakeAll(7.0, 2.0) -- the final-surge tremor (sparingly: this, the train, the brood)
   AnnounceAll("|cffff4444Every walking thing in the estate turns toward the station at once. HOLD THE FORECOURT.|r")
 end
 
@@ -1394,6 +1698,10 @@ function TrainArrives()
   TrainUnit = CreateUnit(Player(PLAYER_NEUTRAL_PASSIVE_ID), UNIT_THE_LAST_TRAIN,
     REGION_PLATFORM.maxX - 40.0, 0.0, 270.0)
   LogRun("train|arrive")
+  -- the cinematic beat of the map: rumble underfoot + a breath of black
+  ShakeAll(10.0, 3.0)
+  CinematicFadeBJ(bj_CINEFADETYPE_FADEOUTIN, 1.2,
+    "ReplaceableTextures\\CameraMasks\\Black_mask.blp", 0.0, 0.0, 0.0, 40.0)
   AnnounceAll("|cffffff66Rails singing, headlight cutting the rain -- THE LAST TRAIN slides into Yio Chu Kang.|r")
   AnnounceAll("|cffffcc00\"Last train leaving. Please mind the platform gap.\" It departs in " .. (TRAIN_DEPART - TRAIN_ARRIVE) .. " seconds.|r")
   if not StationPowered then
@@ -1429,10 +1737,12 @@ SURGE_OFFSETS = {
   { 0, 900 }, { 636, 636 }, { 900, 0 }, { 636, -636 },
   { 0, -900 }, { -636, -636 }, { -900, 0 }, { -636, 636 },
 }
+-- (south points sit at y -4600: the Block 6A interior pockets own the
+-- band below -4980 — a trickle must never spawn inside the tower walls)
 EDGE_POINTS = {
   { -5800.0, 0.0 }, { -5800.0, 3600.0 }, { -5800.0, -3600.0 },
   { 0.0, 4800.0 }, { -3000.0, 4800.0 }, { 3000.0, 4800.0 },
-  { 0.0, -5300.0 }, { -3000.0, -5300.0 },
+  { 0.0, -4600.0 }, { -3000.0, -4600.0 },
 }
 
 function SurgeTargetPick()
@@ -1652,7 +1962,7 @@ end
 
 function NextSurgeIn()
   for _, s in ipairs(SURGE_SCHED) do
-    if GameClock < s.at then return s.at - GameClock end
+    if EstateClock < s.at then return s.at - EstateClock end
   end
   return nil
 end
@@ -1666,7 +1976,8 @@ function UpdateBoard()
   else trainTxt = "T-" .. FmtMMSS(TRAIN_ARRIVE - GameClock) end
   local surgeTxt
   local nxt = NextSurgeIn()
-  if nxt ~= nil then surgeTxt = "in " .. FmtMMSS(nxt) .. " (lv " .. EscLevel .. ")"
+  if TowerPhase then surgeTxt = "held -- stairwell " .. TowerNoiseState()
+  elseif nxt ~= nil then surgeTxt = "in " .. FmtMMSS(nxt) .. " (lv " .. EscLevel .. ")"
   elseif LastMile then surgeTxt = "LAST MILE (lv " .. EscLevel .. ")"
   else surgeTxt = "-- (lv " .. EscLevel .. ")" end
   local noiseTxt
@@ -1682,8 +1993,12 @@ function UpdateBoard()
   SetBoardCell(2, 1, surgeTxt, 0.09)
   SetBoardCell(3, 0, "Noise", 0.07)
   SetBoardCell(3, 1, noiseTxt, 0.09)
+  -- the fort is a first-class owned number (build & survive): works
+  -- standing now; every one standing at the verdict scores 25
+  SetBoardCell(4, 0, "Fort", 0.07)
+  SetBoardCell(4, 1, DefensesStanding() .. " standing", 0.09)
   for i, pid in ipairs(Users) do
-    SetBoardCell(3 + i, 0, GetPlayerName(Player(pid)), 0.07)
+    SetBoardCell(4 + i, 0, GetPlayerName(Player(pid)), 0.07)
     local rowTxt
     if Defected[pid] then
       rowTxt = "Revenant -- " .. PlayerStatus(pid)
@@ -1692,14 +2007,14 @@ function UpdateBoard()
         .. " -- " .. RoundsOf(pid) .. "rd " .. ClipsOf(pid) .. "cl -- "
         .. PlayerStatus(pid)
     end
-    SetBoardCell(3 + i, 1, rowTxt, 0.13)
+    SetBoardCell(4 + i, 1, rowTxt, 0.13)
   end
 end
 
 function InitBoard()
   Board = CreateMultiboard()
   MultiboardSetTitleText(Board, "Last Train from Yio Chu Kang")
-  MultiboardSetRowCount(Board, 4 + #Users)
+  MultiboardSetRowCount(Board, 5 + #Users)
   MultiboardSetColumnCount(Board, 2)
   UpdateBoard()
   MultiboardDisplay(Board, true)
@@ -1718,6 +2033,7 @@ function HandleDeath()
   if zrec ~= nil then
     ZombieRec[u] = nil
     HordeCount = HordeCount - 1
+    FxOn(FX.BLOOD, u) -- ZCD-style blood on every put-down
     if u == BroodUnit then
       BroodmotherSlain()
       return
@@ -1748,13 +2064,18 @@ function HandleDeath()
     return
   end
 
-  -- a survivor falls: defection, and their rise IS the Revenant
+  -- a survivor falls: INDOORS the tower sets you back (respawn rule, no
+  -- traitor dependence in the slice); OUTSIDE death = defection unchanged
   local pid = SurvivorPidOf(u)
   if pid ~= nil then
     if hordeKill or Infected[pid] then
       GrantHordeXP(50, GetUnitX(u), GetUnitY(u), "survivor")
     end
-    DefectPlayer(pid, GetUnitX(u), GetUnitY(u))
+    if TowerPhase then
+      TowerDeath(pid, GetUnitX(u), GetUnitY(u))
+    else
+      DefectPlayer(pid, GetUnitX(u), GetUnitY(u))
+    end
     return
   end
 
@@ -1774,32 +2095,513 @@ function HandleDeath()
     NestRec[u] = nil
     NestsDown = NestsDown + 1
     LogRun("nest|down|" .. NestsDown)
-    AnnounceAll("|cff88ff88A rat-king nest collapses into the mud (" .. NestsDown
-      .. " down). The horde will grow slower for it.|r")
+    Fx(FX.BOOM, GetUnitX(u), GetUnitY(u))
+    AnnounceAll("|cff88ff88A nest collapses (" .. NestsDown
+      .. " down). The horde grows slower.|r")
     if killer ~= nil then
       GrantSurvXP(SurvivorPidOf(killer), 30, "nest")
     end
     return
   end
 
-  -- a prop smashed open: instant loot, and the district HEARS it
+  -- the noisemaker dies (or expires): one last +2 thump (A5)
+  if DecoyRec[u] ~= nil then
+    DecoyRec[u] = nil
+    TowerNoiseAdd(2)
+    NoiseAdd(GetUnitX(u), GetUnitY(u), NOISE_SMASH)
+    LogRun("decoy|dead")
+    return
+  end
+
+  -- a prop smashed open: instant loot, and the district HEARS it — the
+  -- stairwell too (+2 graded loudness). EXEMPT: the 3F blockers (the
+  -- mandatory beat is never punished — and they pay out their PLANKS,
+  -- feeding the brace/build economy... unless the gas got them first)
   local prec = PropRec[u]
   if prec ~= nil then
     PropRec[u] = nil
     NoiseAdd(GetUnitX(u), GetUnitY(u), NOISE_SMASH)
+    if TowerBlockers[u] ~= nil then
+      TowerBlockers[u] = nil
+      Fx(FX.BOOM, GetUnitX(u), GetUnitY(u)) -- the barricade gives way
+      if not InGasBlast then
+        CreateItem(ITEM_PLANK, GetUnitX(u), GetUnitY(u))
+        LogRun("blocker|plank")
+      end
+    elseif TowerPhase then
+      TowerNoiseAdd(2)
+    end
     if not prec.searched then
       LockSeed("smash")
       Searches = Searches + 1
       local got = DropLoot(prec.kind, GetUnitX(u), GetUnitY(u))
       LogRun("smash|" .. prec.kind .. "|" .. got)
-      local kpid = killer ~= nil and SurvivorPidOf(killer) or nil
-      if kpid ~= nil then
-        Tell(kpid, "|cff88ccffThe " .. prec.kind .. " bursts open: " .. got
-          .. ". Every district ear turned your way (+noise).|r")
-      end
+      FloatText(GetUnitX(u), GetUnitY(u), "|cffff8866+noise|r")
     end
     return
   end
+end
+
+-- ------------------------------------------------------ the tower (2B core)
+-- Block 6A's interior: six pockets on the map's south margin (walled rooms
+-- linked by trigger-teleport stairwell doors — generate-layout.mjs mirror).
+-- ax/ay = where the stairwell DELIVERS you when you enter from above;
+-- dx/dy = the door rect's center (the region constants own the rects).
+-- DATA-DRIVEN floor definitions: each pocket is a row, each encounter
+-- feature a FIELD (lift sparks / dark flicker / blocked door / nest floor
+-- / rescue floor / final fight). New verbs and encounter types slot in as
+-- new fields + one handler each — never hardcoded floor indices.
+TOWER = {
+  { key = "6f", cx = -3400, name = "the sixth-floor corridor",
+    lift = { x = -3740, y = -5140 },         -- the dead lift bank sparks
+    chute = true },                          -- rubbish chute mouth
+  { key = "5f", cx = -2400, name = "the fifth-floor flats",
+    rescue = true, chute = true },           -- the trapped neighbour
+  { key = "4f", cx = -1400, name = "the fourth-floor corridor",
+    dark = true, chute = true,               -- no working lights until the
+    breaker = { x = -1750, y = -5150 } },    --   DB box is flipped
+  { key = "3f", cx = -400,  name = "the third-floor landing",
+    blocked = true, dark = true, gas = true, -- furniture on the door, no
+    chute = true,                            --   lights, and a GAS LEAK:
+    breaker = { x = -750, y = -5380 } },     --   one live round and it goes
+  { key = "2f", cx = 600,   name = "the second floor",
+    nest = true, dark = true,                -- the nest breeds in the dark
+    breaker = { x = 140, y = -5390 } },
+  { key = "1f", cx = 1600,  name = "the void deck",
+    final = true },                          -- the last fight before rain
+}
+TOWER_BLOCKED = 4
+TOWER_GAS = 4
+for i, p in ipairs(TOWER) do
+  p.ax, p.ay = p.cx - 320, TOWER_Y
+  p.dx, p.dy = p.cx + 330, TOWER_Y
+  if p.blocked then TOWER_BLOCKED = i end
+  if p.gas then TOWER_GAS = i end
+end
+CHUTE_LANDING = { x = 340, y = -5080 }  -- the 2F bin alcove (all chutes land here)
+DECK_ARRIVE = { x = -620, y = -240 }    -- where the tower lets you out
+-- tower death (2B rule — the slice must not depend on the defection
+-- system): indoors, the tower doesn't TAKE you, it sets you back — a
+-- downed survivor respawns at their floor's landing after TOWER_RESPAWN
+-- seconds, minus a clip, with a half-full gun; their corpse rises where
+-- they fell (the standard window, burnable). If the LAST living survivor
+-- goes down indoors, the wipe verdict lands as usual (solo death stays a
+-- plain defeat). OUTSIDE, death = defection, unchanged (estate rules).
+TOWER_RESPAWN = 18
+
+function PocketIndexAt(x, y)
+  if y < TOWER_Y - TOWER_HALF_H - 120 or y > TOWER_Y + TOWER_HALF_H + 120 then
+    return nil
+  end
+  for i, p in ipairs(TOWER) do
+    if x >= p.cx - TOWER_HALF_W and x <= p.cx + TOWER_HALF_W then return i end
+  end
+  return nil
+end
+
+function TowerBlockersAlive()
+  local n = 0
+  for b, _ in pairs(TowerBlockers) do
+    if Alive(b) then n = n + 1 end
+  end
+  return n
+end
+
+-- graded stairwell LOUDNESS (the advisor's noise repair): visible on the
+-- board, decays over time, feeds the climber cadence +1 body per 3 points
+-- (capped). The mandatory 3F blocker smashes are EXEMPT — you are never
+-- punished for the beat the map forces.
+function TowerNoiseAdd(n)
+  if not TowerPhase then return end
+  TowerNoise = TowerNoise + n
+  if TowerNoise > 12 then TowerNoise = 12 end
+  BoardDirty = true
+end
+
+function TowerNoiseState()
+  if TowerNoise >= 6 then return "ROUSED (" .. TowerNoise .. ")" end
+  if TowerNoise >= 3 then return "stirring (" .. TowerNoise .. ")" end
+  return "quiet"
+end
+
+-- A1 darkness with teeth: a dark pocket stays dark until its DB box is
+-- flipped (5s presence — the substation pattern) or a Watchfire burns in
+-- it. Dark floors rummage slower and spawn an extra body per event.
+function PocketIsLit(i)
+  local p = TOWER[i]
+  if p == nil or not p.dark then return true end
+  if PocketLit[i] then return true end
+  for b, rec in pairs(BarricadeRec) do
+    if rec.kind == "watchfire" and Alive(b)
+      and PocketIndexAt(GetUnitX(b), GetUnitY(b)) == i then
+      return true
+    end
+  end
+  return false
+end
+
+-- risers behind you: clearing a floor doesn't keep it clear — the flats
+-- empty out AFTER you pass (capped per pocket so re-transits can't farm
+-- it). A2: a BARRICADE braced at that pocket's stair door absorbs the
+-- whole event — the door takes the thuds instead.
+function SpawnRisersBehind(i)
+  RiserEvents[i] = (RiserEvents[i] or 0) + 1
+  if RiserEvents[i] > RISER_CAP then return end
+  local p = TOWER[i]
+  for b, rec in pairs(BarricadeRec) do
+    if rec.kind == "barricade" and Alive(b)
+      and Dist2(GetUnitX(b), GetUnitY(b), p.dx, p.dy) <= 250.0 * 250.0 then
+      InScriptedDamage = true
+      UnitDamageTarget(b, b, 60.0, true, false,
+        ATTACK_TYPE_NORMAL, DAMAGE_TYPE_NORMAL, WEAPON_TYPE_WHOKNOWS)
+      InScriptedDamage = false
+      FxOn(FX.DUST, b)
+      LogRun("riser|" .. p.key .. "|braced")
+      return
+    end
+  end
+  local n = 1 + (NumPlayers >= 3 and 1 or 0) + (PocketIsLit(i) and 0 or 1)
+  for k = 1, n do
+    local z = SpawnZombie("shambler", p.cx - 60 + (k - 1) * 90, TOWER_Y + 60)
+    IssuePointOrder(z, "attack", p.dx, p.dy)  -- they take the stairs too
+  end
+  LogRun("riser|" .. p.key .. "|n=" .. n)
+end
+
+-- climbers from below: the stairwell answers LOUDNESS, graded and capped;
+-- the dark adds a body of its own
+function SpawnClimbers()
+  local deepest = nil
+  for _, pid in ipairs(Users) do
+    local i = TowerPocketOf[pid]
+    if i ~= nil and not Defected[pid] and Alive(Survivors[pid]) then
+      if deepest == nil or i > deepest then deepest = i end
+    end
+  end
+  if deepest == nil then return end
+  local p = TOWER[deepest]
+  local n = 1 + math.min(2, TowerNoise // 3)
+    + (LivingSurvivors() >= 3 and 1 or 0)
+    + (PocketIsLit(deepest) and 0 or 1)
+  for k = 1, n do
+    local z = SpawnZombie("shambler", p.dx - 150, p.dy - 80 + ((k - 1) % 4) * 60)
+    IssuePointOrder(z, "attack", p.ax, p.ay)
+  end
+  StartSound(SndWarn)
+  LogRun("climb|" .. p.key .. "|n=" .. n)
+end
+
+-- A3 the rubbish chute: instant descent to the 2F bin alcove — ~CHUTE_DMG
+-- to your bones, a +2 thump the whole block hears, every floor between
+-- skipped (loot and all); the rescued neighbour will NOT follow you down.
+function HandleChute(i)
+  local u = GetTriggerUnit()
+  if u == nil or GameOver or not TowerPhase then return end
+  local pid = SurvivorPidOf(u)
+  if pid == nil then return end
+  local landIdx = PocketIndexAt(CHUTE_LANDING.x, CHUTE_LANDING.y)
+  SetUnitPosition(u, CHUTE_LANDING.x, CHUTE_LANDING.y)
+  PanCameraToTimedForPlayer(Player(pid), CHUTE_LANDING.x, CHUTE_LANDING.y, 0.0)
+  TowerPocketOf[pid] = landIdx
+  InScriptedDamage = true
+  UnitDamageTarget(u, u, CHUTE_DMG, true, false,
+    ATTACK_TYPE_NORMAL, DAMAGE_TYPE_NORMAL, WEAPON_TYPE_WHOKNOWS)
+  InScriptedDamage = false
+  TowerNoiseAdd(2)
+  Fx(FX.DUST, CHUTE_LANDING.x, CHUTE_LANDING.y)
+  StartSound(SndDoor)
+  FloatText(CHUTE_LANDING.x, CHUTE_LANDING.y, "|cffff8866THUMP|r")
+  LogRun("chute|pid=" .. pid .. "|from=" .. TOWER[i].key)
+end
+
+-- A4 the 3F gas leak: one live round fired inside the pocket (or a
+-- Molotov) and the landing goes up — zombies cooked, blockers blown,
+-- every UNDRAWN prop draw destroyed, +4 loudness. A dry-clip Parang
+-- swing makes no spark: empty your gun before the landing, or use it.
+function IgniteGas(pid)
+  if not GasLive then return end
+  GasLive = false
+  local p = TOWER[TOWER_GAS]
+  InGasBlast = true
+  Fx(FX.FIRE, p.cx - 200, TOWER_Y)
+  Fx(FX.FIRE, p.cx + 100, TOWER_Y - 150)
+  Fx(FX.FIRE, p.cx + 250, TOWER_Y + 120)
+  Fx(FX.BOOM, p.cx, TOWER_Y)
+  ShakeAll(5.0, 1.2)
+  -- prop loot burns FIRST (searched props drop nothing), then the props
+  for u, rec in pairs(PropRec) do
+    if Alive(u) and PocketIndexAt(GetUnitX(u), GetUnitY(u)) == TOWER_GAS then
+      rec.searched = true
+    end
+  end
+  InScriptedDamage = true
+  for _, pd in ipairs(Users) do
+    local su = Survivors[pd]
+    if Alive(su) and PocketIndexAt(GetUnitX(su), GetUnitY(su)) == TOWER_GAS then
+      UnitDamageTarget(su, su, GAS_DMG_SURV, true, false,
+        ATTACK_TYPE_NORMAL, DAMAGE_TYPE_FIRE, WEAPON_TYPE_WHOKNOWS)
+    end
+  end
+  local doomed = {}
+  for z, _ in pairs(ZombieRec) do
+    if Alive(z) and PocketIndexAt(GetUnitX(z), GetUnitY(z)) == TOWER_GAS then
+      doomed[#doomed + 1] = z
+    end
+  end
+  for u, _ in pairs(PropRec) do
+    if Alive(u) and PocketIndexAt(GetUnitX(u), GetUnitY(u)) == TOWER_GAS then
+      doomed[#doomed + 1] = u
+    end
+  end
+  for _, d in ipairs(doomed) do
+    UnitDamageTarget(Survivors[pid] or d, d, GAS_DMG_ZOMB, true, false,
+      ATTACK_TYPE_NORMAL, DAMAGE_TYPE_FIRE, WEAPON_TYPE_WHOKNOWS)
+  end
+  InScriptedDamage = false
+  InGasBlast = false
+  TowerNoiseAdd(4)
+  LogRun("gas|boom|pid=" .. (pid or -1))
+  AnnounceAll("|cffff4444The third-floor landing goes up in one blue-orange sheet.|r")
+end
+
+function TeleportRescuedWith(pid, x, y)
+  for ru, rec in pairs(RescueRec) do
+    if rec.pid == pid and Alive(ru) then
+      SetUnitPosition(ru, x + 60.0, y + 60.0)
+    end
+  end
+end
+
+function TowerExitBeat(pid, u)
+  SetUnitPosition(u, DECK_ARRIVE.x, DECK_ARRIVE.y)
+  PanCameraToTimedForPlayer(Player(pid), DECK_ARRIVE.x, DECK_ARRIVE.y, 0.0)
+  TeleportRescuedWith(pid, DECK_ARRIVE.x, DECK_ARRIVE.y)
+  TowerPocketOf[pid] = nil
+  StartSound(SndDoor)
+  Fx(FX.VICTORY, DECK_ARRIVE.x, DECK_ARRIVE.y)
+  GrantSurvXP(pid, 40, "escape")
+  LogRun("tower|out|pid=" .. pid .. "|t=" .. GameClock)
+  for ru, rec in pairs(RescueRec) do
+    if rec.pid == pid and Alive(ru) and not rec.out then
+      rec.out = true
+      GrantSurvXP(pid, 25, "rescue-out")
+      LogRun("rescue|out|pid=" .. pid)
+    end
+  end
+  if TowerPhase then
+    -- the slice's victory beat: the block lets go, the estate opens up
+    TowerPhase = false
+    StartSound(SndVictory)
+    ShakeAll(3.0, 1.0)
+    AnnounceAll("|cff88ff88OUT. The rain hits you like applause -- Block 6A lets you go.|r")
+    AnnounceAll("|cffffff66Across the carpark the station sits dark. The PA, far off: \"...last train service tonight...\" The clock above was never waiting for you to climb down.|r")
+    LogRun("tower|open|t=" .. GameClock)
+  end
+  BoardDirty = true
+  EndCheck()
+end
+
+function HandleTowerDoor(i)
+  local u = GetTriggerUnit()
+  if u == nil or GameOver then return end
+  local p = TOWER[i]
+  -- the horde takes the stairs too: pressure follows you down
+  if ZombieRec[u] ~= nil then
+    if i >= #TOWER then
+      SetUnitPosition(u, DECK_ARRIVE.x + 120.0, DECK_ARRIVE.y)
+    else
+      local nx = TOWER[i + 1]
+      SetUnitPosition(u, nx.ax, nx.ay)
+      IssuePointOrder(u, "attack", nx.dx, nx.dy)
+    end
+    return
+  end
+  local pid = SurvivorPidOf(u)
+  if pid == nil then return end
+  if i == TOWER_BLOCKED and TowerBlockersAlive() > 0 then
+    -- the furniture barricade holds: smash through (loud) or stay stuck
+    SetUnitPosition(u, p.dx - 160.0, p.dy)
+    FloatText(p.dx, p.dy, "|cffff8866BLOCKED -- smash through|r")
+    return
+  end
+  if i >= #TOWER then
+    TowerExitBeat(pid, u)
+    return
+  end
+  local nx = TOWER[i + 1]
+  SetUnitPosition(u, nx.ax, nx.ay)
+  PanCameraToTimedForPlayer(Player(pid), nx.ax, nx.ay, 0.0)
+  TeleportRescuedWith(pid, nx.ax, nx.ay)
+  TowerPocketOf[pid] = i + 1
+  StartSound(SndDoor)
+  LogRun("tower|door|pid=" .. pid .. "|to=" .. nx.key)
+  FloatText(nx.ax, nx.ay, "|cffaaddff" .. nx.name .. "|r")
+  SpawnRisersBehind(i)
+end
+
+-- tower death (see the TOWER_RESPAWN note above): setback, not spectator
+-- purgatory and not the traitor system — the slice stands on its own
+function TowerDeath(pid, x, y)
+  Survivors[pid] = nil
+  RummageProp[pid] = nil
+  Infected[pid] = nil
+  RecordCorpse(x, y) -- their corpse rises where they fell (burnable window)
+  LogRun("towerdeath|pid=" .. pid)
+  BoardDirty = true
+  if LivingSurvivors() == 0 then
+    -- the last one down indoors is the end of the night (solo death stays
+    -- a plain defeat; nobody waits out a wipe in a stairwell)
+    EndCheck()
+    return
+  end
+  Tell(pid, "|cffff8866Down -- but not out. You stagger back to the landing in "
+    .. TOWER_RESPAWN .. "s (one clip poorer).|r")
+  local rpid = pid
+  After(TOWER_RESPAWN + 0.0, function()
+    if GameOver or not TowerPhase or Defected[rpid] then return end
+    local i = TowerPocketOf[rpid] or 1
+    local p = TOWER[i]
+    local def = ClassDefOf(rpid)
+    local u = CreateUnit(Player(rpid), def.unit, p.ax, p.ay, 0.0)
+    Survivors[rpid] = u
+    ApplyLevelStats(rpid)
+    -- the penalty: one clip gone, the gun half-seated
+    AddClips(rpid, -1)
+    if ClipsOf(rpid) < 0 then SetPlayerState(Player(rpid), PLAYER_STATE_RESOURCE_LUMBER, 0) end
+    SetPlayerState(Player(rpid), PLAYER_STATE_RESOURCE_GOLD, ClipSizeOf(rpid) // 2)
+    SelectUnitForPlayerSingle(u, Player(rpid))
+    FxOn(FX.RESCUE, u)
+    LogRun("respawn|pid=" .. rpid .. "|" .. p.key)
+    BoardDirty = true
+  end)
+end
+
+-- the trapped neighbour (5F): presence frees them; they run with you
+function RescueScan()
+  for ru, rec in pairs(RescueRec) do
+    if rec.pid == nil and Alive(ru) then
+      for _, pid in ipairs(Users) do
+        local u = Survivors[pid]
+        if Alive(u) and not Defected[pid]
+          and Dist2(GetUnitX(ru), GetUnitY(ru), GetUnitX(u), GetUnitY(u))
+            <= RESCUE_RANGE * RESCUE_RANGE then
+          rec.ticks = (rec.ticks or 0) + 1
+          if rec.ticks >= RESCUE_TIME then
+            rec.pid = pid
+            SetUnitOwner(ru, Player(pid), true)
+            FxOn(FX.RESCUE, ru)
+            StartSound(SndChime)
+            FloatText(GetUnitX(ru), GetUnitY(ru), "|cff88ff88with you|r")
+            GrantSurvXP(pid, 25, "rescue")
+            LogRun("rescue|pid=" .. pid)
+          end
+          break
+        end
+      end
+    end
+  end
+end
+
+-- A1: flip a floor's DB box by PRESENCE (the substation pattern): 5s
+-- standing at the box lights the floor for good — but a running breaker
+-- HUMS (+1 loudness per minute, the quiet-vs-lit trade)
+function BreakerScan()
+  for b, i in pairs(BreakerRec) do
+    if not PocketLit[i] and Alive(b) then
+      local working = false
+      for _, pid in ipairs(Users) do
+        local u = Survivors[pid]
+        if Alive(u) and not Defected[pid]
+          and Dist2(GetUnitX(b), GetUnitY(b), GetUnitX(u), GetUnitY(u))
+            <= FIX_RANGE * FIX_RANGE then
+          working = true
+          BreakerTicks[b] = (BreakerTicks[b] or 0) + 1
+          if BreakerTicks[b] % 2 == 0 then FxOn(FX.SPARK, b) end
+          if BreakerTicks[b] >= BREAKER_TIME then
+            PocketLit[i] = true
+            Fx(FX.VICTORY, GetUnitX(b), GetUnitY(b))
+            StartSound(SndChime)
+            FloatText(GetUnitX(b), GetUnitY(b), "|cffffff66lights ON -- the floor hums|r")
+            LogRun("breaker|" .. TOWER[i].key .. "|pid=" .. pid)
+            BoardDirty = true
+          end
+          break
+        end
+      end
+      if not working then BreakerTicks[b] = 0 end
+    end
+  end
+end
+
+-- A8: one free read per floor — stand a beat at the stair door and your
+-- survivor peeks down the well (zombie count + lights of the next floor)
+function PeekScan()
+  for _, pid in ipairs(Users) do
+    local u = Survivors[pid]
+    local i = TowerPocketOf[pid]
+    if Alive(u) and i ~= nil and i < #TOWER and not PeekTold[pid .. "|" .. i] then
+      local p = TOWER[i]
+      if Dist2(GetUnitX(u), GetUnitY(u), p.dx, p.dy) <= PEEK_RANGE * PEEK_RANGE then
+        PeekTold[pid .. "|" .. i] = true
+        local nx = i + 1
+        local zn = 0
+        for z, _ in pairs(ZombieRec) do
+          if Alive(z) and PocketIndexAt(GetUnitX(z), GetUnitY(z)) == nx then
+            zn = zn + 1
+          end
+        end
+        FloatText(p.dx, p.dy, "|cffaaddffbelow: " .. TOWER[nx].name .. " -- "
+          .. zn .. " walking" .. (PocketIsLit(nx) and "" or ", DARK") .. "|r")
+        LogRun("peek|pid=" .. pid .. "|" .. TOWER[nx].key .. "|n=" .. zn)
+      end
+    end
+  end
+end
+
+function TowerTick()
+  RescueScan()
+  BreakerScan()
+  PeekScan()
+  -- graded loudness DECAYS: quiet play buys the stairwell back
+  TowerNoiseClock = TowerNoiseClock + 1
+  if TowerNoiseClock >= TOWER_NOISE_DECAY_T then
+    TowerNoiseClock = 0
+    if TowerNoise > 0 then
+      TowerNoise = TowerNoise - 1
+      BoardDirty = true
+    end
+  end
+  -- a flipped breaker hums: +1 loudness per minute per lit floor
+  if GameClock % BREAKER_HUM_T == 0 then
+    for i, p in ipairs(TOWER) do
+      if p.dark and PocketLit[i] then TowerNoiseAdd(1) end
+    end
+  end
+  -- the stairwell breathes: climbers on a cadence, more when you are loud
+  if GameClock >= CLIMB_FROM then
+    ClimbClock = ClimbClock + 1
+    if ClimbClock >= CLIMB_PERIOD then
+      ClimbClock = 0
+      SpawnClimbers()
+    end
+  end
+  -- per-floor scenery that talks (data-driven off the TOWER fields):
+  -- lift banks spark, UNLIT dark floors flicker — no lines
+  for i, p in ipairs(TOWER) do
+    if p.lift ~= nil and GameClock % 6 == 0 and PocketOccupied(i) then
+      Fx(FX.SPARK, p.lift.x, p.lift.y)
+    end
+    if p.dark and not PocketIsLit(i) and GameClock % 8 == 0 and PocketOccupied(i) then
+      Fx(FX.SPARK, p.cx, TOWER_Y)
+    end
+  end
+end
+
+function PocketOccupied(i)
+  for _, pid in ipairs(Users) do
+    if TowerPocketOf[pid] == i and Alive(Survivors[pid]) then return true end
+  end
+  return false
 end
 
 -- -------------------------------------------------------------------- clock
@@ -1810,6 +2612,16 @@ function ClockTick()
     InfectionTick()
     RummageScan()
     RepairScan()
+    RepairStructScan()
+
+    -- the tower holds the estate's breath: while ANY door is still between
+    -- the survivors and the rain, the estate heartbeat (wanderers, surges,
+    -- escalation drip, last mile) waits — its clock starts at first exit
+    if TowerPhase then
+      TowerTick()
+    else
+      EstateClock = EstateClock + 1
+    end
 
     -- noise cools
     NoiseClock = NoiseClock + 1
@@ -1836,33 +2648,37 @@ function ClockTick()
       end
     end
 
-    -- escalation drip (state-keyed)
-    EscClock = EscClock + 1
-    if EscClock >= ESC_TICK then
-      EscClock = 0
-      EscDrip()
+    -- escalation drip (state-keyed; held while the tower has you)
+    if not TowerPhase then
+      EscClock = EscClock + 1
+      if EscClock >= ESC_TICK then
+        EscClock = 0
+        EscDrip()
+      end
     end
 
-    -- ambient wanderers (texture, and the t=90 seed-lock point)
-    if GameClock >= WANDER_FROM then
+    -- ambient wanderers (texture, and the estate's t=90 seed-lock point;
+    -- the estate clock starts when the first survivor steps outside)
+    if not TowerPhase and EstateClock >= WANDER_FROM then
       WanderClock = WanderClock + 1
-      if GameClock == WANDER_FROM or WanderClock >= WANDER_PERIOD then
+      if EstateClock == WANDER_FROM or WanderClock >= WANDER_PERIOD then
         WanderClock = 0
         SpawnWanderer()
       end
     end
 
-    -- the surge heartbeat
+    -- the surge heartbeat (EstateClock-anchored: the phase-2A pacing,
+    -- preserved RELATIVE to the moment the estate gets you)
     for _, s in ipairs(SURGE_SCHED) do
-      if GameClock == s.warn then
+      if EstateClock == s.warn then
         SurgeWarnNow(s)
-      elseif GameClock == s.at then
+      elseif EstateClock == s.at then
         FireSurge(PendingSurge or SurgeTargetPick(), s.final)
       end
     end
 
     -- the Last Mile: trickle + station drift
-    if not LastMile and GameClock >= SURGE_LAST then
+    if not LastMile and not TowerPhase and EstateClock >= SURGE_LAST then
       LastMile = true
       LogRun("lastmile")
       AnnounceAll("|cffff8866The estate empties toward the tracks. From here the horde only walks ONE way: yours.|r")
@@ -1907,16 +2723,13 @@ end
 
 -- ------------------------------------------------------------ chat: info
 function ShowHelp(pid)
-  Tell(pid, "|cffffcc00LAST TRAIN FROM YIO CHU KANG|r -- co-op survival. Board the last train at T+"
-    .. TRAIN_ARRIVE .. "s (walk onto the platform; it waits " .. (TRAIN_DEPART - TRAIN_ARRIVE)
-    .. "s and needs 3/3 substations), or kill the Broodmother in the kampong. Death = you join the horde (F feasts corpses, C shrieks the surge).")
-  Tell(pid, "|cffaaddffThe verbs are your MOUSE and hotkeys:|r walk onto a class circle (first "
-    .. PICK_WINDOW .. "s); stand ~3s by furniture to RUMMAGE it quietly, or SMASH it open for instant loot and +Noise; loot auto-combines ('-recipes'); |cffffcc00R|r reloads (1 clip, gun down "
-    .. RELOAD_TIME .. "s, legs work); |cffffcc00E|r sprints; STAND in a substation yard to repair it (progress keeps; hits cost 3s).")
-  Tell(pid, "|cffaaddffThe SIREN|r warns " .. SURGE_WARN .. "s before every surge; surges grow with the horde level, your headcount and district NOISE. Burn rat-king nests to slow it all down. From T+600 the horde walks station-ward. Survivor levels pay stats and a level-"
-    .. SIG_LEVEL .. " signature ability.")
-  Tell(pid, "|cffaaddffBullets are GOLD, clips are LUMBER:|r every shot costs 1 round and makes 1 noise. The Provision Shop at the void deck sells tools FOR clips. Infection: cure with a Wet Bandage above "
-    .. CURE_HP_PCT .. "% (Paramedic: any) or " .. CLINIC_CURE_T .. "s in the polyclinic. Corpses rise in " .. RISE_DELAY .. "s -- burn them.")
+  Tell(pid, "|cffffcc00LAST TRAIN FROM YIO CHU KANG|r -- co-op survival. FIRST: get out of Block 6A -- six floors down the stairwell (walk onto a stair door to take it; the 3F door is blocked, smash through). Then the estate: board the last train at T+"
+    .. TRAIN_ARRIVE .. "s (3/3 substations live) or kill the Broodmother. Death = you join the horde.")
+  Tell(pid, "|cffaaddffThe verbs are your MOUSE and hotkeys:|r class circle in the 6F corridor (first "
+    .. PICK_WINDOW .. "s); stand ~3s by furniture to RUMMAGE (quiet) or SMASH it (instant, LOUD -- indoors, the stairwell hears); |cffffcc00R|r reloads; |cffffcc00E|r sprints; STAND to repair substations and damaged works.")
+  Tell(pid, "|cffaaddffBUILD constantly:|r |cffffcc00Z|r Barricade (1 Plank), |cffffcc00X|r Spike Wire (1 Pipe), |cffffcc00V|r Watchfire (1 Kerosene), |cffffcc00B|r plants a Sentry Kit (a second kit rearms). Raw halves build the fort; pairs auto-combine into tools. The fort persists to the fare-gate finale and scores.")
+  Tell(pid, "|cffaaddffOutside:|r The SIREN warns " .. SURGE_WARN .. "s ahead; surges grow with horde level, headcount and district NOISE; burn nests to slow it. Bullets are GOLD, clips are LUMBER. Infection: bandage above "
+    .. CURE_HP_PCT .. "% or the polyclinic. Corpses rise in " .. RISE_DELAY .. "s -- burn them.")
   Tell(pid, "|cffaaddffChat is reference only:|r -help -status -recipes -credits -seed N (until the night commits) -test (debug).")
   Tell(pid, "|cff888888A map by Serendipity. Design adapted with credit from Zombie Defense Custom (Lions_Blood), Zombination v11 (Trinin), Zombie-Simulator 7 (SpirulinaN), Dawn of the Dead (PreViO), NotD: Special Ops, SWAT: Aftermath. '-credits' for the full roll incl. every community model author. Mechanics only; nothing copied.|r")
 end
@@ -1932,6 +2745,11 @@ function ShowStatus(pid)
     trainTxt = "arrives in " .. (TRAIN_ARRIVE - GameClock) .. "s"
   end
   Tell(pid, "|cffffcc00T+" .. GameClock .. "s.|r Train: " .. trainTxt .. ".")
+  if TowerPhase then
+    local i = TowerPocketOf[pid] or 1
+    Tell(pid, "|cffaaddffBlock 6A:|r you are in " .. TOWER[i].name
+      .. " (" .. (#TOWER - i) .. " door(s) between you and the rain). The estate waits.")
+  end
   local nxt = NextSurgeIn()
   Tell(pid, "|cffaaddffPower:|r " .. GensFixed .. "/3 substations"
     .. (StationPowered and " -- STATION LIVE" or "") .. ". |cffaaddffHorde:|r level "
@@ -2049,7 +2867,7 @@ function HandleChat(pid, msgRaw)
     TestMode[pid] = not TestMode[pid]
     if TestMode[pid] then
       AnnounceAll("|cffff88ff" .. GetPlayerName(Player(pid))
-        .. " enabled -test debug mode.|r Commands: -gold N, -clips N, -give <r>, -zspawn <kind> [n], -esc N, -clock N, -power, -infectme, -clearhorde, -ff, -runlog, -surge, -xp N, -noise N")
+        .. " enabled -test debug mode.|r Commands: -gold N, -clips N, -give <r>, -zspawn <kind> [n], -esc N, -clock N, -power, -infectme, -clearhorde, -ff, -runlog, -surge, -xp N, -noise N, -deck")
     else
       AnnounceAll("|cffff88ff" .. GetPlayerName(Player(pid)) .. " disabled -test debug mode.|r")
     end
@@ -2068,7 +2886,7 @@ function HandleChat(pid, msgRaw)
     or zKind ~= nil or escArg ~= nil or clockArg ~= nil
     or xpArg ~= nil or noiseArg ~= nil
     or msg == "-power" or msg == "-infectme" or msg == "-clearhorde"
-    or msg == "-ff" or msg == "-runlog" or msg == "-surge"
+    or msg == "-ff" or msg == "-runlog" or msg == "-surge" or msg == "-deck"
   if not known then return end
   if not TestMode[pid] then
     Tell(pid, "|cffaaaaaaDebug commands need -test mode. Type -test first.|r")
@@ -2120,6 +2938,10 @@ function HandleChat(pid, msgRaw)
   elseif clockArg ~= nil then
     local t = ParseNumArg(clockArg) or GameClock
     GameClock = t
+    -- a time warp implies the tower is over: the estate clock jumps with
+    -- the wall clock (the two run in step from the first exit onward)
+    TowerPhase = false
+    EstateClock = t
     LogRun("debug|clock|" .. t)
     AnnounceAll("|cffff88ffThe night lurches to T+" .. t .. "s.|r")
     BoardDirty = true
@@ -2129,6 +2951,20 @@ function HandleChat(pid, msgRaw)
     end
   elseif msg == "-infectme" then
     InfectSurvivor(pid)
+  elseif msg == "-deck" then
+    -- dev shortcut: put every living survivor on the void deck and open
+    -- the estate (skips the tower slice; estate suites re-target on this)
+    for _, opid in ipairs(Users) do
+      local ou = Survivors[opid]
+      if Alive(ou) then
+        SetUnitPosition(ou, DECK_ARRIVE.x + 40.0 * opid, DECK_ARRIVE.y)
+        TowerPocketOf[opid] = nil
+      end
+    end
+    TowerPhase = false
+    LogRun("debug|deck")
+    Tell(pid, "|cffff88ffThe tower lets everyone out. The estate clock starts now.|r")
+    BoardDirty = true
   elseif msg == "-surge" then
     FireSurge(SurgeTargetPick(), false)
   elseif msg == "-clearhorde" then
@@ -2180,6 +3016,20 @@ function HandleSpellEffect()
     elseif aid == ABIL_RIOT_DISCIPLINE then HandleRiotDiscipline(pid)
     elseif aid == ABIL_FIELD_TRIAGE then HandleFieldTriage(pid)
     elseif aid == ABIL_OVERCLOCK then HandleOverclock(pid)
+    elseif aid == ABIL_BUILD_BARRICADE then
+      HandleBuild(pid, "barricade", UNIT_BARRICADE, ITEM_PLANK, "Plank",
+        GetSpellTargetX(), GetSpellTargetY())
+    elseif aid == ABIL_LAY_SPIKE_WIRE then
+      HandleBuild(pid, "spikes", UNIT_SPIKE_WIRE, ITEM_PIPE, "Pipe",
+        GetSpellTargetX(), GetSpellTargetY())
+    elseif aid == ABIL_LIGHT_WATCHFIRE then
+      HandleBuild(pid, "watchfire", UNIT_WATCHFIRE, ITEM_KEROSENE, "Kerosene",
+        GetSpellTargetX(), GetSpellTargetY())
+    elseif aid == ABIL_SET_FIELD_SENTRY then
+      HandleBuild(pid, "sentry", UNIT_SENTRY_GUN, ITEM_SENTRY_KIT, "Sentry Kit",
+        GetSpellTargetX(), GetSpellTargetY())
+    elseif aid == ABIL_PLACE_NOISEMAKER then
+      HandleDecoy(pid, GetSpellTargetX(), GetSpellTargetY())
     end
     return
   end
@@ -2252,6 +3102,39 @@ function RegisterTriggers()
       if pid ~= nil then HandleClassPick(pid, key) end
     end)
   end
+
+  -- the stairwell doors (2B): six trigger teleports down through Block 6A
+  local doorRects = {
+    REGION_TOWER_DOOR_A, REGION_TOWER_DOOR_B, REGION_TOWER_DOOR_C,
+    REGION_TOWER_DOOR_D, REGION_TOWER_DOOR_E, REGION_TOWER_EXIT,
+  }
+  for i, rc in ipairs(doorRects) do
+    local trig = CreateTrigger()
+    local reg = CreateRegion()
+    RegionAddRect(reg, Rect(rc.minX, rc.minY, rc.maxX, rc.maxY))
+    TriggerRegisterEnterRegion(trig, reg, nil)
+    local idx = i
+    TriggerAddAction(trig, function()
+      HandleTowerDoor(idx)
+    end)
+  end
+
+  -- the rubbish chutes (A3): mouths on 6F..3F, all landing in the 2F bin
+  -- alcove — instant, bruising, LOUD, and it skips everything between
+  local chuteRects = {
+    { REGION_CHUTE_A, 1 }, { REGION_CHUTE_B, 2 },
+    { REGION_CHUTE_C, 3 }, { REGION_CHUTE_D, 4 },
+  }
+  for _, pair in ipairs(chuteRects) do
+    local trig = CreateTrigger()
+    local reg = CreateRegion()
+    RegionAddRect(reg, Rect(pair[1].minX, pair[1].minY, pair[1].maxX, pair[1].maxY))
+    TriggerRegisterEnterRegion(trig, reg, nil)
+    local idx = pair[2]
+    TriggerAddAction(trig, function()
+      HandleChute(idx)
+    end)
+  end
 end
 
 -- ------------------------------------------------------------------- intro
@@ -2271,27 +3154,32 @@ function ShowCredits()
 
   local q2 = CreateQuest()
   QuestSetTitle(q2, "How to Survive (and the Recipes)")
-  QuestSetDescription(q2, "Board the last train (T+" .. TRAIN_ARRIVE .. "s, waits "
+  QuestSetDescription(q2, "FIRST: out of Block 6A -- six floors down the stairwell (stair doors teleport you; the 3F door is furniture-blocked, smash through; rummage quietly or the stairwell sends CLIMBERS; a trapped neighbour on 5F joins whoever stands with them)."
+    .. " THEN: board the last train (T+" .. TRAIN_ARRIVE .. "s, waits "
     .. (TRAIN_DEPART - TRAIN_ARRIVE) .. "s; needs 3/3 substations -- STAND in the yard, progress keeps, hits cost 3s) or kill the Broodmother in the kampong."
-    .. " Walk onto a class circle in the first " .. PICK_WINDOW .. "s. Bullets are gold, clips are lumber; R reloads (gun down "
+    .. " Class circle in the 6F corridor, first " .. PICK_WINDOW .. "s. Bullets are gold, clips are lumber; R reloads (gun down "
     .. RELOAD_TIME .. "s, legs work), E sprints."
-    .. " RUMMAGE furniture by standing beside it ~3s (quiet) or SMASH it (instant, +Noise -- noisy districts get BIGGER surges)."
+    .. " RUMMAGE furniture by standing beside it ~3s (quiet) or SMASH it (instant, LOUD)."
     .. " Crafting is AUTOMATIC on pickup: Cloth+Water=Wet Bandage, Plank+Pipe=Parang, Bottle+Kerosene=Molotov, Wire+Battery=Sentry Kit."
+    .. " BUILDING spends raw halves: Z Barricade (1 Plank), X Spike Wire (1 Pipe, claws back), V Watchfire (1 Kerosene, light), B plants a Sentry Kit (second kit rearms). STAND beside damaged works to repair; the fort persists and scores."
     .. " The Provision Shop sells Barricade Kit (2 clips), Mobile Phone (3), Wet Bandage (2), Flare (1). Rations: eat for 100."
     .. " The SIREN gives " .. SURGE_WARN .. "s of warning before every surge. Burn rat-king nests: each one slows the horde's growth."
     .. " Zombie bites infect (cure: Wet Bandage above " .. CURE_HP_PCT .. "%, or the polyclinic)."
-    .. " The horde's kills rise in " .. RISE_DELAY .. "s -- burn corpses; a burned corpse is also DENIED to the defectors' Feast."
+    .. " The horde's kills rise in " .. RISE_DELAY .. "s (the ground marker IS the window) -- burn corpses; a burned corpse is also DENIED to the defectors' Feast."
     .. " Death = defection: the fallen play on, against you, with Feast and Shriek.")
   QuestSetIconPath(q2, "ReplaceableTextures\\CommandButtons\\BTNSteelMelee.blp")
   QuestSetDiscovered(q2, true)
 end
 
 function PlayIntro()
-  AnnounceAll("|cffaaddffYIO CHU KANG, 9.47 PM. The island went dark estate by estate. The PA says one more train.|r")
+  -- the survival-horror cold open: sixth floor, dead lifts, one way down
+  StartSound(SndLift)
+  Fx(FX.SPARK, TOWER[1].lift.x, TOWER[1].lift.y)
+  AnnounceAll("|cffaaddffYIO CHU KANG, 9.47 PM. Block 6A, sixth floor. The lifts died with the island. The PA says one more train.|r")
   After(4.0, function()
     if GameOver then return end
-    AnnounceAll("|cffaaddffFour circles glow at the void deck -- walk onto one in the first " .. PICK_WINDOW
-      .. "s to choose who you are. Stand by furniture to rummage it; smash it if you are in a hurry and don't mind the NOISE. |cffffcc00R|r reloads. |cffffcc00E|r sprints. The clock above is the last train.|r")
+    AnnounceAll("|cffaaddffThe stairwell is the only way down -- walk onto a stair door to take it. Circles in the corridor choose who you are (first " .. PICK_WINDOW
+      .. "s). |cffffcc00R|r reloads, |cffffcc00E|r sprints, |cffffcc00Z X V B|r build. Quiet keeps the stairwell quiet.|r")
   end)
   After(8.0, function()
     if GameOver then return end
@@ -2331,10 +3219,11 @@ function config()
   SetTeams(1)
   SetGamePlacement(MAP_PLACEMENT_USE_MAP_SETTINGS)
 
-  DefineStartLocation(0, -700.0, -400.0)
-  DefineStartLocation(1, -500.0, -400.0)
-  DefineStartLocation(2, -700.0, 0.0)
-  DefineStartLocation(3, -500.0, 0.0)
+  -- start locations sit in the 6F corridor (Block 6A interior — 2B)
+  DefineStartLocation(0, -3740.0, -5290.0)
+  DefineStartLocation(1, -3640.0, -5290.0)
+  DefineStartLocation(2, -3740.0, -5210.0)
+  DefineStartLocation(3, -3640.0, -5210.0)
 
   InitCustomPlayerSlots()
   InitCustomTeams()
@@ -2372,10 +3261,23 @@ function main()
   SetTerrainFogEx(0, 1400.0, 5200.0, 0.35, 0.05, 0.07, 0.12)
   AddWeatherEffect(Rect(-6144.0, -6144.0, 6144.0, 6144.0), FourCC("RLlr"))
 
-  -- the siren and the combine chime (stock paths; cosmetic, game-only)
+  -- the sound rack (stock paths, all listfile-verified into
+  -- lib/data/stock-art.json kind "sound"; cosmetic, game-only)
   SndSiren = CreateSound("Sound\\Ambient\\DoodadEffects\\TheHornOfCenarius.wav",
     false, false, false, 10, 10, "")
   SndChime = CreateSound("Sound\\Interface\\SecretFound.wav",
+    false, false, false, 10, 10, "")
+  SndLevel = CreateSound("Abilities\\Spells\\Other\\Levelup\\Levelupcaster.wav",
+    false, false, false, 10, 10, "")
+  SndBuild = CreateSound("Sound\\Buildings\\Shared\\BuildingPlacement.wav",
+    false, false, false, 10, 10, "")
+  SndVictory = CreateSound("Sound\\Interface\\QuestCompleted.wav",
+    false, false, false, 10, 10, "")
+  SndDoor = CreateSound("Sound\\Ambient\\DoodadEffects\\DoorSlam1.wav",
+    false, false, false, 10, 10, "")
+  SndLift = CreateSound("Sound\\Ambient\\DoodadEffects\\Elevator.wav",
+    false, false, false, 10, 10, "")
+  SndWarn = CreateSound("Sound\\Interface\\Warning.wav",
     false, false, false, 10, 10, "")
 
   -- seat the survivors: 1-4 co-op slots occupied by humans
@@ -2411,6 +3313,19 @@ function main()
       local t = GetUnitTypeId(u)
       if PROP_KINDS[t] ~= nil then
         PropRec[u] = { kind = PROP_KINDS[t], searched = false }
+        -- the 3F furniture barricade: props squatting the blocked door's
+        -- approach hold the stairwell shut until smashed
+        if PocketIndexAt(GetUnitX(u), GetUnitY(u)) == TOWER_BLOCKED
+          and GetUnitX(u) > TOWER[TOWER_BLOCKED].cx + 160 then
+          TowerBlockers[u] = true
+        end
+      elseif t == UNIT_DB_BOX then
+        -- a dark floor's breaker (A1): registered to its pocket
+        local bi = PocketIndexAt(GetUnitX(u), GetUnitY(u))
+        if bi ~= nil then
+          BreakerRec[u] = bi
+          SetUnitInvulnerable(u, true)
+        end
       elseif t == UNIT_SUBSTATION then
         GenList[#GenList + 1] = { unit = u, fixed = false, progress = 0 }
       elseif t == UNIT_KAMPONG_NEST then
@@ -2429,7 +3344,13 @@ function main()
   GroupEnumUnitsOfPlayer(g, Player(PLAYER_NEUTRAL_VICTIM_ID), nil)
   local cu = FirstOfGroup(g)
   while cu ~= nil do
-    if CIVILIAN_TYPES[GetUnitTypeId(cu)] then CivTotal = CivTotal + 1 end
+    if CIVILIAN_TYPES[GetUnitTypeId(cu)] then
+      CivTotal = CivTotal + 1
+      -- a neighbour trapped INSIDE the tower is a rescue beat (5F)
+      if PocketIndexAt(GetUnitX(cu), GetUnitY(cu)) ~= nil then
+        RescueRec[cu] = { pid = nil, ticks = 0 }
+      end
+    end
     GroupRemoveUnit(g, cu)
     cu = FirstOfGroup(g)
   end
@@ -2441,21 +3362,31 @@ function main()
   SHOP_TOKENS[ITEM_WET_BANDAGE] = "bandage"
   SHOP_TOKENS[ITEM_FLARE] = "flare"
 
-  -- the survivors walk out of the void deck as Heartlanders (the class
-  -- circles re-cast them); bullets are gold, clips are lumber
+  -- the survivors wake in the 6F CORRIDOR as Heartlanders (the class
+  -- circles down the corridor re-cast them); bullets are gold, clips are
+  -- lumber; the whole estate loop waits beyond the last door
   for _, pid in ipairs(Users) do
     ClassOf[pid] = "heartlander"
     SurvXP[pid] = 0
     SurvLevel[pid] = 1
+    TowerPocketOf[pid] = 1
     local def = CLASSES.heartlander
-    local sx = -700.0 + 200.0 * (pid % 2)
-    local sy = -400.0 + 400.0 * (pid // 2)
-    Survivors[pid] = CreateUnit(Player(pid), def.unit, sx, sy, 90.0)
+    -- the spawn band stays CLEAR of the class-circle rects (y <= -5350):
+    -- nobody picks a class by standing up
+    local sx = -3740.0 + 100.0 * (pid % 2)
+    local sy = -5290.0 + 80.0 * (pid // 2)
+    Survivors[pid] = CreateUnit(Player(pid), def.unit, sx, sy, 0.0)
     SetPlayerState(Player(pid), PLAYER_STATE_RESOURCE_GOLD, def.clip)
     SetPlayerState(Player(pid), PLAYER_STATE_RESOURCE_LUMBER, def.clips)
     for _, it in ipairs(def.items) do GiveItem(pid, it) end
     AmmoSpent[pid] = 0
   end
+
+  -- the tower's authored floor beats: the dead neighbour's Parang (6F —
+  -- the escape must be completable without a single shot) and a Molotov
+  -- in the dark of 4F (the nest floor's counterplay, found en route)
+  CreateItem(ITEM_PARANG, -3600.0, -5140.0)
+  CreateItem(ITEM_MOLOTOV, -1660.0, -5340.0)
 
   -- the countdown window: the clock is a metronome from frame one (ZCD's
   -- "Final Wave In..." pattern; canon negative space: no hidden state)

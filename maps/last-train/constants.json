@@ -36,6 +36,13 @@
       "name": "Bus Stop",
       "source": "objects-units.json"
     },
+    "UNIT_DB_BOX": {
+      "kind": "unit",
+      "rawcode": "h01K",
+      "base": "hhou",
+      "name": "DB Box",
+      "source": "objects-units.json"
+    },
     "UNIT_ELEVATED_TRACK": {
       "kind": "unit",
       "rawcode": "h019",
@@ -134,6 +141,13 @@
       "name": "Mayflower Hawker Centre",
       "source": "objects-units.json"
     },
+    "UNIT_OLD_RADIO": {
+      "kind": "unit",
+      "rawcode": "h01L",
+      "base": "hhou",
+      "name": "Old Radio",
+      "source": "objects-units.json"
+    },
     "UNIT_PARAMEDIC": {
       "kind": "unit",
       "rawcode": "h002",
@@ -204,6 +218,13 @@
       "name": "Shambling Resident",
       "source": "objects-units.json"
     },
+    "UNIT_SPIKE_WIRE": {
+      "kind": "unit",
+      "rawcode": "h01I",
+      "base": "hhou",
+      "name": "Spike Wire",
+      "source": "objects-units.json"
+    },
     "UNIT_STATION_PLATFORM": {
       "kind": "unit",
       "rawcode": "h01B",
@@ -272,6 +293,13 @@
       "rawcode": "n020",
       "base": "ncop",
       "name": "Void Deck Bench",
+      "source": "objects-units.json"
+    },
+    "UNIT_WATCHFIRE": {
+      "kind": "unit",
+      "rawcode": "h01J",
+      "base": "hhou",
+      "name": "Watchfire",
       "source": "objects-units.json"
     },
     "UNIT_WITHERED_UNCLE": {
@@ -606,6 +634,13 @@
       "name": "Void Deck Pillars",
       "source": "objects-doodads.json"
     },
+    "ABIL_BUILD_BARRICADE": {
+      "kind": "ability",
+      "rawcode": "A008",
+      "base": "ANcl",
+      "name": "Build Barricade",
+      "source": "objects-abilities.json"
+    },
     "ABIL_FEAST": {
       "kind": "ability",
       "rawcode": "A006",
@@ -620,11 +655,32 @@
       "name": "Field Triage",
       "source": "objects-abilities.json"
     },
+    "ABIL_LAY_SPIKE_WIRE": {
+      "kind": "ability",
+      "rawcode": "A009",
+      "base": "ANcl",
+      "name": "Lay Spike Wire",
+      "source": "objects-abilities.json"
+    },
+    "ABIL_LIGHT_WATCHFIRE": {
+      "kind": "ability",
+      "rawcode": "A00A",
+      "base": "ANcl",
+      "name": "Light Watchfire",
+      "source": "objects-abilities.json"
+    },
     "ABIL_OVERCLOCK": {
       "kind": "ability",
       "rawcode": "A005",
       "base": "ANcl",
       "name": "Overclock",
+      "source": "objects-abilities.json"
+    },
+    "ABIL_PLACE_NOISEMAKER": {
+      "kind": "ability",
+      "rawcode": "A00C",
+      "base": "ANcl",
+      "name": "Place Noisemaker",
       "source": "objects-abilities.json"
     },
     "ABIL_RELOAD": {
@@ -639,6 +695,13 @@
       "rawcode": "A003",
       "base": "ANcl",
       "name": "Riot Discipline",
+      "source": "objects-abilities.json"
+    },
+    "ABIL_SET_FIELD_SENTRY": {
+      "kind": "ability",
+      "rawcode": "A00B",
+      "base": "ANcl",
+      "name": "Set Field Sentry",
       "source": "objects-abilities.json"
     },
     "ABIL_SHRIEK": {
@@ -665,6 +728,26 @@
     "REGION_CHENG_SAN": {
       "kind": "region",
       "name": "ChengSan",
+      "source": "regions.json"
+    },
+    "REGION_CHUTE_A": {
+      "kind": "region",
+      "name": "ChuteA",
+      "source": "regions.json"
+    },
+    "REGION_CHUTE_B": {
+      "kind": "region",
+      "name": "ChuteB",
+      "source": "regions.json"
+    },
+    "REGION_CHUTE_C": {
+      "kind": "region",
+      "name": "ChuteC",
+      "source": "regions.json"
+    },
+    "REGION_CHUTE_D": {
+      "kind": "region",
+      "name": "ChuteD",
       "source": "regions.json"
     },
     "REGION_CLINIC": {
@@ -715,6 +798,36 @@
     "REGION_TECK_GHEE": {
       "kind": "region",
       "name": "TeckGhee",
+      "source": "regions.json"
+    },
+    "REGION_TOWER_DOOR_A": {
+      "kind": "region",
+      "name": "TowerDoorA",
+      "source": "regions.json"
+    },
+    "REGION_TOWER_DOOR_B": {
+      "kind": "region",
+      "name": "TowerDoorB",
+      "source": "regions.json"
+    },
+    "REGION_TOWER_DOOR_C": {
+      "kind": "region",
+      "name": "TowerDoorC",
+      "source": "regions.json"
+    },
+    "REGION_TOWER_DOOR_D": {
+      "kind": "region",
+      "name": "TowerDoorD",
+      "source": "regions.json"
+    },
+    "REGION_TOWER_DOOR_E": {
+      "kind": "region",
+      "name": "TowerDoorE",
+      "source": "regions.json"
+    },
+    "REGION_TOWER_EXIT": {
+      "kind": "region",
+      "name": "TowerExit",
       "source": "regions.json"
     },
     "REGION_YIO_CHU_KANG_GARDENS": {

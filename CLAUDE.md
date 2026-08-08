@@ -133,46 +133,54 @@ Reference sources (each README documents its own invariants):
   2026-08-07: every bundled map now carries author "Serendipity" in its
   w3i, its README byline, and any existing credits/help command; future
   bundled maps follow suit): 1–4 player co-op Singapore-set zombie
-  survival (phase 2A — the FUN TRANSPLANT, playtest-verdict-driven:
-  phase 1's "constant typing is bad" verdict + four studies converged on
-  the reconciled spec its DESIGN-WALKTHROUGH.md gates — the map is
-  gotcha 33's and PIPELINE §10's precedent). One permanent monsoon night
-  in an HDB estate, every combat verb on the mouse: class pick = walk
-  onto a class circle; rummage (stand ~3s, quiet) vs SMASH (props are
-  ~30 HP units; instant loot, +district Noise) scavenging; AUTO-COMBINE
-  crafting on pickup (4 recipes, each material in exactly one); Reload =
-  ability R (4s gun-down, legs work — no PauseUnit), Sprint = E;
-  substation repair = STAND in the yard (progress persists, hits cost
-  3s; fixed districts RELIGHT with lamps); board = walk onto the
-  platform; Provision Shop sells tools for CLIPS (engine-charged ilum).
-  The night's heartbeat: telegraphed SURGES (~120s cycle, siren+dread
-  20s ahead, sized by esc level × living players × district Noise −
-  nests down, targeting the players' district / active repair yards),
-  the Last Mile trickle from T+600, a platform SIEGE across the 180s
-  boarding window, a persistent countdown window from frame one; 8–12
-  seeded rat-king nests (burning trims drip AND surge size), ground
-  spills from surge kills, survivor XP/levels with level-3 signature
-  abilities (Steady Hands / Riot Discipline / Field Triage / Overclock);
-  defectors CONDUCT the horde (Feast raises un-burnt corpses into the
-  pack — Molotov burning is PvP denial; Shriek converges the next
-  surge; board row flips to HUNT). Still here from phase 1:
-  gold-as-bullets/lumber-as-clips, curable 1.5-dps infection, 3.5s
-  corpse-rise, death = DEFECTION, 0.75^(n-1) falloff + state-keyed
-  drip, the T+720/900 train + Broodmother endings. Chat is META ONLY
-  (-help/-status/-recipes/-credits/-seed/-test family). FIRST CONSUMER
-  of community models from Hive Workshop (HerrDave / Ilya Alaric / bakr
-  / Wayshan — per-author credit, imports-credits.json provenance ledger
-  + lint rule g; ledger also covers the Sol commissioned batches) and
-  the ambience-first-class rule (permanent night, script-side RLlr
-  rain, MRT announcement beats; dread now pre-surge only — the 35s
-  metronome is cut). 93 logic tests at 99.2% script line coverage
-  (seeded-replay prefixes deliberately re-pinned per PIPELINE §8 — see
-  escalation.test.js header); golden run deferred to the post-2A
-  balance pass (README). Design credits (mechanics only, nothing
-  copied): Zombie Defense Custom (Lions_Blood) — surge/countdown
-  heartbeat, ground drops, spendable downtime —, Zombination v11
-  (Trinin), Zombie-Simulator 7 (SpirulinaN), Dawn of the Dead (PreViO),
-  NotD: Special Ops, SWAT: Aftermath. Never loaded in the real game —
+  survival (**phase 2B — THE TOWER**, playtest-2-driven; the honest
+  verdict on 2A's first contact: the loop landed better than phase 1
+  but "things are placed kind of nonsensically", "you put too much work
+  into the text", the player wanted ZCD-grade trigger/effect richness +
+  an interior survival-horror opening — "fight your way out of a HDB,
+  on the sixth floor, all lifts are down" — and mid-phase added
+  "there's not enough to do at all — maybe let players build & survive"
+  then "focus entirely on the HDB interior"). The playable slice is now
+  **Block 6A's interior**: six walled pockets on the south margin
+  (6F corridor with the class circles → 5F flat warren + rescue beat →
+  4F dark corridor → 3F blocked landing + GAS leak → 2F nest floor +
+  chute alcove → 1F void deck) linked by trigger-teleport stairwell
+  doors; pressure BOTH directions (risers behind on every transit —
+  braceable with a barricade —, climbers below every 30s graded by a
+  visible, decaying stairwell-loudness ledger, +1 body on dark floors);
+  the activity pass (advisor-mandated A1–A5): darkness with teeth
+  (DB-box breakers by presence vs Watchfire light vs blind-and-slow),
+  brace-the-door, rubbish-chute descent (fast/bruising/LOUD/skips
+  loot/loses the escort), the 3F gas set-piece (parang-chop on an empty
+  clip = silent + planks; one live round or a Molotov = detonation),
+  noisemaker decoy (Battery's second life); BUILD & SURVIVE: five
+  point-cast verbs (Z barricade 1 Plank / X spike wire 1 Pipe / V
+  watchfire 1 Kerosene / B sentry kit + rearm / N noisemaker 1
+  Battery), raw halves build the fort while pairs auto-combine into
+  tools (one material pool, two mouths), presence repair (tech 2×),
+  Fort board row + 25 score per work standing; tower death = SETBACK
+  (corpse rises at the spot, ~18s respawn at the landing, −1 clip,
+  half gun; last-one-down/solo = defeat — the slice does NOT depend on
+  the defection system, which remains the estate's death rule, intact
+  but design-frozen this phase); ZCD-mined juice on every beat (raise
+  flash on all spawns, blood, loot pops, level bursts, visible burnable
+  corpse-window markers, build dust, yard sparks, sparing shakes +
+  train-arrival fade; all 31 effect/sound paths listfile-verified into
+  lib/data/stock-art.json — the table grew script-side kinds
+  effect/sound) and the ~70% TEXT DIET (per-action lines deleted, the
+  siren/PA/verdict/defection spine kept, pinned both ways by the
+  effects-text suite incl. a ≤10-lines/200s volume pin). The estate
+  loop (surges/Noise/nests/substations/train/Broodmother, phase 2A)
+  stays compiled, tested and live BEYOND the exit, anchored to
+  EstateClock = seconds since first exit; estate-wide layout coherence
+  shipped only as the cheap pass (hawker stall rows + the generator's
+  furniture-anchor assert that caught the exact screenshot complaint) —
+  the rest is PARKED with the traitor design work and advisor items
+  A6–A12 (README "Parked"). 145 logic tests at 99% coverage
+  (estate suites deliberately re-targeted on the `-deck` debug door per
+  PIPELINE §8 — headers document it); golden run still deferred until
+  after the first tower playtest. Design credits unchanged (ZCD et al.,
+  mechanics only). Never loaded in the real game in 2B form —
   sim-proven only.
 
 Scratch builds go to `_build/` (gitignored). Exception: `maps/builds/` holds
@@ -772,8 +780,12 @@ maps/*/assets/) or CC0-converted content. Details: docs/ASSETS.md.
   Last Train phase 2A (the fun transplant: de-chatted verbs, surge
   heartbeat, Noise, power curve, nests, spills, conductor defection;
   gotcha 33 + PIPELINE §10 + the canon dossier + the ZCD appendix landed
-  with it). Suite 586/586 on both MPQ
-  backends; preflight 7 maps 0 FAIL.
+  with it) AND phase 2B (playtest-2-driven: the Block 6A tower slice,
+  build & survive, the activity pass, ZCD juice + the ~70% text diet,
+  the tower-respawn death rule, the stock-art table's new script-side
+  effect/sound kinds + schema-test extension, w3i/sloc start moves).
+  Suite 638/638 on both MPQ backends; preflight 7 maps 0 FAIL
+  (last-train 0 WARN).
 - **Authorship convention: all bundled maps are credited to
   "Serendipity"** (w3i author field + README byline + in-game credits
   where a command exists). Community/mechanics credits stay per-author in
@@ -806,15 +818,21 @@ maps/*/assets/) or CC0-converted content. Details: docs/ASSETS.md.
   200 allowed locals** (gotcha 28) — future edits add script-level state
   as globals only. Standing next step: playtest vaults-of-ash in-game
   (solo default-seed run, beat-for-beat vs the 61-beat golden run).
-  **last-train has never been loaded in the real game** — its FIRST
-  playtest (phase-1 build) returned the design verdict "constant typing
-  is bad, core loop is unfun", which phase 2A (the fun transplant) is
-  the systematic answer to; the 2A build is sim-proven only (93 logic
-  tests, 99.2% coverage; golden run lands after the 2A in-game balance
-  pass — the ZCD appendix + comparison doc:
-  docs/reference/zombie-survival-comparison.md). Standing next step:
-  playtest the 2A build (the walkthrough in its DESIGN-WALKTHROUGH.md is
-  the script to play against).
+  **last-train: two playtests, both verdict-rich.** Playtest 1 (phase-1
+  build): "constant typing is bad, core loop is unfun" → phase 2A.
+  Playtest 2 (2A build, 2026-08-08): the de-chatted loop landed better
+  but the verdict asked for MORE — ZCD-grade trigger/effect richness,
+  an interior survival-horror opening ("fight your way out of a HDB,
+  sixth floor, lifts down" — waygates pitch), called the placement
+  "kind of nonsensical" (screenshot: hawker tables/benches loose on
+  lawns) and the text volume too high; mid-phase follow-ups: "not
+  enough to do — let players build & survive", then "focus entirely on
+  the HDB interior". Phase 2B (the tower slice + build system +
+  activity pass + juice + text diet) is the systematic answer; the 2B
+  build is sim-proven only (145 logic tests, 99% coverage; golden run
+  lands after the tower playtest + balance). Standing next step:
+  playtest the TOWER SLICE (DESIGN-WALKTHROUGH.md §1 is the script to
+  play against).
   Coinstead's art fix (`f405bac`) awaits its re-verification eyeball pass
   (Barn/WindMill construction shows no Birth anim — cosmetic, accept or
   swap at next playtest; promote its paths to game-verified after).

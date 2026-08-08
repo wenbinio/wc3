@@ -13,8 +13,11 @@ const { loadMap } = require('../../../lib/sim');
 
 const MAP = path.join(__dirname, '..');
 
-const itemOf = (sim, typeStr) =>
-  [...sim.items.values()].find((i) => !i.removed && i.typeStr === typeStr);
+// ownership-aware: the 2B tower preplaces a Parang (I011) and a Molotov
+// (I014) as GROUND items — carried-item asserts must not see them
+const itemOf = (sim, typeStr, owner) =>
+  [...sim.items.values()].find((i) => !i.removed && i.typeStr === typeStr
+    && (owner === undefined ? i.ownerUnit != null : i.ownerUnit === owner));
 const groundItems = (sim) =>
   [...sim.items.values()].filter((i) => !i.removed && !i.ownerUnit);
 
@@ -27,7 +30,8 @@ test('rummage: stand ~3s beside the nearest unsearched prop; loot pops as a grou
   sim.moveUnit(hero, -300, -80); // the spawn void-deck bench
   sim.advance(2);
   assert.strictEqual(sim.global('Searches'), 0, 'not done at 2s — rummage takes ~3');
-  assert.ok(sim.messagesTo(0).some((m) => /You start going through the/.test(m.text)));
+  assert.ok(sim.callsOf('SetTextTagText').some((c) => /rummaging/.test(String(c.args[1]))),
+    'the channel reads at the prop as floating text (2B text diet)');
   sim.advance(1);
   assert.strictEqual(sim.global('Searches'), 1, 'the ~3s stand turns the prop out');
   assert.strictEqual(sim.global('SeedLocked'), true, 'the rummage draw commits the seed');
@@ -56,7 +60,8 @@ test('smash: the prop is a ~30 HP unit — instant loot, +10 district Noise', ()
   assert.ok(groundItems(sim).length >= 1, 'instant loot on the ground');
   assert.strictEqual(sim.run("return NoiseHeat[DistrictAt(-300,-80).key] or 0")[0], 10,
     'smashing is LOUD: +10 noise');
-  assert.ok(sim.messagesTo(0).some((m) => /\+noise/.test(m.text)), 'the cost is stated');
+  assert.ok(sim.callsOf('SetTextTagText').some((c) => /\+noise/.test(String(c.args[1]))),
+    'the cost reads at the prop (2B text diet)');
 });
 
 test('shooting a prop open costs rounds (the smash price is ammo or noise, never typing)', () => {
@@ -89,13 +94,13 @@ test('auto-combine on pickup: all four recipes snap together, chimed and logged'
     const a = sim.createItem(mats[0], hero.x, hero.y);
     const b = sim.createItem(mats[1], hero.x, hero.y);
     sim.pickup(hero, a);
-    assert.ok(!itemOf(sim, out), key + ': one half combines nothing');
+    assert.ok(!itemOf(sim, out, hero.handle), key + ': one half combines nothing');
     sim.pickup(hero, b);
-    const it = itemOf(sim, out);
+    const it = itemOf(sim, out, hero.handle);
     assert.ok(it, key + ' snapped together on pickup');
-    assert.strictEqual(it.ownerUnit, hero.handle, key + ' in the pack');
     assert.ok(new RegExp('craft\\|pid=0\\|' + key).test(sim.global('RUNLOG')));
-    assert.ok(!itemOf(sim, mats[0]) && !itemOf(sim, mats[1]), key + ' consumed both halves');
+    assert.ok(!itemOf(sim, mats[0], hero.handle) && !itemOf(sim, mats[1], hero.handle),
+      key + ' consumed both halves');
     sim.drop(hero, it);
   }
   assert.ok(sim.callsOf('StartSound').length >= 4, 'the combine chime fired');
@@ -151,12 +156,12 @@ test('Rations are eaten (+100), flare lights the estate, phone shares horde visi
   assert.strictEqual(hero.life, 400, '+100 from the kaya tin');
 
   sim.chat(0, '-give flare');
-  sim.useItem(hero, itemOf(sim, 'I015'));
+  sim.useItem(hero, itemOf(sim, 'I015', hero.handle));
   assert.ok(/flare\|pid=0/.test(sim.global('RUNLOG')));
   assert.ok(sim.messagesMatching(/red daylight/).length > 0);
 
   sim.chat(0, '-give phone');
-  sim.useItem(hero, itemOf(sim, 'I012'));
+  sim.useItem(hero, itemOf(sim, 'I012', hero.handle));
   assert.ok(/phone\|pid=0/.test(sim.global('RUNLOG')));
   assert.strictEqual(sim.alliance(24, 0, 'ALLIANCE_SHARED_VISION'), true,
     'the horde player shares vision for 30s');
@@ -170,11 +175,12 @@ test('barricade kit raises a wall; its death feeds the horde a little', () => {
   const hero = sim.findUnit('h000', 0);
   sim.chat(0, '-test');
   sim.chat(0, '-give barricade');
-  sim.useItem(hero, itemOf(sim, 'I013'));
+  sim.moveUnit(hero, 0, 0); // open estate: clear of the tower crowd (XP falloff)
+  sim.useItem(hero, itemOf(sim, 'I013', hero.handle));
   const wall = sim.findUnit('h016', 0);
   assert.ok(wall, 'barricade raised at the feet');
   assert.strictEqual(wall.maxLife, 800);
-  assert.ok(/barricade\|pid=0/.test(sim.global('RUNLOG')));
+  assert.ok(/build\|pid=0\|barricade/.test(sim.global('RUNLOG'))); // 2B: one build beat family
 
   sim.chat(0, '-zspawn shambler 1');
   const zomb = sim.unitsOf(24, 'u000').filter((u) => u.alive).pop();
@@ -203,7 +209,7 @@ test('a full pack drops the loot at your feet instead of losing it', () => {
   for (let i = 0; i < 5; i++) sim.chat(0, '-give plank');
   // heartlander starts with 1 Rations: the pack is now 6/6
   sim.chat(0, '-give kerosene');
-  assert.ok(sim.messagesTo(0).some((m) => /hands are full/.test(m.text)));
+  assert.ok(sim.messagesTo(0).some((m) => /Hands full/.test(m.text)));
   const ground = [...sim.items.values()].filter((i) => !i.removed && i.typeStr === 'I005'
     && !i.ownerUnit);
   assert.strictEqual(ground.length, 1, 'the kerosene lands at the feet');

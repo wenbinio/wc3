@@ -25,7 +25,11 @@ test('permanent night: time locked at 22.00, scale 0, fog and monsoon rain', () 
 });
 
 test('the dread metronome is DEAD: one scripted beat at 45, then only pre-surge', () => {
+  // 2B re-target: '-deck' opens the estate so the siren fires on the same
+  // schedule the 2A pin used (EstateClock == wall clock from t=0)
   const sim = loadMap(MAP, { users: [0] });
+  sim.chat(0, '-test');
+  sim.chat(0, '-deck');
   sim.advance(44);
   assert.strictEqual(sim.messagesMatching(/\|cff8888aa/).length, 0, 'quiet start');
   sim.advance(1);
@@ -42,6 +46,8 @@ test('the dread metronome is DEAD: one scripted beat at 45, then only pre-surge'
 test('dread and sirens replay byte-identically per seed (they share the stream)', () => {
   const beats = (seed) => {
     const sim = loadMap(MAP, { users: [0] });
+    sim.chat(0, '-test');
+    sim.chat(0, '-deck');
     sim.chat(0, '-seed ' + seed);
     sim.advance(130);
     return sim.messagesMatching(/\|cff8888aa/).map((m) => m.text).join('\n');

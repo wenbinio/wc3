@@ -23,7 +23,18 @@
 //   - the Mayflower Hawker Centre (loot-dense), the Teck Ghee Polyclinic
 //     (the cure region), three SUBSTATIONS spread to force traversal;
 //   - the kampong-remnant Broodmother lair in the far SW corner
-//     (Lorong Buangkok, mucky ground, nests + guards).
+//     (Lorong Buangkok, mucky ground, nests + guards);
+//   - PHASE 2B: BLOCK 6A'S INTERIOR — the tower-escape slice (playtest-2
+//     verdict: interior survival horror, "fight your way out of a HDB").
+//     Six walled interior POCKETS on the south margin (inside camera
+//     bounds, below every estate system: 6F corridor -> 5F flat warren ->
+//     4F dark corridor -> 3F blocked landing -> 2F nest floor -> 1F void
+//     deck), connected by TRIGGER-TELEPORT stairwell doors (region rects;
+//     no waygate ability — the robust, sim-testable form). Walls are
+//     solid LTrc rock ranks (game-verified blocking; NO cliffs — the
+//     pathing-safety doctrine; a Sol round-4 interior set replaces the
+//     look later). The four class circles + slocs moved INTO the 6F
+//     corridor: you pick your neighbour identity as you flee your flat.
 //
 // NOTE (CLAUDE.md gotcha 6): committed JSON is a translator FIXED POINT —
 // after regenerating run build-map --stabilize once and commit. wpm/shd/
@@ -53,7 +64,41 @@ const T = { dirt: 0, rough: 1, grassy: 2, rock: 3, grass: 4, dark: 5 };
 // ---------------------------------------------------------------- anchors
 // (mirrored by war3map.lua's DISTRICTS table and regions.json)
 const SPAWN = { x: -600, y: -200 };
-const SLOCS = [[-700, -400], [-500, -400], [-700, 0], [-500, 0]];
+
+// ---- phase 2B: the Block 6A interior (the tower-escape slice) ----------
+// Six pockets, west->east = top floor -> void deck. Band y [-5540,-4980]
+// sits INSIDE the camera bounds (bottom -5632) and below every estate
+// anchor (lair region ends at x -4100 / y -3900; Cheng San substation pad
+// bottom -4800; trickle edge points moved to y -4600 in war3map.lua).
+// war3map.lua's TOWER table mirrors these numbers — keep them in sync.
+const TOWER_Y = -5260;                     // pocket centerline
+const TOWER_HALF_H = 280, TOWER_HALF_W = 420;
+const TOWER_POCKETS = [
+  { key: '6f', cx: -3400 },   // start: corridor, class circles, dead lift
+  { key: '5f', cx: -2400 },   // flat warren: rummage-rich, the neighbour
+  { key: '4f', cx: -1400 },   // dark corridor: watchfire country
+  { key: '3f', cx: -400 },    // blocked landing: smash through
+  { key: '2f', cx: 600 },     // nest floor: burn it or sneak past
+  { key: '1f', cx: 1600 },    // void deck interior: the final fight
+];
+const TOWER_BAND = {
+  x0: TOWER_POCKETS[0].cx - TOWER_HALF_W - 120,
+  y0: TOWER_Y - TOWER_HALF_H - 120,
+  x1: TOWER_POCKETS[5].cx + TOWER_HALF_W + 120,
+  y1: TOWER_Y + TOWER_HALF_H + 120,
+};
+const inTowerBand = (x, y) => x >= TOWER_BAND.x0 && x <= TOWER_BAND.x1
+  && y >= TOWER_BAND.y0 && y <= TOWER_BAND.y1;
+// stairwell door rect (inside each pocket, east end) + the next pocket's
+// arrival spot (west end) — war3map.lua teleports between them
+const doorOf = (p) => ({ x: p.cx + 330, y: TOWER_Y });
+const arriveOf = (p) => ({ x: p.cx - 320, y: TOWER_Y });
+
+// slocs + survivor spawn: the 6F corridor's west end (was the void deck).
+// GEOMETRY RULE: the spawn band (y -5290..-5210) must stay clear of the
+// class-circle rects (south wall row, y <= -5350) — walking around the
+// corridor must never accidentally re-pick a class.
+const SLOCS = [[-3740, -5290], [-3640, -5290], [-3740, -5210], [-3640, -5210]];
 const TRACK_X = 4600;                    // the elevated line
 const BERM = { x0: 4470, x1: 4730, h: 96 };
 const STATION = { x: 4250, y: 0 };       // station house (west of the line)
@@ -122,6 +167,7 @@ for (let r = 0; r < ROWS; r++) {
     }
     if (nearAny(x, y, pads, 0) || onRoad(x, y, ROAD_HALF)) gh = 8192;
     if (pads.some(([px, py, pr]) => Math.hypot(x - px, y - py) <= pr) && !onBerm(x)) gh = 8192;
+    if (inTowerBand(x, y)) gh = 8192;      // interior slabs are dead flat
     groundHeight.push(gh);
     waterHeight.push(8192);
     boundaryFlag.push(false);
@@ -129,7 +175,9 @@ for (let r = 0; r < ROWS; r++) {
 
     // texture
     let tex;
-    if (onBerm(x)) {
+    if (inTowerBand(x, y)) {
+      tex = n < 0.3 ? T.dark : T.rock;                     // interior slab
+    } else if (onBerm(x)) {
       tex = T.rock;                                        // the viaduct strip
     } else if (pads.some(([px, py, pr]) => Math.hypot(x - px, y - py) <= pr)) {
       tex = n < 0.35 ? T.rough : T.rock;                   // concrete hardstanding
@@ -179,7 +227,8 @@ const treeClear = (x, y) =>
   !onRoad(x, y, ROAD_HALF + 260)
   && !onBerm(x) && x < BERM.x0 - 300
   && !pads.some(([px, py, pr]) => Math.hypot(x - px, y - py) <= pr + 300)
-  && !(x >= PLATFORM_RECT.x0 - 300 && x <= PLATFORM_RECT.x1);
+  && !(x >= PLATFORM_RECT.x0 - 300 && x <= PLATFORM_RECT.x1)
+  && !inTowerBand(x, y) && !inTowerBand(x, y - 260); // Block 6A interior
 
 // park connector tree lines (broken at the main road)
 for (let y = -5600; y <= 5600; y += 420) {
@@ -421,6 +470,38 @@ DX('D017', -1450, 330, 300, 70);
 SD('D01A', 4400, -430, 0);
 SD('D01A', 4400, 430, 0);
 
+// ---------------------- phase 2B: the Block 6A interior (tower-escape
+// slice; APPENDED after every existing doodad so all prior ids stay
+// byte-stable). Walls are SOLID LTrc rock ranks — game-verified blocking,
+// no cliffs (pathing-safety doctrine); interior dressing reuses the Sol
+// void-deck decor classes (pillars/mailbox walls/bike racks, solid:false).
+// The look is a placeholder until the commissioned Sol round-4 interior
+// set lands (corridor walls, flat doors, dead lifts, tube lights).
+const TW = (x, y) => {
+  // wall rock: solid, slightly oversized, deterministic scale
+  if (y < -5632 + 32) throw new Error(`tower wall below camera bounds: ${x},${y}`);
+  if (!inTowerBand(x, y)) throw new Error(`tower wall outside the band: ${x},${y}`);
+  doodads.push({
+    type: 'LTrc', position: [x, y, 0], angle: 270,
+    scale: [1.25, 1.25, 1.45],
+    flags: { visible: true, solid: true, fixedZ: false },
+    id: did++, variation: 0,
+  });
+};
+for (const p of TOWER_POCKETS) {
+  const x0 = p.cx - TOWER_HALF_W, x1 = p.cx + TOWER_HALF_W;
+  const y0 = TOWER_Y - TOWER_HALF_H, y1 = TOWER_Y + TOWER_HALF_H;
+  for (let x = x0; x <= x1; x += 112) { TW(x, y0); TW(x, y1); }   // S + N walls
+  for (let y = y0 + 112; y <= y1 - 112; y += 112) { TW(x0, y); TW(x1, y); } // W + E
+}
+// interior dressing (non-solid Sol decor): the 6F dead lift doors (pillar
+// pair — the spark effect anchors in war3map.lua sit between them), 5F
+// mailbox wall, 1F void-deck pillars + bike rack at the exit mouth.
+SD('D013', -3760, -5100, 0);            // 6F: the dead lift bank
+SD('D014', -2600, -5100, 0);            // 5F: corridor mailbox wall
+SD('D013', 1400, -5100, 0);             // 1F: void-deck pillar row
+SD('D015', 1860, -5150, 90);            // 1F: bike rack by the exit
+
 // ------------------------------------------------------------------- units
 // Type ids mirror objects-units.json (the generated UNIT_ constants).
 const units = [];
@@ -461,10 +542,12 @@ U('n020', SPAWN.x + 300, SPAWN.y + 120, P_PASSIVE);
 U('n023', SPAWN.x + 320, SPAWN.y - 160, P_PASSIVE);
 U('n027', SPAWN.x - 320, SPAWN.y + 200, P_PASSIVE);
 
-// hawker centre: the building, six stall tables, three civilians
+// hawker centre: the building, six stall tables in two tight STALL ROWS
+// under the pavilion mouth (phase 2B placement-coherence pass: tables
+// live in stall rows, not loose on the forecourt lawn), three civilians
 U('h014', HAWKER.x, HAWKER.y + 260, P_PASSIVE);
 for (let i = 0; i < 6; i++) {
-  U('n024', HAWKER.x - 350 + (i % 3) * 350, HAWKER.y - 140 - Math.floor(i / 3) * 240, P_PASSIVE);
+  U('n024', HAWKER.x - 260 + (i % 3) * 260, HAWKER.y - 60 - Math.floor(i / 3) * 200, P_PASSIVE);
 }
 U('n000', HAWKER.x - 120, HAWKER.y - 60, P_VICTIM);
 U('n001', HAWKER.x + 200, HAWKER.y - 300, P_VICTIM);
@@ -552,19 +635,76 @@ const SOL_TOWERS = [
 for (const [t, x, y] of SOL_TOWERS) U(t, x, y, P_PASSIVE);
 
 // Phase 2A (the fun transplant, DESIGN-WALKTHROUGH.md): the four CLASS
-// CIRCLES at the spawn void deck's south edge — a statue of each class
-// stands on its circle; walking a survivor onto the rect transforms them
-// (chat -class is gone, gotcha 33). Plus the PROVISION SHOP (goblin-
-// merchant base, Merchant.mdl — tools priced in clips). APPENDED after
-// everything above so all existing unit ids stay byte-stable.
+// CIRCLES — a statue of each class stands on its circle; walking a
+// survivor onto the rect transforms them (chat -class is gone, gotcha
+// 33). PHASE 2B moved them INTO the 6F corridor (you pick your neighbour
+// identity as you flee your flat); same unit slots/ids, new positions.
+// Plus the PROVISION SHOP (goblin-merchant base, Merchant.mdl — tools
+// priced in clips) at the void deck. APPENDED after everything above so
+// all existing unit ids stay byte-stable.
 const CLASS_CIRCLES = [
-  ['h000', -980, -560],   // Heartlander
-  ['h001', -760, -680],   // Auxiliary Police Officer
-  ['h002', -540, -730],   // Paramedic
-  ['h003', -320, -680],   // Town Council Technician
+  ['h000', -3560, -5420],   // Heartlander
+  ['h001', -3420, -5420],   // Auxiliary Police Officer
+  ['h002', -3280, -5420],   // Paramedic
+  ['h003', -3140, -5420],   // Town Council Technician
 ];
 for (const [t, x, y] of CLASS_CIRCLES) U(t, x, y, P_PASSIVE);
 U('h01H', -140, -420, P_PASSIVE);  // the Provision Shop
+
+// ---- phase 2B: Block 6A interior units (APPENDED LAST — ids stable) ----
+// Furniture goes where furniture lives (playtest-2 placement verdict):
+// every interior prop sits inside its pocket; the encounters mirror
+// war3map.lua's TOWER table and DESIGN-WALKTHROUGH.md's floor beats.
+// 6F corridor: the dead neighbour's flat (locker holds the seeded draw;
+// the guaranteed Parang is a ground item placed by main()), one riser.
+U('n022', -3400, -5100, P_PASSIVE);   // 6F: the neighbour's locker (>250 from every sloc)
+U('n020', -3260, -5380, P_PASSIVE);   // 6F: corridor bench
+U('u000', -3300, -5160, P_HORDE);     // 6F: what's left of the neighbour
+// 5F flat warren: rummage-rich, the trapped neighbour (the rescue beat)
+U('n020', -2780, -5400, P_PASSIVE);
+U('n022', -2700, -5120, P_PASSIVE);
+U('n023', -2340, -5400, P_PASSIVE);
+U('n024', -2260, -5120, P_PASSIVE);
+U('n021', -2060, -5300, P_PASSIVE);
+U('n000', -2200, -5100, P_VICTIM);    // 5F: Uncle Heng, trapped
+U('u000', -2560, -5260, P_HORDE);
+U('u001', -2140, -5180, P_HORDE);
+// 4F dark corridor: no working lights — watchfire country; the Molotov
+// for the nest floor is a ground item placed by main(). Two search pulls
+// so the dark asks: light it, risk it, or push on (activity density)
+U('n022', -1660, -5400, P_PASSIVE);
+U('n023', -1150, -5150, P_PASSIVE);
+U('u000', -1420, -5140, P_HORDE);
+U('u000', -1120, -5380, P_HORDE);
+// 3F blocked landing: a furniture barricade squats on the stair door —
+// war3map.lua registers props in the blocker zone and refuses the door
+// while any stand (smash through: loud, or shove past: impossible)
+U('n021', -140, -5260, P_PASSIVE);    // 3F blockers (zone x -240..-40)
+U('n020', -140, -5160, P_PASSIVE);
+U('n020', -140, -5360, P_PASSIVE);
+U('n020', -700, -5120, P_PASSIVE);    // 3F: a bench clear of the barricade
+U('u001', -520, -5200, P_HORDE);
+// 2F nest floor: burn it or sneak past — plus two search pulls competing
+// with the nest for your attention (activity density)
+U('h018', 560, -5140, P_HORDE);       // 2F rat-king nest
+U('n021', 300, -5400, P_PASSIVE);
+U('n020', 900, -5140, P_PASSIVE);
+U('u000', 400, -5380, P_HORDE);
+U('u002', 760, -5320, P_HORDE);       // a sprinter naps by the chute
+// 1F void deck interior: the final fight, then the rain
+U('u000', 1380, -5180, P_HORDE);
+U('u000', 1520, -5380, P_HORDE);
+U('u001', 1700, -5160, P_HORDE);
+U('u000', 1820, -5300, P_HORDE);
+U('n020', 1300, -5400, P_PASSIVE);    // 1F: the last bench before outside
+U('n022', 1850, -5400, P_PASSIVE);    // 1F: the storeroom by the exit
+// A1 darkness: each dark floor (4F/3F/2F) carries a DB BOX — flip it by
+// standing 5s (lights the floor, hums +loudness) or leave it dark and
+// pay in time and extra bodies. Coordinates mirror war3map.lua's
+// TOWER[].breaker fields — keep in sync.
+U('h01K', -1750, -5150, P_PASSIVE);   // 4F DB box
+U('h01K', -750, -5380, P_PASSIVE);    // 3F DB box
+U('h01K', 140, -5390, P_PASSIVE);     // 2F DB box
 
 // ----------------------------------------------------------------- regions
 const NUL = '\u0000\u0000\u0000\u0000';
@@ -584,12 +724,78 @@ for (const d of DISTRICTS) {
     [200, 200, 80]));
 }
 // phase 2A class-circle rects (one per statue above; walk in = transform)
+// — phase 2B: the circles live in the 6F corridor, rects ±90 so the four
+// stay distinct at the tighter interior pitch
 const CIRCLE_NAMES = ['PickHeartlander', 'PickPolice', 'PickParamedic', 'PickTech'];
 CLASS_CIRCLES.forEach(([, cx, cy], i) => {
   regions.push(region(CIRCLE_NAMES[i],
-    { x0: cx - 120, y0: cy - 120, x1: cx + 120, y1: cy + 120 },
+    { x0: cx - 70, y0: cy - 70, x1: cx + 70, y1: cy + 70 },
     [90, 200, 255]));
 });
+
+// phase 2B stairwell doors (trigger teleports; APPENDED after every
+// existing region so prior ids stay stable). DoorA..DoorE lead down one
+// floor each; TowerExit steps out into the void deck rain.
+const DOOR_NAMES = ['TowerDoorA', 'TowerDoorB', 'TowerDoorC', 'TowerDoorD', 'TowerDoorE'];
+TOWER_POCKETS.slice(0, 5).forEach((p, i) => {
+  const d = doorOf(p);
+  regions.push(region(DOOR_NAMES[i],
+    { x0: d.x - 60, y0: d.y - 60, x1: d.x + 60, y1: d.y + 60 },
+    [255, 160, 60]));
+});
+{
+  const d = doorOf(TOWER_POCKETS[5]);
+  regions.push(region('TowerExit',
+    { x0: d.x - 60, y0: d.y - 60, x1: d.x + 60, y1: d.y + 60 },
+    [120, 255, 120]));
+}
+// A3 rubbish-chute mouths (6F/5F/4F/3F -> the 2F bin alcove at 340,-5080;
+// war3map.lua's CHUTE_LANDING mirrors it): instant descent, bruising,
+// LOUD, skips the floors between. Placed clear of every prop/spawn.
+const CHUTES = [
+  ['ChuteA', -3660, -5080], ['ChuteB', -2100, -5050],
+  ['ChuteC', -1660, -5060], ['ChuteD', -560, -5050],
+];
+for (const [nm, cxx, cyy] of CHUTES) {
+  regions.push(region(nm,
+    { x0: cxx - 40, y0: cyy - 40, x1: cxx + 40, y1: cyy + 40 },
+    [255, 220, 90]));
+}
+
+// ------------------------------------------------- placement-coherence
+// asserts (playtest-2: "things are placed kind of nonsensically").
+// Furniture lives WHERE FURNITURE LIVES: every searchable furniture prop
+// (bench/dumpster/locker/desk/table) must sit inside a tower pocket or
+// within reach of a building anchor (tower foot = void deck, hawker
+// forecourt, clinic, station house, spawn deck, shop). Street classes
+// (cars, vans, phones, bus stops, lamps) are exempt — they live on the
+// road shoulders by design.
+{
+  const FURNITURE = new Set(['n020', 'n021', 'n022', 'n023', 'n024']);
+  const anchors = [[SPAWN.x, SPAWN.y], [HAWKER.x, HAWKER.y],
+    [CLINIC.x, CLINIC.y], [STATION.x, STATION.y], [-140, -420]];
+  for (const d of DISTRICTS) for (const [, tx, ty] of d.towers) anchors.push([tx, ty]);
+  for (const [, tx, ty] of SOL_TOWERS) anchors.push([tx, ty]);
+  for (const u of units) {
+    if (!FURNITURE.has(u.type)) continue;
+    const [x, y] = u.position;
+    const pocketed = TOWER_POCKETS.some((p) =>
+      Math.abs(x - p.cx) <= TOWER_HALF_W - 40 && Math.abs(y - TOWER_Y) <= TOWER_HALF_H - 40);
+    const anchored = anchors.some(([ax, ay]) => Math.hypot(x - ax, y - ay) <= 460);
+    if (!pocketed && !anchored) {
+      throw new Error(`furniture on a lawn: ${u.type} at ${x},${y}`);
+    }
+  }
+  // tower geometry must stay inside the camera bounds margin
+  for (const p of TOWER_POCKETS) {
+    const d = doorOf(p), a = arriveOf(p);
+    for (const pt of [d, a]) {
+      if (pt.x < -5376 || pt.x > 5376 || pt.y < -5632 || pt.y > 5120) {
+        throw new Error(`tower point outside camera bounds: ${pt.x},${pt.y}`);
+      }
+    }
+  }
+}
 
 // ------------------------------------------------------------------- write
 const write = (rel, data) =>

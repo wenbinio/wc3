@@ -23,7 +23,8 @@ test('standing in the yard accrues; leaving PERSISTS; damage knocks 3s; done at 
   const hero = sim.findUnit('h000', 0);
   sim.moveUnit(hero, GEN.x + 100, GEN.y);
   sim.advance(6);
-  assert.ok(sim.messagesTo(0).some((m) => /You crack the cabinet/.test(m.text)));
+  assert.ok(sim.messagesTo(0).some((m) => /Stay in the yard/.test(m.text)),
+    'ONE first-time teach line (2B text diet)');
   assert.strictEqual(sim.run('return GenList[1].progress')[0], 6, 'a second a second');
   assert.strictEqual(sim.global('GensFixed'), 0);
 
@@ -40,7 +41,8 @@ test('standing in the yard accrues; leaving PERSISTS; damage knocks 3s; done at 
   sim.advance(1); // 7 held
   sim.damage(zomb, hero, 5);
   assert.strictEqual(sim.run('return GenList[1].progress')[0], 4, '7 - 3 = 4');
-  assert.ok(sim.messagesTo(0).some((m) => /costs you 3s of repair work/.test(m.text)));
+  assert.ok(sim.callsOf('SetTextTagText').some((c) => /-3s/.test(String(c.args[1]))),
+    'the knock reads at the yard as floating text (2B text diet)');
 
   sim.advance(6);
   assert.strictEqual(sim.global('GensFixed'), 1, '4 + 6 = 10: the cabinet hums');
@@ -57,12 +59,14 @@ test('a fixed substation RELIGHTS its district with street lamps and pays 40 XP'
   assert.strictEqual(sim.allUnits('n028').length, lamps0 + 4, 'four lamps flare on');
   assert.ok(/relight\|lamps=4/.test(sim.global('RUNLOG')));
   assert.ok(sim.messagesMatching(/street lamps flicker on/).length > 0);
+  assert.ok(sim.callsOf('AddSpecialEffect').some((c) => /Resurrecttarget/.test(String(c.args[0]))),
+    'completion lands as the big flash (2B juice)');
   assert.strictEqual(sim.run('return SurvXP[0]')[0], 40, 'the objective pays');
 });
 
 test('the Technician accrues 2x; Overclock (signature) completes the next one instantly', () => {
   const sim = loadMap(MAP, { users: [0] });
-  sim.moveUnit(sim.findUnit('h000', 0), -320, -680); // the tech circle
+  sim.moveUnit(sim.findUnit('h000', 0), -3140, -5420); // the tech circle (6F corridor, 2B)
   const tech = sim.findUnit('h003', 0);
   sim.moveUnit(tech, GEN.x + 100, GEN.y);
   sim.advance(5);
@@ -181,6 +185,7 @@ test('the empty departure: the night goes on, only the Broodmother ends it', () 
 test('killing the Broodmother early is a victory in its own right; defectors lose', () => {
   const sim = loadMap(MAP, { users: [0, 1] });
   sim.chat(0, '-test');
+  sim.chat(0, '-deck'); // estate rules (2B: tower deaths respawn instead)
   sim.chat(0, '-zspawn shambler 1');
   const zomb = sim.unitsOf(24, 'u000').filter((u) => u.alive).pop();
   sim.kill(sim.findUnit('h000', 1), zomb); // pid 1 defects

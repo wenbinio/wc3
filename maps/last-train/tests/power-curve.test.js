@@ -32,7 +32,9 @@ test('kills pay XP by zombie kind; 80 XP is a level; level-ups bump stats and he
   assert.strictEqual(sim.run('return SurvXP[0]')[0], 84);
   assert.strictEqual(sim.run('return SurvLevel[0]')[0], 2, '84 xp = level 2');
   assert.ok(/lvl\|pid=0\|l=2\|kill/.test(sim.global('RUNLOG')));
-  assert.ok(sim.messagesTo(0).some((m) => /Level 2\./.test(m.text)));
+  assert.ok(sim.callsOf('AddSpecialEffectTarget')
+    .some((c) => /Levelupcaster/.test(String(c.args[0]))),
+  'the level-up SHOWS (2B text diet: burst + sting, no line)');
   const hpCalls = sim.callsOf('BlzSetUnitMaxHP').filter((c) => c.args[1] === 550 + 30);
   const dmgCalls = sim.callsOf('BlzSetUnitBaseDamage').filter((c) => c.args[1] === 22 + 2);
   assert.ok(hpCalls.length >= 1, '+30 max HP applied for the game client');
@@ -63,7 +65,7 @@ test('Steady Hands: reloads take 3s and the clip deepens +2 per level', () => {
 
 test('Riot Discipline: 10s of half damage for the APO', () => {
   const sim = loadMap(MAP, { users: [0] });
-  sim.moveUnit(sim.findUnit('h000', 0), -760, -680); // the police circle
+  sim.moveUnit(sim.findUnit('h000', 0), -3420, -5420); // the police circle (6F corridor, 2B)
   const apo = sim.findUnit('h001', 0);
   sim.chat(0, '-test');
   sim.chat(0, '-xp 170');
@@ -82,7 +84,7 @@ test('Riot Discipline: 10s of half damage for the APO', () => {
 
 test('Field Triage: AoE cure + heal for every survivor within 400', () => {
   const sim = loadMap(MAP, { users: [0, 1] });
-  sim.moveUnit(sim.findUnit('h000', 0), -540, -730); // the paramedic circle
+  sim.moveUnit(sim.findUnit('h000', 0), -3280, -5420); // the paramedic circle (6F corridor, 2B)
   const medic = sim.findUnit('h002', 0);
   const buddy = sim.findUnit('h000', 1);
   sim.chat(0, '-test');
@@ -122,7 +124,8 @@ test('the Provision Shop stands at the void deck and sells tools for CLIPS', () 
   assert.ok(/buy\|pid=0\|barricade/.test(sim.global('RUNLOG')));
   const kit = [...sim.items.values()].find((i) => !i.removed && i.typeStr === 'I013');
   assert.strictEqual(kit.ownerUnit, hero.handle, 'the ware is in the pack');
-  assert.ok(sim.messagesTo(0).some((m) => /paid in clips/.test(m.text)));
+  // 2B text diet: the towkay's ack line is deleted — the ware in the pack
+  // and the buy| beat are the receipt
 });
 
 test('burning a nest pays 30 XP (and the trim is pinned in escalation/surges suites)', () => {
@@ -131,7 +134,7 @@ test('burning a nest pays 30 XP (and the trim is pinned in escalation/surges sui
   sim.kill(nest, hero);
   assert.ok(/nest\|down\|1/.test(sim.global('RUNLOG')));
   assert.strictEqual(sim.run('return SurvXP[0]')[0], 30);
-  assert.ok(sim.messagesMatching(/rat-king nest collapses/).length > 0);
+  assert.ok(sim.messagesMatching(/A nest collapses/).length > 0, 'the shortened 2B announce');
 });
 
 test('a Molotov burns nests down (200 fire damage vs 150 HP nests)', () => {
@@ -140,7 +143,8 @@ test('a Molotov burns nests down (200 fire damage vs 150 HP nests)', () => {
   assert.strictEqual(nest.maxLife, 150, 'nests are burnable, not walls');
   sim.chat(0, '-give molotov');
   sim.moveUnit(hero, nest.x + 100, nest.y);
-  const molotov = [...sim.items.values()].find((i) => !i.removed && i.typeStr === 'I014');
+  const molotov = [...sim.items.values()].find((i) => !i.removed
+    && i.typeStr === 'I014' && i.ownerUnit === hero.handle); // not the 4F ground drop
   sim.useItem(hero, molotov);
   assert.ok(!nest.alive, 'one Molotov takes a nest');
   assert.ok(/nest\|down\|1/.test(sim.global('RUNLOG')), 'burned = down, XP paid');
@@ -149,6 +153,7 @@ test('a Molotov burns nests down (200 fire damage vs 150 HP nests)', () => {
 test('XP never accrues to the defected or the aboard', () => {
   const sim = loadMap(MAP, { users: [0, 1] });
   sim.chat(0, '-test');
+  sim.chat(0, '-deck'); // estate rules (2B: tower deaths respawn instead)
   sim.chat(0, '-zspawn shambler 2');
   const zombs = sim.unitsOf(24, 'u000').filter((u) => u.alive).slice(-2);
   sim.kill(sim.findUnit('h000', 1), zombs[0]); // pid 1 defects
