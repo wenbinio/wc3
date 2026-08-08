@@ -3326,6 +3326,17 @@ function main()
       local t = GetUnitTypeId(u)
       if PROP_KINDS[t] ~= nil then
         PropRec[u] = { kind = PROP_KINDS[t], searched = false }
+        -- furniture must read as furniture, not as a unit roster (the
+        -- playtest-3 "goofy green health bars" fix): the persistent bars
+        -- were Reforged's always-on unit HP bars over every attackable
+        -- full-health prop (uhpm 30 verified correct in the w3u — NOT a
+        -- damaged-at-spawn artifact). The bar itself dies object-side via
+        -- ussc -10 (negative selection scale, the objects-units.json
+        -- change: bar+circle are sized by selection scale, so negative
+        -- hides both while the prop stays attackable for Smash); here we
+        -- also drop the props off the minimap so the south margin never
+        -- reads as a row of neutral dots. Sim-inert (auto-stubbed native).
+        BlzSetUnitBooleanField(u, UNIT_BF_HIDE_MINIMAP_DISPLAY, true)
         -- the 3F furniture barricade: props squatting the blocked door's
         -- approach hold the stairwell shut until smashed
         if PocketIndexAt(GetUnitX(u), GetUnitY(u)) == TOWER_BLOCKED

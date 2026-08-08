@@ -250,6 +250,45 @@ buildModel({
   outFile: path.join(OUT, 'Barricade.mdx'),
 });
 
+// ============ 2026-08-08 playtest-3 interior-credibility pass ============
+// FLOOR SLABS for the Block 6A pockets (D01I lit / D01J dark in
+// objects-doodads.json; placed by generate-layout.mjs). The tower floors
+// must read as building slab in PERMANENT NIGHT: terrain tiles blend at
+// edges and go near-black under night ambient, but mdl-lib layers are
+// Unshaded by construction, so these render at their authored tint in any
+// lighting. 800x520 covers a pocket interior to the thickened walls'
+// interior faces (+-404/+-264); 4 tall so the top face sits above the
+// terrain with no z-fight. The LIT slab is mid concrete with a pale
+// walkway band (the corridor read); the DARK slab is near-black with a
+// barely-there band — the lit-vs-dark floor fiction stays legible.
+const SLAB_DARKLINE = [0.10, 0.10, 0.12];
+buildModel({
+  name: 'FloorSlabLit',
+  extents: { min: [-400, -260, 0], max: [400, 260, 4], radius: 480 },
+  geosets: [
+    { name: 'slab', tint: [0.30, 0.29, 0.28], mesh: box(-400, 400, -260, 260, 0, 4) },
+    { name: 'walk', tint: [0.40, 0.39, 0.37], mesh: box(-380, 380, -70, 70, 4, 5) },
+    { name: 'edge', tint: SLAB_DARKLINE, mesh: merge(
+      box(-400, 400, -260, -240, 4, 5), box(-400, 400, 240, 260, 4, 5),
+      box(-400, -380, -260, 260, 4, 5), box(380, 400, -260, 260, 4, 5),
+    ) },
+  ],
+  outFile: path.join(OUT, 'FloorSlabLit.mdx'),
+});
+buildModel({
+  name: 'FloorSlabDark',
+  extents: { min: [-400, -260, 0], max: [400, 260, 4], radius: 480 },
+  geosets: [
+    { name: 'slab', tint: [0.13, 0.13, 0.15], mesh: box(-400, 400, -260, 260, 0, 4) },
+    { name: 'walk', tint: [0.17, 0.17, 0.19], mesh: box(-380, 380, -70, 70, 4, 5) },
+    { name: 'edge', tint: [0.06, 0.06, 0.08], mesh: merge(
+      box(-400, 400, -260, -240, 4, 5), box(-400, 400, 240, 260, 4, 5),
+      box(-400, -380, -260, 260, 4, 5), box(380, 400, -260, 260, 4, 5),
+    ) },
+  ],
+  outFile: path.join(OUT, 'FloorSlabDark.mdx'),
+});
+
 // ================== 2026-08-07 visual-identity pass ======================
 // REMOVED (Sol round 3): SkyTowerSlab, SkyTowerStep, SkyTowerCrown,
 // SkyTowerTwin, SkyTowerSpire, MRTEntrance, MRTSign, LaundryRack and
@@ -261,4 +300,4 @@ buildModel({
 // MRT entrance/sign <= 175; linkway < 100; laundry racks flush on tower
 // south faces).
 
-console.log('last-train models regenerated: StationPlatform, TrackSegment, HDBBlockA, HDBBlockB, Substation, BusStop, Barricade');
+console.log('last-train models regenerated: StationPlatform, TrackSegment, HDBBlockA, HDBBlockB, Substation, BusStop, Barricade, FloorSlabLit, FloorSlabDark');

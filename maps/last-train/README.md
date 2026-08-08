@@ -508,6 +508,52 @@ Design inspirations (mechanics only, nothing copied): **Zombination v11**
 (Trinin), **Zombie-Simulator 7** (SpirulinaN), **Dawn of the Dead**
 (PreViO), **NotD: Special Ops**, **SWAT: Aftermath**.
 
+## Interior credibility (2026-08-08 pass — playtest 3: "Looks goofy")
+
+The tower slice's third playtest returned four screenshot complaints;
+each got a mechanism-level fix (all visual-only — blocking geometry,
+loot streams and every seeded draw byte-identical):
+
+- **Persistent green health bars over every searchable prop.** NOT a
+  damaged-at-spawn artifact: the built w3u provably carries `uhpm int
+  30` and props spawn full-health (green = full). The bars are
+  Reforged's always-on unit HP bars over every *attackable* unit
+  (invulnerable pieces — lamps, DB boxes, statues — showed none). Fix:
+  `ussc -10` (negative Art–Selection Scale) on all 14 searchable prop
+  classes — the HP bar and the selection circle are sized by selection
+  scale, so negative hides both while the prop stays fully attackable
+  for Smash (the canonical Hive technique; no destructable conversion,
+  zero mechanics churn). Props are also dropped from the minimap at
+  registration (`UNIT_BF_HIDE_MINIMAP_DISPLAY`, sim-inert).
+- **Pocket floors read as lawn.** The old interior tile mix was 30%
+  `Lgrd` "dark grass" (still grass-green) and the 120-unit band margin
+  was under one tile (128), so estate grass blended into the floors.
+  Fix: interior + a 260-unit apron repainted to `Lrok`/`Ldro` only
+  (hard dead ground, zero grass tiles), plus one generated **unshaded
+  floor-slab doodad per pocket** (`FloorSlabLit` 6F/5F/1F,
+  `FloorSlabDark` 4F/3F/2F — the lit-vs-dark floor fiction stays
+  legible in any lighting). NO blight anywhere: zombies are `ugho`
+  clones and undead blight-regen would turn a ground stain into a
+  combat buff the sim cannot model.
+- **Walls rendered as flat black slabs.** The map is permanent night
+  (`SetTimeOfDay 22`, scale 0) and Sol's round-4 models ship LIT
+  materials, so night ambient crushed the pale two-tone to black —
+  while every in-house mdl-lib model is Unshaded by construction and
+  read fine. Fix: `assets/patch-sol-interior.mjs` (the recorded local
+  modification per the Legal doctrine; ledger entries updated) sets
+  the Unshaded flag on the tower-exclusive Sol set (wall segment +
+  corner, flat door, stairwell flight, lift bank, covered body) and
+  re-tones the walls' pale face to RGB (0.78, 0.80, 0.76); the wall
+  skin's visual depth is doubled 16→32 via the doodad's model-space
+  y-scale (`[0.875, 2, 1]` — pathing footprints don't scale, blockers
+  byte-identical), flat doors re-flushed to the thicker face (±24).
+- **Scale reads**: the 6F dead lift bank scaled up `[1.9, 1.6, 1]` and
+  re-flushed against the thickened wall (spark anchor still in sync).
+
+Before/after proof renders: `scripts/experimental/terrain-preview`
+tier-2 obliques + tier-1 top-downs (outputs under the rig's `out/`,
+never committed — regenerate with the rig against this source).
+
 ## Visual identity & the camera-safety doctrine (2026-08-07 pass)
 
 The estate now reads explicitly Singaporean without costing gameplay

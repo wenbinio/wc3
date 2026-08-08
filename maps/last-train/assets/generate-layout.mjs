@@ -92,6 +92,20 @@ const TOWER_BAND = {
 };
 const inTowerBand = (x, y) => x >= TOWER_BAND.x0 && x <= TOWER_BAND.x1
   && y >= TOWER_BAND.y0 && y <= TOWER_BAND.y1;
+// TILE-ONLY apron (playtest-3 "interior reads as lawn" fix): the 120-unit
+// band margin is UNDER one tile (128), so estate-grass tile blending bled
+// into the pocket floors and the walls stood visibly on lawn. Tiles get a
+// wider 260-unit apron (2 tiles) of dead hard ground around the whole
+// band — a void ring between the block and the estate. Walls/asserts/
+// regions keep using TOWER_BAND (geometry unchanged); ONLY tile painting
+// and tree keep-out use the wide rect. NO blight anywhere: the zombies
+// are ugho (Ghoul) clones — undead blight-regen would turn a cosmetic
+// ground stain into a combat buff the sim cannot model.
+const TOWER_APRON = 260;
+const inTowerTiles = (x, y) => x >= TOWER_BAND.x0 - TOWER_APRON + 120
+  && x <= TOWER_BAND.x1 + TOWER_APRON - 120
+  && y >= TOWER_BAND.y0 - TOWER_APRON + 120
+  && y <= TOWER_BAND.y1 + TOWER_APRON - 120;
 // stairwell door rect (inside each pocket, east end) + the next pocket's
 // arrival spot (west end) — war3map.lua teleports between them
 const doorOf = (p) => ({ x: p.cx + 330, y: TOWER_Y });
@@ -170,7 +184,7 @@ for (let r = 0; r < ROWS; r++) {
     }
     if (nearAny(x, y, pads, 0) || onRoad(x, y, ROAD_HALF)) gh = 8192;
     if (pads.some(([px, py, pr]) => Math.hypot(x - px, y - py) <= pr) && !onBerm(x)) gh = 8192;
-    if (inTowerBand(x, y)) gh = 8192;      // interior slabs are dead flat
+    if (inTowerTiles(x, y)) gh = 8192;     // interior + apron dead flat
     groundHeight.push(gh);
     waterHeight.push(8192);
     boundaryFlag.push(false);
@@ -178,8 +192,14 @@ for (let r = 0; r < ROWS; r++) {
 
     // texture
     let tex;
-    if (inTowerBand(x, y)) {
-      tex = n < 0.3 ? T.dark : T.rock;                     // interior slab
+    if (inTowerTiles(x, y)) {
+      // interior + void ring: HARD DEAD GROUND ONLY (playtest-3: the old
+      // 30% Lgrd "dark grass" is still grass-green — the floors read as
+      // lawn). Rock with rough-dirt flecks; never a grass tile anywhere
+      // inside the wide apron. The pocket floors themselves are covered
+      // by the unshaded FloorSlab doodads below — these tiles are the
+      // between-pocket void and the under-slab backup.
+      tex = n < 0.25 ? T.rough : T.rock;
     } else if (onBerm(x)) {
       tex = T.rock;                                        // the viaduct strip
     } else if (pads.some(([px, py, pr]) => Math.hypot(x - px, y - py) <= pr)) {
@@ -231,7 +251,7 @@ const treeClear = (x, y) =>
   && !onBerm(x) && x < BERM.x0 - 300
   && !pads.some(([px, py, pr]) => Math.hypot(x - px, y - py) <= pr + 300)
   && !(x >= PLATFORM_RECT.x0 - 300 && x <= PLATFORM_RECT.x1)
-  && !inTowerBand(x, y) && !inTowerBand(x, y - 260); // Block 6A interior
+  && !inTowerTiles(x, y) && !inTowerTiles(x, y - 260); // Block 6A + apron
 
 // park connector tree lines (broken at the main road)
 for (let y = -5600; y <= 5600; y += 420) {
@@ -497,9 +517,14 @@ const TW = (x, y, horiz) => {
   // wall post: solid, proven blocking (see the block comment above)
   if (y < -5632 + 32) throw new Error(`tower wall below camera bounds: ${x},${y}`);
   if (!inTowerBand(x, y)) throw new Error(`tower wall outside the band: ${x},${y}`);
+  // local-y scale 2 doubles the VISUAL slab depth (16 -> 32 units): the
+  // playtest-3 verdict read the 16-unit skin as paper/cardboard from the
+  // iso camera. Doodad scale is model-space (y = through-wall axis under
+  // both angles) and pathing footprints neither scale nor change with the
+  // model (the block comment above) — blocking geometry is byte-identical.
   doodads.push({
     type: 'D01B', position: [x, y, 0], angle: horiz ? 0 : 90,
-    scale: [0.875, 1, 1],
+    scale: [0.875, 2, 1],
     flags: { visible: true, solid: true, fixedZ: false },
     id: did++, variation: 0,
   });
@@ -518,7 +543,12 @@ for (const p of TOWER_POCKETS) {
 // the 6F dead lift bank flush on the N wall (war3map.lua's TOWER[1].lift
 // spark anchor sits just in front of its doors — keep in sync), 5F
 // mailbox wall, 1F void-deck pillars + bike rack at the exit mouth.
-SD('D01E', -3760, -4998, 0);            // 6F: the dead lift bank (r4)
+// 6F dead lift bank: scaled up 1.9x/1.6x (playtest-3: it read TINY against
+// the 840-unit wall run) and pulled to the thickened N wall's interior
+// face (y -5012: wall face -4996 + scaled 16-unit half-depth). The
+// war3map.lua TOWER[1].lift spark anchor at (-3760,-5040) stays ~12 in
+// front of the scaled doors — still in sync.
+SD('D01E', -3760, -5012, 0, [1.9, 1.6, 1]);
 SD('D014', -2600, -5100, 0);            // 5F: corridor mailbox wall
 SD('D013', 1400, -5100, 0);             // 1F: void-deck pillar row
 SD('D015', 1860, -5150, 90);            // 1F: bike rack by the exit
@@ -539,12 +569,14 @@ const TD = (type, x, y, angle, scale) => {
   SD(type, x, y, angle, scale);
 };
 // flat doors flush on the wall interior faces (door slab is 12 deep; the
-// N-wall row faces south = angle 0, the S-wall row faces north = 180)
+// N-wall row faces south = angle 0, the S-wall row faces north = 180).
+// Offset 24 = the thickened wall's 16-unit half-depth + the door's 6-unit
+// half-depth + 2 clearance (was 14 against the old 8-unit half-depth).
 for (const [dx2] of [[-3480], [-3200], [-2560], [-2280], [-1520], [-480], [480]]) {
-  TD('D01D', dx2, TOWER_WALL_N - 14, 0);
+  TD('D01D', dx2, TOWER_WALL_N - 24, 0);
 }
 for (const [dx2] of [[-3060], [-2480], [-2160], [-1280]]) {
-  TD('D01D', dx2, TOWER_WALL_S + 14, 180);
+  TD('D01D', dx2, TOWER_WALL_S + 24, 180);
 }
 // stairwell flights: one against the east wall at every stair DOOR
 // (pockets 6F..2F), one against the west wall at every ARRIVAL (5F..1F);
@@ -569,6 +601,21 @@ for (const p of [TOWER_POCKETS[0], TOWER_POCKETS[1], TOWER_POCKETS[5]]) {
 TD('D01H', -3620, -5090, 320);          // 6F: by the dead lift
 TD('D01H', -1300, -5340, 40);           // 4F: the dark corridor
 TD('D01H', 1210, -5150, 290);           // 1F: the void deck
+
+// ---- playtest-3 interior-credibility pass (2026-08-08, APPENDED LAST so
+// every prior doodad id stays byte-stable). FLOOR SLABS: one generated
+// unshaded concrete slab per pocket (800x520, 4 tall — inside the
+// thickened walls' interior faces at +-404/+-264) so the floor reads as a
+// building slab in ANY lighting: the map is permanent night and terrain
+// tiles both blend at edges and go near-black under night ambient. LIT
+// floors (6F/5F/1F — the floors whose tube lights are on) get the
+// mid-concrete D01I slab; DARK floors (4F/3F/2F) get the near-black D01J
+// slab, so the lit-vs-dark floor fiction survives the fix. Non-solid,
+// z 0 (top face at 4): pathing untouched.
+const SLAB_LIT = new Set(['6f', '5f', '1f']);
+for (const p of TOWER_POCKETS) {
+  TD(SLAB_LIT.has(p.key) ? 'D01I' : 'D01J', p.cx, TOWER_Y, 0);
+}
 
 // ------------------------------------------------------------------- units
 // Type ids mirror objects-units.json (the generated UNIT_ constants).

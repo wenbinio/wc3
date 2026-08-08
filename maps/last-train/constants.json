@@ -561,6 +561,20 @@
       "name": "HDB Flat Door",
       "source": "objects-doodads.json"
     },
+    "DOOD_INTERIOR_FLOOR_SLAB_DARK": {
+      "kind": "doodad",
+      "rawcode": "D01J",
+      "base": "YOtf",
+      "name": "Interior Floor Slab (Dark)",
+      "source": "objects-doodads.json"
+    },
+    "DOOD_INTERIOR_FLOOR_SLAB_LIT": {
+      "kind": "doodad",
+      "rawcode": "D01I",
+      "base": "YOtf",
+      "name": "Interior Floor Slab (Lit)",
+      "source": "objects-doodads.json"
+    },
     "DOOD_KAMPONG_HOUSE_SHELL": {
       "kind": "doodad",
       "rawcode": "D010",

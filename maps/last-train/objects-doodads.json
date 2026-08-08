@@ -558,6 +558,38 @@
         "column": 0,
         "value": "war3mapImported\\SolCorpseCovered.mdl"
       }
+    ],
+    "D01I:YOtf": [
+      {
+        "id": "dnam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Interior Floor Slab (Lit)"
+      },
+      {
+        "id": "dfil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\FloorSlabLit.mdl"
+      }
+    ],
+    "D01J:YOtf": [
+      {
+        "id": "dnam",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "Interior Floor Slab (Dark)"
+      },
+      {
+        "id": "dfil",
+        "type": "string",
+        "level": 0,
+        "column": 0,
+        "value": "war3mapImported\\FloorSlabDark.mdl"
+      }
     ]
   }
 }

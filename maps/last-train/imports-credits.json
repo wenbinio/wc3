@@ -454,35 +454,40 @@
       "resource": "Warcraft3 Interior Models round 4 (commissioned HDB interior + buildable-defense set — corridor wall segment, two-tone dado + skirting, tiles end-to-end (the tower pocket wall skin))",
       "source": "user-commissioned delivery 2026-08-08 (round 4; gate-clean 0/0/0, negative-controlled; Sol's generator source is archived in the intake scratchpad only — not yet self-contained, deliberately not committed)",
       "license": "commissioned for this project",
-      "fetched": "2026-08-08"
+      "fetched": "2026-08-08",
+      "modified": "modified 2026-08-08 by assets/patch-sol-interior.mjs (playtest-3 \"black walls\" fix): Unshaded flag set on all material layers so the piece self-lights under the map's permanent night; pale-face geoset-anim re-toned to RGB (0.78, 0.80, 0.76)"
     },
     "war3mapImported/SolHDBWallCorner.mdx": {
       "author": "Sol (GPT 5.6 Codex fleet)",
       "resource": "Warcraft3 Interior Models round 4 (commissioned HDB interior + buildable-defense set — corridor wall corner column, datum-matched to the wall segment)",
       "source": "user-commissioned delivery 2026-08-08 (round 4; gate-clean 0/0/0, negative-controlled; Sol's generator source is archived in the intake scratchpad only — not yet self-contained, deliberately not committed)",
       "license": "commissioned for this project",
-      "fetched": "2026-08-08"
+      "fetched": "2026-08-08",
+      "modified": "modified 2026-08-08 by assets/patch-sol-interior.mjs (playtest-3 \"black walls\" fix): Unshaded flag set on all material layers so the piece self-lights under the map's permanent night; pale-face geoset-anim re-toned to RGB (0.78, 0.80, 0.76)"
     },
     "war3mapImported/SolHDBFlatDoor.mdx": {
       "author": "Sol (GPT 5.6 Codex fleet)",
       "resource": "Warcraft3 Interior Models round 4 (commissioned HDB interior + buildable-defense set — HDB flat door with gate grille and unit-number plaque)",
       "source": "user-commissioned delivery 2026-08-08 (round 4; gate-clean 0/0/0, negative-controlled; Sol's generator source is archived in the intake scratchpad only — not yet self-contained, deliberately not committed)",
       "license": "commissioned for this project",
-      "fetched": "2026-08-08"
+      "fetched": "2026-08-08",
+      "modified": "modified 2026-08-08 by assets/patch-sol-interior.mjs (playtest-3 \"black walls\" fix): Unshaded flag set on all material layers so the piece self-lights under the map's permanent night"
     },
     "war3mapImported/SolHDBLiftDead.mdx": {
       "author": "Sol (GPT 5.6 Codex fleet)",
       "resource": "Warcraft3 Interior Models round 4 (commissioned HDB interior + buildable-defense set — dead lift bank, steel leaves + out-of-order dots (the 6F fiction anchor))",
       "source": "user-commissioned delivery 2026-08-08 (round 4; gate-clean 0/0/0, negative-controlled; Sol's generator source is archived in the intake scratchpad only — not yet self-contained, deliberately not committed)",
       "license": "commissioned for this project",
-      "fetched": "2026-08-08"
+      "fetched": "2026-08-08",
+      "modified": "modified 2026-08-08 by assets/patch-sol-interior.mjs (playtest-3 \"black walls\" fix): Unshaded flag set on all material layers so the piece self-lights under the map's permanent night"
     },
     "war3mapImported/SolStairwellFlight.mdx": {
       "author": "Sol (GPT 5.6 Codex fleet)",
       "resource": "Warcraft3 Interior Models round 4 (commissioned HDB interior + buildable-defense set — stairwell flight, 7 treads + handrail (landing-transition dressing))",
       "source": "user-commissioned delivery 2026-08-08 (round 4; gate-clean 0/0/0, negative-controlled; Sol's generator source is archived in the intake scratchpad only — not yet self-contained, deliberately not committed)",
       "license": "commissioned for this project",
-      "fetched": "2026-08-08"
+      "fetched": "2026-08-08",
+      "modified": "modified 2026-08-08 by assets/patch-sol-interior.mjs (playtest-3 \"black walls\" fix): Unshaded flag set on all material layers so the piece self-lights under the map's permanent night"
     },
     "war3mapImported/SolHDBBedFrame.mdx": {
       "author": "Sol (GPT 5.6 Codex fleet)",
@@ -531,7 +536,8 @@
       "resource": "Warcraft3 Interior Models round 4 (commissioned HDB interior + buildable-defense set — covered body under a sheet, no gore geometry (somber decor))",
       "source": "user-commissioned delivery 2026-08-08 (round 4; gate-clean 0/0/0, negative-controlled; Sol's generator source is archived in the intake scratchpad only — not yet self-contained, deliberately not committed)",
       "license": "commissioned for this project",
-      "fetched": "2026-08-08"
+      "fetched": "2026-08-08",
+      "modified": "modified 2026-08-08 by assets/patch-sol-interior.mjs (playtest-3 \"black walls\" fix): Unshaded flag set on all material layers so the piece self-lights under the map's permanent night"
     },
     "war3mapImported/SolSpikeWire.mdx": {
       "author": "Sol (GPT 5.6 Codex fleet)",
@@ -545,6 +551,20 @@
       "resource": "Warcraft3 Interior Models round 4 (commissioned HDB interior + buildable-defense set — oil-drum watchfire with crossed flame planes (the build-verb result art))",
       "source": "user-commissioned delivery 2026-08-08 (round 4; gate-clean 0/0/0, negative-controlled; Sol's generator source is archived in the intake scratchpad only — not yet self-contained, deliberately not committed)",
       "license": "commissioned for this project",
+      "fetched": "2026-08-08"
+    },
+    "war3mapImported/FloorSlabLit.mdx": {
+      "author": "Serendipity (generated)",
+      "resource": "generated model (Block 6A pocket floor slab, lit floors 6F/5F/1F — playtest-3 interior-credibility pass)",
+      "source": "assets/generate-models.mjs",
+      "license": "original, repo license",
+      "fetched": "2026-08-08"
+    },
+    "war3mapImported/FloorSlabDark.mdx": {
+      "author": "Serendipity (generated)",
+      "resource": "generated model (Block 6A pocket floor slab, dark floors 4F/3F/2F — playtest-3 interior-credibility pass)",
+      "source": "assets/generate-models.mjs",
+      "license": "original, repo license",
       "fetched": "2026-08-08"
     }
   }
