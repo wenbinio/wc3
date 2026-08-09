@@ -61,3 +61,22 @@ literally zero AI. Ends with an 8-point gap statement and the
 sim-testability constraint (we can test decisions, never outcomes).
 **Staleness**: the code read is current as of 2026-08; the gap statement
 is structural and should age well.
+
+## wtoc-ai-spec.md (2026-08-09)
+
+**Question answered**: what would an AI have to do to play Warhammer:
+Tides of Chaos, and can we iterate on it headlessly? Decomposition of the
+live artifact (map by Krazlo; not committed, per Legal). Refutes the
+earlier "zero micro" note — that was the map's lobby blurb describing the
+metronome, not the game; the map has no builder, food-gates spawns so an
+unspent army skips its next wave, excludes heroes from the army macro,
+and ships a unit-selection-priority tuner. Carries the spawn/income/
+upgrade economics (incl. the 50/25/0% research-salvage tiers), the
+permanent-death hero rules and the XP rule that pulls heroes into danger,
+the two 300-second ritual instant-wins, a tempo×difficulty decision
+table, and the sim-testability verdict: lib/sim cannot run it (JASS) and
+even after a Lua port reaches only one of the six decisions the map's
+player named as hard. Buildability is excellent (unprotected, clean
+round-trip, validate exit 0) and the map ships its own in-game debug
+harness. **Staleness**: measured against v1.89K.
+
