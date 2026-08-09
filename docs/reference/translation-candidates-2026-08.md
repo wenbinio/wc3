@@ -1100,3 +1100,227 @@ smaller delta than the v25↔v31↔v33 chain w3i31.js already covers;
 free source of listfile-grade stock-art PATH facts** for
 lib/data/stock-art.json (its asset zips were scanned against an ~80MB
 listfile), and 2002 maps use dozens of paths not yet in our table.
+
+---
+
+# Wave 6d — THE KOREAN CANON (and the metric that hid it)
+
+## The headline: Korean is the MAJORITY of live WC3, not a seam [M]
+
+Wave 5 said 18.8%; wave 6a said 23–30%. Both summed the **per-row
+`hosted_month`** field, which is CORRUPT for high-volume Korean lines
+(id 437213 reports `hosted_total == hosted_month == 1,164,168` — an
+all-time count leaking into the month field). **`group_hosted_month` is
+the sound metric** (ORDR: group_total 15,360,569 / group_month 169,133 ≈
+1.1%, consistent with a ~9-year life). Over 3,089 live groups:
+
+| | groups | group_hosted_month | share |
+|---|---|---|---|
+| **Korean** | 527 | **207,000** | **58.3%** |
+| Latin | 2,280 | 143,316 | 40.3% |
+| Chinese | 223 | 4,656 | 1.3% |
+| Russian | 59 | 390 | 0.1% |
+
+Confirmed twice more, neither map-language-based: **`/api/activity`
+(28h live): 64,429 games, 39,989 from the `kr` gateway = 62.1%**, peak
+76.6%; **`/api/lobbies`: 28 of 69 open lobbies on `kr`**. And
+`/api/stats` (series ends 2024-11) already showed kr at 27–35% of all
+hosting since 2020 — nobody read the field. **Carry forward: Korean maps
+are the majority of public bot-lobby WC3.**
+
+## The canon is one map [M]
+
+**원피스랜덤디펜스R (ORDR) = 169,133 group-hosted/month = 47.6% of every
+game on the network**, 5.8× the #2 map worldwide (Legion TD OZE 29,217).
+Zombie Defense — which our canon dossier calls #1–2 — is **#8 globally**
+at 3,533; that snapshot is a *Latin*-canon statement.
+
+Concentration differs structurally: Korean top-1 share **81.7%** (top-20
+93.9%) vs Latin top-1 19.7% (top-20 57.2%). **The Latin canon is a
+distribution; the Korean canon is one franchise plus a 500-map
+graveyard** — 471 of 527 KR groups host <100/month.
+
+Genre census by hosting: **random-defense 23 groups = 83.8%** of Korean
+play; then defense/TD 114 groups (8,763), RPG **142 groups but only
+6,739** (~47 each), hero-arena 19, AoS 8, survival 24, sim/tycoon 19,
+**board/party 9 groups = 39 games/month**. Korea *plays* one genre and
+*authors* another — king50's whole party/board shelf is hosted-dead.
+
+## Structural profile of all 527 KR groups [M]
+
+**Script: 523 JASS / 4 Lua, zero transpilers** — the Latin canon's
+Lua/TS/C# migration has NOT happened here. **Format: 481 of 527 are w3i
+v25 (classic TFT)**, 22 v31, 23 v33, 1 v18 — the Korean canon is a
+CLASSIC-format canon, so our v25 codecs are the load-bearing ones, not
+the Reforged path. wtg present on only 63/527. **Median editor saves
+2,876, max 37,303** — the strongest per-map authoring-effort signal
+available anywhere, free in the API.
+
+**Text shape has NO dominant form** (unlike CN/RU's "it's all in the
+wts"): 호박숲리버스 ships **no wts file at all** with 31,106 hangul in
+object data; ORDR is the inverse (282,717 in wts, 109 in object data);
+디지몬 splits 11,943 script / 1,410 wts / 58,459 object data. **A KR
+pass must measure per map.**
+
+**The KR runtime-extension stack (new)**: Korea runs CN's **DzAPI plus
+its own JN API** — frame UI, raw keyboard, direct process memory
+(`DzFrameSetTexture`, `JNMemoryGetInteger`, `JNGetModuleHandle`);
+m16tool.xyz hosts a `/JNAPI/Index` developer portal. Those maps are
+outside vanilla and **un-simulatable by lib/sim by construction**.
+Screen for `Dz*`/`JN*` natives before shortlisting any KR map.
+
+## Translate candidates — and an honest exhaustion note
+
+After wave 5 took 윷놀이얌 and 턴제카드깸, **the cheap-and-original seam
+is nearly exhausted**; what remains is huge, IP-bound, or a localization.
+1. **영웅 밀어 떨어뜨리기 2.25** (68445, 0.59MB, wtg present, ~17K
+   hangul) — the whole combat model is **displacement, not damage**:
+   stats are Movement / Knockback Power / Knockback Resistance, tooltips
+   literally typed "type: laws of physics", armor converts to % knockback
+   reduction. Sumo-in-WC3 with a designed stat economy. Click-native,
+   sim-testable, no incumbent. **A weekend.**
+2. **스킬사서막기 2.99** (8735, wtg+wct — the only fully GUI-open map
+   measured, ~13.2K hangul) — 100 rounds; **every skill is an item that
+   teaches it**; 5 hidden + 5 "extreme" characters.
+3. **2005 TD Special 3** (382696, 155/mo) — **the only genuinely alive
+   small KR map left**; 41,715 hangul, 100% in wts, clean UTF-8, nothing
+   in object data. A 20-year lineage still maintained by ≥3 authors.
+4. 언덕왕 외전 (7509, 3,083 saves on a 350KB map) — verify it isn't a
+   localization first. 5. 외길인생 (25844) — KR-original, author grants
+   redistribution explicitly.
+REJECTED after measurement: **테트리스 0.8** (466 hangul total — the
+cheapest artifact ever found, and unshippable: DzAPI+JN memory hooks);
+**겨울나기 HARDCORE** (a KR localization of a 2004 EN map — caught only
+by an English changelog inside its own wts); 토끼 vs 양 (localization);
+90분의1 (a StarCraft UMS port + defamation of a named politician).
+
+## Decompose: ORDR — the most-played WC3 map on earth, never opened
+
+134.6MB, **65,533 archive entries** (65,513 anonymous; the count is
+2^16−3, consistent with **hash-table stuffing** to defeat name probing),
+91,080 lines of JASS, group lifetime **15.36M hosted games**. Steals:
+
+1. **A machine-readable tooltip SCHEMA across ~2,300 abilities** — every
+   one uses the same field set (◎기본효과/◎추가효과/◎발동조건/◎범위/
+   ◎데미지/◎쿨타임/◎코스트/◎지속시간…). A 90k-line map stays legible
+   because the tooltip grammar is a schema, not prose — and schemas are
+   LINTABLE. Cheap, high-leverage adoption for our fleet.
+2. **Timed side-objectives that pay into the roll economy and punish
+   with RESOURCE DENIAL**: "stop Wapol within 60s → +1 wisp, +1 lumber…
+   on failure you receive no random wisp for 2 rounds; rounds 21–30
+   only." Optional, windowed, self-balancing — and denying a future roll
+   beats our wave-bonus designs.
+3. **A shared boss HP pool that side-objectives chip**, granting +1
+   gamble charge at rounds 6 and 9 — roll charges as a boss-clear reward.
+4. **Six declared difficulties × orthogonal modes**, voted in lobby —
+   difficulty as a first-class object, not a hidden multiplier.
+5. **`-기여도` (contribution) — a permanent per-player metric inside a
+   co-op team.** Our maps score the team; this scores YOU within it, an
+   anti-freeloader surface for 4-player co-op.
+6. **Verb census: ZERO combat-tempo typing** — all 16 chat commands are
+   meta (reroll/story/scoreboard/vision/treasure/door/offline).
+   **Gotcha 33 holds in the world's most-played WC3 map** — cite it there.
+
+## Wave 5's deckbuilding "opening" — refined, not refuted
+
+Wave 5 audited `덱빌딩: 0` and called seeded deckbuilding the strongest
+opening. The **draft loop already exists** in Korean random-defense:
+RATankD's own text — "spend 100 gold to draw a lowest-tier ability…
+**three random abilities are offered and you choose one**", 300/600g
+tiers, 500 lumber to ascend, abilities specified in engine terms; your
+tank is **rebuilt after 10s** rather than dying. The genuinely open slot
+is narrower and better: **draft-pick exists; a SEEDED draft does not.**
+"Same offers, played better" (two lobbies, one Park-Miller seed) remains
+ours alone. Bonus: that map's own description says it is a **hosted
+regression-test map for the author's trigger engine** (overload /
+diversity / stability tests) — our preflight doctrine, shipped as a
+playable artifact.
+
+## The maintainership finding — re-measured, with a correction [M]
+
+Wave 5: KR authors ship EN builds and they die. Confirmed, worse than
+reported: fods1030's KR line 2,547/mo vs his own EN build **3** (849×);
+nsaworker 369 vs **1** (369×). **But KR→CN localization WORKS**: 20
+CJK-titled groups in the live canon are Korean-authored and retain ~10%
+of their KR line (escaco's tank defense: 29/mo CN vs 286 KR).
+**The Korean scene has one working export channel and it points EAST**
+— roughly 100× more effective than westward. Any "translate a KR map to
+English" plan should carry that prior explicitly: ~0.1% retention unless
+a Western MAINTAINER (not translator) adopts it — the Pumpkin TD pattern.
+
+## Provenance hazards (KR-specific)
+
+- **The `cheats` API field is unreliable and the cheat fork can BE the
+  canonical build**: FOC Another (435984), **#5 Korean map at 2,480/mo**,
+  has `path = "Cheat_FOCS Another…"`, `cheats = 0`, and a full `@`
+  command set in its script (give gold, level up, duplicate, kick,
+  delete replay). Meanwhile `cheats=1` fires on six maps with clean
+  paths. Check BOTH.
+- **`Cht` ≠ cheat** — it is 繁體中文 (`PlantFarm_0.53Cht.w3x` is a
+  Traditional Chinese build).
+- **The path oracle FAILS on KR localizations.** Three localizations in
+  the sample were invisible to metadata; only the wts caught them. **New
+  cheap oracle: grep the extracted wts for 한글화 / 한글판 / 번역 /
+  원작자 / 한글패치 and for ASCII-English changelog blocks.** Only
+  30/527 declare it in name/author/description.
+- **The author field is spoofed**: live KR maps carry authors "Blizzard
+  Entertainment" (×3), "알려지지 않음" (unknown, ×5), "developer",
+  "TRIGSTR_004", "null", "未知". Wave 3's check-the-author rule degrades
+  badly here.
+- **ORDR fork ecology**: one group, four live path variants (base, `_EZ`
+  easy-mode, `_RT` re-tune, `_solvit_v2` = the current #1 row), 168
+  point-versions under one name spelling. **The map you download and the
+  map the lobbies run are usually different files.** And storagebox
+  **404s the hottest rows** (447715, 447696) — fall back down the list.
+
+## Other steals
+
+- **Hidden roster entries as advertised community content** — Soldier
+  TD: "40 builders — 34 normal, **6 hidden** — 82 rounds, 202 towers";
+  스킬사서막기: "hidden five, extreme five". The KR analogue of CN's
+  隱藏英雄密碼 culture, *declared on the loading screen* to advertise
+  the unknown. Cheap, sim-testable, drives walkthrough engagement.
+- **컴까기 ("beat the comp") is a KR genre with no Western equivalent** —
+  24 groups of co-op melee vs enhanced AI. S.Wizard's 33-map catalog
+  ships w3i v33, 0.7MB, wtg present, AMAI 3.2.2 and near-zero custom
+  content: **the map IS the AI script.** Nothing in our fleet has an AI
+  opponent, and these are the cheapest artifacts to study.
+- **Shared franchises across unrelated authors** (돈타워, 2005TD), like
+  호성 — fork genealogy here is a forest with shared roots, never a line.
+
+## Audited absent in Korean
+
+Zero results for 재판 (trial), 사다리, 알바, 지하철, 심리, 방탈출,
+경영, and 무궁화/달고나/오징어 (**the KR scene never made a Squid Game
+map**). Hosted-DEAD (ghm=0): 술래잡기/얼음땡 (7), 경매 (3), 낚시 (7),
+요리, 야구 (3), 축구 (3), 가위바위보, 숨바꼭질, 감옥 (3). The
+Korean-life-simulator genre I expected by analogy to RU's Gomel/
+Chelyabinsk **does not exist**. Also: m16tool.xyz is NOT a canon portal
+(its GameList is 15 anime-RPGs); `/api/activity?range=month` 502s, only
+24h works; `group=` is not a real search param.
+
+## Toolkit findings
+
+- **T1 — `lib/wts.js` SILENTLY CORRUPTS invalid-UTF-8 wts files.** Wave
+  4 predicted a throw; it does not throw — it substitutes U+FFFD with no
+  warning. 3 of 14 KR files affected; 무한맵 컴까기 loses **665**
+  sequences, ORDR 5, FOC 1. **Root cause found**: every corruption sits
+  inside a WE auto-generated trigger comment, where the editor truncates
+  long Korean comments at a BYTE limit, cutting a UTF-8 sequence
+  mid-character. A round-trip through our pipeline destroys those bytes
+  permanently. Real data loss, not cosmetic — it will silently corrupt
+  any KR translation pass. Fix shape: byte-preserving escape (the
+  `_dialect` sidecar contract) + a WARN with a count. **QUEUED.**
+- **T2 — backend divergence on a real map**: 빙판박치기 (166786, w3i
+  v18) fails stormlib `ERR:1004` but **smpq extracts it fine**. A
+  concrete reason the smpq fallback stays wired.
+- **T3 — a protection technique neither backend beats**: 랜덤능력타워
+  디펜스 II ships a **DECOY listfile** — plausible, real-looking paths
+  whose files cannot be opened. Distinct from wave 1's 2-entry fake
+  listfile; a candidate for lib/recover.js (hash-probe the union anyway
+  rather than trusting listfile entries that fail to open).
+- **T4 — hash-table stuffing** (hypothesis): ORDR's 65,533 = 2^16−3
+  entries, 65,513 anonymous, in a 134MB archive.
+- **T5 — no object-data failures**: the trailing-zero-dword codec parsed
+  every v1/v2 file in this wave, including maps with 58,459 hangul in
+  object data and one with no wts at all.
