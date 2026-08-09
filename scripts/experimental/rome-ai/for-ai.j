@@ -405,6 +405,43 @@
     integer          ai_raidType    = 0
 
     // ===================================================================
+    //  ROUND 3: RAMS (item 8) AND DISPERSAL (item 10)
+    //
+    //  Rams. The map own hint text: "Battering Rams are particularly useful
+    //  for bashing down city walls!" -- anti-structure by design intent, not
+    //  merely by stat profile. h025 is the ram the AI already buys as role 4
+    //  and h00S is the only ua1t = siege / ua1w = artillery unit in the
+    //  table. So a ram gets ONE job: go at a wall when there is a wall to
+    //  break, and hold behind the line when there is not, instead of
+    //  drifting into a field engagement it cannot survive.
+    //
+    //  Dispersal. The owner screenshot: a 283/300 food army crammed into a
+    //  single street. Ordering every unit to the SAME point is what makes a
+    //  blob, because the engine then queues the whole army through one tile
+    //  -- the same failure family as the gate jam, and it survives even an
+    //  OPEN gate. Each unit instead gets a lane: a lateral offset
+    //  perpendicular to the ARMY march line, keyed off the unit handle id.
+    //  Both halves of that matter. Handle-keyed means a unit keeps its lane
+    //  across ticks; army-line-keyed (rather than per-unit geometry) means
+    //  the offset does not drift as the unit walks, so lanes cost ZERO extra
+    //  orders and cannot undo the round-2 order economy.
+    // ===================================================================
+    constant real    AI_RAM_HOLD_R    = 1400.0  // how far behind the line rams sit
+    constant integer AI_LANES         = 5       // odd, so one lane is dead centre
+    constant integer AI_LANE_MID      = 2       // (AI_LANES-1)/2, STATED not derived:
+                                                // JASS integer division truncates and
+                                                // the trace interpreter divides as a
+                                                // real, so deriving it would make the
+                                                // two disagree about the formation.
+    constant real    AI_LANE_W        = 260.0   // lateral spacing between lanes
+    integer          ai_ramType     = 0
+    boolean          ai_ramWork     = false
+    real             ai_ramX        = 0.0
+    real             ai_ramY        = 0.0
+    real             ai_laneNX      = 0.0       // march-line normal, per dispatch
+    real             ai_laneNY      = 0.0
+
+    // ===================================================================
     //  ROUND 3: HEROES  (queue item 5)
     //
     //  The decisive fact, established from the artifact: there is NO revive
@@ -845,6 +882,46 @@ function AI_BaseCost takes integer tid returns real
         return 300.0
     endif
     return 50.0
+endfunction
+
+// Faction unit ids. Each player trains its own visual variant of the same role.
+function AI_UnitFor takes integer pid, integer role returns integer
+    // role 0 cheap melee, 1 heavy melee, 2 ranged, 3 cavalry, 4 siege ram
+    if ai_role[pid] == AI_ROLE_ROME then
+        if role == 0 then
+            return 'h00B'
+        elseif role == 1 then
+            return 'h00C'
+        elseif role == 2 then
+            return 'n001'
+        elseif role == 3 then
+            return 'h00A'
+        endif
+        return 'h025'
+    endif
+    if GetPlayerId(ai_p[pid]) == 7 then
+        // Persia
+        if role == 0 then
+            return 'h019'
+        elseif role == 1 then
+            return 'h00T'
+        elseif role == 2 then
+            return 'n007'
+        elseif role == 3 then
+            return 'h01B'
+        endif
+        return 'h025'
+    endif
+    if role == 0 then
+        return 'h007'
+    elseif role == 1 then
+        return 'h006'
+    elseif role == 2 then
+        return 'n000'
+    elseif role == 3 then
+        return 'h005'
+    endif
+    return 'h025'
 endfunction
 
 function AI_IsStructure takes unit u returns boolean
@@ -1987,6 +2064,13 @@ endfunction
 //  Execution
 //===========================================================================
 
+// This unit lane, centred on zero: for AI_LANES = 5 the lanes are -2..2.
+// Keyed off the handle id so a unit keeps the same lane every tick -- a lane
+// that changed between ticks would be an order storm.
+function AI_LaneOf takes unit u returns real
+    return I2R(ModuloInteger(GetHandleId(u), AI_LANES) - AI_LANE_MID)
+endfunction
+
 function AI_SendEnum takes nothing returns nothing
     local unit u = GetEnumUnit()
     if AI_IsStructure(u) or GetUnitState(u, UNIT_STATE_LIFE) <= 0.405 then
@@ -2008,20 +2092,53 @@ function AI_SendEnum takes nothing returns nothing
         set u = null
         return
     endif
+    // ROUND 3, queue item 8: a ram with no wall to break holds behind the
+    // line. It is the map own declared wall-breaker and nothing else.
+    if GetUnitTypeId(u) == ai_ramType and not ai_ramWork then
+        call AI_TryOrder(u, AI_ORD_MOVE, ai_ramX, ai_ramY, null)
+        set u = null
+        return
+    endif
     if ai_ordKind == AI_ORD_ATTACKU then
+        // focus fire converges: no lane offset on a specific target
         if AI_Dist(GetUnitX(u), GetUnitY(u), ai_orderX, ai_orderY) < AI_SIEGE_R then
             call AI_TryOrder(u, AI_ORD_ATTACKU, ai_orderX, ai_orderY, ai_orderTarget)
         else
             call AI_TryOrder(u, AI_ORD_ATTACKP, ai_orderX, ai_orderY, null)
         endif
     else
-        call AI_TryOrder(u, ai_ordKind, ai_orderX, ai_orderY, null)
+        // ROUND 3, queue item 10: march in lanes, not in one column
+        call AI_TryOrder(u, ai_ordKind, ai_orderX + ai_laneNX*AI_LANE_W*AI_LaneOf(u), ai_orderY + ai_laneNY*AI_LANE_W*AI_LaneOf(u), null)
     endif
     set u = null
 endfunction
 
 function AI_SendArmy takes integer pid, real x, real y, integer kind, unit tgt returns nothing
     local group g = CreateGroup()
+    local real dx = x - wm_fieldX[pid]
+    local real dy = y - wm_fieldY[pid]
+    local real d = SquareRoot(dx*dx + dy*dy)
+    // ROUND 3, item 10: one march-line normal for the whole dispatch. Taking
+    // it from the ARMY line rather than each unit own line is what keeps a
+    // unit lane destination fixed while it walks, so lanes add no orders.
+    if d > 1.0 then
+        set ai_laneNX = -dy/d
+        set ai_laneNY = dx/d
+    else
+        set ai_laneNX = 0.0
+        set ai_laneNY = 0.0
+    endif
+    // ROUND 3, item 8: where a ram waits when there is no wall to break --
+    // AI_RAM_HOLD_R back from the army, towards home.
+    set d = AI_Dist(wm_fieldX[pid], wm_fieldY[pid], ai_homeX[pid], ai_homeY[pid])
+    if d < AI_RAM_HOLD_R then
+        set ai_ramX = ai_homeX[pid]
+        set ai_ramY = ai_homeY[pid]
+    else
+        set ai_ramX = wm_fieldX[pid] + (ai_homeX[pid]-wm_fieldX[pid])*(AI_RAM_HOLD_R/d)
+        set ai_ramY = wm_fieldY[pid] + (ai_homeY[pid]-wm_fieldY[pid])*(AI_RAM_HOLD_R/d)
+    endif
+    set ai_ramType = AI_UnitFor(pid, 4)
     set ai_curP = ai_p[pid]
     set ai_curPid = pid
     set ai_orderX = x
@@ -2493,6 +2610,9 @@ function AI_MoveOnTarget takes integer pid, integer t returns nothing
         set ai_progAt[pid] = ai_now
     endif
     set gi = ai_apGate[pid]
+    // ROUND 3, item 8: is there a wall to break on this march? That single
+    // question is what tells the rams whether they have a job this tick.
+    set ai_ramWork = (gi >= 0) and ai_apBreak[pid]
     if gi >= 0 and ai_apBreak[pid] then
         // the crossing is shut and not ours: break THIS gate on purpose,
         // instead of attack-moving at the objective and letting the engine
@@ -2527,46 +2647,6 @@ function AI_FindTrainer takes integer pid returns unit
     call DestroyGroup(g)
     set g = null
     return ai_trainer
-endfunction
-
-// Faction unit ids. Each player trains its own visual variant of the same role.
-function AI_UnitFor takes integer pid, integer role returns integer
-    // role 0 cheap melee, 1 heavy melee, 2 ranged, 3 cavalry, 4 siege ram
-    if ai_role[pid] == AI_ROLE_ROME then
-        if role == 0 then
-            return 'h00B'
-        elseif role == 1 then
-            return 'h00C'
-        elseif role == 2 then
-            return 'n001'
-        elseif role == 3 then
-            return 'h00A'
-        endif
-        return 'h025'
-    endif
-    if GetPlayerId(ai_p[pid]) == 7 then
-        // Persia
-        if role == 0 then
-            return 'h019'
-        elseif role == 1 then
-            return 'h00T'
-        elseif role == 2 then
-            return 'n007'
-        elseif role == 3 then
-            return 'h01B'
-        endif
-        return 'h025'
-    endif
-    if role == 0 then
-        return 'h007'
-    elseif role == 1 then
-        return 'h006'
-    elseif role == 2 then
-        return 'n000'
-    elseif role == 3 then
-        return 'h005'
-    endif
-    return 'h025'
 endfunction
 
 function AI_RoleCost takes integer pid, integer role returns real
@@ -2668,7 +2748,10 @@ function AI_Spend takes integer pid returns nothing
         return
     endif
     // composition: bias by goal, break ties with the seeded stream
-    if ai_goal[pid] == GOAL_SIEGE and wm_lumber[pid] >= 200.0 and AI_RandReal() < 0.35 then
+    // ROUND 3, item 8: buy rams because there is a WALL in the way, not as a
+    // random flavour of the composition roll. ai_apBreak is set by the
+    // approach layer when the crossing we picked has to be broken.
+    if (ai_apBreak[pid] or ai_goal[pid] == GOAL_SIEGE) and wm_lumber[pid] >= 200.0 and AI_RandReal() < 0.45 then
         set role = 4
     elseif AI_RandReal() < 0.45 then
         set role = 0
@@ -2860,6 +2943,7 @@ function AI_Execute takes integer pid returns nothing
         call AI_TryRaze(pid)
         // no march in progress: gate control is purely defensive here
         set ai_apGate[pid] = -1
+        set ai_ramWork = false
         call AI_ManageGates(pid)
         call AI_SendArmy(pid, ai_homeX[pid], ai_homeY[pid], AI_ORD_MOVE, null)
 
@@ -2875,6 +2959,7 @@ function AI_Execute takes integer pid returns nothing
         // Answer with a capped slice of the army, and only pull the field army
         // off its objective when the thing at risk is worth more than the thing
         // being taken.
+        set ai_ramWork = false
         if AI_ShouldRecall(pid) then
             call AI_SendArmy(pid, wm_threatX[pid], wm_threatY[pid], AI_ORD_ATTACKP, null)
         else
@@ -2882,6 +2967,7 @@ function AI_Execute takes integer pid returns nothing
         endif
 
     elseif goal == GOAL_RETREAT then
+        set ai_ramWork = false
         call AI_SendArmy(pid, ai_homeX[pid], ai_homeY[pid], AI_ORD_MOVE, null)
 
     elseif goal == GOAL_SIEGE then

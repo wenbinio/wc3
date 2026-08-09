@@ -947,6 +947,78 @@ def strategy():
     return 1 if fails else 0
 
 
+# ------------------------- round 3: rams (item 8) and dispersal (item 10)
+
+def formation():
+    """Queue items 8 and 10.
+
+    Item 10 is the owner's screenshot: 283/300 food in one street. Ordering
+    every unit to the same point is what builds a blob, and it survives even
+    an open gate -- the same failure family as the gate jam. The lane model
+    must spread the army AND must cost nothing in orders, or it undoes round
+    2, so the stability of a lane is asserted as hard as its width."""
+    print('\n' + '=' * 78)
+    print('ROUND 3 -- rams and dispersal: columns instead of one blob')
+    print('=' * 78)
+    L, W = int(CONSTS['AI_LANES']), CONSTS['AI_LANE_W']
+    fails = 0
+
+    def lanes_for(handles, n_lanes=None):
+        sc = dict(role='barb')
+        env = make_env(sc)
+        consts = dict(CONSTS)
+        if n_lanes is not None:
+            consts['AI_LANES'] = n_lanes
+            consts['AI_LANE_MID'] = (n_lanes - 1) // 2
+        nat = make_natives(env, 0.0)
+        nat['GetHandleId'] = lambda u: u
+        nat['ModuloInteger'] = lambda a, b: a % b
+        it = Interp(FUNCS, consts, env, nat)
+        return [it.run('AI_LaneOf', [h]) for h in handles]
+
+    lanes = lanes_for(range(400))
+    distinct = sorted(set(lanes))
+    checks = [
+        ('every lane in the model is used', len(distinct) == L),
+        ('AI_LANE_MID and AI_LANES cannot drift apart',
+         2 * int(CONSTS['AI_LANE_MID']) + 1 == L),
+        ('lanes are centred on the march line', abs(sum(distinct)) < 1e-9),
+        ('the formation is symmetric', distinct[0] == -distinct[-1]),
+        ('the widest lane separation is a real frontage, not a nudge',
+         (distinct[-1] - distinct[0]) * W >= 800.0),
+    ]
+    for name, ok in checks:
+        fails += 0 if ok else 1
+        print('  %s %s' % ('PASS' if ok else 'FAIL', name))
+    print('       lanes: %s  frontage %.0f units'
+          % (distinct, (distinct[-1] - distinct[0]) * W))
+
+    # a unit keeps its lane forever: the lane is a function of the handle id
+    # alone, so nothing about walking can change it. An offset that drifted
+    # would re-trip AI_NeedsOrder and undo the round-2 order economy.
+    stable = lanes_for([12345]) * 3 == lanes_for([12345, 12345, 12345])
+    fails += 0 if stable else 1
+    print('  %s a unit lane is a pure function of its handle, so it never drifts'
+          % ('PASS' if stable else 'FAIL'))
+
+    # NEGATIVE CONTROL: collapse to one lane and the frontage must vanish --
+    # otherwise the spread above is coming from somewhere other than AI_LANES.
+    one = sorted(set(lanes_for(range(400), n_lanes=1)))
+    ok = (len(one) == 1 and (one[-1] - one[0]) * W == 0.0)
+    fails += 0 if ok else 1
+    print('  %s   negative control: with AI_LANES=1 the army collapses back to one column (%s)'
+          % ('PASS' if ok else 'FAIL', one))
+
+    # -- rams -------------------------------------------------------------
+    ok = CONSTS['AI_RAM_HOLD_R'] > CONSTS['AI_TOUCH_R']
+    fails += 0 if ok else 1
+    print('  %s a waiting ram sits further back than the capture-focus radius'
+          % ('PASS' if ok else 'FAIL'))
+
+    print('\n%s: %d formation assertions failed' % ('PASS' if not fails else 'FAIL', fails))
+    return 1 if fails else 0
+
+
 # ------------------------------ round 3: coordination + harassers (item 7)
 
 def consort():
@@ -1330,6 +1402,21 @@ ROUND3_GUARDS = [
      r'function AI_ScoreDefend\b.*?if t > AI_WRITEOFF\*a and not wm_capThreat\[pid\] then', True),
     ('GUARD B: the army SPLIT is still the default response',
      r'function AI_Execute\b.*?if AI_ShouldRecall\(pid\) then.*?call AI_Respond\(pid,', True),
+    # --- rams (item 8) and dispersal (item 10) ---------------------------
+    ('a ram with no wall to break holds behind the line',
+     r'function AI_SendEnum\b.*?if GetUnitTypeId\(u\) == ai_ramType and not ai_ramWork then\s*\n\s*call AI_TryOrder\(u, AI_ORD_MOVE, ai_ramX, ai_ramY', True),
+    ('ram work is decided by whether the approach must BREAK a crossing',
+     r'set ai_ramWork = \(gi >= 0\) and ai_apBreak\[pid\]', True),
+    ('rams are bought because a wall is in the way, not at random',
+     r'if \(ai_apBreak\[pid\] or ai_goal\[pid\] == GOAL_SIEGE\) and wm_lumber\[pid\] >= 200\.0', True),
+    ('a defensive or retreating dispatch gives rams no job',
+     r'set ai_ramWork = false', True),
+    ('the march-line normal is computed ONCE per dispatch, from the army line',
+     r'function AI_SendArmy\b.*?set ai_laneNX = -dy/d\s*\n\s*set ai_laneNY = dx/d', True),
+    ('lanes are applied to the march, not to focus fire',
+     r'call AI_TryOrder\(u, ai_ordKind, ai_orderX \+ ai_laneNX\*AI_LANE_W\*AI_LaneOf\(u\)', True),
+    ('a lane is keyed off the unit handle so it is stable across ticks',
+     r'function AI_LaneOf\b.*?ModuloInteger\(GetHandleId\(u\), AI_LANES\) - AI_LANE_MID', True),
     # --- coordination and harassers (item 7) -----------------------------
     ('objectives are claimed in the shared ledger when adopted',
      r'function AI_Execute\b.*?call AI_Claim\(pid, t\)', True),
@@ -1556,6 +1643,7 @@ def main():
     rc |= routing()
     rc |= gates_round3()
     rc |= strategy()
+    rc |= formation()
     rc |= consort()
     rc |= holding()
     rc |= heroes()
