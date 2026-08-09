@@ -64,6 +64,9 @@ def parse_globals(text):
 
 def jass_expr_to_py(e):
     e = re.sub(r'//.*$', '', e).strip()
+    # JASS function references: Filter(function Foo) / ForGroup(g, function Foo).
+    # Python has no such keyword, and the name alone is the callable.
+    e = re.sub(r'\bfunction\s+(\w+)', r'\1', e)
     e = re.sub(r'\bnot\b', ' not ', e)
     e = re.sub(r'\band\b', ' and ', e)
     e = re.sub(r'\bor\b', ' or ', e)
@@ -358,6 +361,8 @@ def make_natives(env, noise=0.0):
         'AI_Find': lambda i: env['_ptComp'].get(i, 0),
         'R2I': int,
         'PATHING_TYPE_WALKABILITY': 1,
+        'UNIT_STATE_LIFE': 1, 'UNIT_STATE_MAX_LIFE': 2, 'UNIT_TYPE_HERO': 3,
+        'UNIT_TYPE_STRUCTURE': 4,
         # IsTerrainPathable is INVERTED: true means BLOCKED. Two independent
         # scenario mechanisms, because the two round-4 uses need different
         # shapes: '_span' is a half-width of walkable ground about the march
@@ -1334,6 +1339,105 @@ def consort():
     return 1 if fails else 0
 
 
+# --------------------------- round 7: a centroid is not a position (14.2)
+
+def centroid():
+    """Round 7, stage 1. Measured against the map's own war3map.wpm
+    (1920x1920 cells at 32 units, walkable = flag & 0x02 == 0, calibrated on
+    six known-land points): the STARTING field centroid of all three Roman
+    powers is IN THE SEA -- West Rome (-4056,-14352), East Rome
+    (16714,-13819), North Rome (-21062,-54) -- while all nine other factions
+    are on land.
+
+    A CV-weighted mean of an empire spread around a sea is not a place, and
+    everything geometric measures from it: the water test that decides
+    wantsBoat, the nearest-target scan, the march origin, the lane normal and
+    the ram hold point. Hence "West Rome: boarding a transport" and
+    "transport parked in the middle of the sea"."""
+    print('\n' + '=' * 78)
+    print('ROUND 7 -- a centroid is not a position: the three Roman starts')
+    print('=' * 78)
+    fails = 0
+
+    def validate(fx, fy, units, home=(0.0, 0.0), water=None):
+        """Run the REAL AI_ValidateField. 'water' is an interval on x that is
+        sea; 'units' are the player's own units the snap may choose from."""
+        sc = dict(role='rome', fieldX=fx, fieldY=fy)
+        env = make_env(sc)
+        env['ai_homeX'] = {0: home[0]}
+        env['ai_homeY'] = {0: home[1]}
+        env['_water'] = water if water else (1.0, -1.0)
+        nat = make_natives(env, 0.0)
+        seq = list(units)
+        state = {'i': 0}
+        def enum_driver(g, fn):
+            for u in seq:
+                state['cur'] = u
+                fn()
+        nat['GetEnumUnit'] = lambda: state.get('cur')
+        nat['GetUnitX'] = lambda u: u[0]
+        nat['GetUnitY'] = lambda u: u[1]
+        nat['GetUnitState'] = lambda u, st: 1000.0
+        nat['IsUnitLoaded'] = lambda u: u[2] if len(u) > 2 else False
+        nat['AI_IsStructure'] = lambda u: False
+        nat['CreateGroup'] = lambda: 'g'
+        nat['DestroyGroup'] = lambda g: None
+        nat['GroupEnumUnitsOfPlayer'] = lambda g, p, f: None
+        nat['ForGroup'] = enum_driver
+        nat['Filter'] = lambda f: f
+        it = Interp(FUNCS, CONSTS, env, nat)
+        moved = it.run('AI_ValidateField', [0])
+        return bool(moved), env['wm_fieldX'][0], env['wm_fieldY'][0]
+
+    SEA = (-2000.0, 2000.0)     # a strait spanning the mean of two land masses
+    LAND_UNITS = [(-6000.0, 0.0), (6000.0, 0.0), (7000.0, 500.0)]
+
+    # the shape of a Roman empire: two coasts, weighted mean lands in between
+    moved, fx, fy = validate(0.0, 0.0, LAND_UNITS, home=(-6000.0, 0.0), water=SEA)
+    ok = moved and abs(fx) > 2000.0
+    fails += 0 if ok else 1
+    print('  %s a centroid that lands in open water is moved to real ground (-> %.0f, %.0f)'
+          % ('PASS' if ok else 'FAIL', fx, fy))
+
+    ok = abs(fx - (-6000.0)) < 1e-6 or abs(fx - 6000.0) < 1e-6
+    fails += 0 if ok else 1
+    print('  %s ... and it snaps to an actual UNIT, not to an arbitrary point'
+          % ('PASS' if ok else 'FAIL'))
+
+    # a centroid already on land must be left completely alone
+    moved2, fx2, fy2 = validate(6000.0, 0.0, LAND_UNITS, home=(-6000.0, 0.0), water=SEA)
+    ok = (not moved2) and fx2 == 6000.0 and fy2 == 0.0
+    fails += 0 if ok else 1
+    print('  %s a centroid already on land is untouched (nine of twelve factions pay nothing)'
+          % ('PASS' if ok else 'FAIL'))
+
+    # cargo must not be a snap candidate: a loaded unit reports the BOAT
+    moved3, fx3, fy3 = validate(0.0, 0.0, [(500.0, 0.0, True), (6000.0, 0.0, False)],
+                                home=(-9000.0, 0.0), water=SEA)
+    ok = moved3 and abs(fx3 - 6000.0) < 1e-6
+    fails += 0 if ok else 1
+    print('  %s a LOADED unit is not a valid anchor -- it reports its transport (-> %.0f)'
+          % ('PASS' if ok else 'FAIL', fx3))
+
+    # with nothing ashore at all, home is the fallback
+    moved4, fx4, fy4 = validate(0.0, 0.0, [], home=(-9000.0, 123.0), water=SEA)
+    ok = moved4 and abs(fx4 - (-9000.0)) < 1e-6 and abs(fy4 - 123.0) < 1e-6
+    fails += 0 if ok else 1
+    print('  %s with no unit ashore it falls back to home, which is a building and therefore a place'
+          % ('PASS' if ok else 'FAIL'))
+
+    # NEGATIVE CONTROL: no water anywhere, and the identical call must be a
+    # no-op -- so it is the pathing probe deciding, not the snap running blind.
+    moved5, fx5, fy5 = validate(0.0, 0.0, LAND_UNITS, home=(-6000.0, 0.0), water=None)
+    ok = (not moved5) and fx5 == 0.0
+    fails += 0 if ok else 1
+    print('  %s   negative control: with no water the same centroid is left exactly where it was'
+          % ('PASS' if ok else 'FAIL'))
+
+    print('\n%s: %d centroid assertions failed' % ('PASS' if not fails else 'FAIL', fails))
+    return 1 if fails else 0
+
+
 # ------------------- round 6: the impossible goal (Persia after a capture)
 
 def impossible():
@@ -2129,6 +2233,15 @@ ROUND3_GUARDS = [
      r'function AI_BoardEnum\b.*?IsUnitType\(u, UNIT_TYPE_HERO\) and ai_navLoaded < AI_NAV_MIN_LOAD', True),
     ('no transport is left with cargo and no destination',
      r'function AI_NavIdle\b.*?call AI_TryOrder\(ship, AI_ORD_UNLOAD, ai_homeX\[pid\]', True),
+    # --- round 7: the centroid ------------------------------------------
+    ('the field centroid is validated before anything geometric uses it',
+     r'set wm_fieldHPFrac\[pid\] = 1\.0\s*\n\s*endif(?:\s*//[^\n]*\n)*\s*if AI_ValidateField\(pid\) then', True),
+    ('cargo counts towards strength but never towards position',
+     r'function AI_SumOwnArmy\b(?:(?!\nendfunction)[\s\S])*?if not IsUnitLoaded\(u\) then\s*\n\s*set ai_accX', True),
+    ('the snap prefers a real unit and falls back to home',
+     r'function AI_ValidateField\b(?:(?!\nendfunction)[\s\S])*?set ai_snapBX = ai_homeX\[pid\]', True),
+    ('a loaded unit is never a snap anchor',
+     r'function AI_SnapEnum\b(?:(?!\nendfunction)[\s\S])*?IsUnitLoaded\(u\)', True),
     # --- round 6: the impossible goal and the stale objective -------------
     ('TECH scores zero when no research is affordable',
      r'function AI_ScoreTech\b(?:(?!\nendfunction)[\s\S])*?wm_gold\[pid\] < AI_TECH_MIN_GOLD.*?return 0\.0', True),
@@ -2423,6 +2536,7 @@ def main():
     rc |= strategy()
     rc |= tribes()
     rc |= formation()
+    rc |= centroid()
     rc |= impossible()
     rc |= romanlock()
     rc |= unstick()

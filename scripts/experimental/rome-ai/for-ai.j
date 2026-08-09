@@ -388,6 +388,11 @@
     real             ai_accW         = 0.0
     real             ai_accHP        = 0.0
     real             ai_accHPMax     = 0.0
+    real             ai_snapX        = 0.0    // round 7: centroid validation
+    real             ai_snapY        = 0.0
+    real             ai_snapD        = 0.0
+    real             ai_snapBX       = 0.0
+    real             ai_snapBY       = 0.0
     integer          ai_accN         = 0
     integer          ai_accSiege     = 0
     unit             ai_orderTarget  = null
@@ -1718,9 +1723,16 @@ function AI_SumOwnArmy takes nothing returns nothing
     endif
     if cv > 0.0 then
         set ai_accCV = ai_accCV + cv
-        set ai_accX  = ai_accX + GetUnitX(u)*cv
-        set ai_accY  = ai_accY + GetUnitY(u)*cv
-        set ai_accW  = ai_accW + cv
+        // ROUND 7: a LOADED unit reports its transport position, not its own.
+        // Letting cargo vote on where the army is drags the centroid out to
+        // sea and then makes the sea-origin water test want more boats -- a
+        // self-reinforcing loop. Cargo counts towards strength, never towards
+        // position.
+        if not IsUnitLoaded(u) then
+            set ai_accX  = ai_accX + GetUnitX(u)*cv
+            set ai_accY  = ai_accY + GetUnitY(u)*cv
+            set ai_accW  = ai_accW + cv
+        endif
         set ai_accHP = ai_accHP + GetUnitState(u, UNIT_STATE_LIFE)
         set ai_accHPMax = ai_accHPMax + GetUnitState(u, UNIT_STATE_MAX_LIFE)
         set ai_accN  = ai_accN + 1
@@ -1742,6 +1754,72 @@ function AI_SumVisibleEnemy takes nothing returns nothing
         endif
     endif
     set u = null
+endfunction
+
+//---------------------------------------------------------------------------
+//  ROUND 7 -- A CENTROID IS NOT A POSITION.
+//
+//  Measured against the map's own war3map.wpm (1920x1920 cells at 32 units,
+//  walkable = flag & 0x02 == 0, calibrated on six known-land points): the
+//  STARTING field centroid of all three Roman powers is IN THE SEA --
+//  West Rome (-4056,-14352), East Rome (16714,-13819), North Rome
+//  (-21062,-54). The nine other factions are on land.
+//
+//  wm_fieldX/Y is a CV-weighted mean, and for an empire spread around a sea
+//  -- Italy, Gaul, Hispania, Africa -- that mean is not a place. Everything
+//  geometric then measures from open water:
+//    * AI_WantsCrossing runs its water test FROM the centroid, so the line to
+//      almost any objective is wet and West Rome and North Rome measure
+//      wantsBoat = TRUE on their own nearest target. That is the
+//      "West Rome: boarding a transport" report, and the milder form of the
+//      hero-in-a-boat.
+//    * the naval gather point, the ram hold point and the lane normal are all
+//      derived from it, which is "transport parked in the middle of the sea".
+//
+//  So the centroid is VALIDATED as a position before anything is measured
+//  from it: if the weighted mean is not walkable it snaps to the nearest real
+//  unit standing on real ground, and to home if there is none. The snap costs
+//  one extra enumeration and only for a faction that actually needs it -- nine
+//  of twelve never pay it.
+//---------------------------------------------------------------------------
+
+function AI_SnapEnum takes nothing returns nothing
+    local unit u = GetEnumUnit()
+    local real d
+    if AI_IsStructure(u) or GetUnitState(u, UNIT_STATE_LIFE) <= 0.405 or IsUnitLoaded(u) then
+        set u = null
+        return
+    endif
+    set d = AI_Dist(GetUnitX(u), GetUnitY(u), ai_snapX, ai_snapY)
+    if d < ai_snapD then
+        set ai_snapD = d
+        set ai_snapBX = GetUnitX(u)
+        set ai_snapBY = GetUnitY(u)
+    endif
+    set u = null
+endfunction
+
+// Make wm_fieldX/Y a real place. Returns true when it had to be moved.
+function AI_ValidateField takes integer pid returns boolean
+    local group g
+    // IsTerrainPathable is INVERTED: true means BLOCKED.
+    if not IsTerrainPathable(wm_fieldX[pid], wm_fieldY[pid], PATHING_TYPE_WALKABILITY) then
+        return false                        // already a place
+    endif
+    set ai_snapX = wm_fieldX[pid]
+    set ai_snapY = wm_fieldY[pid]
+    set ai_snapD = 999999.0
+    set ai_snapBX = ai_homeX[pid]
+    set ai_snapBY = ai_homeY[pid]
+    set ai_curP = ai_p[pid]
+    set g = CreateGroup()
+    call GroupEnumUnitsOfPlayer(g, ai_p[pid], Filter(function AI_OwnUnitFilter))
+    call ForGroup(g, function AI_SnapEnum)
+    call DestroyGroup(g)
+    set g = null
+    set wm_fieldX[pid] = ai_snapBX
+    set wm_fieldY[pid] = ai_snapBY
+    return true
 endfunction
 
 function AI_ResetAcc takes nothing returns nothing
@@ -1860,6 +1938,12 @@ function AI_ScanWorld takes integer pid returns nothing
         set wm_fieldHPFrac[pid] = ai_accHP / ai_accHPMax
     else
         set wm_fieldHPFrac[pid] = 1.0
+    endif
+    // ROUND 7: before ANYTHING geometric is measured from it. Every later
+    // consumer -- the water test, the nearest-target scan, the march origin,
+    // the lane normal, the ram hold point -- assumes this is a place.
+    if AI_ValidateField(pid) then
+        call AI_Say(pid, "regrouping - the army was too scattered to have a centre")
     endif
 
     // garrison = own CV near home
