@@ -270,6 +270,9 @@ def make_env(sc):
         'ai_harasser': d(sc.get('harasser', False)),
         'wm_wantBoat': d(sc.get('wantBoat', False)),
         'ai_comp': {}, 'ai_claim': {}, 'ai_claimAt': {},
+        'ai_laneN': CONSTS['AI_LANES'], 'ai_laneMid': CONSTS['AI_LANE_MID'],
+        'ai_laneNX': sc.get('laneNX', 0.0), 'ai_laneNY': sc.get('laneNY', 1.0),
+        'ai_ramWork': False, 'ai_ramType': 0, 'ai_ramX': 0.0, 'ai_ramY': 0.0,
         'ai_navState': d(0), 'ai_navShip': d(None),
         'ai_navAt': d(0.0), 'ai_navSince': d(0.0),
         'wm_capThreat': d(sc.get('capThreat', False)),
@@ -305,6 +308,9 @@ def make_env(sc):
     # land component per point; AI_Find is mocked off this so the union-find
     # implementation is not what the connectivity assertions depend on
     env['_allies'] = set(sc.get('allies', ()))
+    env['_span'] = sc.get('span', 1e9)          # walkable half-width, engine-side
+    env['_spanNX'] = sc.get('laneNX', 0.0)
+    env['_spanNY'] = sc.get('laneNY', 1.0)
     env['_ptComp'] = {i: p.get('comp', 0) for i, p in enumerate(sc.get('points', []))}
     env['_ptOwner'] = {i + 1: p.get('owner', 1) for i, p in enumerate(sc.get('points', []))}
     # gates: handle = 1000+index so it cannot collide with a point handle
@@ -340,6 +346,13 @@ def make_natives(env, noise=0.0):
         # engine's own pathing, which no interpreter can reach, so the graph
         # comes from the scenario and the CONSUMERS stay under test
         'AI_Find': lambda i: env['_ptComp'].get(i, 0),
+        'R2I': int,
+        'PATHING_TYPE_WALKABILITY': 1,
+        # IsTerrainPathable is INVERTED: true means BLOCKED. The scenario gives
+        # a half-width of walkable ground about the march line, so a bridge is
+        # simply a small number.
+        'IsTerrainPathable': lambda x, y, t: abs(
+            x * env.get('_spanNX', 0.0) + y * env.get('_spanNY', 1.0)) > env.get('_span', 1e9),
     }
 
 
@@ -760,6 +773,45 @@ def gates_round3():
         fails += 0 if ok else 1
         print('  %s %-58s -> %s' % ('PASS' if ok else 'FAIL', name, bool(got)))
 
+    # -- ROUND 4, FINDING 7 ------------------------------------------------
+    # "gates are over-prioritised when a nearby gate is already broken -- they
+    # should go for control points instead." A gate has ZERO intrinsic value;
+    # it is pure transit cost. With a breach available the army must route
+    # THROUGH it and issue no gate-attack order at all.
+    print('  -- round 4, finding 7: a gate is transit cost, never an objective --')
+
+    def pick4(gates, free_corridor=None):
+        sc = dict(role='barb', army=600.0, points=[], gates=gates,
+                  fieldX=0.0, fieldY=0.0)
+        env = make_env(sc)
+        consts = dict(CONSTS)
+        if free_corridor is not None:
+            consts['AI_GATE_CORRIDOR_FREE'] = free_corridor
+        it = Interp(FUNCS, consts, env, make_natives(env, 0.0))
+        it.run('AI_ChooseApproach', [0, 8000.0, 0.0])
+        return env['ai_apGate'][0], bool(env['ai_apBreak'][0])
+
+    WALL4 = [dict(x=6000.0, y=0.0, state=CLOSED, life=1.0, owner=1),     # intact, ON the line
+             dict(x=6000.0, y=3000.0, state=GONE, owner=1)]             # breach, well off it
+    gi, brk = pick4(WALL4)
+    ok = (gi == 1) and not brk
+    fails += 0 if ok else 1
+    print('    %s a breach 3000 off the line still beats an intact gate ON it (gate=%s break=%s)'
+          % ('PASS' if ok else 'FAIL', gi, brk))
+    ok = not brk
+    fails += 0 if ok else 1
+    print('    %s ... so ai_apBreak is false, and AI_MoveOnTarget issues ZERO gate-attack orders'
+          % ('PASS' if ok else 'FAIL'))
+
+    # NEGATIVE CONTROL: shrink the free-crossing corridor back to the narrow
+    # one, which is exactly the round-3 behaviour. The breach goes invisible
+    # and the army commits to besieging the gate it never needed.
+    gi_nc, brk_nc = pick4(WALL4, free_corridor=CONSTS['AI_GATE_CORRIDOR'])
+    ok = (gi_nc == 0) and brk_nc
+    fails += 0 if ok else 1
+    print('    %s   negative control: at the round-3 corridor the breach vanishes and it besieges (gate=%s break=%s)'
+          % ('PASS' if ok else 'FAIL', gi_nc, brk_nc))
+
     print('\n%s: %d round-3 gate assertions failed' % ('PASS' if not fails else 'FAIL', fails))
     return 1 if fails else 0
 
@@ -1068,14 +1120,12 @@ def formation():
     def lanes_for(handles, n_lanes=None):
         sc = dict(role='barb')
         env = make_env(sc)
-        consts = dict(CONSTS)
-        if n_lanes is not None:
-            consts['AI_LANES'] = n_lanes
-            consts['AI_LANE_MID'] = (n_lanes - 1) // 2
         nat = make_natives(env, 0.0)
         nat['GetHandleId'] = lambda u: u
         nat['ModuloInteger'] = lambda a, b: a % b
-        it = Interp(FUNCS, consts, env, nat)
+        it = Interp(FUNCS, CONSTS, env, nat)
+        # ROUND 4: the formation width is set per dispatch, not by a constant
+        it.run('AI_SetLanes', [CONSTS['AI_LANES'] if n_lanes is None else n_lanes])
         return [it.run('AI_LaneOf', [h]) for h in handles]
 
     lanes = lanes_for(range(400))
@@ -1104,12 +1154,46 @@ def formation():
           % ('PASS' if stable else 'FAIL'))
 
     # NEGATIVE CONTROL: collapse to one lane and the frontage must vanish --
-    # otherwise the spread above is coming from somewhere other than AI_LANES.
+    # otherwise the spread above is coming from somewhere other than the lanes.
     one = sorted(set(lanes_for(range(400), n_lanes=1)))
     ok = (len(one) == 1 and (one[-1] - one[0]) * W == 0.0)
     fails += 0 if ok else 1
-    print('  %s   negative control: with AI_LANES=1 the army collapses back to one column (%s)'
+    print('  %s   negative control: at one lane the army collapses back to a single column (%s)'
           % ('PASS' if ok else 'FAIL', one))
+
+    # -- ROUND 4, finding 3: the frontage is MEASURED, and a bridge collapses it
+    def lanes_at(span):
+        sc = dict(role='barb', span=span, laneNX=0.0, laneNY=1.0)
+        env = make_env(sc)
+        nat = make_natives(env, 0.0)
+        nat['GetHandleId'] = lambda u: u
+        nat['ModuloInteger'] = lambda a, b: a % b
+        it = Interp(FUNCS, CONSTS, env, nat)
+        n = it.run('AI_LanesAt', [0.0, 0.0])
+        it.run('AI_SetLanes', [n])
+        return n, env['ai_laneN'], env['ai_laneMid']
+
+    print('  -- round 4: a bridge is narrow ground, so the column must fit it --')
+    span_cases = [
+        ('open field (1200 each side) keeps the full frontage', 1200.0, 5),
+        ('a wide ramp (400 each side) drops to three lanes', 400.0, 3),
+        ('a bridge (200 each side) collapses to single file', 200.0, 1),
+        ('a gate mouth (120 each side) collapses to single file', 120.0, 1),
+    ]
+    for name, span, want in span_cases:
+        raw, n, mid = lanes_at(span)
+        ok = (n == want) and (2 * mid + 1 == n)
+        fails += 0 if ok else 1
+        print('    %s %-56s measured=%d -> %d lane(s)' % ('PASS' if ok else 'FAIL', name, raw, n))
+
+    # NEGATIVE CONTROL for the measurement: with no terrain restriction at all
+    # the bridge case must go back to the full frontage, so it is the probe and
+    # not something else that collapsed the column.
+    _, n_open, _ = lanes_at(1e9)
+    ok = (n_open == int(CONSTS['AI_LANES']))
+    fails += 0 if ok else 1
+    print('    %s   negative control: unrestricted terrain restores the full frontage (%d lanes)'
+          % ('PASS' if ok else 'FAIL', n_open))
 
     # -- rams -------------------------------------------------------------
     ok = CONSTS['AI_RAM_HOLD_R'] > CONSTS['AI_TOUCH_R']
@@ -1544,7 +1628,7 @@ ROUND3_GUARDS = [
     ('the wrong player state (FOOD_CAP_CEILING) is gone from the code',
      r'PLAYER_STATE_FOOD_CAP_CEILING', False),
     ('AI_ChooseApproach projects gates onto the field->objective segment',
-     r'function AI_ChooseApproach\b.*?AI_GATE_CORRIDOR', True),
+     r'function AI_ChooseApproach\b.*?AI_GateCorridor\(pid, i\)', True),
     ('AI_ChooseApproach crosses walls in t order (AI_GATE_SAMEWALL)',
      r'function AI_ChooseApproach\b.*?AI_GATE_SAMEWALL', True),
     ('the round-2 objective-anchored radius no longer selects gates',
@@ -1609,8 +1693,10 @@ ROUND3_GUARDS = [
      r'function AI_SendEnum\b.*?if GetUnitTypeId\(u\) == ai_ramType and not ai_ramWork then\s*\n\s*call AI_TryOrder\(u, AI_ORD_MOVE, ai_ramX, ai_ramY', True),
     ('ram work is decided by whether the approach must BREAK a crossing',
      r'set ai_ramWork = \(gi >= 0\) and ai_apBreak\[pid\]', True),
-    ('rams are bought because a wall is in the way, not at random',
-     r'if \(ai_apBreak\[pid\] or ai_goal\[pid\] == GOAL_SIEGE\) and wm_lumber\[pid\] >= 200\.0', True),
+    ('rams are bought ONLY because the crossing decision says so',
+     r'if ai_apBreak\[pid\] and wm_lumber\[pid\] >= 200\.0', True),
+    ('a siege goal no longer buys rams by itself (finding 7)',
+     r'ai_goal\[pid\] == GOAL_SIEGE\) and wm_lumber', False),
     ('a defensive or retreating dispatch gives rams no job',
      r'set ai_ramWork = false', True),
     ('the march-line normal is computed ONCE per dispatch, from the army line',
@@ -1618,7 +1704,16 @@ ROUND3_GUARDS = [
     ('lanes are applied to the march, not to focus fire',
      r'call AI_TryOrder\(u, ai_ordKind, ai_orderX \+ ai_laneNX\*AI_LANE_W\*AI_LaneOf\(u\)', True),
     ('a lane is keyed off the unit handle so it is stable across ticks',
-     r'function AI_LaneOf\b.*?ModuloInteger\(GetHandleId\(u\), AI_LANES\) - AI_LANE_MID', True),
+     r'function AI_LaneOf\b.*?ModuloInteger\(GetHandleId\(u\), ai_laneN\) - ai_laneMid', True),
+    # --- round 4: findings 3 and 7 ---------------------------------------
+    ('a free crossing earns a wider search than one we must break',
+     r'function AI_GateCorridor\b.*?AI_GATE_CORRIDOR_FREE', True),
+    ('the formation width is MEASURED against the engine pathing',
+     r'function AI_HalfSpan\b.*?IsTerrainPathable\(', True),
+    ('the tightest point on the route decides the width',
+     r'set n = AI_LanesAt\(x, y\).*?dx\*0\.34.*?dx\*0\.67.*?call AI_SetLanes\(n\)', True),
+    ('lane count and midpoint are always set together, never derived',
+     r'function AI_SetLanes\b.*?set ai_laneN = 5\s*\n\s*set ai_laneMid = 2', True),
     # --- coordination and harassers (item 7) -----------------------------
     ('objectives are claimed in the shared ledger when adopted',
      r'function AI_Execute\b.*?call AI_Claim\(pid, t\)', True),

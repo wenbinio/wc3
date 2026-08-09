@@ -214,6 +214,16 @@
     // army must cross leaving its OWN city was never a candidate and the
     // army jammed behind it. These drive the segment-based replacement.
     constant real    AI_GATE_CORRIDOR = 1600.0 // perp distance from the march line
+    // ROUND 4, finding 7: "gates are over-prioritised when a nearby gate is
+    // already broken -- they should go for control points instead." A gate has
+    // ZERO intrinsic value; it is pure transit cost. So the search radius for
+    // a crossing must scale with what the crossing SAVES: a breach costs
+    // nothing to use and is therefore worth walking a long way sideways for,
+    // while a gate we would have to besiege is only worth considering if it is
+    // nearly on our line. Round 3 used one radius for both, so a breach a
+    // little off the direct line was invisible and the army besieged an intact
+    // gate it never needed to touch.
+    constant real    AI_GATE_CORRIDOR_FREE = 4800.0
     constant real    AI_GATE_SAMEWALL = 0.15   // same wall when t is this close
     constant real    AI_GATE_ENTRY    = 300.0  // waypoint set just PAST the gate
     constant real    AI_STALL_EPS     = 400.0  // movement that counts as progress
@@ -433,6 +443,21 @@
     //  orders and cannot undo the round-2 order economy.
     // ===================================================================
     constant real    AI_RAM_HOLD_R    = 1400.0  // how far behind the line rams sit
+    // ROUND 4, finding 3: "gray still struggling with this" -- a screenshot of
+    // ~40 units piled on and behind a BRIDGE leading to a walled coastal city.
+    // A bridge is a terrain-narrow crossing, not a wall crossing, so the
+    // round-3 corridor model never looked at it and, worse, the 5-lane
+    // 1040-unit frontage is PHYSICALLY IMPOSSIBLE there: the outer lane
+    // destinations land in water, the engine cannot path to them, and the
+    // formation collapses into exactly the pile the owner photographed.
+    // So the frontage is now MEASURED against the engine's own pathing at the
+    // places the army is about to walk, and the lane count collapses to fit.
+    // Past the constriction the same measurement widens again and the lanes
+    // re-form, with no state to keep and nothing to reset.
+    constant real    AI_LANE_PROBE    = 200.0   // step when measuring frontage
+    constant integer AI_LANE_PROBE_N  = 6       // steps each side (max 1200)
+    integer          ai_laneN       = 5         // lanes in use THIS dispatch
+    integer          ai_laneMid     = 2         // (ai_laneN-1)/2, set together
     constant integer AI_LANES         = 5       // odd, so one lane is dead centre
     constant integer AI_LANE_MID      = 2       // (AI_LANES-1)/2, STATED not derived:
                                                 // JASS integer division truncates and
@@ -1311,6 +1336,16 @@ endfunction
 // choke them easily". A hole is free, our own gate is nearly free because we
 // can simply open it, and an enemy gate costs a siege priced by how much of
 // it is still standing, so a half-broken gate beats a fresh one.
+// How far off the march line this crossing is worth looking for. A breach is
+// free, so it earns a wide search; anything we must open or break earns only
+// the narrow one. ROUND 4, finding 7.
+function AI_GateCorridor takes integer pid, integer i returns real
+    if AI_GateState(i) != AI_GS_CLOSED then
+        return AI_GATE_CORRIDOR_FREE
+    endif
+    return AI_GATE_CORRIDOR
+endfunction
+
 function AI_GateCost takes integer pid, integer i returns real
     if AI_GateState(i) != AI_GS_CLOSED then
         return 0.0                        // an existing breach: free
@@ -1896,7 +1931,7 @@ function AI_ChooseApproach takes integer pid, real tx, real ty returns nothing
             set t = ((ai_gateX[i]-fx)*dx + (ai_gateY[i]-fy)*dy) / len2
             if t >= 0.0 and t <= 1.0 and t < bestT then
                 set perp = AI_Dist(ai_gateX[i], ai_gateY[i], fx + dx*t, fy + dy*t)
-                if perp <= AI_GATE_CORRIDOR then
+                if perp <= AI_GateCorridor(pid, i) then
                     set bestT = t
                     set best = i
                 endif
@@ -1916,7 +1951,7 @@ function AI_ChooseApproach takes integer pid, real tx, real ty returns nothing
             set t = ((ai_gateX[i]-fx)*dx + (ai_gateY[i]-fy)*dy) / len2
             if t >= 0.0 and t <= 1.0 and (t - bestT) <= AI_GATE_SAMEWALL then
                 set perp = AI_Dist(ai_gateX[i], ai_gateY[i], fx + dx*t, fy + dy*t)
-                if perp <= AI_GATE_CORRIDOR then
+                if perp <= AI_GateCorridor(pid, i) then
                     // crossing cost plus the real detour it imposes
                     set cost = AI_GateCost(pid, i) + AI_Dist(fx, fy, ai_gateX[i], ai_gateY[i]) + AI_Dist(ai_gateX[i], ai_gateY[i], tx, ty) - direct
                     if cost < bestCost then
@@ -2294,7 +2329,48 @@ endfunction
 // Keyed off the handle id so a unit keeps the same lane every tick -- a lane
 // that changed between ticks would be an order storm.
 function AI_LaneOf takes unit u returns real
-    return I2R(ModuloInteger(GetHandleId(u), AI_LANES) - AI_LANE_MID)
+    return I2R(ModuloInteger(GetHandleId(u), ai_laneN) - ai_laneMid)
+endfunction
+
+// Set the formation width. Always odd so one lane stays on the march line, and
+// the midpoint is set ALONGSIDE the count rather than derived, because JASS
+// integer division truncates and the trace interpreter divides as a real --
+// the round-3 lesson, kept.
+function AI_SetLanes takes integer n returns nothing
+    if n >= 5 then
+        set ai_laneN = 5
+        set ai_laneMid = 2
+    elseif n >= 3 then
+        set ai_laneN = 3
+        set ai_laneMid = 1
+    else
+        set ai_laneN = 1
+        set ai_laneMid = 0
+    endif
+endfunction
+
+// Walkable distance from (x,y) along (sx,sy) before the ground stops being
+// walkable, capped. IsTerrainPathable is INVERTED: true means blocked.
+function AI_HalfSpan takes real x, real y, real sx, real sy returns real
+    local integer i = 1
+    local real span = 0.0
+    local boolean blocked = false
+    loop
+        exitwhen i > AI_LANE_PROBE_N or blocked
+        if IsTerrainPathable(x + sx*AI_LANE_PROBE*I2R(i), y + sy*AI_LANE_PROBE*I2R(i), PATHING_TYPE_WALKABILITY) then
+            set blocked = true
+        else
+            set span = AI_LANE_PROBE*I2R(i)
+            set i = i + 1
+        endif
+    endloop
+    return span
+endfunction
+
+// How many lanes physically fit across the march line at (x,y).
+function AI_LanesAt takes real x, real y returns integer
+    local real width = AI_HalfSpan(x, y, ai_laneNX, ai_laneNY) + AI_HalfSpan(x, y, -ai_laneNX, -ai_laneNY)
+    return R2I(width / AI_LANE_W)
 endfunction
 
 function AI_SendEnum takes nothing returns nothing
@@ -2344,6 +2420,8 @@ function AI_SendArmy takes integer pid, real x, real y, integer kind, unit tgt r
     local real dx = x - wm_fieldX[pid]
     local real dy = y - wm_fieldY[pid]
     local real d = SquareRoot(dx*dx + dy*dy)
+    local integer n
+    local integer k
     // ROUND 3, item 10: one march-line normal for the whole dispatch. Taking
     // it from the ARMY line rather than each unit own line is what keeps a
     // unit lane destination fixed while it walks, so lanes add no orders.
@@ -2354,6 +2432,22 @@ function AI_SendArmy takes integer pid, real x, real y, integer kind, unit tgt r
         set ai_laneNX = 0.0
         set ai_laneNY = 0.0
     endif
+    // ROUND 4, finding 3: size the formation to the ground it has to cross.
+    // Sample the TIGHTEST point on the route -- a third of the way, two
+    // thirds, and the destination -- because a bridge is usually between the
+    // army and where it is going rather than at either end. One narrow sample
+    // collapses the whole column to single file, which is the only formation
+    // that fits a bridge.
+    set n = AI_LanesAt(x, y)
+    set k = AI_LanesAt(wm_fieldX[pid] + dx*0.34, wm_fieldY[pid] + dy*0.34)
+    if k < n then
+        set n = k
+    endif
+    set k = AI_LanesAt(wm_fieldX[pid] + dx*0.67, wm_fieldY[pid] + dy*0.67)
+    if k < n then
+        set n = k
+    endif
+    call AI_SetLanes(n)
     // ROUND 3, item 8: where a ram waits when there is no wall to break --
     // AI_RAM_HOLD_R back from the army, towards home.
     set d = AI_Dist(wm_fieldX[pid], wm_fieldY[pid], ai_homeX[pid], ai_homeY[pid])
@@ -2977,7 +3071,13 @@ function AI_Spend takes integer pid returns nothing
     // ROUND 3, item 8: buy rams because there is a WALL in the way, not as a
     // random flavour of the composition roll. ai_apBreak is set by the
     // approach layer when the crossing we picked has to be broken.
-    if (ai_apBreak[pid] or ai_goal[pid] == GOAL_SIEGE) and wm_lumber[pid] >= 200.0 and AI_RandReal() < 0.45 then
+    // ROUND 4, finding 7. Round 3 also bought rams whenever the goal was
+    // SIEGE, which is a standing incentive to own rams regardless of whether
+    // a wall is in the way -- and a ram fleet looking for work manufactures
+    // wall objectives. Rams are now bought ONLY because the crossing decision
+    // says a wall stands between this army and what it wants, with no cheaper
+    // way through. ai_apBreak is exactly that, and nothing else sets it.
+    if ai_apBreak[pid] and wm_lumber[pid] >= 200.0 and AI_RandReal() < 0.45 then
         set role = 4
     else
         // ROUND 3, queue item 9: composition follows the faction passive.
