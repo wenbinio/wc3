@@ -80,3 +80,29 @@ player named as hard. Buildability is excellent (unprotected, clean
 round-trip, validate exit 0) and the map ships its own in-game debug
 harness. **Staleness**: measured against v1.89K.
 
+## wc3-map-ai-decompositions.md (2026-08-09)
+
+**Question answered**: how do real maps actually drive a computer player —
+engine AI subsystem, hand-rolled triggers, or hybrid — and what should
+rome-ai steal? Artifact-heavy counterpart to wc3-ai-prior-art.md, and it
+corrects that file in nine places (§10). Verdict: the engine ships a full
+AI subsystem (123 `common.ai` natives: captains, assault waves, staging,
+arrival/unreachability read-back, `CommandAI` interop) and **essentially
+nobody uses it** — 1.55% of 5,350 archive.org 2002 maps and 0 of the top
+70 live maps drive it, and most calls pass the World Editor's placeholder
+`"map.ai"`, a file hash-probing proves absent. But it **does** work on
+non-melee custom maps (Footmen Frenzy 9.0 AI: `isMeleeMap:false`, w3i v33,
+eight WE-generated `.ai` scripts) and the DotA `AI Plus` line is a hybrid
+that hides `AIScripts\AI_Plus.ai` from its listfile and runs per-hero item
+logic at 0.1 s. Decompositions: AMAI (hybrid; army clustering + projected
+threat field + stall-blacklist + jittered load-adaptive job heap), the WE
+AI Editor template (~60 lines of policy), DotA IMBA AI, Castle Fight DE,
+Survival Chaos, Risk Europe, the Footmen family, and Fall of Rome itself
+(zero AI code, zero `.ai`, but all twelve start locations present). §8 is
+the ranked steal list tied to our five playtest failures; §9 is what
+nobody has solved (destination scoring, terrain/route models, deadline
+planning, determinism). **Staleness**: hosted-count rows move monthly and
+the surveys are snapshots; the structural claims and §8 should age well.
+The one open premise is S9 — whether the engine captain works on a
+workerless, hall-less map — which is a 30-minute in-game experiment.
+
