@@ -5,7 +5,7 @@ A **self-directed AI computer player** for *Fall of Rome 1.06* by
 it are third-party and are NOT committed (gotcha 9 / Legal). Any
 derivative you produce must credit ToaNoah.
 
-Written 2026-08-09; **rounds 2 and 3 the same day, both driven by real
+Written 2026-08-09; **rounds 2, 3 and 4 the same day, all driven by real
 playtests.** Read §"Honest gap" before trusting any number in here.
 
 ## The map, in one paragraph
@@ -76,8 +76,8 @@ since an empty slot otherwise leaves ~100 structures and a capital inert.
 
 - `for-ai.j` — the AI module.
 - `DESIGN.md` — full design with every scoring formula; §8 is the
-  round-2 playtest record, §9 the round-3 diagnosis and §10 what round 3
-  actually shipped.
+  round-2 playtest record, §9 the round-3 diagnosis, §10 what round 3
+  shipped, and §11 round 4 (including §11.0, a correction to §10.5).
 - `inject.py` — splits the module at injection (JASS allows one
   `globals` block and is single-pass, so globals go into the map's block
   and functions before `InitCustomTriggers`). Idempotent. Point it at a
@@ -108,12 +108,25 @@ layer, tribes, formation, consort, raze-or-hold, heroes, naval, defence,
 and PRNG bit-exact over 200,000 states. `npm test` 617/0; `npm run
 preflight` 0 FAILs.
 
-**Nine negative controls**, because a probe that cannot fail proves
+**Thirteen negative controls**, because a probe that cannot fail proves
 nothing — this repo has shipped five such probes before (gotcha 34).
 Guard A (force `AI_GATE_BREAK` to 0 and the intact gate must win
 instead), Guard B in both directions, the naval lift with `wantBoat`
 false, hero hysteresis versus a single threshold (2 transitions vs 8),
-the hold gate with `AI_HOLD_DIST` = 0, and dispersal with `AI_LANES` = 1.
+the hold gate with `AI_HOLD_DIST` = 0, dispersal with `AI_LANES` = 1, and
+from round 4: the deadlock gate neutralised (which reproduces the round-3
+numbers *exactly*, 0.533/0.225), the free-crossing corridor shrunk back to
+round 3 (the breach vanishes and the army besieges), unrestricted terrain
+restoring the full frontage, and the leash rather than the army radius
+doing the rejecting.
+
+**Round 4 also found two defects in the harness itself**, both the same
+family as the thing they are meant to catch: an ABSENCE guard whose lazy
+`.*?` walked past `endfunction` and matched a *later* function, reporting a
+leak that did not exist; and a hero-leash test that recomputed the leash in
+Python instead of running the shipped function, so it could not have
+failed. Both are fixed; the lesson is that a guard which can match outside
+what it claims to check is as worthless as a probe that cannot fire.
 
 **lib/sim cannot execute this map** — it is JASS, and the sim is
 Lua-only. None of the above is a claim that the AI was *run*; the one
@@ -125,7 +138,12 @@ time it ran, it ran in the game, and that produced the round-2 list.
    threshold — 1.60× write-off, 1.15× retreat, the t=810/1440 capital
    window, the hold-versus-raze premiums, the tribal role weights, and
    every number in the `AI_VAL_*` table — is a plausible number someone
-   chose. The trace proves the AI does what the design says;
+   chose. **Round 4 sharpened this from a caveat into a measured fact:
+   the two worst findings of that playtest — the CONSOLIDATE deadlock and
+   the unbounded hero chase — were both invisible to a 190-assertion trace
+   that passed completely.** Neither was wrong at any single tick; both
+   were wrong over time. A trace pins decisions, and a decision can be
+   right every second and wrong every game. The trace proves the AI does what the design says;
    nothing proves the design is right. **This is still the biggest gap
    and it needs an eval environment before any number here is
    trustworthy.** Round 2 is evidence for the claim: five of the design's
@@ -172,55 +190,58 @@ time it ran, it ran in the game, and that produced the round-2 list.
    per-player per-think and were only sliced, not eliminated.
 
 **Round 3 (2026-08-09) is IMPLEMENTED** — DESIGN.md §9 diagnosed it, §10
-is what shipped. All ten queue items plus both round-2 bugs, each landed
-as its own commit with its gates green:
+is what shipped: all ten queue items plus both round-2 bugs (the gate jam,
+naval transport, messaging, readiness-gated capital value, heroes, raze-or-
+hold, the claim ledger and harassers, rams, tribal preferences, dispersal).
 
-1. **The gate jam** (the blocker, screenshot-confirmed). Round 2 only ever
-   considered a gate near the *objective*, so the wall an army must cross
-   leaving its own city was never a candidate — measured, P3 owns 22 gates
-   and considered 0 of them. Replaced with a corridor test against the
-   whole `field → objective` **segment**, walls crossed in `t` order,
-   cheapest crossing per wall, an own gate on our crossing opening
-   unconditionally, the map's own `SetUnitAnimation` copied, a self-verify
-   that latches a failed toggle and routes around it, and a stall backstop
-   for chokepoints we do not model at all.
-2. **Naval transport** — board, cross, unload, nothing else. A land
-   connectivity graph over the point registry (JASS arrays cap at 8192, so
-   a terrain fill does not fit), reachability measured from the *army* so a
-   landed force stands the layer down, and a shipyard value lift narrow
-   enough that it cannot recreate round 2's finding 5.
-3. **Messaging** — state changes only, rate-limited, prefixed with the
-   faction name in the faction colour, read off the map's own multiboard
-   rows. `-aiquiet` / `-aitalk`. This is what makes playtest 4 diagnosable.
-4. **The strategic layer** — capital worth is now readiness-gated (early
-   0.72, less than one control point; late with a real army 4.00), and a
-   posture persists across ticks. The clock sweep moved from
-   `EXPAND,EXPAND,SIEGE×6` to `EXPAND×4,SIEGE×4`.
-5. **Heroes** — no revive trigger exists anywhere in this map and each
-   player has exactly one, so killing theirs is permanent (a bounded
-   focus-fire override) and losing ours is unaffordable (break at 0.50, not
-   the army's 0.22, with hysteresis).
-6. **Raze or hold** — the refund now applies only where a settlement cannot
-   be kept, and a *holdable* one carries a larger premium instead, because
-   round 2 never counted the supply, auras and militia summon that keeping
-   it pays.
-7. **Acting in consort** — a claim ledger that is a discount not a veto and
-   binds only between allies, plus one harasser per front raiding
-   concurrently with the push, drawn from the seeded stream.
-8. **Rams** get an explicit anti-wall role and hold behind the line
-   otherwise.
-9. **Tribal preferences** derived from each faction's actual passive.
-10. **Dispersal** — five lanes, 1040-unit frontage, and provably zero extra
-    orders.
+**Round 4 (2026-08-09) is IMPLEMENTED** — DESIGN.md §11. Playtest 4 played
+the round-3 build and produced six findings plus two follow-ups. All eight
+landed, and one of them was a correction to this project's own diagnosis:
 
-Order issuance across the three rounds, from the model joined to source:
-peak/tick 1705 → 204 → **234** (the budgeted bound), mean/second
+- **The passive-AI deadlock (findings 1, 2)** — *"Red also got stuck at the
+  first city"*, with a screenshot of **this module's own chat line**,
+  "Huns: massing at home", over 25-plus idle units. **A regression round 3
+  introduced.** CONSOLIDATE weighted a pure clock ramp at 0.78 while round
+  3 made the food cap real; together, a food-capped AI wanted an army it
+  could never build, and the urge to sit at home *rose* all game
+  (0.440 → 0.533 while EXPAND fell 0.333 → 0.225). Fixed with a
+  **possibility gate** — massing only scores if massing can happen.
+- **The bridge (finding 3)** — ~40 units piled on a bridge. Not a gate
+  problem: the five-lane 1040-unit frontage is *physically impossible* on a
+  bridge, so the lanes collapsed into a pile. The frontage is now
+  **measured** against the engine's own pathing at the tightest point of
+  the route, and collapses to single file where it must.
+- **Gates as transit, not objectives (finding 7)** — a breach slightly off
+  the direct line was invisible, so the army besieged a gate it never
+  needed. The search radius now scales with what a crossing *saves*, and
+  rams are bought only from the crossing decision.
+- **The information leak (finding 4)** — Romans were reading barbarian
+  plans off the AI's chat. Reports are now ally-scoped, per recipient, with
+  no `GetLocalPlayer` anywhere.
+- **The crossing phase rule (findings 5, 8)** — home landmass first;
+  across-water objectives are suppressed until it is consolidated. Plus a
+  genuine disagreement resolved: the owner wants the Vandals shipping, the
+  flood fill says they can walk — both true, because the walk is via Egypt
+  and Anatolia. **Connectivity was the wrong question**; a wet straight
+  line over distance is much closer to the right one.
+- **The hero leash (finding 6)** — the round-3 hunt was bounded by distance
+  from the *army*, a moving reference, so it bounded nothing. Now anchored
+  to the objective and to the formation.
+- **The revive correction** — round 3 said "no revive trigger anywhere, so
+  a dead hero is gone". The conclusion holds for this build; **the evidence
+  did not support it**. The map advertises "Appoint a New General" (`R007`,
+  250g+250l, in the Forge's list) and then disables it for every player at
+  init. The AI now *asks the game* at runtime instead of assuming.
+
+Order issuance is unchanged by round 4 — it changes *which* orders are
+issued, not how many: peak/tick 1705 → 204 → **234**, mean/second
 880.0 → 55.3 → **79.3**.
 
 Iteration order from here: **(1)** an eval harness so thresholds stop being
-guesses; (2) opponent modelling; (3) a real connectivity graph for
-chokepoints that are not gates. Difficulty tuning is meaningless until (1)
-exists.
+guesses — round 4 sharpened why, see the honest gap below; (2) a land
+*route-length* model, since round 4 established that connectivity is not
+usefulness; (3) opponent modelling. Difficulty tuning is meaningless until
+(1) exists.
 
 Related: `docs/reference/wc3-ai-prior-art.md` (why no good custom-map AI
 exists), `docs/reference/wtoc-ai-spec.md` (the same analysis for a

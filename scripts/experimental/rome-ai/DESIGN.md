@@ -1194,3 +1194,176 @@ resolution, no engine. `lib/sim` cannot execute JASS. Every result above is
 about what the AI *decides*, never about whether it *wins* — and round 2's
 lesson stands: five of the design's confident numbers were wrong in ways only a
 human playing the map found.
+
+---
+
+## 11. Round 4 (2026-08-09) — playtest 4, and a correction
+
+Six findings from the owner plus two follow-ups. All eight landed. Round 3's
+build was played; this section is what was wrong with it.
+
+### 11.0 A correction to §10.5 — absence of a trigger is not absence of a mechanism
+
+Round 3 wrote: *"there is no revive trigger anywhere in the map and each player
+has exactly one preplaced hero. A dead hero is dead for the rest of the game."*
+The conclusion happens to hold for this build. **The evidence given for it did
+not support it**, and the whole hero policy was calibrated on that evidence.
+
+What the artifact says, searched properly:
+
+| probe | result |
+|---|---|
+| `ReviveHero` / any revive native in `war3map.j` | none |
+| altar or tavern base in the object data | none |
+| revive-family ability on any unit | none |
+| revive item — `I000`, given to every hero at start | it is a **Battle Standard** |
+| stock preplaced buildings (a neutral Tavern would need no trigger) | none; the only non-custom placements on the whole map are **14 `sloc`** |
+| the map's own tooltip, **TRIGSTR_1000** | *"Your hero cannot be revived if he dies, but you can get a new Hero by researching **Appoint a New General** at your Forge."* |
+| that research | **`R007`**, 250 gold + 250 lumber (`gglb`/`glmb`), and it **is** in the Forge's list (`h00W` `ures`) |
+| who disables it | `Trig_Melee_Initialization_Func003A`, over `udg_AllPlayers`: `SetPlayerTechMaxAllowedSwap('R007', 0)` — and **nothing anywhere re-enables it** |
+
+So the map advertises a replacement, ships the research, lists it on the
+building, and then disables it for every player at initialization.
+
+The owner reports 100 gold, which matches neither the 250/250 measured here nor
+a build with `R007` disabled — most likely a different version. **The AI does
+not take a side.** `wm_canReplaceHero` reads
+`GetPlayerTechMaxAllowed(p, 'R007')` at runtime, exactly as `wm_canRaze` reads
+`R008`, and the thresholds follow: irreplaceable breaks at 0.50 / re-engages at
+0.78; replaceable breaks at 0.30 / re-engages at 0.55. Correct under every
+reading, and no version argument is needed.
+
+### 11.1 Findings 1 and 2 — the passive-AI deadlock, a round-3 regression
+
+The screenshot was this module's **own chat line** — "Huns: massing at home" —
+over 25-plus idle Hun units, and West Rome idle by the same route.
+
+`AI_ScoreConsolidate` weights its first term **0.78** against
+`wantArmy = 350 + 750·clock`, a pure clock ramp with no relation to what a
+player can field. Round 3 fixed `wm_foodCap` to the **real** cap. Both changes
+are individually correct; together they deadlock. A food-capped AI now
+correctly refuses to train while CONSOLIDATE keeps demanding an army it can
+never build — and because the ramp grows while a capped army cannot, the urge
+to sit at home **rises all game**:
+
+| clock | round 3 CONSOLIDATE | round 3 EXPAND | round 4 CONSOLIDATE | round 4 EXPAND |
+|---|---|---|---|---|
+| 300 | 0.440 | 0.333 | **0.147** | **0.333** |
+| 600 | 0.413 | 0.306 | **0.138** | **0.306** |
+| 900 | 0.449 | 0.279 | **0.150** | **0.279** |
+| 1500 | 0.533 | 0.225 | **0.178** | **0.225** |
+
+The fix is a **possibility gate**, not a smaller number: `AI_CanMass` asks
+whether standing still can be converted into army at all — food headroom for
+one squad, and gold for one. A train order spawns exactly 12 units, so
+`AI_SQUAD_FOOD`/`AI_SQUAD_GOLD` are facts about the map. If massing is
+impossible the score collapses, EXPAND wins, and expanding raises the cap. The
+same gate guards the consolidating **posture**, which would otherwise have
+pinned a capped AI and added the posture bias to the goal that already could
+not lose. An army with room to grow still masses early (t=60: 0.922 / 0.079),
+so it is not an over-correction.
+
+Finding 2 also gets a permanent diagnostic: `AI_Init` broadcasts **which slots
+the AI took**. A player doing nothing is a different failure class from one
+doing the wrong thing, and this tells them apart from outside the game.
+
+### 11.2 Finding 3 — the bridge, not a gate
+
+~40 units piled on and behind a **bridge**. Of the two candidate causes, it is
+(a): a bridge is a terrain-narrow crossing, the corridor model only knows
+walls, and the round-3 five-lane 1040-unit frontage is **physically impossible
+there** — the outer lane destinations land in water, the engine cannot path to
+them, and the formation collapses into a pile. The absence of "forcing a gate
+open" in the chat log is consistent: the stall backstop never fired because
+this was never a gate.
+
+The frontage is now **measured** against the engine's own pathing.
+`AI_HalfSpan` walks `IsTerrainPathable` outward along the march normal;
+`AI_LanesAt` converts it to a lane count; `AI_SendArmy` samples the **tightest**
+point on the route — ⅓, ⅔ and the destination, because a bridge is usually
+between the army and where it is going. Measured: 1200 units of clearance keeps
+5 lanes, 400 → 3, 200 → 1, 120 → 1. Past the constriction the same measurement
+widens and lanes re-form, with no state to keep.
+
+### 11.3 Finding 7 — a gate is transit cost, never an objective
+
+Gates were never registry points, so they never competed as objectives. What
+was wrong: round 3 used **one** corridor half-width for every candidate, so a
+breach a little off the direct line was invisible and the army besieged an
+intact gate it never needed. The search radius now scales with what the
+crossing **saves** — `AI_GATE_CORRIDOR_FREE` (4800) for a breach, which costs
+nothing, against `AI_GATE_CORRIDOR` (1600) for anything we must open or break.
+
+Second cause, exactly as the coordinator suspected: rams were bought on
+`ai_apBreak **or** goal == SIEGE`, and that second clause is a standing
+incentive to own rams whether or not a wall is in the way. Rams are now bought
+**only** from the crossing decision.
+
+### 11.4 Finding 4 — the information leak
+
+A Roman-side screenshot reading "Huns: massing at home" off this module's chat.
+Every AI report now goes through `AI_BroadcastAllies` — an explicit
+per-recipient `IsPlayerAlly` test, still a plain loop, so no `GetLocalPlayer`
+and no desync. Human teammates still see everything, which was the point.
+Only setup lines describing the **game** (which slots are AI) stay global.
+
+### 11.5 Findings 5 and 8 — the crossing phase rule, and a real disagreement
+
+Round 3's bug: `AI_TargetScore` never knew about water, so **any** faction
+whose best-scoring point lay across a strait boarded a boat immediately. The
+phase rule fixes it with no faction list — while anything uncontested remains
+on our own landmass it outranks everything across water
+(`AI_CROSS_PENALTY`). Measured: an across-water control point scores **0.0137**
+while home has work and **0.2736** once it does not, against 0.2736 for the
+same point on our own landmass. That is finding 8 exactly: an island faction
+clears its island first, and the transport becomes what happens afterwards.
+
+**The disagreement, reported because it is the actual bug.** The owner wants
+orange (Vandals) shipping; §8.6's flood fill says they are land-connected to
+Europe and never need a boat. Both are right — the land route exists, via Egypt
+and Anatolia, and it is most of the map. **Connectivity was the wrong
+question.** `AI_WantsCrossing` now also answers yes when the *straight line* to
+the objective crosses water and the objective is far enough that walking around
+is a real detour — eight samples of the same `AI_LandLine` probe. That is a
+Mediterranean shipping lane by construction and false for anything reachable
+straight overland, so it enables the Vandals without re-enabling the six
+factions finding 5 was about.
+
+### 11.6 Finding 6 — the leash
+
+The round-3 hunt was bounded by distance from the **army**. Because the army
+centroid follows the chase, that bound travelled with the target and bounded
+nothing: a hero could be walked across the map one tick at a time. Both hunts
+are now anchored to something that does not run — the army's to the
+**objective** (`AI_HERO_LEASH` 3400), our own hero's to the **formation**
+(`AI_HERO_SOLO_R` 1200), so it skirmishes rather than hunts.
+
+### 11.7 Round 4 verification
+
+| check | result |
+|---|---|
+| full-mode pjass, module injected | **Parse successful, 58,953 lines**; unmodified map also clean |
+| apostrophe delta lint | 0 introduced; negative control fires |
+| `trace.py` | **exit 0, 250 assertions, 0 FAILs across 15 sections** |
+| Guards A and B | **re-verified green** after every commit |
+| `validate-map` on the packed build | **191/192, 152 warnings — identical to the unmodified map** |
+| order issuance | **unchanged** — round 4 adds no dispatcher; it changes *which* orders, not how many. Peak 234, mean 79.3, still the budgeted bound |
+
+**Two harness defects found and fixed this round**, both of the same family as
+gotcha 34 — a check that cannot fail:
+
+* An ABSENCE guard written `function AI_Say\b.*?call AI_Broadcast\(` with
+  `re.S` walks straight past `endfunction` and matches a **later** function, so
+  it reported a leak that did not exist. Both guards of that shape are now
+  bounded to their own function body.
+* The first version of the hero-leash test **recomputed the leash in Python**
+  instead of running `AI_EnemyHeroEnum`, so it could not have failed. It now
+  drives the real function against a mocked enum unit.
+
+**What none of this shows, still.** No pathing, no collision, no combat
+resolution, no engine. Every result is about what the AI *decides*. Round 4
+adds a sharper version of that warning: **the two worst findings this round —
+the deadlock and the leash — were both invisible to a 190-assertion trace that
+passed completely**, because both were emergent over time rather than wrong at
+a point. A trace pins decisions; only play reveals a decision that is right
+every tick and wrong every game.
