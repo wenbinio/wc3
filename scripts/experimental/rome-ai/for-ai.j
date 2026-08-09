@@ -141,14 +141,26 @@
     constant real    AI_RESPOND_R     = 12000.0
 
     // ---- approach routing and gates, playtest faults (3) and (4) ------
-    constant real    AI_GATE_NEAR     = 4200.0 // gate belongs to an objective
+    // AI_GATE_NEAR and AI_GATE_DETOUR were round 2 and are DELETED, not
+    // merely unused: the objective-anchored radius is the gate-jam bug, and
+    // leaving it declared invites it back. The corridor test replaces both.
     constant real    AI_GATE_BREAK    = 6000.0 // detour worth avoiding a siege
     constant real    AI_GATE_OWN      = 400.0  // opening our own gate is cheap
-    constant real    AI_GATE_DETOUR   = 1.60   // reject silly reroutes
     constant real    AI_APPROACH_MIN  = 2200.0 // below this, just go
     constant real    AI_SIEGE_R       = 2000.0 // hit the gate itself inside this
     constant real    AI_GATE_GUARD    = 1200.0 // enemy proximity for gate control
     constant real    AI_GATE_CD       = 20.0   // the map cooldown on A00Z etc.
+
+    // ---- ROUND 3: the corridor test and the stall backstop -------------
+    // Round 2 only ever asked "is a gate near the OBJECTIVE?", so the gate an
+    // army must cross leaving its OWN city was never a candidate and the
+    // army jammed behind it. These drive the segment-based replacement.
+    constant real    AI_GATE_CORRIDOR = 1600.0 // perp distance from the march line
+    constant real    AI_GATE_SAMEWALL = 0.15   // same wall when t is this close
+    constant real    AI_GATE_ENTRY    = 300.0  // waypoint set just PAST the gate
+    constant real    AI_STALL_EPS     = 400.0  // movement that counts as progress
+    constant real    AI_STALL_T       = 12.0   // seconds of no progress = stalled
+    constant real    AI_STALL_R       = 4000.0 // force-open radius around the army
 
     // ---- razing, playtest fault (5) -----------------------------------
     constant real    AI_RAZE_DIST     = 4200.0 // only raze what we cannot hold
@@ -203,6 +215,10 @@
     integer array    ai_apGate          // gate index or -1
     boolean array    ai_apBreak         // must we break it
 
+    // ---- ROUND 3: stall detection (a blocked exit is a failure state) --
+    real    array    ai_progD           // best distance-to-objective so far
+    real    array    ai_progAt          // when that best was recorded
+
     // ---- point registry (static geography, dynamic state fogged) -----
     integer          ai_pointCount   = 0
     unit    array    ai_pt
@@ -221,6 +237,7 @@
     real    array    ai_gateY
     integer array    ai_gateOr        // 0 horizontal 1 diag1 2 diag2 3 vertical
     real    array    ai_gateCd        // next game time this gate may be toggled
+    boolean array    ai_gateStuck     // a toggle we issued did not take effect
 
     // ---- deterministic PRNG (Park-Miller via Schrage) -----------------
     integer          ai_seed         = AI_SEED_DEFAULT
@@ -247,6 +264,16 @@
     timer            ai_microTimer   = null
     trigger          ai_cmdTrig      = null
     real             ai_now          = 0.0
+
+    // ---- ROUND 3: messaging -------------------------------------------
+    // The AI narrates its STATE CHANGES so a playtest diagnoses itself. Rate
+    // limited per player and de-duplicated, because twelve narrating players
+    // would otherwise be a chat flood rather than a diagnostic.
+    constant real    AI_SAY_GAP       = 8.0
+    constant real    AI_SAY_TTL       = 12.0
+    boolean array    ai_talk
+    real    array    ai_sayAt
+    string  array    ai_sayLast
 
     // ---- order accounting ---------------------------------------------
     hashtable        ai_ht           = null
@@ -332,6 +359,123 @@ endfunction
 
 function AI_Clock takes nothing returns real
     return AI_C01(ai_now / AI_GAME_LEN)
+endfunction
+
+//===========================================================================
+//  MESSAGING  (round 3, queue item 3)
+//
+//  "The AI should tell humans what it is doing and be able to request
+//  things." Humans reading "Huns: pushing East Rome" is how the next
+//  playtest gets diagnosed for free -- it is the only trace of the decision
+//  layer a person inside the game can actually see.
+//
+//  Rules, so this stays a diagnostic and not a flood: state CHANGES only,
+//  one line per player per AI_SAY_GAP seconds, identical consecutive lines
+//  suppressed, and every line prefixed with the faction name in the faction
+//  colour. The names and colour codes are the map OWN multiboard rows
+//  (TRIGSTR_615..2396, read off war3map.wts), not invented ones, so what a
+//  player reads in chat matches what the scoreboard calls that slot.
+//===========================================================================
+
+function AI_Name takes integer pid returns string
+    if pid == 0 then
+        return "|cffff0000Huns|r"
+    elseif pid == 1 then
+        return "|cff0000ffFranks|r"
+    elseif pid == 2 then
+        return "|cff00ffffSaxons|r"
+    elseif pid == 3 then
+        return "|cff6f2583West Rome|r"
+    elseif pid == 4 then
+        return "|cffffff00Visigoths|r"
+    elseif pid == 5 then
+        return "|cffd45e19Vandals|r"
+    elseif pid == 6 then
+        return "|cff00ff00Britons|r"
+    elseif pid == 7 then
+        return "|cffff8080Persians|r"
+    elseif pid == 8 then
+        return "|cff808080Ostrogoths|r"
+    elseif pid == 9 then
+        return "|cff8080ffEast Rome|r"
+    elseif pid == 10 then
+        return "|cff00af00North Rome|r"
+    endif
+    return "|cff964b4bBurgundians|r"
+endfunction
+
+// Broadcast to every human in the game. Deliberately NOT GetLocalPlayer:
+// this is a plain loop over playing slots, so no asynchronous branch exists
+// anywhere near it.
+function AI_Broadcast takes string msg returns nothing
+    local integer i = 0
+    loop
+        exitwhen i >= AI_MAX_PLAYERS
+        if GetPlayerSlotState(Player(i)) == PLAYER_SLOT_STATE_PLAYING and GetPlayerController(Player(i)) == MAP_CONTROL_USER then
+            call DisplayTimedTextToPlayer(Player(i), 0, 0, AI_SAY_TTL, msg)
+        endif
+        set i = i + 1
+    endloop
+endfunction
+
+function AI_KindName takes integer kind returns string
+    if kind == AI_PK_CAPITAL then
+        return "a capital"
+    elseif kind == AI_PK_CITY then
+        return "a city"
+    elseif kind == AI_PK_TOWN then
+        return "a town"
+    elseif kind == AI_PK_CAMP then
+        return "a camp"
+    elseif kind == AI_PK_PLOT then
+        return "a building plot"
+    elseif kind == AI_PK_SHIPYARD then
+        return "a shipyard"
+    endif
+    return "a control point"
+endfunction
+
+function AI_GoalName takes integer goal returns string
+    if goal == GOAL_EXPAND then
+        return "taking ground"
+    elseif goal == GOAL_DEFEND then
+        return "defending"
+    elseif goal == GOAL_SIEGE then
+        return "committing to a capital"
+    elseif goal == GOAL_TECH then
+        return "researching"
+    elseif goal == GOAL_RETREAT then
+        return "pulling back"
+    endif
+    return "massing at home"
+endfunction
+
+// Owner of a registered point, safe for neutral and out-of-range ids.
+function AI_OwnerName takes integer i returns string
+    local integer o
+    if ai_pt[i] == null then
+        return "no one"
+    endif
+    set o = GetPlayerId(GetOwningPlayer(ai_pt[i]))
+    if o < 0 or o >= AI_MAX_PLAYERS then
+        return "no one"
+    endif
+    return AI_Name(o)
+endfunction
+
+function AI_Say takes integer pid, string msg returns nothing
+    if not ai_talk[pid] then
+        return
+    endif
+    if msg == ai_sayLast[pid] then
+        return                              // nothing changed; do not repeat
+    endif
+    if ai_now < ai_sayAt[pid] then
+        return
+    endif
+    set ai_sayLast[pid] = msg
+    set ai_sayAt[pid] = ai_now + AI_SAY_GAP
+    call AI_Broadcast(AI_Name(pid) + ": " + msg)
 endfunction
 
 //===========================================================================
@@ -605,6 +749,7 @@ function AI_GateEnum takes nothing returns nothing
         set ai_gateY[ai_gateCount]  = GetUnitY(u)
         set ai_gateOr[ai_gateCount] = AI_GateOrient(GetUnitTypeId(u))
         set ai_gateCd[ai_gateCount] = 0.0
+        set ai_gateStuck[ai_gateCount] = false
         set ai_gateCount = ai_gateCount + 1
     endif
     set u = null
@@ -653,6 +798,30 @@ function AI_GateOpenType takes integer orient returns integer
         return 'h01V'
     endif
     return 'h01X'
+endfunction
+
+// Ours to open: we own it, or an ally does.
+function AI_GateIsOurs takes integer pid, integer i returns boolean
+    if ai_gate[i] == null then
+        return false
+    endif
+    return GetOwningPlayer(ai_gate[i]) == ai_p[pid] or IsPlayerAlly(GetOwningPlayer(ai_gate[i]), ai_p[pid])
+endfunction
+
+// What crossing this gate costs us, in map units of equivalent detour. This
+// is the ONE place the round-2 playtest complaint is answered -- "if there is
+// a pre-existing hole in the gate, instead of sieging that gate ... you can
+// choke them easily". A hole is free, our own gate is nearly free because we
+// can simply open it, and an enemy gate costs a siege priced by how much of
+// it is still standing, so a half-broken gate beats a fresh one.
+function AI_GateCost takes integer pid, integer i returns real
+    if AI_GateState(i) != AI_GS_CLOSED then
+        return 0.0                        // an existing breach: free
+    endif
+    if AI_GateIsOurs(pid, i) then
+        return AI_GATE_OWN
+    endif
+    return AI_GATE_BREAK * AI_GateLifeFrac(i)
 endfunction
 
 function AI_GateShutType takes integer orient returns integer
@@ -798,10 +967,22 @@ function AI_ScanWorld takes integer pid returns nothing
     set wm_gold[pid]    = I2R(GetPlayerState(p, PLAYER_STATE_RESOURCE_GOLD))
     set wm_lumber[pid]  = I2R(GetPlayerState(p, PLAYER_STATE_RESOURCE_LUMBER))
     set wm_food[pid]    = I2R(GetPlayerState(p, PLAYER_STATE_RESOURCE_FOOD_USED))
-    set wm_foodCap[pid] = I2R(GetPlayerState(p, PLAYER_STATE_FOOD_CAP_CEILING))
+    // ROUND 3 BUG FIX. Round 2 read PLAYER_STATE_FOOD_CAP_CEILING, which is
+    // the UPPER BOUND on the cap, not the cap. The map sets that ceiling to
+    // 100 for everyone, then 200 for Persia and 300 for each Roman, while the
+    // cap you actually have is produced by your buildings (25 per city, 10
+    // per town, per the map own tooltips). A barbarian with a 100 ceiling and
+    // 30 supply believed it had 70 food of headroom and issued train orders
+    // that could never succeed -- wasted orders and an army that never grew.
+    // PLAYER_STATE_RESOURCE_FOOD_CAP is the real cap.
+    set wm_foodCap[pid] = I2R(GetPlayerState(p, PLAYER_STATE_RESOURCE_FOOD_CAP))
     set wm_canRaze[pid] = (GetPlayerTechMaxAllowed(p, 'R008') != 0)
     if wm_foodCap[pid] <= 0.0 then
-        set wm_foodCap[pid] = 100.0
+        // A player with no settlements really does have no headroom. The
+        // floor exists only to keep the CONSOLIDATE divisor non-zero -- it
+        // must NOT be a plausible cap, or the round-2 bug comes straight
+        // back in a new disguise.
+        set wm_foodCap[pid] = 1.0
     endif
 
     // whole-army CV and centroid
@@ -982,69 +1163,110 @@ endfunction
 //
 //  A single attack-move at a distant objective hands the whole route to the
 //  engine, which will happily walk an army the long way round a wall. This
-//  picks the cheapest crossing of the objective wall first and moves to
-//  THAT, and only then engages. An opening (open or destroyed gate) costs
-//  nothing to use; an intact enemy gate costs a siege, priced by how much
-//  of it is left, so a half-broken gate and a hole both beat an intact one.
+//  picks a crossing before it marches and moves to THAT as a waypoint, and
+//  only then engages.
+//
+//  ROUND 3 -- THE GATE JAM. Round 2 asked the wrong question. It only ever
+//  considered a gate within a fixed radius of the OBJECTIVE, which can only
+//  find the wall being broken INTO; the wall an army must cross on the way
+//  OUT of its own city sits at the far end of the march and was therefore
+//  never a candidate, ai_apGate stayed -1, and the open branch could not
+//  fire. Measured on the shipped map, home -> nearest non-owned objective:
+//  Player 3 owns 22 gates and round 2 considered 0 of them, Player 10 owns
+//  18 and considered 0, and three of Player 9s gates sit 38, 85 and 1420
+//  units off its own exit line -- ON it -- while round 2 saw none of them
+//  because they are 7.2k-8.9k away from the objective. The army attack-moved
+//  at something distant, walked into its own shut gate and stopped, which is
+//  exactly the screenshot the owner sent.
+//
+//  Round 3 asks: which walls does the SEGMENT from here to the objective
+//  cross? Every gate is projected onto that segment; it is a candidate when
+//  its projection lands inside the segment (0 <= t <= 1) and it lies within
+//  AI_GATE_CORRIDOR of the line. Walls are crossed in t order -- the nearest
+//  first -- and inside one wall (t values within AI_GATE_SAMEWALL) the
+//  CHEAPEST crossing wins, by AI_GateCost: a breach is free, our own gate is
+//  nearly free, an enemy gate costs a siege. That cost ordering is the
+//  round-2 fix being re-expressed rather than inherited, and trace.py pins
+//  it: on a wall carrying both a hole and an intact gate, the hole wins.
 //===========================================================================
 
 function AI_ChooseApproach takes integer pid, real tx, real ty returns nothing
+    local real fx = wm_fieldX[pid]
+    local real fy = wm_fieldY[pid]
+    local real dx = tx - fx
+    local real dy = ty - fy
+    local real len2 = dx*dx + dy*dy
+    local real direct = SquareRoot(len2)
     local integer i = 0
     local integer best = -1
-    local integer st
-    local real df
-    local real dt
-    local real cost
+    local real bestT = 2.0
     local real bestCost = 999999.0
-    local real direct = AI_Dist(wm_fieldX[pid], wm_fieldY[pid], tx, ty)
-    local boolean mine
+    local real t
+    local real perp
+    local real cost
 
     set ai_apGate[pid] = -1
     set ai_apBreak[pid] = false
     set ai_apX[pid] = tx
     set ai_apY[pid] = ty
-    if direct < AI_APPROACH_MIN then
+    if len2 <= 0.0 or direct < AI_APPROACH_MIN then
         return                              // already on top of it
     endif
 
+    // pass 1 -- the FIRST wall on the march: smallest t inside the corridor
     loop
         exitwhen i >= ai_gateCount
-        set dt = AI_Dist(ai_gateX[i], ai_gateY[i], tx, ty)
-        if dt <= AI_GATE_NEAR then
-            set df = AI_Dist(ai_gateX[i], ai_gateY[i], wm_fieldX[pid], wm_fieldY[pid])
-            // reject a crossing that is a silly detour, which also covers the
-            // case where the army is already inside the wall
-            if (df + dt) <= direct * AI_GATE_DETOUR then
-                set st = AI_GateState(i)
-                set cost = df + dt
-                if st == AI_GS_CLOSED then
-                    set mine = (ai_gate[i] != null) and (GetOwningPlayer(ai_gate[i]) == ai_p[pid] or IsPlayerAlly(GetOwningPlayer(ai_gate[i]), ai_p[pid]))
-                    if mine then
-                        set cost = cost + AI_GATE_OWN
-                    else
-                        set cost = cost + AI_GATE_BREAK * AI_GateLifeFrac(i)
-                    endif
-                endif
-                if cost < bestCost then
-                    set bestCost = cost
+        if ai_gate[i] != null and not ai_gateStuck[i] then
+            set t = ((ai_gateX[i]-fx)*dx + (ai_gateY[i]-fy)*dy) / len2
+            if t >= 0.0 and t <= 1.0 and t < bestT then
+                set perp = AI_Dist(ai_gateX[i], ai_gateY[i], fx + dx*t, fy + dy*t)
+                if perp <= AI_GATE_CORRIDOR then
+                    set bestT = t
                     set best = i
                 endif
             endif
         endif
         set i = i + 1
     endloop
-
     if best < 0 then
-        return
+        return                              // no wall between us and it
     endif
+
+    // pass 2 -- the cheapest crossing of THAT wall
+    set i = 0
+    loop
+        exitwhen i >= ai_gateCount
+        if ai_gate[i] != null and not ai_gateStuck[i] then
+            set t = ((ai_gateX[i]-fx)*dx + (ai_gateY[i]-fy)*dy) / len2
+            if t >= 0.0 and t <= 1.0 and (t - bestT) <= AI_GATE_SAMEWALL then
+                set perp = AI_Dist(ai_gateX[i], ai_gateY[i], fx + dx*t, fy + dy*t)
+                if perp <= AI_GATE_CORRIDOR then
+                    // crossing cost plus the real detour it imposes
+                    set cost = AI_GateCost(pid, i) + AI_Dist(fx, fy, ai_gateX[i], ai_gateY[i]) + AI_Dist(ai_gateX[i], ai_gateY[i], tx, ty) - direct
+                    if cost < bestCost then
+                        set bestCost = cost
+                        set best = i
+                    endif
+                endif
+            endif
+        endif
+        set i = i + 1
+    endloop
+
     set ai_apGate[pid] = best
-    set ai_apX[pid] = ai_gateX[best]
-    set ai_apY[pid] = ai_gateY[best]
-    set st = AI_GateState(best)
-    if st == AI_GS_CLOSED then
-        set mine = (ai_gate[best] != null) and (GetOwningPlayer(ai_gate[best]) == ai_p[pid] or IsPlayerAlly(GetOwningPlayer(ai_gate[best]), ai_p[pid]))
-        set ai_apBreak[pid] = not mine
-    endif
+    // The waypoint sits just PAST the gate, along the march line. Ordering the
+    // army AT the gate parks it in the doorway; ordering it through makes the
+    // crossing a waypoint the army actually clears, after which the gate falls
+    // behind the segment (t < 0), drops out of the candidate set, and the next
+    // tick routes at the objective itself. That progression is the answer to
+    // "if you open one door they just get routed around to the worse route" --
+    // the crossing is walked to deliberately instead of being left to the
+    // engine pathfinder to find or ignore.
+    set ai_apX[pid] = ai_gateX[best] + AI_GATE_ENTRY*dx/direct
+    set ai_apY[pid] = ai_gateY[best] + AI_GATE_ENTRY*dy/direct
+    // We only have to BREAK a crossing that is shut and not ours. An own gate
+    // on our path is opened instead -- unconditionally, see AI_ManageGates.
+    set ai_apBreak[pid] = (AI_GateState(best) == AI_GS_CLOSED) and not AI_GateIsOurs(pid, best)
 endfunction
 
 //===========================================================================
@@ -1366,9 +1588,13 @@ endfunction
 
 function AI_SetGate takes integer i, integer newType returns nothing
     local unit u = ai_gate[i]
+    local integer before
+    local boolean opening
     if u == null then
         return
     endif
+    set before = AI_GateState(i)
+    set opening = (newType == AI_GateOpenType(ai_gateOr[i]))
     // The map itself performs exactly this transition in Trig_Open_* and
     // Trig_Close_*; we do it directly rather than through the ability, because
     // the ability order string cannot be verified headlessly. The map cooldown
@@ -1376,29 +1602,47 @@ function AI_SetGate takes integer i, integer newType returns nothing
     // see ai_gateCd. Owned gates only.
     call ReplaceUnitBJ(u, newType, bj_UNIT_STATE_METHOD_RELATIVE)
     set ai_gate[i] = GetLastReplacedUnitBJ()
+    // ROUND 3: the map's own actions also play the animation. Without it an
+    // opened gate is passable but can still LOOK shut, which is exactly the
+    // kind of thing a playtester reports as "the gate did not open".
+    if opening then
+        call SetUnitAnimation(ai_gate[i], "Death Alternate")
+    else
+        call SetUnitAnimation(ai_gate[i], "stand")
+    endif
     set ai_gateCd[i] = ai_now + AI_GATE_CD
+    // ROUND 3: self-verify. If the state did not actually change, latch the
+    // gate as stuck; AI_ChooseApproach then routes around it instead of
+    // waiting forever on a crossing that will never open. A silent failure
+    // becomes an adaptive one.
+    if AI_GateState(i) == before then
+        set ai_gateStuck[i] = true
+    endif
     set u = null
 endfunction
 
 // Open the crossing we intend to use; shut one the enemy is standing in.
+//
+// ROUND 3: an OWN gate on our crossing opens UNCONDITIONALLY. Round 2 wrapped
+// this in an enemy-proximity check, which is the wrong place for it -- an army
+// that cannot leave its own city because an enemy is visible is an army that
+// never leaves. The enemy check belongs only to the decision to shut a gate
+// again, which is where it now lives.
 function AI_ManageGates takes integer pid returns nothing
     local integer i = 0
     local integer st
     local integer ap = ai_apGate[pid]
+    if ap >= 0 and ap < ai_gateCount and ai_now >= ai_gateCd[ap] then
+        if AI_GateIsOurs(pid, ap) and AI_GateState(ap) == AI_GS_CLOSED then
+            call AI_SetGate(ap, AI_GateOpenType(ai_gateOr[ap]))
+            return                         // one toggle per tick
+        endif
+    endif
     loop
         exitwhen i >= ai_gateCount
         if ai_gate[i] != null and GetOwningPlayer(ai_gate[i]) == ai_p[pid] and ai_now >= ai_gateCd[i] then
             set st = AI_GateState(i)
-            if st == AI_GS_CLOSED and i == ap then
-                call AI_GateScan(pid, i)
-                // open it for our own march when the crossing is clear, or when
-                // we already hold it in strength -- but not to let a stronger
-                // enemy walk straight in
-                if ai_accCV <= 0.0 or ai_accW > ai_accCV then
-                    call AI_SetGate(i, AI_GateOpenType(ai_gateOr[i]))
-                    return                 // one toggle per tick
-                endif
-            elseif st == AI_GS_OPEN and i != ap then
+            if st == AI_GS_OPEN and i != ap then
                 call AI_GateScan(pid, i)
                 if ai_accCV > 0.0 and ai_accN == 0 then
                     call AI_SetGate(i, AI_GateShutType(ai_gateOr[i]))
@@ -1410,11 +1654,69 @@ function AI_ManageGates takes integer pid returns nothing
     endloop
 endfunction
 
+// ---- stall backstop -----------------------------------------------------
+//
+// Everything above models gates. Nothing models mountain passes, bridges or
+// any other chokepoint, and a toggle can still fail in a way we did not
+// predict. So a blocked exit is made a first-class failure state: if the army
+// has not closed on its objective for AI_STALL_T seconds, force the nearest
+// own shut gate open and let the next tick re-path.
+
+function AI_ForceOpenNear takes integer pid, real x, real y returns boolean
+    local integer i = 0
+    local integer best = -1
+    local real bd = AI_STALL_R
+    local real d
+    loop
+        exitwhen i >= ai_gateCount
+        if ai_gate[i] != null and AI_GateIsOurs(pid, i) and ai_now >= ai_gateCd[i] then
+            if AI_GateState(i) == AI_GS_CLOSED then
+                set d = AI_Dist(ai_gateX[i], ai_gateY[i], x, y)
+                if d < bd then
+                    set bd = d
+                    set best = i
+                endif
+            endif
+        endif
+        set i = i + 1
+    endloop
+    if best < 0 then
+        return false
+    endif
+    call AI_SetGate(best, AI_GateOpenType(ai_gateOr[best]))
+    return true
+endfunction
+
+// True when the army has stopped closing on its objective.
+function AI_TrackProgress takes integer pid, real tx, real ty returns boolean
+    local real d = AI_Dist(wm_fieldX[pid], wm_fieldY[pid], tx, ty)
+    if d < ai_progD[pid] - AI_STALL_EPS then
+        set ai_progD[pid] = d              // making ground
+        set ai_progAt[pid] = ai_now
+        return false
+    endif
+    if d > ai_progD[pid] + AI_STALL_EPS then
+        set ai_progD[pid] = d              // new objective, or pushed back
+        set ai_progAt[pid] = ai_now
+        return false
+    endif
+    return (ai_now - ai_progAt[pid]) >= AI_STALL_T
+endfunction
+
 // Move on a registered point, crossing the wall deliberately.
 function AI_MoveOnTarget takes integer pid, integer t returns nothing
     local integer gi
+    local boolean stalled = AI_TrackProgress(pid, ai_ptX[t], ai_ptY[t])
     call AI_ChooseApproach(pid, ai_ptX[t], ai_ptY[t])
     call AI_ManageGates(pid)
+    if stalled then
+        // Backstop: something we do not model is in the way. Force the
+        // nearest own shut gate and give the reroute time to take effect.
+        if AI_ForceOpenNear(pid, wm_fieldX[pid], wm_fieldY[pid]) then
+            call AI_Say(pid, "forcing a gate open - the army is not making ground")
+        endif
+        set ai_progAt[pid] = ai_now
+    endif
     set gi = ai_apGate[pid]
     if gi >= 0 and ai_apBreak[pid] then
         // the crossing is shut and not ours: break THIS gate on purpose,
@@ -1727,6 +2029,9 @@ function AI_Execute takes integer pid returns nothing
         call AI_Spend(pid)
         set t = AI_CapitalTarget(pid)
         if t >= 0 then
+            if ai_target[pid] != t then
+                call AI_Say(pid, "marching on " + AI_OwnerName(t) + " capital")
+            endif
             set ai_target[pid] = t
             call AI_MoveOnTarget(pid, t)
         endif
@@ -1736,6 +2041,9 @@ function AI_Execute takes integer pid returns nothing
         call AI_TryRaze(pid)
         set t = ai_bestT[pid]
         if t >= 0 then
+            if ai_target[pid] != t then
+                call AI_Say(pid, "moving on " + AI_KindName(ai_ptKind[t]) + " held by " + AI_OwnerName(t))
+            endif
             set ai_target[pid] = t
             call AI_MoveOnTarget(pid, t)
         endif
@@ -1783,6 +2091,8 @@ function AI_MicroPlayer takes integer pid returns nothing
             set ai_orderX = ai_ptX[t]
             set ai_orderY = ai_ptY[t]
         else
+            // objective ACHIEVED: it is ours now, stop hitting it and say so
+            call AI_Say(pid, "took " + AI_KindName(ai_ptKind[t]))
             set ai_target[pid] = -1
         endif
     endif
@@ -1813,6 +2123,8 @@ function AI_Think takes nothing returns nothing
                 if newGoal != ai_goal[pid] then
                     set ai_goal[pid] = newGoal
                     set ai_goalSince[pid] = ai_now
+                    // posture change: a STATE CHANGE, so it is narrated
+                    call AI_Say(pid, AI_GoalName(newGoal))
                 endif
                 call AI_Execute(pid)
             endif
@@ -1880,6 +2192,8 @@ function AI_EnablePlayer takes integer pid, integer difficulty returns nothing
     set ai_apGate[pid]   = -1
     set ai_apBreak[pid]  = false
     set ai_scanCursor[pid] = 0
+    set ai_progD[pid]    = 999999.0
+    set ai_progAt[pid]   = 0.0
     // PHASE OFFSET. Round 1 gave every player nextThink = 0, so all twelve
     // scanned, scored and issued orders on the same 1 s tick, forever: one
     // synchronised spike of work instead of a spread load. This is the
@@ -1909,6 +2223,16 @@ function AI_CmdActions takes nothing returns nothing
     local string s = GetEventPlayerChatString()
     local integer pid = 0
     local integer d = -1
+    // ROUND 3: the AI can be told to stop talking, or to talk again.
+    if s == "-aiquiet" or s == "-aitalk" then
+        loop
+            exitwhen pid >= AI_MAX_PLAYERS
+            set ai_talk[pid] = (s == "-aitalk")
+            set pid = pid + 1
+        endloop
+        call DisplayTextToPlayer(GetTriggerPlayer(), 0, 0, "FoR-AI reporting toggled.")
+        return
+    endif
     if s == "-aieasy" then
         set d = AI_EASY
     elseif s == "-ainormal" then
@@ -1940,6 +2264,9 @@ function AI_Init takes nothing returns nothing
         set ai_on[pid] = false
         set ai_handicap[pid] = 1.0
         set ai_scanCursor[pid] = 0
+        set ai_talk[pid] = true
+        set ai_sayAt[pid] = 0.0
+        set ai_sayLast[pid] = ""
         set pid = pid + 1
     endloop
 

@@ -262,6 +262,9 @@ def make_env(sc):
         'ai_apX': d(0.0), 'ai_apY': d(0.0), 'ai_apGate': d(-1), 'ai_apBreak': d(False),
         'ai_gateCount': len(sc.get('gates', [])),
         'ai_gate': {}, 'ai_gateX': {}, 'ai_gateY': {}, 'ai_gateOr': {}, 'ai_gateCd': {},
+        'ai_gateStuck': {},
+        'ai_progD': d(sc.get('progD', 999999.0)), 'ai_progAt': d(sc.get('progAt', 0.0)),
+        'ai_talk': d(False), 'ai_sayAt': d(0.0), 'ai_sayLast': d(''),
         'ai_pt': {}, 'ai_ptKind': {}, 'ai_ptX': {}, 'ai_ptY': {},
         'ai_ptOwner': {}, 'ai_ptSeen': {}, 'ai_ptDef': {},
         'ai_accCV': 0.0, 'ai_accX': 0.0, 'ai_accY': 0.0, 'ai_accW': 0.0,
@@ -288,6 +291,7 @@ def make_env(sc):
         env['ai_gateY'][i] = g.get('y', 0.0)
         env['ai_gateOr'][i] = g.get('orient', 0)
         env['ai_gateCd'][i] = 0.0
+        env['ai_gateStuck'][i] = g.get('stuck', False)
         env['_gateState'][i] = g.get('state', CONSTS['AI_GS_CLOSED'])
         env['_gateLife'][i] = g.get('life', 1.0)
         env['_ptOwner'][1000 + i] = g.get('owner', 1)
@@ -568,14 +572,145 @@ def routing():
          [dict(x=6000.0, y=0.0, state=CLOSED, life=1.0, owner=1)], 0, True)
     case('our OWN shut gate on the way: cross it, do not besiege it',
          [dict(x=6000.0, y=0.0, state=CLOSED, life=1.0, owner=0)], 0, False)
-    case('a gate 20000 away from the objective is not this wall',
+    case('a gate past the objective is not on this march',
          [dict(x=28000.0, y=0.0, state=CLOSED, life=1.0, owner=1)], -1, False)
-    case('a hole that would triple the march is rejected as a detour',
+    case('a hole far outside the corridor is not a crossing',
          [dict(x=4000.0, y=9000.0, state=GONE, owner=1)], -1, False)
     case('objective closer than AI_APPROACH_MIN: no routing at all',
          [dict(x=900.0, y=0.0, state=CLOSED, life=1.0, owner=1)], -1, False,
          tx=1500.0, ty=0.0)
+
+    # ---------------------------------------------------------------- round 3
+    # THE BLOCKER. Every one of these was invisible to round 2, which only
+    # looked for a gate within AI_GATE_NEAR (4200) of the OBJECTIVE.
+    print('  -- round 3: the gate an army must cross LEAVING its own city --')
+    case('our own gate 400 units outside home, objective 8000 away',
+         [dict(x=400.0, y=0.0, state=CLOSED, life=1.0, owner=0)], 0, False)
+    case('P9 shape: own gate 85 units off the exit line, 7900 from the objective',
+         [dict(x=1200.0, y=85.0, state=CLOSED, life=1.0, owner=0)], 0, False)
+    case('an enemy gate on the exit line is still a crossing, and must break',
+         [dict(x=600.0, y=38.0, state=CLOSED, life=1.0, owner=1)], 0, True)
+    # wall ORDER: the near wall must be crossed first even when the far wall
+    # is free. Crossing them out of order is how an army walks into a wall.
+    case('near intact wall at t=0.2 vs a breach at t=0.8: cross the NEAR one',
+         [dict(x=1600.0, y=0.0, state=CLOSED, life=1.0, owner=1),
+          dict(x=6400.0, y=0.0, state=GONE, owner=1)], 0, True)
+    # a toggle that silently failed must not trap the army forever
+    case('a gate latched STUCK is routed around, not waited on',
+         [dict(x=6000.0, y=0.0, state=CLOSED, life=1.0, owner=0, stuck=True),
+          dict(x=6000.0, y=1200.0, state=OPEN, owner=0)], 1, False)
     print('\n%s: %d routing assertions failed' % ('PASS' if not fails else 'FAIL', fails))
+    return 1 if fails else 0
+
+
+# ------------------------------------------- round 3: guard A + the backstop
+
+def gates_round3():
+    """Round 3 rewrote candidate selection, so the round-2 behaviours that the
+    OWNER complained about must be re-established in the NEW code rather than
+    inherited by accident.
+
+    Guard A is his exact complaint: "if there is a pre-existing hole in the
+    gate, instead of sieging that gate, allowing you to choke them easily".
+    A breach on the corridor must beat an intact gate on the same wall. The
+    assertion is negative-controlled first -- five agents in this repo have
+    shipped probes that "passed" while structurally incapable of firing.
+    """
+    print('\n' + '=' * 78)
+    print('ROUND 3 -- crossing cost, guard A, and the stall backstop')
+    print('=' * 78)
+    OPEN, CLOSED, GONE = CONSTS['AI_GS_OPEN'], CONSTS['AI_GS_CLOSED'], CONSTS['AI_GS_GONE']
+    fails = 0
+
+    def cost(gate, owner=1):
+        sc = dict(role='barb', gates=[dict(owner=owner, **gate)])
+        env = make_env(sc)
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        return it.run('AI_GateCost', [0, 0])
+
+    # -- the cost ladder, stated explicitly -------------------------------
+    c_breach = cost(dict(x=0.0, y=0.0, state=GONE))
+    c_open = cost(dict(x=0.0, y=0.0, state=OPEN))
+    c_own = cost(dict(x=0.0, y=0.0, state=CLOSED, life=1.0), owner=0)
+    c_half = cost(dict(x=0.0, y=0.0, state=CLOSED, life=0.2))
+    c_intact = cost(dict(x=0.0, y=0.0, state=CLOSED, life=1.0))
+    ladder = [
+        ('a destroyed gate is free', c_breach == 0.0),
+        ('an open gate is free', c_open == 0.0),
+        ('our own shut gate is nearly free', 0.0 < c_own <= CONSTS['AI_GATE_OWN']),
+        ('a half-broken enemy gate is cheaper than an intact one', c_half < c_intact),
+        ('GUARD A: a breach is cheaper than an intact enemy gate', c_breach < c_intact),
+        ('GUARD A: a breach is cheaper than our own shut gate', c_breach < c_own),
+    ]
+    for name, ok in ladder:
+        fails += 0 if ok else 1
+        print('  %s %s' % ('PASS' if ok else 'FAIL', name))
+    print('       ladder: breach=%.1f open=%.1f own=%.1f half=%.1f intact=%.1f'
+          % (c_breach, c_open, c_own, c_half, c_intact))
+
+    # -- guard A end to end, through the real selection -------------------
+    def pick(gates, fx=0.0, fy=0.0, tx=8000.0, ty=0.0, break_cost=None):
+        sc = dict(role='barb', army=600.0, points=[], gates=gates,
+                  fieldX=fx, fieldY=fy)
+        env = make_env(sc)
+        consts = dict(CONSTS)
+        if break_cost is not None:
+            consts['AI_GATE_BREAK'] = break_cost   # negative control lever
+        it = Interp(FUNCS, consts, env, make_natives(env, 0.0))
+        it.run('AI_ChooseApproach', [0, tx, ty])
+        return env['ai_apGate'][0]
+
+    WALL = [dict(x=6000.0, y=0.0, state=CLOSED, life=1.0, owner=1),   # intact
+            dict(x=6000.0, y=800.0, state=GONE, owner=1)]             # the hole
+    got = pick(WALL)
+    ok = (got == 1)
+    fails += 0 if ok else 1
+    print('  %s GUARD A end to end: one wall, one hole and one intact gate -> hole (got %s)'
+          % ('PASS' if ok else 'FAIL', got))
+
+    # NEGATIVE CONTROL: zero the siege cost so an intact gate is as cheap as a
+    # hole. The nearer intact gate must then win, proving the assertion above
+    # is actually driven by AI_GateCost and is capable of failing.
+    got_nc = pick(WALL, break_cost=0.0)
+    ok_nc = (got_nc == 0)
+    fails += 0 if ok_nc else 1
+    print('  %s   negative control: with AI_GATE_BREAK=0 the intact gate wins instead (got %s)'
+          % ('PASS' if ok_nc else 'FAIL', got_nc))
+
+    # -- the waypoint is PAST the gate, not on it -------------------------
+    sc = dict(role='barb', army=600.0, points=[], fieldX=0.0, fieldY=0.0,
+              gates=[dict(x=4000.0, y=0.0, state=OPEN, owner=0)])
+    env = make_env(sc)
+    it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+    it.run('AI_ChooseApproach', [0, 8000.0, 0.0])
+    ok = env['ai_apX'][0] > 4000.0
+    fails += 0 if ok else 1
+    print('  %s the waypoint is set PAST the crossing (apX=%.0f, gate at 4000)'
+          % ('PASS' if ok else 'FAIL', env['ai_apX'][0]))
+
+    # -- the stall backstop ------------------------------------------------
+    def track(progD, progAt, fx, now):
+        sc = dict(role='barb', t=now, fieldX=fx, fieldY=0.0, progD=progD, progAt=progAt)
+        env = make_env(sc)
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        return it.run('AI_TrackProgress', [0, 8000.0, 0.0])
+
+    T = CONSTS['AI_STALL_T']
+    stall_cases = [
+        ('closing on the objective is not a stall', track(8000.0, 0.0, 1000.0, 100.0), False),
+        ('standing still under the timer is not a stall yet',
+         track(7000.0, 100.0, 1000.0, 100.0 + T - 1.0), False),
+        ('standing still past AI_STALL_T IS a stall',
+         track(7000.0, 100.0, 1000.0, 100.0 + T + 1.0), True),
+        ('being pushed BACK resets the clock, it is not a stall',
+         track(2000.0, 100.0, 1000.0, 100.0 + T + 1.0), False),
+    ]
+    for name, got, want in stall_cases:
+        ok = (bool(got) == want)
+        fails += 0 if ok else 1
+        print('  %s %-58s -> %s' % ('PASS' if ok else 'FAIL', name, bool(got)))
+
+    print('\n%s: %d round-3 gate assertions failed' % ('PASS' if not fails else 'FAIL', fails))
     return 1 if fails else 0
 
 
@@ -651,6 +786,60 @@ ORDER_GUARDS = [
     ('players are phase-offset so they do not all think on one tick',
      r'set ai_nextThink\[pid\]\s*=\s*I2R\(ModuloInteger\(pid,'),
 ]
+
+
+# Round-3 source guards. These run against a COMMENT-STRIPPED copy of the
+# module, because several of them assert the ABSENCE of something and the
+# round-3 comments quote the very identifiers being banned.
+CODE = re.sub(r'//.*$', '', TEXT, flags=re.M)
+
+ROUND3_GUARDS = [
+    ('the food cap reads PLAYER_STATE_RESOURCE_FOOD_CAP',
+     r'set wm_foodCap\[pid\]\s*=\s*I2R\(GetPlayerState\(p, PLAYER_STATE_RESOURCE_FOOD_CAP\)\)', True),
+    ('the wrong player state (FOOD_CAP_CEILING) is gone from the code',
+     r'PLAYER_STATE_FOOD_CAP_CEILING', False),
+    ('AI_ChooseApproach projects gates onto the field->objective segment',
+     r'function AI_ChooseApproach\b.*?AI_GATE_CORRIDOR', True),
+    ('AI_ChooseApproach crosses walls in t order (AI_GATE_SAMEWALL)',
+     r'function AI_ChooseApproach\b.*?AI_GATE_SAMEWALL', True),
+    ('the round-2 objective-anchored radius no longer selects gates',
+     r'function AI_ChooseApproach\b.*?AI_GATE_NEAR', False),
+    ('crossing cost is decided in one place, AI_GateCost',
+     r'function AI_GateCost takes integer pid, integer i returns real', True),
+    ('AI_ChooseApproach prices crossings through AI_GateCost',
+     r'function AI_ChooseApproach\b.*?AI_GateCost\(pid, i\)', True),
+    ('a stuck gate is excluded from candidate crossings',
+     r'function AI_ChooseApproach\b.*?not ai_gateStuck\[i\]', True),
+    ('an OWN crossing opens before any enemy scan is consulted',
+     r'function AI_ManageGates\b.*?AI_GateIsOurs\(pid, ap\).*?call AI_SetGate\(ap,.*?call AI_GateScan\(', True),
+    ('AI_SetGate plays the map own open animation',
+     r'function AI_SetGate\b.*?call SetUnitAnimation\(ai_gate\[i\], "Death Alternate"\)', True),
+    ('AI_SetGate plays the map own close animation',
+     r'function AI_SetGate\b.*?call SetUnitAnimation\(ai_gate\[i\], "stand"\)', True),
+    ('AI_SetGate self-verifies the toggle and latches a failure',
+     r'function AI_SetGate\b.*?if AI_GateState\(i\) == before then\s*\n\s*set ai_gateStuck\[i\] = true', True),
+    ('AI_MoveOnTarget consults the stall detector',
+     r'function AI_MoveOnTarget\b.*?AI_TrackProgress\(pid,', True),
+    ('a stall forces the nearest own gate open',
+     r'function AI_MoveOnTarget\b.*?AI_ForceOpenNear\(pid,', True),
+]
+
+
+def round3_guards():
+    """Source assertions for the round-3 gate work: things the interpreter
+    cannot reach because they are about engine calls or about code that is
+    NOT present."""
+    print('\n' + '=' * 78)
+    print('ROUND 3 -- source guards (asserted against the shipped for-ai.j)')
+    print('=' * 78)
+    fails = 0
+    for name, rx, want in ROUND3_GUARDS:
+        got = re.search(rx, CODE, re.S) is not None
+        ok = (got == want)
+        fails += 0 if ok else 1
+        print('  %s %s' % ('PASS' if ok else 'FAIL', name))
+    print('\n%s: %d round-3 source guards failed' % ('PASS' if not fails else 'FAIL', fails))
+    return 1 if fails else 0
 
 
 def order_guards():
@@ -785,6 +974,8 @@ def main():
     rc |= orders()
     rc |= value_ordering()
     rc |= routing()
+    rc |= gates_round3()
+    rc |= round3_guards()
     rc |= defence()
     rc |= prng_check()
     return rc
