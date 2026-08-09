@@ -752,3 +752,45 @@ The clean starting point for the next round, in the order it should be built:
    interception and no naval engagement model — it is pure logistics.
 4. **Order economy applies**: `load` and `unload` must go through
    `AI_TryOrder` like everything else, or this round is undone.
+
+### 8.7 Player-facing text (gotcha 17)
+
+The owner now holds both ToaNoah's original and this build, so they must be
+distinguishable in the map list, and a player loading it must be told the AI
+exists. Every player-facing string in this map is a TRIGSTR reference into
+`war3map.wts`, so all of it lives in one file and `describe.js` applies the
+overlay:
+
+| TRIGSTR | field | value in the AI build |
+|---|---|---|
+| 001 | w3i map name | `The Fall of Rome 1.06 + AI` |
+| 003 | w3i description | original text, then the AI notice + credit |
+| 004 | w3i author | `ToaNoah`, unchanged |
+| 736 | loading title | `Fall of Rome 1.06 + AI` |
+| 737 | loading subtitle | `By ToaNoah - AI computer players added` |
+| 738 | loading body | original hints, plus one AI hint line |
+
+The appended description line is:
+
+> AI BUILD - all empty slots, and any slot set to Computer, are played by an
+> AI. Type -aieasy, -ainormal or -aihard to set the level. Original map by
+> ToaNoah.
+
+**The archive is a bare MPQ with no HM3W pre-header** (it starts `MPQ\x1a`,
+like ToaNoah's original), so the w3i name is the only name and the picker
+renders it; there is no second copy to keep in sync. If a pre-header is ever
+added, `_header.json` must carry the same string.
+
+Three constraints the overlay respects, each of which is a gotcha:
+
+* **Nothing is replaced.** The author's own description, his Discord link and
+  all his loading-screen hints are kept; the AI text is appended. `describe.js`
+  refuses to run if the strings it is about to overlay are not the ones it
+  expects, so it cannot quietly mangle a different build of the map.
+* **The wts byte dialect survives** (gotcha 35). The edit goes through
+  `lib/wts.js`, and the script prints the dialect before and after: BOM true,
+  CRLF, blank separator, 0 bare LF, 1257 entries in and 1257 out, exactly 5
+  changed. That check is the one that catches the class of silent load-time
+  breakage a naive text patch causes.
+* **The authored English is ASCII and apostrophe-free** (gotcha 34 as a
+  cost-free precaution); the script refuses to write if either slips in.

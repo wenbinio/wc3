@@ -78,6 +78,12 @@ since an empty slot otherwise leaves ~100 structures and a capital inert.
   four times now: EXPAND normalised by capital value; an additive
   write-off that still left DEFEND winning; and in round 2 the shipyard
   ordering and the recall predicate.
+- `describe.js` — the player-facing text overlay: gives the build a
+  distinct internal name containing "AI" (gotcha 17), appends the
+  all-empty-slots-are-AI notice to the picker description, credits
+  ToaNoah, and echoes both on the loading screen. Appends, never
+  replaces; goes through `lib/wts.js` so the file's byte dialect
+  survives (gotcha 35); idempotent. DESIGN.md §8.7.
 - `lint_apostrophe.py` — the gotcha-34 delta lint (negative-controlled).
 
 ## Verification (all that was possible headlessly)
