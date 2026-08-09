@@ -19,3 +19,7 @@ dist/
 
 # optional tools built by scripts/setup.sh (never vendored into git)
 vendor/
+
+# Python bytecode caches (trace.py runs generate these)
+__pycache__/
+*.pyc
