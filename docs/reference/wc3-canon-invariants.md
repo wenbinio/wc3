@@ -326,3 +326,82 @@ two authors), while **KR→CN localization retains ~10%** (20 CJK-titled
 groups in the live canon are Korean-authored). The Korean scene has one
 working export channel and it points east. Translation alone does not
 move a map; a maintainer does (the Pumpkin TD pattern above).
+
+## 2026-08-09 wave-6e: LIVE TELEMETRY — the window, I1 qualified, I7 quantified
+
+**THE FIELD WINDOW IS 69 DAYS, NOT 30** [M]. Every wave (3–6) read
+`hosted_month` as games/month. Partitioning 350 top versions by whether
+`hosted_month == hosted_total` and sorting by age gives **zero overlap**
+between the two classes at 68 vs 69 days ⇒ the counter window is
+**68 < w ≤ 69 days** (counting since ~2026-06-01). `group_hosted_month`
+is a *different* window: month-to-date. Triangulated three ways to
+games/day: activity feed (6 full days) **46,897**; Σ`hosted_month`/69
+**42,545**; Σ`group_hosted_month`/8.19 **43,463** — the counter-derived
+pair agree to 2.1%. Under a 30-day reading, Σ`hosted_month` would imply
+97,855 games/day, ~2× the platform's own feed.
+**Consequence: every "N hosted/month" figure in these dossiers overstates
+monthly rates by ~2.3× (69/30).** Zombie Defense's "18,011/mo" ≈ 7,900.
+Also: `/api/stats` is frozen at 2024-11; `/api/activity?range=` IGNORES
+its parameter (always 7 days); `order=hosted_month` actually sorts by
+`group_hosted_month`; version grouping is unstable (5 of 589 lineages
+re-partitioned within 6 minutes); and **counter deltas are unusable** —
+counters refresh in bursts, so a 22-minute delta over-reported by 3.7×.
+Use the two fixed windows only.
+
+**I1 IS MEASURABLY QUALIFIED — and it validates our own authoring
+shape.** I1 ("built for a lobby… 100% of the top 200 are 6+ slots") was
+derived from EpicWar *download* counts. On live *hosting*: **the #1
+lineage in the entire canon is a 4-SLOT map** (ORDR, `users: 4`,
+confirmed across 242 observed lobbies) at 47.5% of all measured games.
+Share of games from ≤4-slot lineages: top-10 **71.9%**, all 3,081
+lineages **53.7%**. And fill rate declines monotonically with size —
+**4-slot lobbies reach full 29% of the time; 10-slot, 2%**. So a
+1–4-player co-op map is the best-filling and highest-volume shape in the
+live canon, not a niche. The "no solo maps" half of I1 stands (1–2 slot
+= 1.1% of games).
+
+**I7 IS QUANTIFIED**: across 74,123 version records from the top 400
+lineages, **88.8% of games played this month are on a lineage patched
+within the last 30 days; 95.5% within 90; 99.0% within a year** (median
+21 days since last version; median 13 versions per year). ORDR ships
+~2.5 point-versions per DAY, sustained. The counter-example proves it:
+Pumpkin TD — the de-crediting fork noted above — has shipped nothing in
+90 days and its momentum is 0.30× its lifetime average.
+
+**What is rising** [M]: CHAOS is mid-lineage-migration — the 14-day-old
+`R0.02 WCC` runs at 5.14× its own recent rate while the incumbent
+`B1.A1` sits at 0.48×, and **72.7% of the new lineage's entire lifetime
+hosting happened in 8 days**. Other genuine risers: Poker Strike
+(1.97×), Green Circle Autumn Codex (28 days old, 2.34×), 동물과 벽
+(1.64×). Decliners: Legion TD Crazy 0.08×, DotA 0.13×, Pumpkin TD 0.30×.
+
+**Language, weighted by games played** [M]: JASS **88.6%**, Lua 9.9%,
+TypeScript 0.9%, C# 0.6%. Lua is only 2.7% of live lineages, so it
+**over-indexes 3.7× on being played** and holds the #2 lineage — our
+Lua-first authoring is not fringe. But **anything that reads only Lua is
+blind to ~89% of live play**, and the freshest riser measured (Green
+Circle Autumn Codex) is JASS on classic-adjacent w3i v31 — the tier our
+`lib/codecs/` covers, not the v33 tier our own maps author in.
+
+**A second distribution channel this dossier never modelled** [M]:
+W3Champions runs 15 ranked ladders, 8 of them custom maps. **Direct
+Strike's ladder is 83% the size of its entire public bot hosting** and is
+21.5% of all W3Champions activity — so Direct Strike is nearly twice as
+big as any bot-lobby index says. Correlation with hosting is weak and
+mode-specific (Legion TD is 2.6× Direct Strike in lobbies but 1/8th its
+ladder): **laddering is a distribution decision, not a popularity
+consequence.**
+
+**Honest limits of all of the above**: public bot lobbies only (private/
+clan/LAN invisible; Chinese play happens on Netease/KK, outside this
+index entirely); fill/region figures come from ONE 41-minute window that
+over-samples KR+US-west and under-samples EU ~2×; `hosted_*` counts
+lobbies hosted, not games completed — **36% of lobbies never exceed one
+player**; `group_hosted_total` starts 2018-02-04, so every "lifetime"
+figure is over the index window and momentum is biased high for older
+lineages; and nothing here measures whether a map is *fun*, only whether
+it is started. Method trap for anyone reusing `/api/lobbies`: **the `id`
+field is re-minted on every poll** (0 of ~75 carried-over lobbies kept
+their id between consecutive samples) — key on `(host, map_id, created)`.
+Snapshot-share ≠ game-share: an open-lobby snapshot measures lobbies ×
+dwell time and so over-represents maps that FAIL to fill.
