@@ -1455,3 +1455,77 @@ their own function body. **Twice is a pattern**: every `function X\b.*?` guard i
 `trace.py` should be treated as suspect until bounded. This is the same family as
 gotcha 34 — a check that cannot fail, or that can pass for the wrong reason, is
 worse than no check, because it is counted as evidence.
+
+---
+
+## 13. Round 6 — the impossible goal (Persia after a capture)
+
+*"Persia just sits around after winning a city."* The sharpest idle state yet:
+**gold 144, food 189/185 — over the cap**, a full army inside the captured city,
+rams idle outside, and the gate it faced undamaged at 500/500. That faction
+**could not train** (over food) and **could not afford research** (144 gold), so
+every production action was unavailable by construction.
+
+### 13.1 The invariant
+
+**A goal whose action is impossible must score ZERO, not merely less.** This
+generalises the round-5 fix that priced out a wall break the army could not
+perform, and it is the same shape as the round-4 `AI_CanMass` gate — which
+CONSOLIDATE had and **TECH did not**. At 144 gold TECH still scored ~0.047:
+small, until everything else is smaller, at which point it wins and its entire
+expression — research and training — does nothing at all.
+
+`AI_ScoreTech` now returns exactly 0 below `AI_TECH_MIN_GOLD`, and reopens the
+moment research is affordable. Measured on the exact screenshot state:
+CONSOLIDATE 0.000, TECH 0.000, **EXPAND 0.211** — the only goal whose action is
+possible is the only one left standing.
+
+### 13.2 Build ambiguity, handled by fixing both readings
+
+The owner may have been on round 4 or round 5. **Both are covered, and they fail
+differently**, which is worth recording:
+
+* **Round 4**: held by the CONSOLIDATE gold floor plus a TECH score that could
+  win by default. Fixed by §12 (`AI_WantsMore`) and by §13.1.
+* **Round 5**: the *scoring was already correct* — EXPAND 0.211 beats TECH
+  0.047 — so the cause there is the other half. Taking the city left the
+  objective selected, its claim standing and the idle clock fresh, so the
+  round-5 aggression floor counted the faction as **committed** and could never
+  fire. The floor measured *selection*, not *progress*.
+
+### 13.3 Success must expire the plan
+
+Capturing the objective now, in one place: releases its **claim** (or an ally
+cannot pick up the next one), expires the goal **dwell** immediately, arms the
+**aggression floor**, and resets the progress tracker. Otherwise every success is
+followed by a pause exactly proportional to how sticky the objective was.
+
+And the idle clock is stamped only when the objective **changes**, not on every
+tick it is re-selected — the defect that made the floor unfireable.
+
+### 13.4 The rams outside the walls
+
+Round 5 sent a ram with no current wall to a hold point *towards home*. From a
+freshly captured city that is **backwards** — the wall it had just come through,
+which is exactly where the screenshot shows Persia's rams. The hold point is now
+one step **behind the army on the march line**, so rams travel with the army and
+arrive at the next wall with it.
+
+### 13.5 Verification
+
+| check | result |
+|---|---|
+| exact screenshot state | CONSOLIDATE **0.000**, TECH **0.000**, EXPAND **0.211** |
+| gates reopen when affordable | TECH 0.419 with money; CONSOLIDATE re-opens for a small army |
+| negative control | research floor removed → TECH scores **0.047** on 144 gold again, reproducing the pre-fix state |
+| trace | **290 assertions, 0 FAILs**; Guards A and B green |
+| pjass / validate / npm test | clean 59,253 lines; 191/192, 152 warnings — identical to unmodified; 617 pass 0 fail |
+
+**The pattern across rounds 4, 5 and 6 is now explicit and worth naming**: three
+separate playtests, three different factions, one shape — *a goal that stays
+selected while unable to make progress*. Round 4 was CONSOLIDATE on a clock ramp
+a food-capped army could never satisfy; round 5 was CONSOLIDATE on a gold floor a
+rich empire could never fall below; round 6 was TECH on money it did not have.
+Each was individually plausible and each produced an army standing still. The
+invariant in §13.1 is the general form, and any future goal added to this module
+must carry its own possibility gate.

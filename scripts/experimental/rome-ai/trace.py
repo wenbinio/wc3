@@ -1334,6 +1334,107 @@ def consort():
     return 1 if fails else 0
 
 
+# ------------------- round 6: the impossible goal (Persia after a capture)
+
+def impossible():
+    """Round 6. "Persia just sits around after winning a city", with the
+    sharpest state yet: gold 144, food 189/185 -- OVER the cap -- a full army
+    inside the captured city, rams idle outside, and the gate it was looking
+    at undamaged at 500/500. That faction could not train (over food) and
+    could not afford research (144 gold), so EVERY production action was
+    unavailable by construction.
+
+    The invariant, generalising round 5's priced-out wall break: A GOAL WHOSE
+    ACTION IS IMPOSSIBLE MUST SCORE ZERO, NOT MERELY LESS.
+
+    Build ambiguity is handled by fixing both readings. Under round 4 the
+    faction was held by the CONSOLIDATE gold floor and a TECH score of ~0.047
+    that could win once everything else was smaller. Under round 5 the
+    scoring was already fine -- so the cause there is the other half: taking
+    the city left the objective selected, the claim standing and the idle
+    clock fresh, so the aggression floor counted the faction as committed and
+    never fired."""
+    print('\n' + '=' * 78)
+    print('ROUND 6 -- the impossible goal: Persia, 144 gold, 189/185 food')
+    print('=' * 78)
+    fails = 0
+
+    def persia(gold=144.0, lumber=380.0, food=189.0, cap=185.0):
+        sc = dict(role='barb', t=1000.0, army=1400.0, garrison=900.0, gold=gold,
+                  lumber=lumber, food=food, proxScale=CONSTS['AI_PROX_MIN'],
+                  fieldX=0.0, fieldY=0.0,
+                  points=[{'kind': CP, 'x': 5000.0, 'y': 0.0, 'owner': 1}])
+        env = make_env(sc)
+        env['wm_foodCap'][0] = cap
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        seed_capital(env, it, sc)
+        out = {}
+        for g, fn in (('CON', 'AI_ScoreConsolidate'), ('EXP', 'AI_ScoreExpand'),
+                      ('TEC', 'AI_ScoreTech')):
+            out[g] = it.run(fn, [0])
+        return out
+
+    sc0 = persia()
+    checks = [
+        ('over the food cap, CONSOLIDATE is exactly zero', sc0['CON'] == 0.0),
+        ('with 144 gold, TECH is exactly zero -- not merely small',
+         sc0['TEC'] == 0.0),
+        ('the only goal left standing is the one whose action IS possible',
+         sc0['EXP'] > 0.0 and sc0['EXP'] > sc0['CON'] and sc0['EXP'] > sc0['TEC']),
+    ]
+    for name, ok in checks:
+        fails += 0 if ok else 1
+        print('  %s %s' % ('PASS' if ok else 'FAIL', name))
+    print('       scores: CONSOLIDATE=%.3f EXPAND=%.3f TECH=%.3f' % (sc0['CON'], sc0['EXP'], sc0['TEC']))
+
+    # the gates must OPEN again the moment the resource state allows it --
+    # otherwise this is not an invariant, it is just a smaller number
+    # The gates must OPEN again as soon as the resource state allows, or this
+    # is not an invariant, just a smaller number. TECH re-opens on money;
+    # CONSOLIDATE additionally needs the round-5 sufficiency gate to agree
+    # that more army is wanted, so it is checked with a SMALL army -- a
+    # 1400-CV force correctly does not want more whatever its bank balance.
+    rich = persia(gold=900.0, lumber=900.0, food=40.0, cap=185.0)
+    ok = rich['TEC'] > 0.0
+    fails += 0 if ok else 1
+    print('  %s TECH re-opens the moment research is affordable (%.3f)'
+          % ('PASS' if ok else 'FAIL', rich['TEC']))
+
+    sc_small = dict(role='barb', t=200.0, army=120.0, gold=900.0, lumber=900.0,
+                    food=40.0, proxScale=CONSTS['AI_PROX_MIN'], fieldX=0.0, fieldY=0.0,
+                    points=[{'kind': CP, 'x': 5000.0, 'y': 0.0, 'owner': 1}])
+    env = make_env(sc_small)
+    env['wm_foodCap'][0] = 185.0
+    it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+    seed_capital(env, it, sc_small)
+    con_small = it.run('AI_ScoreConsolidate', [0])
+    ok = con_small > 0.0
+    fails += 0 if ok else 1
+    print('  %s CONSOLIDATE re-opens for a small army with room and money (%.3f)'
+          % ('PASS' if ok else 'FAIL', con_small))
+
+    # NEGATIVE CONTROL: drop the research floor to nothing and the round-4
+    # behaviour returns -- TECH scores again on 144 gold, which is precisely
+    # the state that could win by default and then do nothing.
+    sc = dict(role='barb', t=1000.0, army=1400.0, gold=144.0, lumber=380.0,
+              food=189.0, proxScale=CONSTS['AI_PROX_MIN'], fieldX=0.0, fieldY=0.0,
+              points=[{'kind': CP, 'x': 5000.0, 'y': 0.0, 'owner': 1}])
+    env = make_env(sc)
+    env['wm_foodCap'][0] = 185.0
+    consts = dict(CONSTS)
+    consts['AI_TECH_MIN_GOLD'] = 0.0
+    it = Interp(FUNCS, consts, env, make_natives(env, 0.0))
+    seed_capital(env, it, sc)
+    tec_nc = it.run('AI_ScoreTech', [0])
+    ok = tec_nc > 0.0
+    fails += 0 if ok else 1
+    print('  %s   negative control: with the research floor removed TECH scores again on 144 gold (%.3f)'
+          % ('PASS' if ok else 'FAIL', tec_nc))
+
+    print('\n%s: %d impossible-goal assertions failed' % ('PASS' if not fails else 'FAIL', fails))
+    return 1 if fails else 0
+
+
 # ---------------------------- round 5: the Roman lock (findings 3, 4, gates)
 
 def romanlock():
@@ -2028,6 +2129,19 @@ ROUND3_GUARDS = [
      r'function AI_BoardEnum\b.*?IsUnitType\(u, UNIT_TYPE_HERO\) and ai_navLoaded < AI_NAV_MIN_LOAD', True),
     ('no transport is left with cargo and no destination',
      r'function AI_NavIdle\b.*?call AI_TryOrder\(ship, AI_ORD_UNLOAD, ai_homeX\[pid\]', True),
+    # --- round 6: the impossible goal and the stale objective -------------
+    ('TECH scores zero when no research is affordable',
+     r'function AI_ScoreTech\b(?:(?!\nendfunction)[\s\S])*?wm_gold\[pid\] < AI_TECH_MIN_GOLD.*?return 0\.0', True),
+    ('taking an objective releases its claim for allies',
+     r'if t >= 0 and t < ai_pointCount and ai_claim\[t\] == pid then\s*\n\s*set ai_claim\[t\] = -1', True),
+    ('taking an objective expires the dwell at once',
+     r'set ai_target\[pid\] = -1\s*\n\s*set ai_goalSince\[pid\] = -9999\.0', True),
+    ('taking an objective arms the aggression floor',
+     r'set ai_goalSince\[pid\] = -9999\.0\s*\n\s*set ai_commitAt\[pid\] = -9999\.0', True),
+    ('the idle clock is stamped on a CHANGE of objective, not every tick',
+     r'if ai_target\[pid\] != t then\s*\n\s*call AI_Say\(pid, "moving on.*?set ai_commitAt\[pid\] = ai_now', True),
+    ('a waiting ram holds behind the ARMY, not back towards home',
+     r'set ai_ramX = wm_fieldX\[pid\] - \(dx/d\)\*AI_RAM_HOLD_R', True),
     ('an idle army takes the nearest contestable objective, unconditionally',
      r'if AI_IsIdle\(pid\) and goal != GOAL_RETREAT and goal != GOAL_DEFEND then.*?call AI_MoveOnTarget\(pid, t\)', True),
     ('the idle floor sits under AI_Execute, not inside a scorer',
@@ -2309,6 +2423,7 @@ def main():
     rc |= strategy()
     rc |= tribes()
     rc |= formation()
+    rc |= impossible()
     rc |= romanlock()
     rc |= unstick()
     rc |= consort()

@@ -181,6 +181,9 @@
     // wrong, and in the meantime the army should still be moving at
     // something.
     constant real    AI_IDLE_T        = 25.0
+    // The cheapest thing the Forge can research. Below this, TECH is not a
+    // cheap goal, it is an impossible one. ROUND 6.
+    constant real    AI_TECH_MIN_GOLD = 200.0
     constant real    AI_POSTURE_T     = 45.0
     constant real    AI_POSTURE_BIAS  = 0.20
     constant integer POSTURE_CONSOLIDATE = 0
@@ -2353,8 +2356,24 @@ function AI_ScoreSiege takes integer pid returns real
     return AI_C01(wm_army[pid] / 900.0) * wm_capReady[pid]
 endfunction
 
+// ROUND 6 -- THE IMPOSSIBLE-GOAL INVARIANT. "Persia just sits around after
+// winning a city", with gold 144, food 189/185 (OVER the cap), a full army
+// inside the captured city and its rams idle outside an undamaged 500/500
+// gate. Every production action that faction could take was unavailable by
+// construction: it could not train (over food) and could not afford research
+// (144 gold). Yet a production goal stayed selected, and a production goal's
+// entire expression is production, so the AI executed nothing at all.
+//
+// The invariant, which generalises the round-5 fix that priced out a wall
+// break we could not perform: A GOAL WHOSE ACTION IS IMPOSSIBLE MUST SCORE
+// ZERO, NOT MERELY LESS. Round 5 gave CONSOLIDATE that gate (AI_CanMass).
+// TECH never had one: at 144 gold it still scored ~0.065, which is small
+// until every other goal is smaller, and then it wins and does nothing.
 function AI_ScoreTech takes integer pid returns real
     local real clock = AI_Clock()
+    if wm_gold[pid] < AI_TECH_MIN_GOLD or wm_lumber[pid] < AI_TECH_MIN_GOLD then
+        return 0.0                          // no research in the Forge list is buyable
+    endif
     return 0.58 * AI_C01(wm_gold[pid]/700.0) * AI_C01(wm_lumber[pid]/700.0) * (1.0 - 0.5*clock)
 endfunction
 
@@ -2715,13 +2734,18 @@ function AI_SendArmy takes integer pid, real x, real y, integer kind, unit tgt r
     call AI_SetLanes(n)
     // ROUND 3, item 8: where a ram waits when there is no wall to break --
     // AI_RAM_HOLD_R back from the army, towards home.
-    set d = AI_Dist(wm_fieldX[pid], wm_fieldY[pid], ai_homeX[pid], ai_homeY[pid])
-    if d < AI_RAM_HOLD_R then
-        set ai_ramX = ai_homeX[pid]
-        set ai_ramY = ai_homeY[pid]
+    // ROUND 6: a waiting ram sits just BEHIND THE ARMY on the march line, not
+    // back towards home. The screenshot showed Persia's rams parked outside
+    // the walls of a city the army had already taken -- because the old hold
+    // point was "towards home", which from a freshly captured city is
+    // backwards, i.e. the wall they had just come through. Rams belong with
+    // the army, one step back, so they arrive at the NEXT wall with it.
+    if d > 1.0 then
+        set ai_ramX = wm_fieldX[pid] - (dx/d)*AI_RAM_HOLD_R
+        set ai_ramY = wm_fieldY[pid] - (dy/d)*AI_RAM_HOLD_R
     else
-        set ai_ramX = wm_fieldX[pid] + (ai_homeX[pid]-wm_fieldX[pid])*(AI_RAM_HOLD_R/d)
-        set ai_ramY = wm_fieldY[pid] + (ai_homeY[pid]-wm_fieldY[pid])*(AI_RAM_HOLD_R/d)
+        set ai_ramX = wm_fieldX[pid]
+        set ai_ramY = wm_fieldY[pid]
     endif
     set ai_ramType = AI_UnitFor(pid, 4)
     set ai_curP = ai_p[pid]
@@ -3670,12 +3694,18 @@ function AI_Execute takes integer pid returns nothing
         call AI_Spend(pid)
         set t = AI_CapitalTarget(pid)
         if t >= 0 then
+            // ROUND 6: the idle clock is stamped only when the objective
+            // CHANGES. Round 5 stamped it every tick a target was selected,
+            // so a faction holding a stale objective it was making no
+            // progress towards counted as "committed" and the aggression
+            // floor could never fire -- which is exactly how a full army sat
+            // in a captured city with the floor supposedly in place.
             if ai_target[pid] != t then
                 call AI_Say(pid, "marching on " + AI_OwnerName(t) + " capital")
+                set ai_commitAt[pid] = ai_now
             endif
             call AI_Claim(pid, t)
             set ai_target[pid] = t
-            set ai_commitAt[pid] = ai_now
             call AI_MoveOnTarget(pid, t)
             call AI_Raid(pid)              // horses keep working during a push
         endif
@@ -3687,10 +3717,10 @@ function AI_Execute takes integer pid returns nothing
         if t >= 0 then
             if ai_target[pid] != t then
                 call AI_Say(pid, "moving on " + AI_KindName(ai_ptKind[t]) + " held by " + AI_OwnerName(t))
+                set ai_commitAt[pid] = ai_now      // ROUND 6: on CHANGE only
             endif
             call AI_Claim(pid, t)
             set ai_target[pid] = t
-            set ai_commitAt[pid] = ai_now
             call AI_MoveOnTarget(pid, t)
             call AI_Raid(pid)
         endif
@@ -3767,9 +3797,21 @@ function AI_MicroPlayer takes integer pid returns nothing
             set ai_orderX = ai_ptX[t]
             set ai_orderY = ai_ptY[t]
         else
-            // objective ACHIEVED: it is ours now, stop hitting it and say so
+            // objective ACHIEVED. ROUND 6: success must EXPIRE the plan, at
+            // once. "Persia just sits around after winning a city" is the
+            // report; the cause is that taking a point left the goal's dwell
+            // running, the claim standing and the idle clock fresh, so the
+            // faction paused for exactly as long as its objective had been
+            // sticky. A completed objective also has to be released or an
+            // ally cannot pick up the next one.
             call AI_Say(pid, "took " + AI_KindName(ai_ptKind[t]))
+            if t >= 0 and t < ai_pointCount and ai_claim[t] == pid then
+                set ai_claim[t] = -1                // release it for allies
+            endif
             set ai_target[pid] = -1
+            set ai_goalSince[pid] = -9999.0         // dwell expires NOW
+            set ai_commitAt[pid] = -9999.0          // and the floor is armed
+            set ai_progD[pid] = 999999.0            // progress restarts clean
         endif
     endif
     set g = CreateGroup()
