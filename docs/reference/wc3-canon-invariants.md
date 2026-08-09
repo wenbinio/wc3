@@ -224,3 +224,58 @@ sidecars) shows genres the modern canon has abandoned were alive in
 versions), Stealth Operations, a weapons-factory automation map. The
 diversity existed and DIED; that is stronger support for §3 than
 anything currently cited there.
+
+## 2026-08-08 wave-6 corrections (five-agent sweep, measured)
+
+**Numbers**: wave 5's counts were an instrument artifact — with
+`groups=""` the API sorts by the group aggregate but returns each
+lineage's LATEST row. Walking `groups=false` gives 9,600+ live builds /
+3.05M games vs 3,192 lineages / 402K. And page-walking `order=` is not
+a stable total order (pages 61–100 surface maps pages 1–60 never
+returned). **Treat every canon count in this dossier as a FLOOR.**
+Language shares survive; KR is 23–30%, not 18.8%. `/api/stats` is stale
+(series ends 2024-11).
+
+**§3's "the social-sandbox canon did not survive the bot-lobby
+transition" is FALSIFIED.** Life of a Peasant Ascension (24p, jobs with
+real production chains, gangs, arena ladder, school scenarios with
+lawsuits) hosts 227/mo, and it is not alone: Uther Party Ultima-X 272,
+Are you a Lucker? 123, Canned Bread 104, Banjoball 135. Narrow the claim
+to "social sandboxes lost the HEAD", not "died".
+
+**I1 ("no solo maps") is a property of the modern HOSTED canon, not of
+WC3 custom maps.** 4.6% of the 5,359-map 2002 corpus declares 1–2 player
+slots (9.2% of index rows).
+
+**I6 (no elimination) needs the same narrowing**: Risk Europe — real
+elimination, 23 players — hosts 1,245/mo, and the 2002 corpus contains a
+Survivor-format elimination game (Dog Eat Dog) with permanent knockout
+as a designed feature.
+
+**The era-divergence thesis is refined, not just supported.** Matched
+corpus comparisons (2002 n=5,359 vs a 2009 kept-on-disk sample n=1,442,
+and 2002 descriptions vs an EpicWar 2005–09 sample n=4,500) show the
+collapse was NOT uniform: deduction (1.08×), board games (0.88×) and
+city-sim (0.95×) HELD their share from 2002 into 2005–09, while the
+party/novelty/physical-experiment shelf died (sandbox 0.12×, racing →0,
+elimination shows →0, drawing →0, golf →0, physics-aim →0) and
+TD/RPG/AoS/survival roughly tripled. A SECOND collapse (2009→2026) took
+the rest, and deduction migrated wholesale into the KR/CN/RU scenes.
+
+**Two genre rows have NEVER been occupied in any era measured**:
+courtroom/trial and automation/logistics. They are openings against the
+entire 24-year record, not just against the 2026 index.
+
+**Better evidence is now cheaply available**: the EpicWar dump on
+archive.org is per-file addressable for ids 1–117,529 (2005-02-24 →
+2009-12-03), carrying category, submission date, RATING (good/bad) and
+DOWNLOAD COUNT per map — ~53MB of metadata, ~3 hours to pull. That would
+replace this dossier's evidence base (A), currently a top-200 scrape,
+with a five-year census.
+
+**Fork topology matters for any "what the canon plays" claim**: median
+lineage = 93 versions ever with 11 live simultaneously; the top build
+holds a median 70% of its lineage's hosting and `latest=1` is often not
+the played build; and one lineage's top-hosted build was a cheat fork.
+Use the `saves`-cohort heuristic (see the translation dossier) before
+attributing hosting to a design.
