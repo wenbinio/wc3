@@ -1529,3 +1529,139 @@ rich empire could never fall below; round 6 was TECH on money it did not have.
 Each was individually plausible and each produced an army standing still. The
 invariant in §13.1 is the general form, and any future goal added to this module
 must carry its own possibility gate.
+
+---
+
+## 14. Round 7 — a retracted measurement, and four inert factions
+
+**No code shipped in this section.** Work is on hold pending
+`docs/reference/wc3-map-ai-decompositions.md` — in particular whether the
+engine's own AI subsystem (`.ai` scripts, `common.ai`, `SetPlayerAIScript`) is
+usable from a custom map, which could replace foundations this module
+hand-rolled over six rounds. Everything below is analysis and measurement.
+
+### 14.1 RETRACTION — the "scoreboard moved" table is not evidence
+
+A before/after multiboard table was circulated showing the three Roman powers
+down 15 cities and five barbarian factions up 16, and it was described as the
+first objective evidence that the AI plays the map. **It is withdrawn. It is not
+recorded anywhere in this document as evidence, and it must not be.** Two
+independent errors:
+
+1. **The two columns came from different games.** Different starting state,
+   different elapsed time. As a before/after it measures nothing.
+2. **The owner was playing the Huns** — *"Only Huns moved and Saxons moved,
+   which was typical. Vandals, Britons, Persians and Franks still not doing
+   anything. I was playing Huns."* The single largest gain in the table was the
+   **human player conquering**, credited to the AI. The other mover, Saxons, the
+   owner calls *typical* — what it did before any of this work.
+
+The behavioural read from the same session survives only in part: barbarian
+armies were fighting **inside** a Roman walled city rather than piling outside
+it, which is a real observation about the crossing work. But Attila reaching
+level 7 with a full inventory is the **owner's own hero**, so it says nothing
+about hero handling.
+
+**The corrected criterion**, which is still the right one:
+
+> Compare the multiboard **within a single game at two separated times**, and
+> **exclude the human's own faction**. A round succeeds if AI-controlled
+> factions' counts move.
+
+**The lesson, recorded because this project keeps paying for it: a measurement
+that cannot separate the AI's play from the human's is not evidence.** It is the
+same family as the trace guards that matched past `endfunction` (§12.5) and the
+probes that could not fire (gotcha 34) — a check that returns a confident answer
+for the wrong reason is worse than no check, because it gets believed.
+
+### 14.2 MEASURED — all three Roman field centroids start in the sea
+
+Probing `war3map.wpm` directly (1920×1920 cells at 32 units, walkable =
+`flag & 0x02 == 0`), calibrated against six known-land points (Rome,
+Constantinople and four faction starts, all reading LAND):
+
+| faction | starting field centroid | ground |
+|---|---|---|
+| West Rome | (−4056, −14352) | **WATER** |
+| East Rome | (16714, −13819) | **WATER** |
+| North Rome | (−21062, −54) | **WATER** |
+| all nine others | — | land |
+
+`wm_fieldX/Y` is a CV-weighted mean of a faction's units. For an empire spread
+around a sea — Italy, Gaul, Hispania, Africa — **that mean is not a place, and
+here it is not even land.** Consequences, all of which match reported symptoms:
+
+* `AI_WantsCrossing` measures its water test *from the centroid*. From a sea
+  origin the straight line to almost anything is wet, so West Rome and North
+  Rome measure **`wantsBoat = True` on their own nearest objective** — which is
+  the leftover `West Rome: boarding a transport` in the chat log, and the
+  milder form of playtest 5's hero-in-a-boat.
+* It is also the likely origin of "transport parked in the middle of the sea":
+  the gather point and the ram hold point are both derived from the centroid.
+
+This is a **structural** defect, not a threshold: a centroid needs to be
+validated as a position before anything geometric is measured from it. The fix
+(when the hold lifts) is to snap `wm_fieldX/Y` to the nearest real anchor — home,
+or the largest cluster — whenever the centroid is unwalkable. Deliberately not
+implemented yet.
+
+### 14.3 The four inert factions — what the measurement RULES OUT
+
+Same build, same game: Saxons acted, **Vandals, Britons, Persians and Franks did
+not.** A within-build comparison, so the cause is faction-specific rather than
+systemic, and different from the three impossible-goal bugs of §11–13.
+
+The leading hypothesis was that Vandals and Britons are held by the crossing
+phase rule with nothing left at home. **The measurement refutes it, for all
+four**, using the module's own `AI_LandLine` sampling and `AI_SEA_MIN`:
+
+| faction | nearest enemy point | distance | direct line | `wantsBoat` |
+|---|---|---|---|---|
+| Franks | city | 3252 | wet | **False** |
+| Vandals | shipyard | 4299 | wet | **False** |
+| Britons | control point | **2108** | **dry** | **False** |
+| Persians | control point | 2666 | wet | **False** |
+| *(Saxons, active)* | shipyard | 3170 | wet | False |
+
+None of the four wants a boat. Britons has the **closest and driest** objective
+of any faction on the map and is inert. So it is not the phase rule, not the
+crossing test, and not distance.
+
+Nor is it starting force: Franks 89 mobile units against Saxons 92, Vandals 94,
+Britons 94, Persians 121 — the active and inert sets are indistinguishable.
+
+**What that leaves**, in the order `-aispy` can settle them:
+
+1. **Were they enabled at all?** The startup roster line (§12.1) names every slot
+   the AI took. A faction missing from it was never enabled — a completely
+   different bug from one that is enabled and stuck.
+2. **Do they report an objective?** A faction that says *"moving on a control
+   point held by X"* and does not move is an execution failure; one that says
+   nothing is a selection failure. That distinction is one playtest instead of a
+   round of guessing, and it is exactly why `-aispy` was built.
+3. **Persia specifically** may be evidence about the round-6 fix rather than a
+   new bug — see §14.4 — and its food ceiling is 200 rather than the default
+   100, the same wrong-scale shape as the Roman 300.
+
+**One framing correction.** The owner named four inert factions and two movers,
+and said nothing about Visigoths, Ostrogoths and Burgundians. The evidence
+therefore supports *"at least four AI factions are inert"*, **not** *"exactly
+four, and the other AI factions are fine"*. Since the two movers were the human
+and a faction the owner calls typical, the honest summary is that **this session
+produced no clear evidence of any AI faction being driven by rounds 4–6**, and
+§14.1 is why the apparent evidence evaporated.
+
+### 14.4 Which build was played — answerable, but not from a screenshot
+
+Rounds 5 and 6 are **indistinguishable in game**: diffing every double-quoted
+literal between `7e2da1f` and `abe6a1d` shows the only differences are inside
+comments. No chat line, no startup line, nothing player-visible changed.
+
+The one cheap discriminator is the packed artifact size — round 4
+**19,015,736**, round 5 **19,021,994**, round 6 **19,023,866** bytes. If the
+owner still has the file they played, that dates it exactly.
+
+This matters because it changes what the Persian evidence means: under round 5,
+Persia idling after a capture is the bug §13 fixed; under round 6 it is a *new*
+one. **A future build should carry its round number in the startup line** so this
+question never needs asking again.
