@@ -279,3 +279,50 @@ holds a median 70% of its lineage's hosting and `latest=1` is often not
 the played build; and one lineage's top-hosted build was a cheat fork.
 Use the `saves`-cohort heuristic (see the translation dossier) before
 attributing hosting to a design.
+
+## 2026-08-08 wave-6d: THE CANON IS KOREAN (supersedes the counts above)
+
+**Third and decisive metric correction.** Every prior count in this
+dossier — including the wave-6 correction above — summed the per-row
+`hosted_month` field. That field is CORRUPT for high-volume lines (an
+all-time count leaks into the month field). **`group_hosted_month` is
+the sound metric.** Over 3,089 live groups: **Korean 58.3%** (207,000),
+Latin 40.3% (143,316), Chinese 1.3%, Russian 0.1%. Confirmed twice
+independently of map language: the `/api/activity` gateway split
+(**62.1% of 64,429 games over 28h came from the kr gateway**, peak
+76.6%) and a live lobby snapshot (40.6% kr). `/api/stats` had shown kr
+at 27–35% since 2020 — the field was never read.
+
+**One map is half the network.** 원피스랜덤디펜스R (ORDR) hosts 169,133
+group-games/month = **47.6% of every game on the network**, 5.8× the #2
+map worldwide. **Zombie Defense, called #1–2 in the addendum above, is
+#8 globally** — that snapshot is a *Latin*-canon statement and should be
+read as such. Korean top-1 concentration is 81.7% (Latin: 19.7%): the
+Latin canon is a distribution, the Korean canon is one franchise plus a
+500-map graveyard (471 of 527 groups host <100/mo).
+
+**What this canon actually is**: random-defense = **83.8% of Korean
+play** across 23 groups. 523 JASS / 4 Lua / **zero transpilers** — the
+Lua/TS/C# migration visible in the Latin mid-tail has not happened here.
+**481 of 527 groups are classic w3i v25**, so our v25 codecs are the
+load-bearing ones, not the Reforged path. Median editor saves 2,876.
+Korea also runs its own **JN API** alongside CN's DzAPI (frame UI, raw
+keyboard, process memory) — those maps are outside vanilla and
+un-simulatable by lib/sim by construction.
+
+**I-invariant support from the most-played map on earth**: ORDR's verb
+census is **zero combat-tempo typing** — all 16 chat commands are meta
+(reroll, story, scoreboard, vision, treasure, door, offline). Gotcha 33
+holds at the top of the canon. It also demonstrates three mechanics
+worth adopting: a machine-readable (lintable) tooltip schema across
+~2,300 abilities; timed side-objectives whose failure penalty is
+**denial of a future roll** rather than damage; and `-기여도`, a
+per-player contribution metric INSIDE a co-op team (an anti-freeloader
+surface our team-scored maps lack).
+
+**Franchise-vs-file, quantified**: an author's own English build of his
+Korean map retains ~0.1% of its hosting (849× and 369× drops measured on
+two authors), while **KR→CN localization retains ~10%** (20 CJK-titled
+groups in the live canon are Korean-authored). The Korean scene has one
+working export channel and it points east. Translation alone does not
+move a map; a maintainer does (the Pumpkin TD pattern above).
