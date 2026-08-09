@@ -271,6 +271,7 @@
     integer array    wm_capIdx          // nearest enemy capital, or -1
     integer array    wm_fieldComp       // land component the field army stands in
     boolean array    wm_wantBoat        // nothing left to take without a crossing
+    boolean array    wm_landLeft        // something worth taking on our own landmass
     boolean array    wm_capThreat
     boolean array    wm_capLost
     real    array    wm_asset           // value of the best OWN point under threat
@@ -363,6 +364,26 @@
     constant real    AI_NAV_CD        = 5.0     // seconds between naval orders
     constant integer AI_NAV_MIN_LOAD  = 3       // sail once this many are aboard
     constant real    AI_NAV_LOAD_T    = 45.0    // ... or when boarding times out
+    // ROUND 4, findings 5 and 8. "Most Barbarians should not be building
+    // transports apart from orange and green" (P5 Vandals, P6 Britons), and
+    // "orange and green should consolidate their islands early".
+    //
+    // Round 3's bug was that AI_TargetScore never knew about water at all, so
+    // ANY faction whose best-scoring point happened to lie across a strait --
+    // common on a Mediterranean map -- boarded a boat immediately. The phase
+    // rule below is the real fix and needs no faction list: while anything
+    // uncontested remains on our own landmass it outranks everything across
+    // water, so a crossing only becomes eligible once home is consolidated.
+    //
+    // The second half is the Vandals, and it is where round 3's graph was
+    // asking the wrong question. The flood fill says they are land-connected
+    // to Europe, and they ARE -- via Egypt and Anatolia, which is most of the
+    // map. Connectivity is not usefulness. So a crossing is ALSO wanted when
+    // the straight line to the objective crosses water and the objective is
+    // far, which is exactly a Mediterranean shipping lane and is not true of
+    // anything reachable straight overland.
+    constant real    AI_CROSS_PENALTY = 0.05    // across water, home not done
+    constant real    AI_SEA_MIN       = 6000.0  // far enough that walking round hurts
     constant integer AI_NAV_NONE      = 0
     constant integer AI_NAV_LOAD      = 1
     constant integer AI_NAV_SAIL      = 2
@@ -696,6 +717,32 @@ function AI_OwnerName takes integer i returns string
     return AI_Name(o)
 endfunction
 
+// ROUND 4, FINDING 4 -- "Romans should not be able to see what the Barbarians
+// are doing." The playtest screenshot is a ROMAN-side view reading
+// "Huns: massing at home" and "Saxons: moving on a control point held by
+// North Rome" straight off this module's chat. That is the human reading the
+// enemy's plans out of a diagnostic, and it is a correctness bug, not a
+// cosmetic one.
+//
+// Every AI report is therefore scoped to the sender's ALLIES. The point of
+// the messaging layer survives intact -- it exists so an AI can co-operate
+// with its human teammates, and a teammate still sees everything. It is still
+// a plain per-recipient loop, so there is no GetLocalPlayer anywhere near it
+// and no desync risk. Setup lines that describe the GAME rather than any
+// player's intentions (which slots the AI took) stay global.
+function AI_BroadcastAllies takes integer pid, string msg returns nothing
+    local integer i = 0
+    loop
+        exitwhen i >= AI_MAX_PLAYERS
+        if GetPlayerSlotState(Player(i)) == PLAYER_SLOT_STATE_PLAYING and GetPlayerController(Player(i)) == MAP_CONTROL_USER then
+            if IsPlayerAlly(Player(i), ai_p[pid]) then
+                call DisplayTimedTextToPlayer(Player(i), 0, 0, AI_SAY_TTL, msg)
+            endif
+        endif
+        set i = i + 1
+    endloop
+endfunction
+
 function AI_Say takes integer pid, string msg returns nothing
     if not ai_talk[pid] then
         return
@@ -708,7 +755,8 @@ function AI_Say takes integer pid, string msg returns nothing
     endif
     set ai_sayLast[pid] = msg
     set ai_sayAt[pid] = ai_now + AI_SAY_GAP
-    call AI_Broadcast(AI_Name(pid) + ": " + msg)
+    // ROUND 4, finding 4: allies only. Never AI_Broadcast from here.
+    call AI_BroadcastAllies(pid, AI_Name(pid) + ": " + msg)
 endfunction
 
 //===========================================================================
@@ -1509,6 +1557,29 @@ function AI_NeedsBoat takes integer pid, integer i returns boolean
     return AI_Find(i) != wm_fieldComp[pid]
 endfunction
 
+// ROUND 4, findings 5 and 8. Whether this objective is worth a BOAT, which
+// is a different question from whether it is on another landmass.
+//
+// Case 1 is the honest one: a different component, so there is no land route
+// at all. Case 2 is the Vandals. Round 3's flood fill says they are
+// land-connected to Europe and that is true -- via Egypt and Anatolia, which
+// is most of the map -- so connectivity answered "yes, walk" where the owner
+// reports they should be shipping. The straight line crossing water, over a
+// distance where walking around is a real detour, is much closer to the right
+// question and costs eight terrain samples.
+function AI_WantsCrossing takes integer pid, integer i returns boolean
+    if i < 0 or i >= ai_pointCount then
+        return false
+    endif
+    if AI_NeedsBoat(pid, i) then
+        return true
+    endif
+    if AI_Dist(ai_ptX[i], ai_ptY[i], wm_fieldX[pid], wm_fieldY[pid]) < AI_SEA_MIN then
+        return false
+    endif
+    return not AI_LandLine(wm_fieldX[pid], wm_fieldY[pid], ai_ptX[i], ai_ptY[i])
+endfunction
+
 //===========================================================================
 //  World scan
 //===========================================================================
@@ -1748,6 +1819,7 @@ function AI_ScanWorld takes integer pid returns nothing
     // Want a boat only when the reachable landmass is exhausted AND we do not
     // already hold a shipyard to build one from. Anything wider than this
     // recreates round 2 finding 5, where shipyards outscored real objectives.
+    set wm_landLeft[pid] = landWorth
     set wm_wantBoat[pid] = (not landWorth) and yards == 0
     set wm_capIdx[pid] = capIdx
     set wm_capReady[pid] = AI_CapReadiness(wm_army[pid], capDef)
@@ -1809,6 +1881,14 @@ function AI_TargetScore takes integer pid, integer i returns real
     if ai_harasser[pid] then
         set weak = weak * weak
         set prox = 1.0 / (1.0 + AI_Dist(ai_ptX[i], ai_ptY[i], wm_fieldX[pid], wm_fieldY[pid]) / 9000.0)
+    endif
+    // ROUND 4, findings 5 and 8: the phase rule. While anything uncontested
+    // remains on our own landmass it outranks everything across water. This is
+    // what stops six land-connected barbarians building transports for a
+    // control point across a strait, and it is what makes an island faction
+    // clear its island FIRST instead of shipping out at minute one.
+    if wm_landLeft[pid] and AI_WantsCrossing(pid, i) then
+        set sw = sw * AI_CROSS_PENALTY
     endif
     // ROUND 3, the claim ledger: do not duplicate an ally's objective. A
     // DISCOUNT and not a veto, so a claimed point is still taken when it is
@@ -2746,8 +2826,8 @@ function AI_NavStep takes integer pid, integer t returns boolean
     local unit yard
     local group g
     local integer loaded
-    if not AI_NeedsBoat(pid, t) then
-        set ai_navState[pid] = AI_NAV_NONE  // same landmass: stand down
+    if not AI_WantsCrossing(pid, t) then
+        set ai_navState[pid] = AI_NAV_NONE  // walkable from here: stand down
         set ai_navShip[pid] = null
         return false
     endif
@@ -3482,6 +3562,7 @@ function AI_EnablePlayer takes integer pid, integer difficulty returns nothing
     set ai_navSince[pid] = 0.0
     set wm_fieldComp[pid] = -1
     set wm_wantBoat[pid] = false
+    set wm_landLeft[pid] = true
     set wm_capReady[pid] = AI_CAP_FLOOR
     set wm_capIdx[pid]   = -1
     set ai_posture[pid]  = POSTURE_CONSOLIDATE

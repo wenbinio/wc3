@@ -269,6 +269,7 @@ def make_env(sc):
         'ai_postureAt': d(sc.get('postureAt', 1e9)),
         'ai_harasser': d(sc.get('harasser', False)),
         'wm_wantBoat': d(sc.get('wantBoat', False)),
+        'wm_landLeft': d(sc.get('landLeft', False)),
         'ai_comp': {}, 'ai_claim': {}, 'ai_claimAt': {},
         'ai_laneN': CONSTS['AI_LANES'], 'ai_laneMid': CONSTS['AI_LANE_MID'],
         'ai_laneNX': sc.get('laneNX', 0.0), 'ai_laneNY': sc.get('laneNY', 1.0),
@@ -311,6 +312,7 @@ def make_env(sc):
     env['_span'] = sc.get('span', 1e9)          # walkable half-width, engine-side
     env['_spanNX'] = sc.get('laneNX', 0.0)
     env['_spanNY'] = sc.get('laneNY', 1.0)
+    env['_water'] = tuple(sc.get('water', (1.0, -1.0)))   # empty interval by default
     env['_ptComp'] = {i: p.get('comp', 0) for i, p in enumerate(sc.get('points', []))}
     env['_ptOwner'] = {i + 1: p.get('owner', 1) for i, p in enumerate(sc.get('points', []))}
     # gates: handle = 1000+index so it cannot collide with a point handle
@@ -348,11 +350,15 @@ def make_natives(env, noise=0.0):
         'AI_Find': lambda i: env['_ptComp'].get(i, 0),
         'R2I': int,
         'PATHING_TYPE_WALKABILITY': 1,
-        # IsTerrainPathable is INVERTED: true means BLOCKED. The scenario gives
-        # a half-width of walkable ground about the march line, so a bridge is
-        # simply a small number.
-        'IsTerrainPathable': lambda x, y, t: abs(
-            x * env.get('_spanNX', 0.0) + y * env.get('_spanNY', 1.0)) > env.get('_span', 1e9),
+        # IsTerrainPathable is INVERTED: true means BLOCKED. Two independent
+        # scenario mechanisms, because the two round-4 uses need different
+        # shapes: '_span' is a half-width of walkable ground about the march
+        # line (a bridge is simply a small number), and '_water' is an
+        # interval ALONG the march that is sea (a strait to be crossed).
+        'IsTerrainPathable': lambda x, y, t: (
+            abs(x * env.get('_spanNX', 0.0) + y * env.get('_spanNY', 1.0))
+            > env.get('_span', 1e9)
+            or env.get('_water', (1.0, -1.0))[0] <= x <= env.get('_water', (1.0, -1.0))[1]),
     }
 
 
@@ -1613,6 +1619,68 @@ def naval():
     print('       scores: default=%.4f lifted=%.4f across-water=%.4f control-point=%.4f'
           % (base, lifted, across, cp))
 
+    # -- ROUND 4, findings 5 and 8: the phase rule ------------------------
+    # "Most Barbarians should not be building transports apart from orange and
+    # green", and "orange and green should consolidate their islands early".
+    print('  -- round 4: home first, then the boat --')
+
+    def cross_score(land_left, pt_comp, x=9000.0, span=None):
+        sc = dict(role='barb', army=600.0, landLeft=land_left, fieldComp=0,
+                  fieldX=0.0, fieldY=0.0,
+                  points=[{'kind': CP, 'x': x, 'y': 0.0, 'comp': pt_comp,
+                           'owner': 1}])
+        if span is not None:
+            sc['span'] = span
+        env = make_env(sc)
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        return it.run('AI_TargetScore', [0, 0])
+
+    home_open_across = cross_score(True, 1)
+    home_done_across = cross_score(False, 1)
+    home_open_local = cross_score(True, 0)
+    phase = [
+        ('while home has work, an across-water point is all but ignored',
+         home_open_across < 0.15 * home_open_local),
+        ('once home is consolidated, the same point becomes a real objective',
+         home_done_across > 5.0 * home_open_across),
+        ('a point on our OWN landmass is never phase-penalised',
+         home_open_local > home_open_across * 10.0),
+        ('the discount is exactly AI_CROSS_PENALTY',
+         abs(home_open_across - home_done_across * CONSTS['AI_CROSS_PENALTY']) < 1e-6),
+    ]
+    for name, ok in phase:
+        fails += 0 if ok else 1
+        print('    %s %s' % ('PASS' if ok else 'FAIL', name))
+    print('       score: home-open across=%.4f  home-done across=%.4f  own landmass=%.4f'
+          % (home_open_across, home_done_across, home_open_local))
+
+    # The Vandal case: SAME landmass, but the straight line crosses water and
+    # the objective is far. Round 3 answered "walk"; the owner says ship.
+    def wants(pt_comp, x, water):
+        sc = dict(role='barb', fieldComp=0, fieldX=0.0, fieldY=0.0, water=water,
+                  laneNX=0.0, laneNY=1.0,
+                  points=[{'kind': CP, 'x': x, 'y': 0.0, 'comp': pt_comp, 'owner': 1}])
+        env = make_env(sc)
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        return bool(it.run('AI_WantsCrossing', [0, 0]))
+
+    DRY = (1.0, -1.0)                      # empty interval: all land
+    STRAIT = (3000.0, 6000.0)              # a sea band across the route
+    vandal = [
+        ('a different landmass always wants a boat', wants(1, 9000.0, DRY), True),
+        ('same landmass, short hop, dry line: walk', wants(0, 3000.0, DRY), False),
+        ('same landmass, FAR, and the direct line crosses a strait: ship (the Vandals)',
+         wants(0, 9000.0, STRAIT), True),
+        ('same landmass, far, but the line is dry: still walk',
+         wants(0, 9000.0, DRY), False),
+        ('a strait in the way but too close to be worth a boat',
+         wants(0, 3000.0, STRAIT), False),
+    ]
+    for name, got, want in vandal:
+        ok = (got == want)
+        fails += 0 if ok else 1
+        print('    %s %-62s -> %s' % ('PASS' if ok else 'FAIL', name, got))
+
     print('\n%s: %d naval assertions failed' % ('PASS' if not fails else 'FAIL', fails))
     return 1 if fails else 0
 
@@ -1632,7 +1700,7 @@ ROUND3_GUARDS = [
     ('AI_ChooseApproach crosses walls in t order (AI_GATE_SAMEWALL)',
      r'function AI_ChooseApproach\b.*?AI_GATE_SAMEWALL', True),
     ('the round-2 objective-anchored radius no longer selects gates',
-     r'function AI_ChooseApproach\b.*?AI_GATE_NEAR', False),
+     r'function AI_ChooseApproach\b(?:(?!\nendfunction)[\s\S])*?AI_GATE_NEAR', False),
     ('crossing cost is decided in one place, AI_GateCost',
      r'function AI_GateCost takes integer pid, integer i returns real', True),
     ('AI_ChooseApproach prices crossings through AI_GateCost',
@@ -1672,6 +1740,21 @@ ROUND3_GUARDS = [
      r'function AI_ScoreDefend\b.*?if t > AI_WRITEOFF\*a and not wm_capThreat\[pid\] then', True),
     ('GUARD B: the army SPLIT is still the default response',
      r'function AI_Execute\b.*?if AI_ShouldRecall\(pid\) then.*?call AI_Respond\(pid,', True),
+    # --- round 4: findings 4, 5, 8 ---------------------------------------
+    ('AI reports go to ALLIES only, never to everyone',
+     r'function AI_Say\b.*?call AI_BroadcastAllies\(pid, AI_Name\(pid\)', True),
+    ('the ally scope is an explicit IsPlayerAlly test per recipient',
+     r'function AI_BroadcastAllies\b.*?if IsPlayerAlly\(Player\(i\), ai_p\[pid\]\) then', True),
+    ('no GetLocalPlayer anywhere in the module',
+     r'GetLocalPlayer', False),
+    ('AI_Say never uses the global broadcast',
+     r'function AI_Say\b(?:(?!\nendfunction)[\s\S])*?call AI_Broadcast\(', False),
+    ('across-water objectives are suppressed while home has work',
+     r'if wm_landLeft\[pid\] and AI_WantsCrossing\(pid, i\) then\s*\n\s*set sw = sw \* AI_CROSS_PENALTY', True),
+    ('the naval layer answers the same question as the scorer',
+     r'function AI_NavStep\b.*?if not AI_WantsCrossing\(pid, t\) then', True),
+    ('a wet direct line over distance also wants a boat (the Vandals)',
+     r'function AI_WantsCrossing\b.*?not AI_LandLine\(wm_fieldX\[pid\]', True),
     # --- round 4: the passive-AI deadlock (findings 1, 2) ----------------
     ('CONSOLIDATE is gated on massing being POSSIBLE',
      r'function AI_ScoreConsolidate\b.*?return s \* AI_CanMass\(pid\)', True),
