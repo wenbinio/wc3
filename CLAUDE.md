@@ -615,10 +615,15 @@ never third-party maps, gotcha 9).
       ASCII apostrophes inside double-quoted JASS literals** —
       `"Can't leap there."`, `Asura's Wrath`, `Nero's battle theme` — an
       ODD count, interleaved with genuine rawcode literals, and it
-      runs. That is a real artifact contradicting the stated mechanism,
-      not just a failure to reproduce it in a checker. Treat the rule as
-      a cheap style precaution, nothing more, until someone observes an
-      actual in-game failure.
+      runs. And the **#13 most-hosted map in the world** (동물과 벽 짓고
+      살아남기, 4,392 games/month) ships **9** of them. Those are real
+      artifacts contradicting the stated mechanism, not just failures to
+      reproduce it in a checker. Treat the rule as a cheap style
+      precaution, nothing more, until someone observes an actual in-game
+      failure. **The comparative (delta) lint is the only part that
+      holds**: introduce no NEW apostrophe literals beyond the
+      original's count — which is sound regardless of whether the
+      underlying failure is real, and is what every pass should run.
 35. **Text members inside an archive have a BYTE DIALECT, and editing
     one silently destroys it.** The real, evidenced cause of a shipped
     map crashing on load: `war3mapSkin.txt` went from 12 CRLF line
