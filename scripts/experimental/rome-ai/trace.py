@@ -271,6 +271,11 @@ def make_env(sc):
         'wm_wantBoat': d(sc.get('wantBoat', False)),
         'wm_landLeft': d(sc.get('landLeft', False)),
         'wm_canReplaceHero': d(sc.get('canReplaceHero', False)),
+        'wm_proxScale': d(sc.get('proxScale', CONSTS['AI_PROX_MIN'])),
+        'wm_hasSiege': d(sc.get('hasSiege', True)),
+        'ai_wallSince': d(sc.get('wallSince', -9999.0)),
+        'ai_spy': {i: False for i in range(CONSTS['AI_MAX_PLAYERS'])},
+        'ai_accSiege': 0,
         'ai_heroOut': d(sc.get('heroOut', False)),
         'ai_anchorX': 0.0, 'ai_anchorY': 0.0, 'ai_heroLeash': 0.0,
         'ai_comp': {}, 'ai_claim': {}, 'ai_claimAt': {},
@@ -648,9 +653,16 @@ def routing():
          [dict(x=28000.0, y=0.0, state=CLOSED, life=1.0, owner=1)], -1, False)
     case('a hole far outside the corridor is not a crossing',
          [dict(x=4000.0, y=9000.0, state=GONE, owner=1)], -1, False)
-    case('objective closer than AI_APPROACH_MIN: no routing at all',
-         [dict(x=900.0, y=0.0, state=CLOSED, life=1.0, owner=1)], -1, False,
+    # ROUND 5, the Gray jam. Round 3 stopped routing once the objective was
+    # within 2200, so an army that had ARRIVED at a wall switched its whole
+    # crossing model off: ai_apBreak went false, rams were sent to the rear
+    # and none were bought. The screenshot was a gate on 1992/2000 HP.
+    case('a wall in the LAST 2000 units is still a crossing (the Gray jam)',
+         [dict(x=900.0, y=0.0, state=CLOSED, life=1.0, owner=1)], 0, True,
          tx=1500.0, ty=0.0)
+    case('a genuinely trivial distance still skips routing',
+         [dict(x=200.0, y=0.0, state=CLOSED, life=1.0, owner=1)], -1, False,
+         tx=400.0, ty=0.0)
 
     # ---------------------------------------------------------------- round 3
     # THE BLOCKER. Every one of these was invisible to round 2, which only
@@ -1322,6 +1334,122 @@ def consort():
     return 1 if fails else 0
 
 
+# ---------------------------- round 5: the Roman lock (findings 3, 4, gates)
+
+def romanlock():
+    """Round 5. "Barbarian AI has significantly improved but not Roman AI",
+    with screenshots of West Rome and North Rome each holding sixty-plus units
+    motionless inside their own walls.
+
+    The enrolment question, answered first because everything else depended on
+    it: Roman preplaced units ARE enrolled. AI_ScanWorld enumerates with
+    GroupEnumUnitsOfPlayer and a filter that tests only owner and alive -- no
+    type list -- so the 139/185/146 preplaced mobile units of P3/P9/P10 have
+    been counted in wm_army all along. They were never invisible. They were
+    never TOLD to go anywhere.
+
+    Measured on the round-4 build for a West Rome shape (army 2000 CV, gold
+    1500, nearest enemy 18000 away): CONSOLIDATE 0.300 at EVERY clock against
+    EXPAND 0.113 falling to 0.067. The 0.300 is a pure gold floor -- the army
+    term is already zero -- and Rome is rich by construction. And CONSOLIDATE
+    sets ai_apGate to -1, so no gate is ever even considered: the "Romans
+    struggle with gates" report is downstream of an army that was never
+    dispatched, not of the gate model."""
+    print('\n' + '=' * 78)
+    print('ROUND 5 -- the Roman lock: rich, large, and going nowhere')
+    print('=' * 78)
+    fails = 0
+
+    def rome(t_now, army=2000.0, gold=1500.0, scale=18000.0):
+        sc = dict(role='rome', t=t_now, army=army, garrison=1500.0, gold=gold,
+                  lumber=1500.0, food=140.0, proxScale=scale, fieldX=0.0, fieldY=0.0,
+                  points=[{'kind': CP, 'x': 18000.0, 'y': 0.0, 'owner': 1}])
+        env = make_env(sc)
+        env['wm_foodCap'][0] = 300.0
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        seed_capital(env, it, sc)
+        return it.run('AI_ScoreConsolidate', [0]), it.run('AI_ScoreExpand', [0])
+
+    print('  a large, rich Roman power must go and use its army, at every clock:')
+    for t_now in (120.0, 600.0, 1200.0, 1700.0):
+        c, e = rome(t_now)
+        ok = e > c
+        fails += 0 if ok else 1
+        print('    %s t=%-6.0f CONSOLIDATE=%.3f EXPAND=%.3f' % ('PASS' if ok else 'FAIL', t_now, c, e))
+
+    # the two halves, separated, so a later change cannot silently undo one
+    c_big, _ = rome(600.0, army=2000.0)
+    c_small, _ = rome(600.0, army=200.0)
+    ok = c_big < 0.01 and c_small > 0.3
+    fails += 0 if ok else 1
+    print('  %s the sufficiency gate: an army that HAS its force stops massing (%.3f), one that does not still masses (%.3f)'
+          % ('PASS' if ok else 'FAIL', c_big, c_small))
+
+    _, e_far = rome(600.0, scale=18000.0)
+    _, e_near = rome(600.0, scale=CONSTS['AI_PROX_MIN'])
+    ok = e_far > 2.0 * e_near
+    fails += 0 if ok else 1
+    print('  %s the adaptive proximity scale: a frontier empire can see its own frontier (%.3f vs %.3f at the barbarian scale)'
+          % ('PASS' if ok else 'FAIL', e_far, e_near))
+
+    # NEGATIVE CONTROL, on the lever that can actually be moved. The
+    # sufficiency gate cannot be "turned off" by a constant once the army is
+    # already past want -- the term is zero by construction -- so the control
+    # targets the other half: pin the proximity scale back to the barbarian
+    # value and EXPAND must collapse to the round-4 measurement, 0.067 at
+    # t=1700. Reproducing the observed number exactly is the strongest form
+    # this control can take.
+    _, e_pinned = rome(1700.0, scale=CONSTS['AI_PROX_MIN'])
+    ok = abs(e_pinned - 0.067) < 0.01
+    fails += 0 if ok else 1
+    print('  %s   negative control: at the barbarian scale EXPAND collapses to the round-4 value (%.3f vs 0.067 measured)'
+          % ('PASS' if ok else 'FAIL', e_pinned))
+
+    # barbarians must be untouched by all of this
+    print('  ... and the barbarian side is unchanged:')
+    for t_now, army, food, want in ((60.0, 60.0, 20.0, 'CON'), (300.0, 200.0, 20.0, 'CON'),
+                                    (300.0, 300.0, 96.0, 'EXP'), (1500.0, 500.0, 96.0, 'EXP')):
+        sc = dict(role='barb', t=t_now, army=army, gold=600.0, lumber=300.0, food=food,
+                  proxScale=CONSTS['AI_PROX_MIN'], fieldX=0.0, fieldY=0.0,
+                  points=[{'kind': CP, 'x': 3000.0, 'y': 0.0, 'owner': 1}])
+        env = make_env(sc)
+        env['wm_foodCap'][0] = 100.0
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        seed_capital(env, it, sc)
+        c, e = it.run('AI_ScoreConsolidate', [0]), it.run('AI_ScoreExpand', [0])
+        got = 'CON' if c > e else 'EXP'
+        ok = (got == want)
+        fails += 0 if ok else 1
+        print('    %s t=%-6.0f army=%-4.0f food=%-3.0f CON=%.3f EXP=%.3f -> %s'
+              % ('PASS' if ok else 'FAIL', t_now, army, food, c, e, got))
+
+    # -- the Gray jam: a crossing we cannot perform ------------------------
+    print('  -- the Gray jam: 25 units at a 1992/2000 gate --')
+
+    def gcost(has_siege):
+        sc = dict(role='barb', hasSiege=has_siege,
+                  gates=[dict(x=0.0, y=0.0, state=CONSTS['AI_GS_CLOSED'], life=1.0, owner=1)])
+        env = make_env(sc)
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        return it.run('AI_GateCost', [0, 0])
+
+    with_siege, without = gcost(True), gcost(False)
+    jam = [
+        ('a break we CAN perform is priced normally', with_siege <= CONSTS['AI_GATE_BREAK']),
+        ('a break we CANNOT perform is priced right out of the comparison',
+         without > with_siege + CONSTS['AI_GATE_BREAK']),
+        ('... but stays finite, so the only crossing is still taken',
+         without < 99999.0),
+    ]
+    for name, ok in jam:
+        fails += 0 if ok else 1
+        print('    %s %s' % ('PASS' if ok else 'FAIL', name))
+    print('       gate cost with siege %.0f, without %.0f' % (with_siege, without))
+
+    print('\n%s: %d Roman-lock assertions failed' % ('PASS' if not fails else 'FAIL', fails))
+    return 1 if fails else 0
+
+
 # ------------------- round 4: the passive-AI deadlock (findings 1 and 2)
 
 def unstick():
@@ -1847,7 +1975,9 @@ ROUND3_GUARDS = [
     ('AI reports go to ALLIES only, never to everyone',
      r'function AI_Say\b.*?call AI_BroadcastAllies\(pid, AI_Name\(pid\)', True),
     ('the ally scope is an explicit IsPlayerAlly test per recipient',
-     r'function AI_BroadcastAllies\b.*?if IsPlayerAlly\(Player\(i\), ai_p\[pid\]\) then', True),
+     r'function AI_BroadcastAllies\b.*?if IsPlayerAlly\(Player\(i\), ai_p\[pid\]\) or ai_spy\[i\] then', True),
+    ('observer mode is opt-in, per player, and never global',
+     r'set ai_spy\[GetPlayerId\(GetTriggerPlayer\(\)\)\] = \(s == "-aispy"\)', True),
     ('no GetLocalPlayer anywhere in the module',
      r'GetLocalPlayer', False),
     ('AI_Say never uses the global broadcast',
@@ -1879,8 +2009,33 @@ ROUND3_GUARDS = [
      r'function AI_SendEnum\b.*?if GetUnitTypeId\(u\) == ai_ramType and not ai_ramWork then\s*\n\s*call AI_TryOrder\(u, AI_ORD_MOVE, ai_ramX, ai_ramY', True),
     ('ram work is decided by whether the approach must BREAK a crossing',
      r'set ai_ramWork = \(gi >= 0\) and ai_apBreak\[pid\]', True),
-    ('rams are bought ONLY because the crossing decision says so',
-     r'if ai_apBreak\[pid\] and wm_lumber\[pid\] >= 200\.0', True),
+    ('rams are bought from a REMEMBERED wall, not a per-tick flag',
+     r'if \(ai_now - ai_wallSince\[pid\]\) < AI_WALL_MEM and wm_lumber\[pid\] >= AI_RAM_LUMBER', True),
+    ('meeting a wall is what starts the ram memory',
+     r'if ai_apBreak\[pid\] then\s*\n\s*set ai_wallSince\[pid\] = ai_now', True),
+    ('a break we cannot perform is priced out of the crossing comparison',
+     r'function AI_GateCost\b.*?if not wm_hasSiege\[pid\] then.*?AI_NOBREAK_COST', True),
+    # --- round 5: the Roman lock -----------------------------------------
+    ('CONSOLIDATE is gated on more army being WANTED, not just possible',
+     r'return s \* AI_CanMass\(pid\) \* AI_WantsMore\(pid\)', True),
+    ('the proximity scale adapts to the faction own geography',
+     r'function AI_TargetScore\b.*?/ wm_proxScale\[pid\]\)', True),
+    ('a unit already at home is not re-ordered home',
+     r'function AI_SendEnum\b(?:(?!\nendfunction)[\s\S])*?if ai_ordKind == AI_ORD_MOVE and AI_Dist\(GetUnitX\(u\), GetUnitY\(u\), ai_orderX, ai_orderY\) < AI_HOME_R then', True),
+    ('transports are never dispatched by the land army',
+     r'function AI_SendEnum\b(?:(?!\nendfunction)[\s\S])*?if AI_IsTransport\(u\) then', True),
+    ('a hero never boards ahead of its army',
+     r'function AI_BoardEnum\b.*?IsUnitType\(u, UNIT_TYPE_HERO\) and ai_navLoaded < AI_NAV_MIN_LOAD', True),
+    ('no transport is left with cargo and no destination',
+     r'function AI_NavIdle\b.*?call AI_TryOrder\(ship, AI_ORD_UNLOAD, ai_homeX\[pid\]', True),
+    ('an idle army takes the nearest contestable objective, unconditionally',
+     r'if AI_IsIdle\(pid\) and goal != GOAL_RETREAT and goal != GOAL_DEFEND then.*?call AI_MoveOnTarget\(pid, t\)', True),
+    ('the idle floor sits under AI_Execute, not inside a scorer',
+     r'function AI_NearestContestable\b', True),
+    ('committing to an objective is what resets the idle clock',
+     r'set ai_commitAt\[pid\] = ai_now', True),
+    ('the naval idle branch runs whatever the goal is',
+     r'call AI_Execute\(pid\)\s*\n(?:\s*//[^\n]*\n)*\s*call AI_NavIdle\(pid\)', True),
     ('a siege goal no longer buys rams by itself (finding 7)',
      r'ai_goal\[pid\] == GOAL_SIEGE\) and wm_lumber', False),
     ('a defensive or retreating dispatch gives rams no job',
@@ -2154,6 +2309,7 @@ def main():
     rc |= strategy()
     rc |= tribes()
     rc |= formation()
+    rc |= romanlock()
     rc |= unstick()
     rc |= consort()
     rc |= holding()

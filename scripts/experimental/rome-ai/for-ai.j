@@ -150,6 +150,37 @@
     // mass at all" -- not a tuning knob, a fact about the map.
     constant real    AI_SQUAD_FOOD    = 12.0
     constant real    AI_SQUAD_GOLD    = 50.0   // the cheapest squad in the table
+    // ROUND 5, findings 3 and 4 -- the ROMAN lock. Measured on the round-4
+    // build for a West Rome shape (army 2000 CV, gold 1500, nearest enemy
+    // 18000 away): CONSOLIDATE 0.300 at EVERY clock against EXPAND 0.113
+    // falling to 0.067. The 0.300 is a pure GOLD FLOOR -- the army term is
+    // already zero because the army exceeds wantArmy, so 0.22*C01(gold/900)
+    // alone pins the faction at home for the whole game. Rome is rich by
+    // construction (25-33 control points at 10 gold each per round), so that
+    // floor is permanent. "West Rome still stacks in Rome and does not use
+    // the troops" is this number.
+    constant real    AI_WANT_BAND     = 0.35   // how far below want still wants more
+    // And the other half: EXPAND is crushed by a proximity term scaled to a
+    // fixed 4200, which is a barbarian's world. Rome's nearest enemy is
+    // ~18000 away, so every objective it owns scores prox 0.19 and nothing is
+    // ever worth marching to. The scale now adapts to the faction's OWN
+    // geography, so the nearest target is always a real objective to whoever
+    // owns the frontier.
+    constant real    AI_PROX_MIN      = 4200.0
+    // ROUND 5, the standing bias. The owner, on the whole fleet: "Players
+    // generally too static ... should always overcorrect for actual
+    // aggressiveness". And the measurable proof: across a whole 30-minute
+    // game the multiboard read West Rome 24/24/24, East Rome 32/33/32, North
+    // Rome 20/21/20, barbarians 2-5 throughout. In a game about taking
+    // territory, territory did not change hands.
+    //
+    // So an IDLE ARMY IS ALWAYS A BUG, and "nothing scored above threshold"
+    // is never allowed to be a terminal state. If a faction has gone this
+    // long without committing to anything, it takes the nearest contestable
+    // objective unconditionally -- if nothing scores, the thresholds are
+    // wrong, and in the meantime the army should still be moving at
+    // something.
+    constant real    AI_IDLE_T        = 25.0
     constant real    AI_POSTURE_T     = 45.0
     constant real    AI_POSTURE_BIAS  = 0.20
     constant integer POSTURE_CONSOLIDATE = 0
@@ -204,7 +235,30 @@
     // leaving it declared invites it back. The corridor test replaces both.
     constant real    AI_GATE_BREAK    = 6000.0 // detour worth avoiding a siege
     constant real    AI_GATE_OWN      = 400.0  // opening our own gate is cheap
-    constant real    AI_APPROACH_MIN  = 2200.0 // below this, just go
+    // ROUND 5, the Gray jam. The screenshot: ~25 units stacked on a causeway
+    // in front of a closed City Gate reading 1992/2000 HP, armour 5. Eight
+    // points of damage. The army walked to a wall it must break and had no
+    // way to break it, and this constant is half the reason.
+    //
+    // AI_ChooseApproach returned EARLY once the objective was closer than
+    // 2200 -- "already on top of it, just go". But the gate is between the
+    // army and the objective at exactly that range, so on arrival the whole
+    // crossing model switched off: ai_apGate went to -1, ai_apBreak went
+    // FALSE, the rams that existed were sent to the rear as having no work,
+    // and no new ram was ever bought -- because round 4 correctly made
+    // ai_apBreak the ONLY reason to buy one. The army then attack-moved into
+    // an armour-5 gate with infantry and achieved eight damage.
+    //
+    // The early-out only ever meant "do not reroute a march that has already
+    // arrived". A wall in the last 2000 units is precisely when routing
+    // matters most, so it now only suppresses genuinely trivial distances.
+    constant real    AI_APPROACH_MIN  = 600.0
+    // How long a wall we met stays a reason to own rams. ai_apBreak is a
+    // per-tick transient and AI_Spend runs BEFORE AI_MoveOnTarget in the same
+    // tick, so buying on the raw flag is a phase race with the march.
+    constant real    AI_WALL_MEM      = 90.0
+    constant real    AI_RAM_LUMBER    = 100.0   // the map cost of h025
+    constant real    AI_NOBREAK_COST  = 9000.0  // crossing we cannot perform
     constant real    AI_SIEGE_R       = 2000.0 // hit the gate itself inside this
     constant real    AI_GATE_GUARD    = 1200.0 // enemy proximity for gate control
     constant real    AI_GATE_CD       = 20.0   // the map cooldown on A00Z etc.
@@ -269,9 +323,11 @@
     integer array    wm_cpOwn
     real    array    wm_capReady        // readiness to TAKE AND HOLD a capital
     integer array    wm_capIdx          // nearest enemy capital, or -1
+    real    array    wm_proxScale       // this faction own distance scale (round 5)
     integer array    wm_fieldComp       // land component the field army stands in
     boolean array    wm_wantBoat        // nothing left to take without a crossing
     boolean array    wm_landLeft        // something worth taking on our own landmass
+    boolean array    wm_hasSiege        // we own something that can break a wall
     boolean array    wm_capThreat
     boolean array    wm_capLost
     real    array    wm_asset           // value of the best OWN point under threat
@@ -292,6 +348,8 @@
     boolean array    ai_apBreak         // must we break it
 
     // ---- ROUND 3: stall detection (a blocked exit is a failure state) --
+    real    array    ai_commitAt        // last time we committed to an objective
+    real    array    ai_wallSince       // last time a wall stood in our way
     real    array    ai_progD           // best distance-to-objective so far
     real    array    ai_progAt          // when that best was recorded
 
@@ -328,6 +386,7 @@
     real             ai_accHP        = 0.0
     real             ai_accHPMax     = 0.0
     integer          ai_accN         = 0
+    integer          ai_accSiege     = 0
     unit             ai_orderTarget  = null
     real             ai_orderX       = 0.0
     real             ai_orderY       = 0.0
@@ -440,6 +499,15 @@
     real    array    ai_claimAt
     integer          ai_raidType    = 0
     string           ai_roster      = ""     // which slots the AI took (finding 2)
+    // ROUND 5, hypothesis 0. Round 4 scoped AI reports to allies, correctly --
+    // and the owner plays ROME, so from that build on they saw not one
+    // barbarian message. The stream they used in playtest 4 to diagnose
+    // "Huns: massing at home" went silent, and the next report was that
+    // barbarians "seem" less active. An AI that announces nothing looks less
+    // active than the same AI announcing constantly. Rather than revert a
+    // correct fix, a playtester can opt IN to seeing everything, for
+    // themselves only, per recipient, with no GetLocalPlayer anywhere.
+    boolean array    ai_spy                  // this PLAYER sees every faction
 
     // ===================================================================
     //  ROUND 3: RAMS (item 8) AND DISPERSAL (item 10)
@@ -775,7 +843,8 @@ function AI_BroadcastAllies takes integer pid, string msg returns nothing
     loop
         exitwhen i >= AI_MAX_PLAYERS
         if GetPlayerSlotState(Player(i)) == PLAYER_SLOT_STATE_PLAYING and GetPlayerController(Player(i)) == MAP_CONTROL_USER then
-            if IsPlayerAlly(Player(i), ai_p[pid]) then
+            // an ally, or an observer who has asked to see everything
+            if IsPlayerAlly(Player(i), ai_p[pid]) or ai_spy[i] then
                 call DisplayTimedTextToPlayer(Player(i), 0, 0, AI_SAY_TTL, msg)
             endif
         endif
@@ -1441,6 +1510,16 @@ function AI_GateCost takes integer pid, integer i returns real
     if AI_GateIsOurs(pid, i) then
         return AI_GATE_OWN
     endif
+    // ROUND 5, the Gray jam. A crossing we have no way to PERFORM is not a
+    // cheap crossing, it is a wall to stand in front of. An army with no
+    // siege cannot meaningfully hurt a 2000 HP armour-5 gate -- the
+    // screenshot was eight damage -- so a break we cannot execute is priced
+    // out of the comparison and any breach, own gate or longer way round
+    // wins instead. It is still finite: if it is the ONLY crossing we take
+    // it, buy rams (AI_WALL_MEM) and chew, rather than idling forever.
+    if not wm_hasSiege[pid] then
+        return AI_GATE_BREAK * AI_GateLifeFrac(i) + AI_NOBREAK_COST
+    endif
     return AI_GATE_BREAK * AI_GateLifeFrac(i)
 endfunction
 
@@ -1631,6 +1710,9 @@ endfunction
 function AI_SumOwnArmy takes nothing returns nothing
     local unit u = GetEnumUnit()
     local real cv = AI_CV(u)
+    if GetUnitTypeId(u) == 'h025' or GetUnitTypeId(u) == 'h00S' then
+        set ai_accSiege = ai_accSiege + 1
+    endif
     if cv > 0.0 then
         set ai_accCV = ai_accCV + cv
         set ai_accX  = ai_accX + GetUnitX(u)*cv
@@ -1667,6 +1749,7 @@ function AI_ResetAcc takes nothing returns nothing
     set ai_accHP = 0.0
     set ai_accHPMax = 0.0
     set ai_accN = 0
+    set ai_accSiege = 0
 endfunction
 
 // Refresh the fogged memory of ONE SLICE of the registry for this player.
@@ -1720,6 +1803,7 @@ function AI_ScanWorld takes integer pid returns nothing
     local real capDist = 999999.0
     local real capDef = 0.0
     local real cd
+    local real nearest = 999999.0
     local boolean landWorth = false
     local boolean capThreat = false
     local boolean capLost = false
@@ -1761,6 +1845,7 @@ function AI_ScanWorld takes integer pid returns nothing
     call DestroyGroup(g)
     set g = null
     set wm_army[pid] = ai_accCV
+    set wm_hasSiege[pid] = (ai_accSiege > 0)
     if ai_accW > 0.0 then
         set wm_fieldX[pid] = ai_accX / ai_accW
         set wm_fieldY[pid] = ai_accY / ai_accW
@@ -1832,8 +1917,15 @@ function AI_ScanWorld takes integer pid returns nothing
             endif
             // nearest enemy capital and the garrison we can SEE around it --
             // the two inputs to the round-3 readiness gate (queue item 4)
+            // ROUND 5: the faction's own distance scale -- how far away its
+            // nearest objective is. A frontier empire must not have every
+            // objective crushed by a proximity term calibrated on a barbarian
+            // whose neighbours are 3000 units away.
+            set cd = AI_Dist(ai_ptX[i], ai_ptY[i], wm_fieldX[pid], wm_fieldY[pid])
+            if cd < nearest then
+                set nearest = cd
+            endif
             if ai_ptKind[i] == AI_PK_CAPITAL then
-                set cd = AI_Dist(ai_ptX[i], ai_ptY[i], wm_fieldX[pid], wm_fieldY[pid])
                 if cd < capDist then
                     set capDist = cd
                     set capIdx = i
@@ -1866,6 +1958,13 @@ function AI_ScanWorld takes integer pid returns nothing
     // recreates round 2 finding 5, where shipyards outscored real objectives.
     set wm_landLeft[pid] = landWorth
     set wm_wantBoat[pid] = (not landWorth) and yards == 0
+    if nearest > 999998.0 then
+        set nearest = AI_PROX_MIN
+    endif
+    if nearest < AI_PROX_MIN then
+        set nearest = AI_PROX_MIN
+    endif
+    set wm_proxScale[pid] = nearest
     set wm_capIdx[pid] = capIdx
     set wm_capReady[pid] = AI_CapReadiness(wm_army[pid], capDef)
     set wm_capThreat[pid] = capThreat
@@ -1910,7 +2009,7 @@ function AI_TargetScore takes integer pid, integer i returns real
     if ai_ptKind[i] == AI_PK_SHIPYARD and wm_wantBoat[pid] and not AI_NeedsBoat(pid, i) then
         set v = AI_VAL_CP * 1.10
     endif
-    set prox = 1.0 / (1.0 + AI_Dist(ai_ptX[i], ai_ptY[i], wm_fieldX[pid], wm_fieldY[pid]) / 4200.0)
+    set prox = 1.0 / (1.0 + AI_Dist(ai_ptX[i], ai_ptY[i], wm_fieldX[pid], wm_fieldY[pid]) / wm_proxScale[pid])
     set weak = AI_C01(1.0 - ai_ptDef[k] / (wm_army[pid] + 60.0))
     set stale = 1.0 - 0.35*AI_C01((ai_now - ai_ptSeen[k]) / 240.0)
     if ai_target[pid] == i then
@@ -1925,7 +2024,7 @@ function AI_TargetScore takes integer pid, integer i returns real
     // flank is the job, not a cost.
     if ai_harasser[pid] then
         set weak = weak * weak
-        set prox = 1.0 / (1.0 + AI_Dist(ai_ptX[i], ai_ptY[i], wm_fieldX[pid], wm_fieldY[pid]) / 9000.0)
+        set prox = 1.0 / (1.0 + AI_Dist(ai_ptX[i], ai_ptY[i], wm_fieldX[pid], wm_fieldY[pid]) / (2.15*wm_proxScale[pid]))
     endif
     // ROUND 4, findings 5 and 8: the phase rule. While anything uncontested
     // remains on our own landmass it outranks everything across water. This is
@@ -2103,6 +2202,9 @@ function AI_ChooseApproach takes integer pid, real tx, real ty returns nothing
     // We only have to BREAK a crossing that is shut and not ours. An own gate
     // on our path is opened instead -- unconditionally, see AI_ManageGates.
     set ai_apBreak[pid] = (AI_GateState(best) == AI_GS_CLOSED) and not AI_GateIsOurs(pid, best)
+    if ai_apBreak[pid] then
+        set ai_wallSince[pid] = ai_now      // ROUND 5: rams stay justified
+    endif
 endfunction
 
 //===========================================================================
@@ -2156,6 +2258,14 @@ function AI_CanMass takes integer pid returns real
     return purse
 endfunction
 
+// Is more army even wanted? Once we are at or past the target there is
+// nothing consolidation can buy, and a rich faction must not read its own
+// treasury as a reason to stay home. ROUND 5, finding 4.
+function AI_WantsMore takes integer pid returns real
+    local real wantArmy = 350.0 + 750.0*AI_Clock()
+    return AI_C01((wantArmy - wm_army[pid]) / (AI_WANT_BAND * wantArmy))
+endfunction
+
 function AI_ScoreConsolidate takes integer pid returns real
     local real clock = AI_Clock()
     local real wantArmy = 350.0 + 750.0*clock
@@ -2165,7 +2275,9 @@ function AI_ScoreConsolidate takes integer pid returns real
     set s = s + 0.22 * AI_C01(wm_gold[pid] / 900.0)
     set s = s + 0.15 * AI_C01((wm_foodCap[pid] - wm_food[pid]) / wm_foodCap[pid]) * AI_C01(wm_gold[pid] / 400.0)
     // ROUND 4: the possibility gate. An AI that cannot train must not want to.
-    return s * AI_CanMass(pid)
+    // ROUND 5: and the sufficiency gate. An AI that already HAS its army must
+    // not want to either, however much gold it is sitting on.
+    return s * AI_CanMass(pid) * AI_WantsMore(pid)
 endfunction
 
 // Playtest fault (2), "barbarians center on where they are being attacked".
@@ -2453,6 +2565,13 @@ endfunction
 // This unit lane, centred on zero: for AI_LANES = 5 the lanes are -2..2.
 // Keyed off the handle id so a unit keeps the same lane every tick -- a lane
 // that changed between ticks would be an order storm.
+// The map's three cargo hulls, plus the artillery hull that has no hold.
+// Nothing here is infantry and none of it may take a land order.
+function AI_IsTransport takes unit u returns boolean
+    local integer t = GetUnitTypeId(u)
+    return t == 'h00R' or t == 'h026' or t == 'h00Q' or t == 'h00S'
+endfunction
+
 function AI_LaneOf takes unit u returns real
     return I2R(ModuloInteger(GetHandleId(u), ai_laneN) - ai_laneMid)
 endfunction
@@ -2516,6 +2635,27 @@ function AI_SendEnum takes nothing returns nothing
     // everything at once"
     if ai_holdCV > 0.0 and AI_Dist(GetUnitX(u), GetUnitY(u), ai_homeX[ai_curPid], ai_homeY[ai_curPid]) < AI_HOME_R then
         set ai_holdCV = ai_holdCV - AI_CV(u)
+        set u = null
+        return
+    endif
+    // ROUND 5, finding 2. A transport is not infantry. Ordering it to
+    // attack-move at a LAND objective makes the engine sail it as close as
+    // water allows and stop -- which is, precisely, "parked in the middle of
+    // the sea". West Rome starts with 6 h00R and 3 h00Q PREPLACED, so this
+    // fired on nine boats it never even built. Boats are commanded by the
+    // naval layer and by nothing else.
+    if AI_IsTransport(u) then
+        set u = null
+        return
+    endif
+    // ROUND 5, findings 3 and 4. A unit already standing in the home radius
+    // needs no order to go home. Round 4 re-issued "move home" to every idle
+    // unit every tick, and with AI_ORDER_SLICE at 24 against a Roman army of
+    // 139-185 preplaced units, CONSOLIDATE spent the ENTIRE order budget
+    // telling troops that were already home to go home. That is the second
+    // half of "the Romans do not use their starting units": they were
+    // enrolled and scored all along, and every order slot was a no-op.
+    if ai_ordKind == AI_ORD_MOVE and AI_Dist(GetUnitX(u), GetUnitY(u), ai_orderX, ai_orderY) < AI_HOME_R then
         set u = null
         return
     endif
@@ -2856,12 +2996,60 @@ function AI_BoardEnum takes nothing returns nothing
         set u = null
         return
     endif
+    // ROUND 5, finding 2. The owner's whole account of West Rome's game was
+    // "build troops in Rome, load its hero into a transport, and just put
+    // said transport in the middle of the sea". A hero is the single
+    // highest-value unit a faction owns and it was boarding first, alone,
+    // and then being abandoned when the goal flipped. A hero crosses with
+    // its army or not at all -- so it boards only once the army is aboard.
+    if IsUnitType(u, UNIT_TYPE_HERO) and ai_navLoaded < AI_NAV_MIN_LOAD then
+        set u = null
+        return
+    endif
+    // A boat is not cargo either.
+    if AI_IsTransport(u) then
+        set u = null
+        return
+    endif
     if AI_Dist(GetUnitX(u), GetUnitY(u), ai_orderX, ai_orderY) <= AI_NAV_BOARD_R then
         call AI_TryOrder(u, AI_ORD_LOAD, ai_orderX, ai_orderY, ai_orderTarget)
     else
         call AI_TryOrder(u, AI_ORD_MOVE, ai_orderX, ai_orderY, null)
     endif
     set u = null
+endfunction
+
+// ROUND 5, finding 2 -- the invariant the round-4 state machine lacked:
+// NO TRANSPORT IS EVER LEFT WITH CARGO AND NO DESTINATION.
+//
+// The failure was structural, not arithmetic. AI_NavStep is only reachable
+// from AI_MoveOnTarget, which only runs under EXPAND or SIEGE. West Rome
+// briefly picked a cross-water objective, the naval layer began boarding,
+// the goal then flipped to CONSOLIDATE -- which round-5 finding 4 shows it
+// could never leave -- and the naval layer was never called again. A boat
+// with the hero aboard sat at its rally in open water for the rest of the
+// game, exactly as reported. So this runs EVERY think tick for EVERY
+// player, whatever the goal, and it is the only place that can end a
+// crossing.
+function AI_NavIdle takes integer pid returns nothing
+    local unit ship
+    if ai_navState[pid] == AI_NAV_NONE then
+        return
+    endif
+    if ai_target[pid] >= 0 and AI_WantsCrossing(pid, ai_target[pid]) then
+        return                               // a real crossing is in progress
+    endif
+    // No crossing objective any more. Put the cargo back on our own shore.
+    set ship = AI_FindShip(pid)
+    if ship != null then
+        set ai_issued = 0
+        set ai_budget = AI_ORDER_SLICE
+        call AI_TryOrder(ship, AI_ORD_UNLOAD, ai_homeX[pid], ai_homeY[pid], null)
+        call AI_Say(pid, "bringing the transport home - the crossing is off")
+    endif
+    set ai_navState[pid] = AI_NAV_NONE
+    set ai_navShip[pid] = null
+    set ship = null
 endfunction
 
 // True when the naval layer has taken this tick and the caller must NOT also
@@ -3234,7 +3422,9 @@ function AI_Spend takes integer pid returns nothing
     // wall objectives. Rams are now bought ONLY because the crossing decision
     // says a wall stands between this army and what it wants, with no cheaper
     // way through. ai_apBreak is exactly that, and nothing else sets it.
-    if ai_apBreak[pid] and wm_lumber[pid] >= 200.0 and AI_RandReal() < 0.45 then
+    // ROUND 5: buy on the REMEMBERED wall, not the per-tick flag, and price
+    // it at what a ram actually costs (50 g + 100 l) rather than a guess.
+    if (ai_now - ai_wallSince[pid]) < AI_WALL_MEM and wm_lumber[pid] >= AI_RAM_LUMBER and AI_RandReal() < 0.55 then
         set role = 4
     else
         // ROUND 3, queue item 9: composition follows the faction passive.
@@ -3409,6 +3599,34 @@ function AI_TryLocalSupport takes integer pid returns nothing
     set ai_orderTarget = null
 endfunction
 
+// ROUND 5: the nearest thing we could contest, ignoring every score. This is
+// the floor under the whole decision layer, not part of it.
+function AI_NearestContestable takes integer pid returns integer
+    local integer i = 0
+    local integer best = -1
+    local real bd = 999999.0
+    local real d
+    loop
+        exitwhen i >= ai_pointCount
+        if ai_pt[i] != null and not AI_WantsCrossing(pid, i) then
+            if not (GetOwningPlayer(ai_pt[i]) == ai_p[pid] or IsPlayerAlly(GetOwningPlayer(ai_pt[i]), ai_p[pid])) then
+                set d = AI_Dist(ai_ptX[i], ai_ptY[i], wm_fieldX[pid], wm_fieldY[pid])
+                if d < bd then
+                    set bd = d
+                    set best = i
+                endif
+            endif
+        endif
+        set i = i + 1
+    endloop
+    return best
+endfunction
+
+// True when this player has gone AI_IDLE_T without committing to anything.
+function AI_IsIdle takes integer pid returns boolean
+    return (ai_now - ai_commitAt[pid]) >= AI_IDLE_T
+endfunction
+
 // ---- goal dispatch ------------------------------------------------------
 
 function AI_Execute takes integer pid returns nothing
@@ -3457,6 +3675,7 @@ function AI_Execute takes integer pid returns nothing
             endif
             call AI_Claim(pid, t)
             set ai_target[pid] = t
+            set ai_commitAt[pid] = ai_now
             call AI_MoveOnTarget(pid, t)
             call AI_Raid(pid)              // horses keep working during a push
         endif
@@ -3471,8 +3690,27 @@ function AI_Execute takes integer pid returns nothing
             endif
             call AI_Claim(pid, t)
             set ai_target[pid] = t
+            set ai_commitAt[pid] = ai_now
             call AI_MoveOnTarget(pid, t)
             call AI_Raid(pid)
+        endif
+    endif
+
+    // ROUND 5 -- THE FLOOR. An idle army is always a bug, and "nothing scored
+    // above threshold" is never a terminal state. Whatever the scorer decided,
+    // a faction that has not committed to anything for AI_IDLE_T marches on
+    // the nearest contestable objective. This sits UNDER the decision layer
+    // rather than inside it, so it cannot be tuned away by a threshold, and
+    // it is the standing aggression bias the owner asked for: when in doubt,
+    // attack something.
+    if AI_IsIdle(pid) and goal != GOAL_RETREAT and goal != GOAL_DEFEND then
+        set t = AI_NearestContestable(pid)
+        if t >= 0 then
+            call AI_Claim(pid, t)
+            set ai_target[pid] = t
+            set ai_commitAt[pid] = ai_now
+            call AI_Say(pid, "nothing worth doing scored - taking the nearest thing instead")
+            call AI_MoveOnTarget(pid, t)
         endif
     endif
 endfunction
@@ -3566,6 +3804,10 @@ function AI_Think takes nothing returns nothing
                     call AI_Say(pid, AI_GoalName(newGoal))
                 endif
                 call AI_Execute(pid)
+                // ROUND 5: runs whatever the goal is, so a crossing can
+                // always be ended by something other than the goal that
+                // started it.
+                call AI_NavIdle(pid)
             endif
         endif
         set pid = pid + 1
@@ -3631,6 +3873,8 @@ function AI_EnablePlayer takes integer pid, integer difficulty returns nothing
     set ai_apGate[pid]   = -1
     set ai_apBreak[pid]  = false
     set ai_scanCursor[pid] = 0
+    set ai_wallSince[pid]= -9999.0
+    set ai_commitAt[pid] = 0.0
     set ai_progD[pid]    = 999999.0
     set ai_progAt[pid]   = 0.0
     set ai_navState[pid] = AI_NAV_NONE
@@ -3640,8 +3884,10 @@ function AI_EnablePlayer takes integer pid, integer difficulty returns nothing
     set wm_fieldComp[pid] = -1
     set wm_wantBoat[pid] = false
     set wm_landLeft[pid] = true
+    set wm_hasSiege[pid] = false
     set wm_capReady[pid] = AI_CAP_FLOOR
     set wm_capIdx[pid]   = -1
+    set wm_proxScale[pid]= AI_PROX_MIN
     set ai_posture[pid]  = POSTURE_CONSOLIDATE
     set ai_postureAt[pid]= 0.0
     set ai_heroOut[pid]  = false
@@ -3675,6 +3921,16 @@ function AI_CmdActions takes nothing returns nothing
     local integer pid = 0
     local integer d = -1
     // ROUND 3: the AI can be told to stop talking, or to talk again.
+    // ROUND 5: observer mode, for the issuing player only.
+    if s == "-aispy" or s == "-aispyoff" then
+        set ai_spy[GetPlayerId(GetTriggerPlayer())] = (s == "-aispy")
+        if s == "-aispy" then
+            call DisplayTextToPlayer(GetTriggerPlayer(), 0, 0, "FoR-AI: you now see EVERY faction reports. This is a diagnostic view.")
+        else
+            call DisplayTextToPlayer(GetTriggerPlayer(), 0, 0, "FoR-AI: back to allied reports only.")
+        endif
+        return
+    endif
     if s == "-aiquiet" or s == "-aitalk" then
         loop
             exitwhen pid >= AI_MAX_PLAYERS
@@ -3800,6 +4056,7 @@ function AI_Init takes nothing returns nothing
     loop
         exitwhen pid >= AI_MAX_PLAYERS
         call TriggerRegisterPlayerChatEvent(ai_cmdTrig, Player(pid), "-ai", false)
+        set ai_spy[pid] = false
         set pid = pid + 1
     endloop
     call TriggerAddAction(ai_cmdTrig, function AI_CmdActions)
@@ -3816,6 +4073,7 @@ function AI_Init takes nothing returns nothing
         // faction is missing from this line it was never enabled; if it is
         // present and still idle, the fault is in its scoring.
         call AI_Broadcast("FoR-AI is playing: " + ai_roster)
-        call AI_Broadcast("FoR-AI: -aieasy / -ainormal / -aihard, -aiquiet / -aitalk.")
+        call AI_Broadcast("FoR-AI: -aieasy / -ainormal / -aihard, -aiquiet / -aitalk, -aispy to watch every faction.")
+        call AI_Broadcast("FoR-AI handicap: NONE - no resource or vision cheating, fog is respected.")
     endif
 endfunction
