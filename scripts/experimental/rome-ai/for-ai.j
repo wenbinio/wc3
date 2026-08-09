@@ -884,7 +884,175 @@ function AI_BaseCost takes integer tid returns real
     return 50.0
 endfunction
 
-// Faction unit ids. Each player trains its own visual variant of the same role.
+//---------------------------------------------------------------------------
+//  TRIBAL PREFERENCES  (round 3, queue item 9)
+//
+//  Derived from the MAP, not from history. Two facts had to be established
+//  from the artifact first, and both changed the shape of this:
+//
+//  1. Trig_Limit_Units does NOT restrict rosters by faction. It caps h012
+//     Roman Praetor at 5 for Romans, bars R008 (raze) for Romans, and
+//     disables A00V (the capital militia summon) for barbarians. That is
+//     all. Every player can train every unit in the Forum utra list, and
+//     the per-faction unit variants are stat-identical within a role. So a
+//     tribal preference cannot be about ACCESS -- it is about composition.
+//
+//  2. Each faction hero carries exactly one unique ability alongside the
+//     shared A005..A008/A00X/A019/A01K set, and the preplaced heroes map
+//     them to players unambiguously (units.json placement x objects-units
+//     uabi x the -skin upro field, which names the historical figure):
+//
+//     P0  Huns        Attila             A00N Superior Tactics  +damage, +5 armour aura
+//     P1  Franks      Childeric I        A01N Dispair           -enemy attack damage
+//     P2  Saxons      Eadwacer           A00Q (silence)         enemies cannot cast
+//     P3  West Rome   Roman General      A021 Local Support     summon 12 at a City
+//     P4  Visigoths   Alaric             A01C Fury              +10 flat attack
+//     P5  Vandals     Gaiseric           A01E Rally             +200% movement speed
+//     P6  Britons     Vortigern          A00P Druidic Power     +500% life regen
+//     P7  Persians    Bahram V           A01A Old Hatred        +50% attack speed
+//     P8  Ostrogoths  Theodoric          A01B Willpower         +5 armour
+//     P9  East Rome   Roman General      A021 Local Support
+//     P10 North Rome  Roman General      A021 Local Support
+//     P11 Burgundians Gundahar           A01Z Blood Pact        links 12, spreads damage
+//
+//  The composition each passive actually rewards, which is where history
+//  only breaks ties:
+//   * FLAT per-unit buffs (+10 attack, +5 armour, +damage+armour) are worth
+//     proportionally most on cheap massed bodies -- +10 on a 25-attack
+//     Warrior is +40%, on a 50-attack Cavalry it is +20%. Visigoths,
+//     Ostrogoths and Huns therefore mass.
+//   * Blood Pact links exactly 12 units, and a train order in this map
+//     spawns exactly a squad of 12. Burgundians mass for the same reason.
+//   * PROPORTIONAL buffs (+50% attack speed) are worth most on high-damage
+//     units, so Persia goes heavy and mounted.
+//   * MOBILITY (+200% move speed) is a raiding tool: Vandals ride.
+//   * SUSTAIN (+500% regen) and enemy-damage reduction pay off on units that
+//     stand and take hits: Britons and Franks go heavy melee.
+//   * Rome summons its reinforcements at a City, which is a defensive kit,
+//     and is the only side with the Praetor line -- so it stays balanced and
+//     infantry-weighted.
+//
+//  Weights are percentages across roles 0..3 (cheap melee, heavy melee,
+//  ranged, cavalry) and sum to 100; siege is decided separately by the ram
+//  rule (item 8). The draw runs on the map single seeded stream.
+//---------------------------------------------------------------------------
+function AI_RoleWeight takes integer pid, integer role returns integer
+    if pid == 0 then                        // Huns: mass under an aura, and horse
+        if role == 0 then
+            return 40
+        elseif role == 1 then
+            return 15
+        elseif role == 2 then
+            return 10
+        endif
+        return 35
+    elseif pid == 1 then                    // Franks: blunt the enemy, then stand
+        if role == 0 then
+            return 20
+        elseif role == 1 then
+            return 45
+        elseif role == 2 then
+            return 15
+        endif
+        return 20
+    elseif pid == 2 then                    // Saxons: cheap bodies and missiles
+        if role == 0 then
+            return 40
+        elseif role == 1 then
+            return 20
+        elseif role == 2 then
+            return 30
+        endif
+        return 10
+    elseif pid == 4 then                    // Visigoths: Fury is flat, so mass
+        if role == 0 then
+            return 50
+        elseif role == 1 then
+            return 20
+        elseif role == 2 then
+            return 15
+        endif
+        return 15
+    elseif pid == 5 then                    // Vandals: Rally is a raiding tool
+        if role == 0 then
+            return 25
+        elseif role == 1 then
+            return 15
+        elseif role == 2 then
+            return 10
+        endif
+        return 50
+    elseif pid == 6 then                    // Britons: regen rewards big bodies
+        if role == 0 then
+            return 25
+        elseif role == 1 then
+            return 45
+        elseif role == 2 then
+            return 20
+        endif
+        return 10
+    elseif pid == 7 then                    // Persia: attack speed is proportional
+        if role == 0 then
+            return 15
+        elseif role == 1 then
+            return 35
+        elseif role == 2 then
+            return 15
+        endif
+        return 35
+    elseif pid == 8 then                    // Ostrogoths: flat armour, so mass
+        if role == 0 then
+            return 45
+        elseif role == 1 then
+            return 25
+        elseif role == 2 then
+            return 15
+        endif
+        return 15
+    elseif pid == 11 then                   // Burgundians: Blood Pact links 12
+        if role == 0 then
+            return 45
+        elseif role == 1 then
+            return 25
+        elseif role == 2 then
+            return 20
+        endif
+        return 10
+    endif
+    // Rome (3, 9, 10): a defensive summon kit and the only Praetor line
+    if role == 0 then
+        return 25
+    elseif role == 1 then
+        return 35
+    elseif role == 2 then
+        return 25
+    endif
+    return 15
+endfunction
+
+// Draw a role from this faction weights, on the single seeded stream.
+function AI_PickRole takes integer pid returns integer
+    local integer r = ModuloInteger(AI_Rand(), 100)
+    if r < AI_RoleWeight(pid, 0) then
+        return 0
+    endif
+    set r = r - AI_RoleWeight(pid, 0)
+    if r < AI_RoleWeight(pid, 1) then
+        return 1
+    endif
+    set r = r - AI_RoleWeight(pid, 1)
+    if r < AI_RoleWeight(pid, 2) then
+        return 2
+    endif
+    return 3
+endfunction
+
+// Faction unit ids. Each player trains its own visual variant of the same
+// role. Round 3 kept this three-way (Rome / Persia / the rest) deliberately:
+// the map ships six more cosmetic variants of each barbarian role, but they
+// are STAT-IDENTICAL and nothing in the script maps a variant to a faction,
+// so picking one per tribe would be inventing an association the artifact
+// does not contain. The tribal difference lives in AI_RoleWeight instead.
 function AI_UnitFor takes integer pid, integer role returns integer
     // role 0 cheap melee, 1 heavy melee, 2 ranged, 3 cavalry, 4 siege ram
     if ai_role[pid] == AI_ROLE_ROME then
@@ -2753,14 +2921,9 @@ function AI_Spend takes integer pid returns nothing
     // approach layer when the crossing we picked has to be broken.
     if (ai_apBreak[pid] or ai_goal[pid] == GOAL_SIEGE) and wm_lumber[pid] >= 200.0 and AI_RandReal() < 0.45 then
         set role = 4
-    elseif AI_RandReal() < 0.45 then
-        set role = 0
-    elseif AI_RandReal() < 0.40 then
-        set role = 1
-    elseif AI_RandReal() < 0.55 then
-        set role = 2
     else
-        set role = 3
+        // ROUND 3, queue item 9: composition follows the faction passive.
+        set role = AI_PickRole(pid)
     endif
     set tid = AI_UnitFor(pid, role)
     if g >= AI_BaseCost(tid) then

@@ -947,6 +947,108 @@ def strategy():
     return 1 if fails else 0
 
 
+# ------------------------------------ round 3: tribal preferences (item 9)
+
+def tribes():
+    """Queue item 9, derived from the map rather than from history.
+
+    Two facts had to come out of the artifact first. Trig_Limit_Units does
+    NOT restrict rosters by faction -- it caps the Roman Praetor at 5, bars
+    R008 for Romans and disables the militia summon for barbarians, and that
+    is all -- so a tribal difference has to be composition, not access. And
+    each faction hero carries exactly one unique ability, mapped to a player
+    by the preplaced heroes and named by the -skin upro field: Attila's
+    Superior Tactics, Alaric's Fury, Gaiseric's Rally, Bahram V's Old
+    Hatred, Theodoric's Willpower, Gundahar's Blood Pact, and so on.
+
+    What is asserted here is that the weights are a well-formed distribution
+    and that each faction's composition actually matches the KIND of buff it
+    has: flat per-unit buffs reward massed cheap bodies, proportional ones
+    reward expensive units, mobility rewards cavalry."""
+    print('\n' + '=' * 78)
+    print('ROUND 3 -- tribal preferences: composition follows the passive')
+    print('=' * 78)
+    fails = 0
+    NAMES = {0: 'Huns', 1: 'Franks', 2: 'Saxons', 3: 'West Rome', 4: 'Visigoths',
+             5: 'Vandals', 6: 'Britons', 7: 'Persians', 8: 'Ostrogoths',
+             9: 'East Rome', 10: 'North Rome', 11: 'Burgundians'}
+
+    def weights(pid):
+        env = make_env(dict(role='rome' if pid in (3, 9, 10) else 'barb'))
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        return [it.run('AI_RoleWeight', [pid, r]) for r in range(4)]
+
+    W = {p: weights(p) for p in NAMES}
+    bad = [p for p, w in W.items() if sum(w) != 100 or any(x < 0 for x in w)]
+    ok = not bad
+    fails += 0 if ok else 1
+    print('  %s every faction weight vector is a distribution summing to 100%s'
+          % ('PASS' if ok else 'FAIL', '' if ok else ' (bad: %s)' % bad))
+
+    CHEAP, HEAVY, RANGED, HORSE = 0, 1, 2, 3
+    claims = [
+        ('Visigoths mass: Fury is a FLAT +10 attack, worth most on 25-attack bodies',
+         W[4][CHEAP] == max(W[4])),
+        ('Ostrogoths mass: Willpower is FLAT +5 armour', W[8][CHEAP] == max(W[8])),
+        ('Burgundians mass: Blood Pact links exactly 12, and a squad is 12',
+         W[11][CHEAP] == max(W[11])),
+        ('Vandals ride: Rally is +200% movement, a raiding tool',
+         W[5][HORSE] == max(W[5])),
+        ('Persians go expensive: Old Hatred is PROPORTIONAL attack speed',
+         W[7][HEAVY] + W[7][HORSE] >= 65),
+        ('Britons go heavy: Druidic Power is sustain on big bodies',
+         W[6][HEAVY] == max(W[6])),
+        ('Franks go heavy: Dispair blunts what is hitting them',
+         W[1][HEAVY] == max(W[1])),
+        ('Huns take both mass and horse under one aura',
+         W[0][CHEAP] + W[0][HORSE] >= 70),
+        ('Saxons lean on missiles more than anyone else',
+         W[2][RANGED] == max(W[r][RANGED] for r in NAMES)),
+        ('the three Romans are identical to each other',
+         W[3] == W[9] == W[10]),
+        ('no two neighbouring tribes field the same army',
+         len({tuple(W[p]) for p in (0, 1, 2, 4, 5, 6, 7, 8, 11)}) == 9),
+    ]
+    for name, okc in claims:
+        fails += 0 if okc else 1
+        print('  %s %s' % ('PASS' if okc else 'FAIL', name))
+    for p in sorted(NAMES):
+        print('       %-11s cheap %2d  heavy %2d  ranged %2d  horse %2d'
+              % (NAMES[p], W[p][0], W[p][1], W[p][2], W[p][3]))
+
+    # the draw itself, replayed on the module's own stream
+    def draw(pid, n=20000):
+        seed = CONSTS['AI_SEED_DEFAULT']
+        w = W[pid]
+        got = [0, 0, 0, 0]
+        for _ in range(n):
+            hi, lo = divmod(seed, 127773)
+            seed = 16807 * lo - 2836 * hi
+            if seed <= 0:
+                seed += 2147483647
+            r = seed % 100
+            role = 3
+            for k in range(3):
+                if r < w[k]:
+                    role = k
+                    break
+                r -= w[k]
+            got[role] += 1
+        return [g / n for g in got]
+
+    worst = 0.0
+    for p in NAMES:
+        share = draw(p)
+        worst = max(worst, max(abs(share[k] - W[p][k] / 100.0) for k in range(4)))
+    ok = worst < 0.02
+    fails += 0 if ok else 1
+    print('  %s the seeded draw reproduces the declared weights (worst error %.4f)'
+          % ('PASS' if ok else 'FAIL', worst))
+
+    print('\n%s: %d tribal assertions failed' % ('PASS' if not fails else 'FAIL', fails))
+    return 1 if fails else 0
+
+
 # ------------------------- round 3: rams (item 8) and dispersal (item 10)
 
 def formation():
@@ -1402,6 +1504,13 @@ ROUND3_GUARDS = [
      r'function AI_ScoreDefend\b.*?if t > AI_WRITEOFF\*a and not wm_capThreat\[pid\] then', True),
     ('GUARD B: the army SPLIT is still the default response',
      r'function AI_Execute\b.*?if AI_ShouldRecall\(pid\) then.*?call AI_Respond\(pid,', True),
+    # --- tribal preferences (item 9) -------------------------------------
+    ('composition is drawn from per-faction weights',
+     r'set role = AI_PickRole\(pid\)', True),
+    ('the role draw uses the single seeded Park-Miller stream',
+     r'function AI_PickRole\b.*?ModuloInteger\(AI_Rand\(\), 100\)', True),
+    ('the round-2 flat composition roll is gone',
+     r'elseif AI_RandReal\(\) < 0\.40 then\s*\n\s*set role = 1', False),
     # --- rams (item 8) and dispersal (item 10) ---------------------------
     ('a ram with no wall to break holds behind the line',
      r'function AI_SendEnum\b.*?if GetUnitTypeId\(u\) == ai_ramType and not ai_ramWork then\s*\n\s*call AI_TryOrder\(u, AI_ORD_MOVE, ai_ramX, ai_ramY', True),
@@ -1643,6 +1752,7 @@ def main():
     rc |= routing()
     rc |= gates_round3()
     rc |= strategy()
+    rc |= tribes()
     rc |= formation()
     rc |= consort()
     rc |= holding()
