@@ -36,8 +36,26 @@ const { checkSuspectedTrap } = require('../lib/traps');
 const { walk } = require('../lib/source');
 const { checkLuaSyntax } = require('../lib/luacheck');
 const { checkJassSyntax } = require('../lib/jasscheck');
+const { findScriptMembers, resolvePrimary, secondaryNote } = require('../lib/scriptfiles');
+const { isClassicDooOverread, explain: explainClassicDoo } = require('../lib/classicdoo');
 const { lintObjectData } = require('../lib/objectlint');
 const viewer = require('../lib/viewer');
+
+// The w3i's scriptLanguage field (1 = Lua, 0 = JASS) decides which packed
+// script the game runs. Best-effort: a protected/truncated/unknown-version
+// w3i yields null and lib/scriptfiles.js falls back to evidence.
+function readScriptLanguage(extractedDir) {
+  try {
+    const p = path.join(extractedDir, 'war3map.w3i');
+    if (!fs.existsSync(p)) return null;
+    const raw = fs.readFileSync(p);
+    if (checkSuspectedTrap('war3map.w3i', raw)) return null;
+    const json = warToJson(byWar.get('war3map.w3i'), raw);
+    return typeof json.scriptLanguage === 'number' ? json.scriptLanguage : null;
+  } catch {
+    return null;
+  }
+}
 
 function validate(mapPath) {
   const results = [];
@@ -80,15 +98,32 @@ function validate(mapPath) {
       if (extracted.includes(req)) ok(`required file ${req}`, '');
       else fail(`required file ${req}`, 'missing');
     }
-    const scripts = ['war3map.lua', 'war3map.j', 'scripts/war3map.j', 'scripts/war3map.lua']
-      .filter((s) => fs.existsSync(path.join(tmp, s)));
-    if (scripts.length > 0) ok('map script present', scripts.join(', '));
+    // Script members are matched CASE-INSENSITIVELY (lib/scriptfiles.js):
+    // MPQ paths are case-insensitive and real maps ship 'Scripts\war3map.j'
+    // with a capital S (Tower Survivors v1.90) — hardcoding the lowercase
+    // path reported a live map as scriptless.
+    const scripts = findScriptMembers(walk(tmp));
+    if (scripts.all.length > 0) ok('map script present', scripts.all.join(', '));
     else fail('map script present', 'no war3map.lua or war3map.j in archive');
 
     // 3b. Lua scripts must actually parse (Lua 5.3 grammar via luaparse) —
     // a syntactically broken war3map.lua loads as a silently dead map.
-    for (const s of scripts.filter((n) => n.endsWith('.lua'))) {
-      const err = checkLuaSyntax(fs.readFileSync(path.join(tmp, s), 'utf8'));
+    const luaErrors = new Map();
+    for (const s of scripts.lua) {
+      luaErrors.set(s, checkLuaSyntax(fs.readFileSync(path.join(tmp, s), 'utf8')));
+    }
+    // Only the script the GAME runs can fail the map (gotcha 7): the w3i's
+    // scriptLanguage picks it, and maps legitimately carry a leftover/decoy
+    // script of the other language (a 26-byte garbage scripts\war3map.j in a
+    // Lua map is a real, shipping anti-tamper pattern). Secondaries WARN.
+    const primary = resolvePrimary(readScriptLanguage(tmp), scripts, (s) => !luaErrors.get(s));
+    const secondary = new Set(primary.secondary);
+    for (const s of scripts.lua) {
+      if (secondary.has(s)) {
+        warn(`lua syntax ${s}`, secondaryNote(s, primary.language) + ` (${primary.reason})`);
+        continue;
+      }
+      const err = luaErrors.get(s);
       if (err) fail(`lua syntax ${s}`, `line ${err.line ?? '?'}: ${err.message}`);
       else ok(`lua syntax ${s}`, 'parses as Lua 5.3 (luaparse)');
     }
@@ -97,7 +132,11 @@ function validate(mapPath) {
     // (lib/jasscheck.js — grammar-only without user-supplied common.j/
     // Blizzard.j, see WC3_JASS_API_DIR / WC3_COMMONJ / WC3_BLIZZARDJ).
     // pjass absent = WARN, never FAIL: it is not a dependency (smpq pattern).
-    for (const s of scripts.filter((n) => n.endsWith('.j'))) {
+    for (const s of scripts.jass) {
+      if (secondary.has(s)) {
+        warn(`jass syntax ${s}`, secondaryNote(s, primary.language) + ` (${primary.reason})`);
+        continue;
+      }
       const jr = checkJassSyntax(fs.readFileSync(path.join(tmp, s), 'utf8'));
       if (!jr.checked) {
         warn(`jass syntax ${s}`, `${s} packed unchecked (${jr.reason})`);
@@ -118,6 +157,7 @@ function validate(mapPath) {
     // viewer's, see crossValidate) on them means loops/GB allocations.
     const objectFiles = []; // successfully translated object data, for 4b
     const trapped = new Set(); // suspected-trap members: viewer must skip too
+    const classicDoo = new Set(); // pre-1.32 .doo layout: no parser owes a FAIL
     for (const rel of walk(tmp).sort()) {
       if (CONSUMED_AS_SKIN.has(rel)) continue;
       const entry = byWar.get(rel);
@@ -141,7 +181,18 @@ function validate(mapPath) {
         ok(`translate ${rel}`, `${entry.json}, round-trip stable`);
         if (entry.objectType) objectFiles.push({ war: rel, objectType: entry.objectType, json: json1 });
       } catch (e) {
-        fail(`translate ${rel}`, String(e.message || e).split('\n')[0]);
+        // Classic (pre-1.32) .doo files are the one identified, benign
+        // translator failure: upstream reads a 1.32+-only skinId field per
+        // entry and overreads (lib/classicdoo.js proves the classic layout
+        // consumes the file exactly). 40% of profiled mid-tail live maps are
+        // saved by such an editor and they all run — WARN + raw passthrough,
+        // exactly the treatment gotcha 26 gives trap stubs. EVERY OTHER
+        // translator throw stays a FAIL.
+        const classic = isClassicDooOverread(rel, fs.readFileSync(path.join(tmp, rel)), e);
+        if (classic) {
+          classicDoo.add(rel);
+          warn(`translate ${rel}`, explainClassicDoo(classic));
+        } else fail(`translate ${rel}`, String(e.message || e).split('\n')[0]);
       }
     }
 
@@ -160,7 +211,7 @@ function validate(mapPath) {
     }
 
     // 5. Second opinion: mdx-m3-viewer-th (independent MPQ + format parsers).
-    crossValidate(buf, tmp, ok, fail, warn, trapped);
+    crossValidate(buf, tmp, ok, fail, warn, trapped, classicDoo);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
@@ -171,8 +222,9 @@ function validate(mapPath) {
 // Uint8Array copies, never Node Buffers (its MPQ code mutates the input in
 // place and would misparse); its MPQ save/write path is known-broken
 // (locale/platform swap) and is never used — everything here is read-only.
-function crossValidate(w3xBuf, extractedDir, ok, fail, warn, trapped) {
+function crossValidate(w3xBuf, extractedDir, ok, fail, warn, trapped, classicDoo) {
   trapped = trapped || new Set();
+  classicDoo = classicDoo || new Set();
   // 5a. The viewer's own MPQ reader should open the archive. crossValidate
   // only ever runs AFTER StormLib successfully extracted the same bytes, so
   // a viewer-side failure here is a nonstandard-container disagreement
@@ -212,7 +264,14 @@ function crossValidate(w3xBuf, extractedDir, ok, fail, warn, trapped) {
       viewer.parseMember(base, fs.readFileSync(path.join(extractedDir, rel)), ctx);
       ok(`viewer parse ${rel}`, 'second opinion agrees');
     } catch (e) {
-      fail(`viewer parse ${rel}`, String(e.message || e).split('\n')[0]);
+      // The viewer picks the .doo layout from the w3i's build version, so it
+      // reads a classic .doo correctly on a classic map (a real second
+      // opinion, kept) but overreads on the mixed case (classic .doo under a
+      // 1.32+ w3i). A member already identified as the classic layout in
+      // step 4 cannot fail here either — same demotion, stated reason.
+      if (classicDoo.has(base)) {
+        warn(`viewer parse ${rel}`, `${String(e.message || e).split('\n')[0]} — classic pre-1.32 .doo layout (see the translate warning above); the viewer picks the layout from the w3i build version`);
+      } else fail(`viewer parse ${rel}`, String(e.message || e).split('\n')[0]);
     }
   }
 

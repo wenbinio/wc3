@@ -243,7 +243,14 @@ never third-party maps, gotcha 9).
   byte-faithful — and v2 is NOT just legacy: current Wurst toolchain output
   (Island Troll Tribes v3.9c), DracoL1ch DotA and classic WE 2024 saves
   (X Hero Siege) all ship v2; v1 = same layout, marker preserved). Only
-  **classic .doo remains read-only** (`_viewer/` diagnostics);
+  **classic .doo remains read-only** (`_viewer/` diagnostics; the pre-1.32
+  layout is now IDENTIFIED rather than guessed — lib/classicdoo.js — and
+  degrades to WARN + raw copy instead of a FAIL). Also still **read-only for
+  lack of a codec** (measured 2026-08 on live hosted maps, all of which run):
+  `war3map.w3s` sounds **v1** (v3 parses), `war3map.doo`/`war3mapUnits.doo`
+  **v7** (pre-v8, a clean version error), `war3map.w3i` **v18** (`.w3m`-era)
+  and **v28**, and `war3map.w3c` cameras **v0** with cameras (+2-byte
+  overread — same shape as the .doo bug, unfixed; empty v0 files parse).
   scripts/assets always editable + repackable.
 - **Protected maps** — extract via listfile∪KNOWN_FILES probing, content
   dump (`--dump-unknown`), name recovery (`--recover-names`, gotcha 4);
@@ -673,6 +680,15 @@ never third-party maps, gotcha 9).
   findings on packed third-party models (gotcha 14's passthrough tier),
   `war3map.j packed unchecked (pjass not installed)` (optional tool
   absent — never punish the map for the environment),
+  the **classic pre-1.32 `.doo` overread** (lib/classicdoo.js: upstream reads
+  a 1.32+-only per-entry skinId and drifts +4 bytes/entry; identified by an
+  EXACT classic-layout walk, never by the declared version — both layouts say
+  `W3do`/8/11 — so any other `.doo` failure, incl. a corrupt one, still
+  FAILs; 133 of 331 profiled live mid-tail maps are saved by such an editor),
+  a **secondary script of the other language** (lib/scriptfiles.js: only the
+  script the w3i's scriptLanguage selects can fail the map — gotcha 7; a
+  26-byte garbage `scripts\war3map.j` inside a live Lua map is a real
+  anti-tamper pattern),
   and all object-data lint findings. FAIL is reserved for things that
   break the map for players.
 - Third opinion for disputed layouts: `scripts/crossvalidate-war3net.sh`
@@ -737,6 +753,12 @@ maps/*/assets/) or CC0-converted content. Details: docs/ASSETS.md.
   without user-supplied common.j/Blizzard.j; binary from scripts/setup.sh's
   vendor/pjass build, WC3_PJASS/WC3_JASS_API_DIR envs; absent = warning/WARN,
   never a failure — PIPELINE §5)
+- `lib/scriptfiles.js` — case-insensitive script-member lookup (MPQ paths are
+  case-insensitive; live maps ship `Scripts\war3map.j`) + which script the
+  game actually runs, so a decoy/leftover script of the other language can
+  only WARN (gotcha 7); `lib/classicdoo.js` — proves the classic pre-1.32
+  `.doo` layout behind an upstream overread (exact-consumption walk), the
+  only translator failure demoted to WARN + raw copy
 - `lib/luacheck.js` — luaparse Lua 5.3 gate; `lib/minimap.js` — minimap
   tga/mmp generation; `lib/pathing.js` — wpm/shd generation + dimension
   checks (gotcha 8); `lib/unitscript.js` — CreateAllUnits() generation;

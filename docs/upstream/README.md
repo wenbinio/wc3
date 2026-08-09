@@ -16,7 +16,7 @@ upstream fixes them).
 
 | Draft | Upstream bug | Our workaround |
 | --- | --- | --- |
-| [issue-classic-doo-overread.md](issue-classic-doo-overread.md) | classic-layout `war3map.doo` misparse + read past buffer end (unconditional skinId read) | none possible at our layer (raw copy + `_viewer/` fallback; classic .doo stays read-only) |
+| [issue-classic-doo-overread.md](issue-classic-doo-overread.md) | classic-layout `war3map.doo` misparse + read past buffer end (unconditional skinId read) | `lib/classicdoo.js` IDENTIFIES the signature (exact classic-layout walk) so validate-map WARNs + raw-copies instead of failing a working map; still no read (classic .doo stays read-only, `_viewer/` fallback) |
 | [issue-utf8-string-handling.md](issue-utf8-string-handling.md) | UTF-8 mangled on binary-string READ and on wts WRITE | FIX A (`readString` patch) + `lib/wts.js` |
 | [issue-falsy-zero-write-throughs.md](issue-falsy-zero-write-throughs.md) | legitimate `0` values silently replaced by defaults on write (`life: 0` → 100, ...) | FIX C (truthy zero stand-ins on a copy) |
 | [issue-unbounded-readstring.md](issue-unbounded-readstring.md) | `readString` never checks the buffer end — infinite loop on truncated/garbage files | FIX B (bounded readString, catchable RangeError) |

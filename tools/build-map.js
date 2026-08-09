@@ -42,6 +42,7 @@ const { collectConstants, constantsIndex } = require('../lib/constants');
 const { checkLuaSyntax } = require('../lib/luacheck');
 const { checkJassSyntax } = require('../lib/jasscheck');
 const { lintGeneratedConstants } = require('../lib/constlint');
+const { findScriptMembers, resolvePrimary } = require('../lib/scriptfiles');
 const { extractAll } = require('../lib/mpq');
 const { byJson } = require('../lib/filemap');
 const { packDir } = require('./w3x-pack');
@@ -104,6 +105,19 @@ function stabilizeSource(sourceDir, w3xPath) {
   } finally {
     fs.rmSync(tmpExtract, { recursive: true, force: true });
     fs.rmSync(tmpSource, { recursive: true, force: true });
+  }
+}
+
+// The map source's declared script language (1 = Lua, 0 = JASS), or null
+// when info.json is missing/unreadable — see gotcha 7.
+function sourceScriptLanguage(sourceDir) {
+  try {
+    const p = path.join(sourceDir, 'info.json');
+    if (!fs.existsSync(p)) return null;
+    const v = JSON.parse(fs.readFileSync(p, 'utf8')).scriptLanguage;
+    return typeof v === 'number' ? v : null;
+  } catch {
+    return null;
   }
 }
 
@@ -195,8 +209,17 @@ function buildMap(sourceDir, outW3x, opts) {
     // on the same condition). Full API-level checking needs user-supplied
     // common.j/Blizzard.j (WC3_JASS_API_DIR or WC3_COMMONJ+WC3_BLIZZARDJ);
     // without them pjass runs grammar/syntax-level only.
-    const jassPath = path.join(tmp, 'war3map.j');
-    if (fs.existsSync(jassPath)) {
+    // Only the script the GAME runs is gated (gotcha 7): with
+    // scriptLanguage 1 + a war3map.lua that passed the luaparse gate above,
+    // a packed .j is a leftover/decoy, not the map script — warning only
+    // (validate-map applies the same rule to arbitrary maps).
+    const packedScripts = findScriptMembers(walk(tmp));
+    const jassPath = packedScripts.jass.map((s) => path.join(tmp, s)).find((p) => fs.existsSync(p));
+    const luaPrimary = resolvePrimary(sourceScriptLanguage(sourceDir), packedScripts).language === 'lua';
+    if (jassPath && luaPrimary) {
+      console.error(`warning: ${path.relative(tmp, jassPath)} packed unchecked — `
+        + 'not the map script (scriptLanguage 1 + war3map.lua present, gotcha 7)');
+    } else if (jassPath) {
       const jr = checkJassSyntax(fs.readFileSync(jassPath, 'utf8'));
       if (!jr.checked) {
         console.error(`warning: war3map.j packed unchecked (${jr.reason}) — scripts/setup.sh builds pjass when a C toolchain is available`);

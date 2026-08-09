@@ -120,6 +120,7 @@ const { hasHM3W, parseHeader, readW3iFlags } = require('../lib/header');
 const { byWar, byJson, jsonToWar } = require('../lib/filemap');
 const { lintObjectData, collectStockArtRefs, lintImportsCredits } = require('../lib/objectlint');
 const { walk, readJson } = require('../lib/source');
+const { findScriptMembers } = require('../lib/scriptfiles');
 
 const ROOT = path.join(__dirname, '..');
 
@@ -478,7 +479,12 @@ function preflightMap(mapDir, opts) {
 
     extractAll(w3xPath, xdir);
     const members = walk(xdir);
-    const packedLuaPath = path.join(xdir, 'war3map.lua');
+    // Script members are matched case-insensitively (lib/scriptfiles.js):
+    // MPQ paths are case-insensitive and real maps ship 'Scripts\war3map.j'
+    // with a capital S — hardcoding the lowercase path reads as "scriptless".
+    const packedScripts = findScriptMembers(members);
+    const packedLuaPath = packedScripts.lua.length
+      ? path.join(xdir, packedScripts.lua[0]) : path.join(xdir, 'war3map.lua');
     const packedLua = fs.existsSync(packedLuaPath) ? fs.readFileSync(packedLuaPath, 'utf8') : null;
     const w3iBuf = fs.existsSync(path.join(xdir, 'war3map.w3i'))
       ? fs.readFileSync(path.join(xdir, 'war3map.w3i')) : null;
@@ -487,7 +493,7 @@ function preflightMap(mapDir, opts) {
     const units = readJsonIf(path.join(mapDir, 'units.json')) || [];
     const strings = readJsonIf(path.join(mapDir, 'strings.json'));
     let lobby = { source: 'none', teams: [], defines: [], startLocs: new Map() };
-    const jassPath = ['war3map.j', 'scripts/war3map.j'].map((s) => path.join(xdir, s)).find((p) => fs.existsSync(p));
+    const jassPath = packedScripts.jass.map((s) => path.join(xdir, s)).find((p) => fs.existsSync(p));
     if (info && info.scriptLanguage === 1 && packedLua) {
       try {
         lobby = harvestLobbyFromSim(mapDir); // executes config() — sees loops
@@ -758,11 +764,11 @@ function preflightMap(mapDir, opts) {
     // 5. runtime class ------------------------------------------------------
     guarded('script-language', () => {
       if (!info) { add('script-language', 'FAIL', 'no info.json'); return; }
-      const hasLua = members.includes('war3map.lua');
-      const hasJ = members.includes('war3map.j') || members.includes('scripts/war3map.j');
-      if (info.scriptLanguage === 1 && hasLua) add('script-language', 'PASS', 'scriptLanguage 1 (Lua) + war3map.lua packed');
-      else if (info.scriptLanguage === 0 && hasJ) add('script-language', 'PASS', 'scriptLanguage 0 (JASS) + war3map.j packed');
-      else add('script-language', 'FAIL', `scriptLanguage ${info.scriptLanguage} but packed scripts: ${[hasLua && 'war3map.lua', hasJ && 'war3map.j'].filter(Boolean).join(', ') || 'none'} (gotcha 7)`);
+      const hasLua = packedScripts.lua.length > 0;
+      const hasJ = packedScripts.jass.length > 0;
+      if (info.scriptLanguage === 1 && hasLua) add('script-language', 'PASS', `scriptLanguage 1 (Lua) + ${packedScripts.lua.join(', ')} packed`);
+      else if (info.scriptLanguage === 0 && hasJ) add('script-language', 'PASS', `scriptLanguage 0 (JASS) + ${packedScripts.jass.join(', ')} packed`);
+      else add('script-language', 'FAIL', `scriptLanguage ${info.scriptLanguage} but packed scripts: ${packedScripts.all.join(', ') || 'none'} (gotcha 7)`);
     });
 
     guarded('create-all-units', () => {
