@@ -145,6 +145,19 @@ time it ran, it ran in the game, and that produced the round-2 list.
    enumerations in `AI_ScanWorld` and `AI_RefreshPointMemory`, which are
    per-player per-think and were only sliced, not eliminated.
 
+**Round 3 (2026-08-09) is DIAGNOSED, NOT IMPLEMENTED.** A second playtest
+produced seven findings; the working environment was destroyed mid-session
+and recovering it consumed the implementation budget. Round 2 is still the
+shipped behaviour. DESIGN.md §9 carries the verified artifact groundwork,
+including the two things a reader should not have to rediscover: the gate
+jam is a *selection* bug, not a toggle bug (round 2 only ever looked for a
+gate near the objective, never the one beside its own home that it must
+cross on the way out — measured: 3 of Player 9's gates sit 38-85 units off
+its exit path and all three were invisible), and `wm_foodCap` reads the
+wrong player state (`FOOD_CAP_CEILING` instead of
+`PLAYER_STATE_RESOURCE_FOOD_CAP`), so a barbarian believes it has food
+headroom it does not have and issues train orders that cannot succeed.
+
 Iteration order: **(1)** an eval harness so thresholds stop being
 guesses; (2) multi-group army management; (3) naval transport for P6
 (DESIGN.md §8.6); (4) opponent modelling. Difficulty tuning is

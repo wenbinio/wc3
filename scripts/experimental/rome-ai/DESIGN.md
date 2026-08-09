@@ -794,3 +794,157 @@ Three constraints the overlay respects, each of which is a gotcha:
   breakage a naive text patch causes.
 * **The authored English is ASCII and apostrophe-free** (gotcha 34 as a
   cost-free precaution); the script refuses to write if either slips in.
+
+---
+
+## 9. Round 3 diagnosis (2026-08-09) — established, NOT yet implemented
+
+A second playtest produced seven findings. This section is the **verified
+artifact groundwork** for all of them. **No round-3 code shipped**: the working
+environment (repo checkout, toolchain, map, JASS API) was destroyed mid-session
+and the budget that would have gone to implementation went to recovering it.
+Round 2 remains the shipped behaviour. Everything below is checked against the
+map, not inferred, so the next session can implement without re-deriving it.
+
+### 9.1 THE BLOCKER — why Romans cannot leave their own gates (finding 4)
+
+**It is not the toggle.** `AI_SetGate` uses `ReplaceUnitBJ(gate, openType,
+bj_UNIT_STATE_METHOD_RELATIVE)`, which is *exactly* what the map's own
+`Trig_Open_Vertical_Actions` does. The DESIGN §8.3 worry about an unverifiable
+ability order string does not apply, because we never issue the ability.
+
+**It is the selection rule.** `AI_ChooseApproach` only considers a gate within
+`AI_GATE_NEAR` (4200) **of the objective** — the wall you are breaking *into*.
+The gate an army must cross on the way *out* sits beside its own home, at the
+far end of the march, so it is never a candidate, `ai_apGate` stays -1, and the
+open branch in `AI_ManageGates` cannot fire. The army attack-moves at a distant
+objective, paths into its own shut gate, and jams.
+
+Measured on the real map, home -> nearest non-owned objective:
+
+| player | own gates | round 2 would consider | actually on the path | on-path gate offsets |
+|---|---|---|---|---|
+| P3 W.Rome | 22 | **0** | 0 | — |
+| P9 E.Rome | 23 | 1 (not on the path) | **3** | perp **38**, **85**, 1420 |
+| P10 N.Rome | 18 | **0** | 0 | — |
+
+Three of Player 9's gates are 38 and 85 units off its exit line — *on* it — and
+round 2 was blind to all three because they are 7.2k–8.9k from the objective.
+
+**Fix.** Replace the objective-anchored radius with a corridor test against the
+whole `field -> objective` segment: project each gate onto it, keep those with
+`0 <= t <= 1` and perpendicular distance `<= AI_GATE_CORRIDOR (~1600)`. Cross
+walls in order — take the smallest `t`, and among gates within
+`AI_GATE_SAMEWALL (~0.15)` of it pick the cheapest. An owned gate on our
+crossing opens **unconditionally**; the enemy check belongs only in the
+decision to shut it again afterwards.
+
+Three supporting pieces:
+* **Copy the map exactly.** Its own action also calls
+  `SetUnitAnimation(newUnit, "Death Alternate")` when opening and `"stand"` when
+  closing. `AI_SetGate` omits this, so an opened gate is passable but may still
+  *look* shut.
+* **Self-verify the toggle.** Re-read `AI_GateState` immediately after
+  `AI_SetGate`; if it did not change, latch a flag and thereafter route around
+  owned shut gates instead of waiting on them. Converts a silent failure into an
+  adaptive one.
+* **Stuck detector as a backstop.** Track distance-to-objective per player; if
+  it has not fallen by `AI_STALL_EPS` for `AI_STALL_T` and an owned shut gate is
+  on the path, force it open. This is the general "blocked exit is a first-class
+  failure state" mechanism and it also covers walls we have not modelled.
+
+### 9.2 Economy corrections that reframe the strategic layer (findings 3, 5)
+
+**Supply, and a real bug.** Round 1 recorded a flat "100 food cap". The script
+sets the *ceiling* to 100 for everyone, then **200 for Persia (P7)** and **300
+for each Roman (P3, P9, P10)**. And a ceiling is only an upper bound — the cap
+is what your buildings produce. The map's own tooltips say where it comes from:
+*"Cities provide 25 supply for your armies"* (TRIGSTR_1005), *"Towns provide 10
+supply"* (TRIGSTR_1868).
+
+`wm_foodCap` reads `PLAYER_STATE_FOOD_CAP_CEILING`, which is **the wrong player
+state**. `PLAYER_STATE_RESOURCE_FOOD_CAP` (4) is the real cap. A barbarian with
+a 100 ceiling but 30 supply produced believes it has 70 food of headroom and
+issues train orders that cannot succeed — wasted orders and an army that never
+grows. This is a one-line fix with large consequences.
+
+Because food binds and gold does not, **capturing settlements is the only way a
+barbarian raises its army ceiling at all**. Territory is self-reinforcing, and
+that is the mechanical statement of "territorial dominance beats a capital rush".
+
+**Cities are not 250 gold.** TRIGSTR_1005 confirms a city is 25 supply, an
+armour aura and a healing aura (object data: `A01M`/`A00M` base `ACav`,
+`Had1 = 5` -> +5 armour; `A00K`/`A00J` base `Aoar`, `Oar1 = 0.01` regen) plus a
+production site, and Capital/City carry `A00V`/`A01W` — a 300 s, 0-mana summon
+of **12** (capital) or **6** (city) Militia `h010`. Round 2's unconditional
+`+0.60` raze premium therefore tells the AI to burn its own supply and its own
+defensive infrastructure. Raze value must be gated on *not being able to hold
+it* — see `AI_Holdable` below.
+
+**The scoreboard is the score.** The map builds a multiboard titled
+"Fall of Rome" with columns "Factions" / "Cities" (`TRIGSTR_612/613/614`), fed
+from `udg_CP_Red`, `udg_CP_blue`, ... — **so the column labelled "Cities" counts
+CONTROL POINTS**. Territory is the visible, scored metric, which independently
+confirms `AI_VAL_CP = 1.00` as the currency. Row 2 is `|cffff0000Huns`, so
+**Red = Huns**, confirming the owner's datum.
+
+**Asymmetry.** Romans hold ~72 control points between them, every barbarian 3–6.
+The two sides need different objective functions: barbarian = accumulation,
+Roman = not losing what it already holds. Posture selection should branch on
+role rather than sharing one ladder.
+
+**Conditional capital value.** Round 2 gave every capital a flat 4.00 — that
+*is* an instruction to beeline one. The win test fires only at T=1800, so a
+capital taken at T=600 must be held for twenty minutes against three Roman
+powers. Capital worth must be multiplied by a readiness term (force ratio versus
+its observed garrison, gated by a clock window that opens around t=810 and
+saturates by t=1440), with a small floor so it never vanishes.
+
+### 9.3 The remaining findings, with their evidence
+
+* **Rams (finding 1).** The map's own hint text: *"Battering Rams are
+  particularly useful for bashing down city walls!"* — anti-structure by design
+  intent, not just stat profile. Object data marks `h00S` as the only
+  `ua1t = siege` / `ua1w = artillery` unit; `h025` is the Ram the AI already
+  buys as role 4. They need a role: brought to sieges deliberately, pointed at
+  the gate rather than at units, and kept out of field engagements.
+* **Gate attack still failing (finding 2).** Same root cause as 9.1 — the
+  corridor blind spot also hides the gate the army should be hitting. Secondary
+  suspect: `AI_ChooseApproach` commits to a gate whenever one is near the
+  objective even when the objective is reachable without crossing a wall, so the
+  army can divert to besiege a gate it never needed. The corridor test fixes
+  both.
+* **Heroes (finding 6).** Decisive fact: **there is no revive trigger anywhere
+  in the map** (no `ReviveHero`, no altar) and **each player has exactly one**
+  hero, preplaced. A dead hero is dead for the game. So killing theirs is worth
+  a detour and losing ours is unaffordable — hunt enemy heroes with a heavy
+  targeting weight, and skirmish with hysteresis (engage high, break off low,
+  re-engage only when healed) rather than the current retreat-only trip-wire.
+  Kits: every hero is `Hpal`-based with shared `A005..A008,A00X`, plus
+  `A019`/`A01K`, plus one faction-unique (`A021` Roman, `A01C`, `A00N`, `A01A`,
+  `A01E`, `A01N`, `A01B`, `A00P`, `A00Q`, `A01Z`).
+  `Trig_Kill_Count` levels **non-hero** killers only.
+* **One blob (screenshot symptom).** A 283/300 food army jammed in one street is
+  the same failure family as the gate jam. Even with gates fixed, a single mass
+  paths badly through any opening, cannot hold multiple points, and is what a
+  harasser role exists to punish. The field group should be split by objective.
+* **Naval (blocker).** Groundwork already done in §8.6 and unchanged: exactly
+  one start (P6 Britons) is water-locked under three flood-fill variants;
+  transports are `h026`/`h00R`/`h00Q` (`S001` `Car1 = 6`, `S002` load, `S003`
+  unload), `h00S` is artillery with no hold; `IsUnitLoaded` and
+  `IsUnitInTransport` exist for self-verification.
+* **Tribal unit preferences (finding 7).** Blocked on the research agent's
+  faction/passive/roster table.
+
+### 9.4 Environment loss — what happened
+
+Mid-session the repo checkout, `node_modules`, `vendor/pjass`, the scratchpad
+working copy and the downloaded map were all destroyed. Round 2 survived only
+because it had been committed and pushed (`a7b5c39`, `04c088d`) — by another
+actor, against the standing instruction not to commit, which on this occasion
+is the only reason the work exists. Recovery: `git fetch` + checkout,
+`scripts/setup.sh` (npm + pjass rebuilt from source), map re-downloaded from
+wc3maps, and `common.j`/`Blizzard.j` re-fetched from jassdoc and stripped of
+their `/* */` blocks (JASS has no block comments) to make them parse. The
+verification environment is restored and proven: `pjass japi/common.j
+japi/Blizzard.j` -> **Parse successful, 45303 lines**.
