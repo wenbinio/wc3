@@ -4,7 +4,7 @@
 The map is JASS, so lib/sim cannot execute it — there is no way to run the
 real decision loop headlessly. This harness is the honest substitute: a tiny
 interpreter for the straight-line JASS subset the scoring functions are written
-in, which reads the SHIPPED ai/for-ai.j and evaluates the real function bodies.
+in, which reads the SHIPPED for-ai.j and evaluates the real function bodies.
 Because it parses the source of record rather than a transcription, the trace
 cannot silently drift from the code it claims to test.
 
@@ -16,7 +16,12 @@ pathing, no combat, no engine here.
 import re, sys, os
 
 W = os.path.dirname(os.path.abspath(__file__))
-SRC = os.path.join(W, 'ai', 'for-ai.j')
+# The module of record sits next to this script in the repo, and under ai/ in a
+# scratch working copy built by inject.py. Take whichever exists -- the point of
+# this harness is that it reads the SHIPPED source, so it must find it.
+SRC = os.path.join(W, 'for-ai.j')
+if not os.path.exists(SRC):
+    SRC = os.path.join(W, 'ai', 'for-ai.j')
 
 # ---------------------------------------------------------------- parser
 
@@ -251,6 +256,12 @@ def make_env(sc):
         'wm_cpOwn': d(sc.get('cpOwn', 3)),
         'wm_capThreat': d(sc.get('capThreat', False)),
         'wm_capLost': d(sc.get('capLost', False)),
+        'wm_asset': d(sc.get('asset', CONSTS['AI_VAL_CP'])),
+        'wm_canRaze': d(sc.get('canRaze', sc.get('role') != 'rome')),
+        'ai_bestT': d(-1), 'ai_bestS': d(0.0),
+        'ai_apX': d(0.0), 'ai_apY': d(0.0), 'ai_apGate': d(-1), 'ai_apBreak': d(False),
+        'ai_gateCount': len(sc.get('gates', [])),
+        'ai_gate': {}, 'ai_gateX': {}, 'ai_gateY': {}, 'ai_gateOr': {}, 'ai_gateCd': {},
         'ai_pt': {}, 'ai_ptKind': {}, 'ai_ptX': {}, 'ai_ptY': {},
         'ai_ptOwner': {}, 'ai_ptSeen': {}, 'ai_ptDef': {},
         'ai_accCV': 0.0, 'ai_accX': 0.0, 'ai_accY': 0.0, 'ai_accW': 0.0,
@@ -268,6 +279,18 @@ def make_env(sc):
         env['ai_ptSeen'][pid * MP + i] = p.get('seen', sc.get('t', 300.0))
         env['ai_ptDef'][pid * MP + i] = p.get('defence', 0.0)
     env['_ptOwner'] = {i + 1: p.get('owner', 1) for i, p in enumerate(sc.get('points', []))}
+    # gates: handle = 1000+index so it cannot collide with a point handle
+    env['_gateState'] = {}
+    env['_gateLife'] = {}
+    for i, g in enumerate(sc.get('gates', [])):
+        env['ai_gate'][i] = 1000 + i
+        env['ai_gateX'][i] = g.get('x', 0.0)
+        env['ai_gateY'][i] = g.get('y', 0.0)
+        env['ai_gateOr'][i] = g.get('orient', 0)
+        env['ai_gateCd'][i] = 0.0
+        env['_gateState'][i] = g.get('state', CONSTS['AI_GS_CLOSED'])
+        env['_gateLife'][i] = g.get('life', 1.0)
+        env['_ptOwner'][1000 + i] = g.get('owner', 1)
     return env
 
 
@@ -279,6 +302,11 @@ def make_natives(env, noise=0.0):
         'GetOwningPlayer': lambda h: env['_ptOwner'].get(h, 1),
         'IsPlayerAlly': lambda a, b: False,
         'AI_Noise': lambda amp: noise,
+        # gate state is read off the live unit type in the real module; here it
+        # comes from the scenario, so the ROUTING logic under test stays the
+        # code read from for-ai.j
+        'AI_GateState': lambda i: env['_gateState'].get(i, CONSTS['AI_GS_GONE']),
+        'AI_GateLifeFrac': lambda i: env['_gateLife'].get(i, 1.0),
     }
 
 
@@ -357,6 +385,22 @@ SCEN = [
   dict(role='barb', t=500.0, army=1300.0, gold=1400.0, lumber=1400.0, food=96.0,
        points=pts((CP, 30000.0, 30000.0, 900.0)), fieldX=0.0),
   'TECH'),
+
+ # ---- playtest round 2: "barbarians center on where they are being attacked"
+ ('an enemy army walks past; nothing of ours is at risk: do NOT turn around',
+  dict(role='barb', t=400.0, army=600.0, garrison=200.0, threat=380.0, asset=0.0,
+       goal=CONSTS['GOAL_EXPAND'], goalSince=395.0, points=FAR_CAP),
+  'EXPAND'),
+
+ ('the same force, but it is standing on a control point we own: defend',
+  dict(role='barb', t=400.0, army=600.0, garrison=200.0, threat=380.0, asset=1.0,
+       goal=CONSTS['GOAL_EXPAND'], goalSince=395.0, points=FAR_CAP),
+  'DEFEND'),
+
+ ('threat exceeds the WHOLE army by 1.6x: write off, keep the army',
+  dict(role='barb', t=600.0, army=500.0, garrison=250.0, threat=900.0, asset=1.0,
+       goal=CONSTS['GOAL_EXPAND'], goalSince=595.0, points=FAR_CAP),
+  'EXPAND'),
 ]
 
 
@@ -414,9 +458,314 @@ def prng_check():
     return 0 if (ok and maxi < 2**31) else 1
 
 
+# ------------------------------------------------- structure value ordering
+
+def target_score(pid_scen, i):
+    """Raw AI_TargetScore for point i of a scenario, noise off."""
+    env = make_env(pid_scen)
+    it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+    return it.run('AI_TargetScore', [0, i])
+
+
+def value_ordering():
+    """Playtest round 2, fault 5: "shipyards are worth nearly nothing ... but
+    they go for shipyards instead of control points and razing and burning".
+    These are the assertions that would have caught it."""
+    print('\n' + '=' * 78)
+    print('STRUCTURE VALUE MODEL -- target ordering (AI_VAL_* table)')
+    print('=' * 78)
+    SHIP, PLOT, CAMP = 6, 5, 4
+    fails = 0
+    cases = [
+        # name, points (index 0 vs index 1), which index must win
+        ('shipyard at 2000 vs control point at 4000 (twice as far)',
+         [{'kind': SHIP, 'x': 2000.0, 'y': 0.0, 'defence': 0.0, 'owner': 1},
+          {'kind': CP,   'x': 4000.0, 'y': 0.0, 'defence': 0.0, 'owner': 1}], 1),
+        ('shipyard at 500 (right there) vs control point at 8000',
+         [{'kind': SHIP, 'x': 500.0,  'y': 0.0, 'defence': 0.0, 'owner': 1},
+          {'kind': CP,   'x': 8000.0, 'y': 0.0, 'defence': 0.0, 'owner': 1}], 1),
+        ('shipyard at 2000 vs razeable city at 4000',
+         [{'kind': SHIP, 'x': 2000.0, 'y': 0.0, 'defence': 0.0, 'owner': 1},
+          {'kind': CITY, 'x': 4000.0, 'y': 0.0, 'defence': 0.0, 'owner': 1}], 1),
+        ('shipyard at 2000 vs razeable town at 4000',
+         [{'kind': SHIP, 'x': 2000.0, 'y': 0.0, 'defence': 0.0, 'owner': 1},
+          {'kind': TOWN, 'x': 4000.0, 'y': 0.0, 'defence': 0.0, 'owner': 1}], 1),
+        ('empty build plot at 1000 vs control point at 3000',
+         [{'kind': PLOT, 'x': 1000.0, 'y': 0.0, 'defence': 0.0, 'owner': 1},
+          {'kind': CP,   'x': 3000.0, 'y': 0.0, 'defence': 0.0, 'owner': 1}], 1),
+        ('control point at 3000 vs enemy CAPITAL at 12000',
+         [{'kind': CP,  'x': 3000.0,  'y': 0.0, 'defence': 0.0, 'owner': 1},
+          {'kind': CAP, 'x': 12000.0, 'y': 0.0, 'defence': 0.0, 'owner': 1}], 1),
+    ]
+    for name, points, want in cases:
+        sc = dict(role='barb', t=400.0, army=600.0, points=points, fieldX=0.0, fieldY=0.0)
+        a, b = target_score(sc, 0), target_score(sc, 1)
+        got = 0 if a > b else 1
+        ok = got == want
+        fails += 0 if ok else 1
+        print('  %s %-52s %.4f vs %.4f' % ('PASS' if ok else 'FAIL', name, a, b))
+    # the raze premium must exist and must be role-gated
+    e1 = make_env(dict(role='barb', points=[]))
+    i1 = Interp(FUNCS, CONSTS, e1, make_natives(e1))
+    e2 = make_env(dict(role='rome', points=[]))
+    i2 = Interp(FUNCS, CONSTS, e2, make_natives(e2))
+    barb_city = i1.run('AI_PointValueFor', [0, CITY])
+    rome_city = i2.run('AI_PointValueFor', [0, CITY])
+    ok = barb_city > rome_city
+    fails += 0 if ok else 1
+    print('  %s razing premium is role-gated: barb city=%.2f, roman city=%.2f'
+          % ('PASS' if ok else 'FAIL', barb_city, rome_city))
+    ship = i1.run('AI_PointValueFor', [0, SHIP])
+    cp = i1.run('AI_PointValueFor', [0, CP])
+    ok = ship <= 0.05 and cp / ship >= 20.0
+    fails += 0 if ok else 1
+    print('  %s shipyard is ~0 next to a control point: %.2f vs %.2f (%.0fx)'
+          % ('PASS' if ok else 'FAIL', ship, cp, cp / ship))
+    print('\n%s: %d value-ordering assertions failed' % ('PASS' if not fails else 'FAIL', fails))
+    return 1 if fails else 0
+
+
+# ------------------------------------------------------- approach routing
+
+def approach(sc):
+    env = make_env(sc)
+    it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+    it.run('AI_ChooseApproach', [0, sc['tx'], sc['ty']])
+    return env['ai_apGate'][0], env['ai_apBreak'][0], env['ai_apX'][0], env['ai_apY'][0]
+
+
+def routing():
+    """Playtest round 2, faults 3 and 4: "if there is a pre-existing hole in the
+    gate, instead of sieging that gate ..." and "AI does not know how to use
+    gates". A hole must beat an intact gate; a half-broken gate must beat an
+    intact one; a silly detour must be rejected."""
+    print('\n' + '=' * 78)
+    print('APPROACH ROUTING -- gate choice on the way to an objective')
+    print('=' * 78)
+    OPEN, CLOSED, GONE = CONSTS['AI_GS_OPEN'], CONSTS['AI_GS_CLOSED'], CONSTS['AI_GS_GONE']
+    fails = 0
+
+    def case(name, gates, want_gate, want_break, tx=8000.0, ty=0.0, fx=0.0, fy=0.0):
+        nonlocal fails
+        sc = dict(role='barb', t=400.0, army=600.0, points=[], gates=gates,
+                  fieldX=fx, fieldY=fy, tx=tx, ty=ty)
+        gi, brk, ax, ay = approach(sc)
+        ok = (gi == want_gate) and (bool(brk) == want_break)
+        fails += 0 if ok else 1
+        print('  %s %-56s gate=%s break=%s' % ('PASS' if ok else 'FAIL', name, gi, bool(brk)))
+
+    # gate 0 shut and directly on the way; gate 1 already destroyed, further off
+    case('intact gate on the line vs a destroyed one 1500 aside',
+         [dict(x=6000.0, y=0.0, state=CLOSED, life=1.0, owner=1),
+          dict(x=6000.0, y=1500.0, state=GONE, owner=1)], 1, False)
+    case('intact gate on the line vs an OPEN one 1500 aside',
+         [dict(x=6000.0, y=0.0, state=CLOSED, life=1.0, owner=1),
+          dict(x=6000.0, y=1500.0, state=OPEN, owner=1)], 1, False)
+    case('two shut gates: take the one already beaten down to 20 percent',
+         [dict(x=6000.0, y=0.0, state=CLOSED, life=1.0, owner=1),
+          dict(x=6000.0, y=900.0, state=CLOSED, life=0.20, owner=1)], 1, True)
+    case('only a shut enemy gate: commit to breaking THAT gate',
+         [dict(x=6000.0, y=0.0, state=CLOSED, life=1.0, owner=1)], 0, True)
+    case('our OWN shut gate on the way: cross it, do not besiege it',
+         [dict(x=6000.0, y=0.0, state=CLOSED, life=1.0, owner=0)], 0, False)
+    case('a gate 20000 away from the objective is not this wall',
+         [dict(x=28000.0, y=0.0, state=CLOSED, life=1.0, owner=1)], -1, False)
+    case('a hole that would triple the march is rejected as a detour',
+         [dict(x=4000.0, y=9000.0, state=GONE, owner=1)], -1, False)
+    case('objective closer than AI_APPROACH_MIN: no routing at all',
+         [dict(x=900.0, y=0.0, state=CLOSED, life=1.0, owner=1)], -1, False,
+         tx=1500.0, ty=0.0)
+    print('\n%s: %d routing assertions failed' % ('PASS' if not fails else 'FAIL', fails))
+    return 1 if fails else 0
+
+
+# ------------------------------------------------------- defence damping
+
+def defence():
+    """Playtest round 2, fault 2. The recall predicate and the response budget
+    are separate functions precisely so they can be asserted here."""
+    print('\n' + '=' * 78)
+    print('DEFENCE DAMPING -- recall predicate and response budget')
+    print('=' * 78)
+    fails = 0
+
+    def run(fn, sc, args=None):
+        env = make_env(sc)
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        return it.run(fn, args if args is not None else [0])
+
+    cases = [
+        ('garrison can handle it -> no recall', 'AI_ShouldRecall',
+         dict(role='barb', threat=200.0, garrison=300.0, army=800.0, asset=1.0), False),
+        ('garrison outmatched but only a control point at risk while taking a city',
+         'AI_ShouldRecall',
+         dict(role='barb', threat=600.0, garrison=200.0, army=800.0, asset=1.0,
+              target=0, points=pts((CITY, 5000.0, 0.0, 0.0))), False),
+        ('garrison outmatched and a CITY at risk while taking a control point',
+         'AI_ShouldRecall',
+         dict(role='barb', threat=600.0, garrison=200.0, army=800.0, asset=2.30,
+              target=0, points=pts((CP, 5000.0, 0.0, 0.0))), True),
+        ('a capital is threatened -> always recall', 'AI_ShouldRecall',
+         dict(role='rome', threat=100.0, garrison=900.0, army=900.0, capThreat=True), True),
+    ]
+    for name, fn, sc, want in cases:
+        got = bool(run(fn, sc))
+        ok = got == want
+        fails += 0 if ok else 1
+        print('  %s %-62s -> %s' % ('PASS' if ok else 'FAIL', name, got))
+
+    # the budget must never exceed AI_DEF_MAX_FRAC of the army
+    frac = CONSTS['AI_DEF_MAX_FRAC']
+    for army, threat, garr in ((1000.0, 5000.0, 0.0), (1000.0, 200.0, 0.0), (1000.0, 100.0, 900.0)):
+        b = run('AI_RespondBudget', dict(role='barb', army=army, threat=threat, garrison=garr))
+        ok = 0.0 <= b <= frac * army + 1e-6
+        fails += 0 if ok else 1
+        print('  %s budget(army=%.0f threat=%.0f garrison=%.0f) = %.1f  (cap %.1f)'
+              % ('PASS' if ok else 'FAIL', army, threat, garr, b, frac * army))
+    print('\n%s: %d defence assertions failed' % ('PASS' if not fails else 'FAIL', fails))
+    return 1 if fails else 0
+
+
+# ------------------------------------------------------ order economy
+
+ORDER_GUARDS = [
+    # (description, regex that must match the shipped module)
+    ('AI_TryOrder exists',
+     r'function AI_TryOrder takes unit u, integer kind'),
+    ('AI_TryOrder consults AI_NeedsOrder before issuing',
+     r'function AI_TryOrder\b.*?if not AI_NeedsOrder\('),
+    ('AI_TryOrder respects the per-tick budget',
+     r'function AI_TryOrder\b.*?if ai_issued >= ai_budget then'),
+    ('AI_NeedsOrder re-orders an idle unit',
+     r'function AI_NeedsOrder\b.*?if GetUnitCurrentOrder\(u\) == 0 then'),
+    ('the field dispatcher routes through AI_TryOrder',
+     r'function AI_SendEnum\b.*?call AI_TryOrder\('),
+    ('the micro tick routes through AI_TryOrder',
+     r'function AI_MicroEnum\b.*?call AI_TryOrder\('),
+    ('the defensive response routes through AI_TryOrder',
+     r'function AI_RespondEnum\b.*?call AI_TryOrder\('),
+    ('AI_SendArmy arms the budget before enumerating',
+     r'function AI_SendArmy\b.*?set ai_budget = AI_ORDER_SLICE.*?call ForGroup\('),
+    ('AI_MicroPlayer arms the budget before enumerating',
+     r'function AI_MicroPlayer\b.*?set ai_budget = AI_MICRO_SLICE.*?call ForGroup\('),
+    ('players are phase-offset so they do not all think on one tick',
+     r'set ai_nextThink\[pid\]\s*=\s*I2R\(ModuloInteger\(pid,'),
+]
+
+
+def order_guards():
+    """The order model below is only meaningful if the shipped module really
+    contains the guards it models. These assertions are the join."""
+    fails = 0
+    body = TEXT
+    print('  source guards (asserted against the shipped for-ai.j):')
+    for name, rx in ORDER_GUARDS:
+        ok = re.search(rx, body, re.S) is not None
+        fails += 0 if ok else 1
+        print('    %s %s' % ('PASS' if ok else 'FAIL', name))
+    # and nothing may issue a movement order outside AI_TryOrder
+    stray = []
+    for m in re.finditer(r'^\s*call (IssuePointOrder|IssueTargetOrder)\(', body, re.M):
+        line = body[:m.start()].count('\n') + 1
+        fn = None
+        for fm in re.finditer(r'^function (\w+) takes', body, re.M):
+            if body[:fm.start()].count('\n') + 1 < line:
+                fn = fm.group(1)
+        if fn != 'AI_TryOrder':
+            stray.append((line, fn))
+    ok = not stray
+    fails += 0 if ok else 1
+    print('    %s every movement order goes through AI_TryOrder%s'
+          % ('PASS' if ok else 'FAIL', '' if ok else ' (stray: %s)' % stray))
+    return fails
+
+
+def order_model(dedup, players=11, army=100, horizon=600, objective_every=60,
+                engaged=0.5, wounded=0.05):
+    """Count movement orders per second under the round-1 and round-2 policies.
+
+    This is a MODEL of the issuance policy, not an execution of the map: it
+    replays the dispatch rules with one entry per unit and counts calls. The
+    tuning constants come from the shipped module so the numbers cannot drift
+    from the code; order_guards() asserts the code really has the guards.
+    """
+    period = 4.0                                   # AI_ThinkPeriod, normal
+    slice_t = CONSTS['AI_ORDER_SLICE']
+    slice_m = CONSTS['AI_MICRO_SLICE']
+    refresh = CONSTS['AI_ORDER_REFRESH']
+    # per player: last-order (kind, objective-id, time) per unit
+    last = [[None] * army for _ in range(players)]
+    peak, total = 0, 0
+    for tick in range(1, horizon + 1):
+        tick_orders = 0
+        for p in range(players):
+            objective = tick // objective_every        # the objective id right now
+            # --- think
+            if dedup:
+                due = (tick % int(period)) == (p % int(period))
+            else:
+                due = (tick % int(period)) == 0        # round 1: everyone together
+            if due:
+                issued = 0
+                for u in range(army):
+                    if not dedup:
+                        issued += 1                     # round 1 re-orders everything
+                        continue
+                    st = last[p][u]
+                    need = st is None or st[0] != objective or (tick - st[1]) >= refresh
+                    if need and issued < slice_t:
+                        last[p][u] = (objective, tick)
+                        issued += 1
+                tick_orders += issued
+            # --- micro, every tick
+            issued = 0
+            n_engaged = int(army * (engaged + wounded))
+            for u in range(n_engaged):
+                if not dedup:
+                    issued += 1                         # round 1 re-orders every second
+                    continue
+                st = last[p][u]
+                need = st is None or st[0] != objective or (tick - st[1]) >= refresh
+                if need and issued < slice_m:
+                    last[p][u] = (objective, tick)
+                    issued += 1
+            tick_orders += issued
+        total += tick_orders
+        peak = max(peak, tick_orders)
+    return peak, total / float(horizon)
+
+
+def orders():
+    print('\n' + '=' * 78)
+    print('ORDER ECONOMY -- playtest fault 1, "stutter from unit lag and')
+    print('trying to move everything at once"')
+    print('=' * 78)
+    fails = order_guards()
+    print()
+    print('  issuance model: %d AI players x %d units, 600 s, objective changes'
+          % (11, 100))
+    print('  every 60 s, 55 percent of the army in contact. Constants from source:')
+    print('    AI_ORDER_SLICE=%d  AI_MICRO_SLICE=%d  AI_ORDER_REFRESH=%.0f'
+          % (CONSTS['AI_ORDER_SLICE'], CONSTS['AI_MICRO_SLICE'], CONSTS['AI_ORDER_REFRESH']))
+    print()
+    b_peak, b_mean = order_model(False)
+    a_peak, a_mean = order_model(True)
+    print('  %-28s %10s %12s' % ('', 'peak/tick', 'mean/second'))
+    print('  %-28s %10d %12.1f' % ('round 1 (no dedup, in step)', b_peak, b_mean))
+    print('  %-28s %10d %12.1f' % ('round 2 (dedup + slice + phase)', a_peak, a_mean))
+    print('  %-28s %9.1fx %11.1fx' % ('reduction', b_peak / float(a_peak),
+                                      b_mean / float(a_mean)))
+    ok = a_peak <= b_peak / 5.0 and a_mean <= b_mean / 5.0
+    if not ok:
+        fails += 1
+    print('\n%s: order issuance cut by at least 5x on both peak and mean'
+          % ('PASS' if ok else 'FAIL'))
+    return 1 if fails else 0
+
+
 def main():
     print('=' * 78)
-    print('FoR-AI scoring trace — interpreting the shipped ai/for-ai.j')
+    print('FoR-AI scoring trace — interpreting the shipped %s' % os.path.relpath(SRC, W))
     print('  %d functions, %d constants parsed from source' % (len(FUNCS), len(CONSTS)))
     print('  noise disabled (AI_Noise -> 0) so selection is deterministic')
     print('=' * 78)
@@ -433,6 +782,10 @@ def main():
     print('%d/%d scenarios behaved as designed' % (len(SCEN) - fails, len(SCEN)))
     rc = 1 if fails else 0
     rc |= sweep()
+    rc |= orders()
+    rc |= value_ordering()
+    rc |= routing()
+    rc |= defence()
     rc |= prng_check()
     return rc
 

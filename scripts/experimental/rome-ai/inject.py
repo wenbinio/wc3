@@ -13,9 +13,16 @@ Idempotent: re-running strips the previous injection first.
 """
 import re, sys, os
 
-W = os.path.dirname(os.path.abspath(__file__))
+# FORAI_WORK is the working copy that holds extract/ (the decomposed map) and
+# ai/ (the build output). It defaults to this script's directory so a scratch
+# checkout keeps working; the module itself is taken from next to the script
+# first, which is where the repo keeps the source of record.
+W = os.environ.get('FORAI_WORK') or os.path.dirname(os.path.abspath(__file__))
+H = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(W, 'extract', 'war3map.j')
-AI = os.path.join(W, 'ai', 'for-ai.j')
+AI = os.path.join(H, 'for-ai.j')
+if not os.path.exists(AI):
+    AI = os.path.join(W, 'ai', 'for-ai.j')
 OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(W, 'ai', 'war3map.ai.j')
 
 GB, GE = '//>>> FORAI-GLOBALS-BEGIN', '//>>> FORAI-GLOBALS-END'

@@ -128,7 +128,10 @@ must be garrisoned with Skirmishers (`A003` cargo hold) to shoot.
 * **Alliances.** A barbarian may temporarily ally with a Roman power
   (`gg_trg_Start_Alliances` / `End_Alliance_*`), gaining Alliance-Center techs
   for the duration. Permanent barbarian alliance otherwise.
-* **Gates** on the Roman walls can be opened/closed (`A00Z/A01O..A01U`).
+* **Gates** on the Roman walls can be opened/closed. Established from the
+  artifact in round 2 (see §8.3): they are **units**, not destructables, in four
+  orientations x three states, and the closed variant is the only one carrying a
+  pathing texture — so an open or destroyed gate is literally a hole in the wall.
 
 ### 1.8 Existing AI — there is none
 * No `.ai` files in the archive (366 members, all named).
@@ -414,14 +417,22 @@ against it; it is withheld where randomness would only make the AI erratic.
 
 ## 6. What this design does not do
 
-Stated up front so §7 of the report is not a surprise.
-* No pathing awareness — it issues attack-move and trusts the engine. The map
-  has mountain passes, gates and sea lanes; the AI does not reason about them.
-* **No naval play.** Shipyards, transports and the amphibious flank (63
-  shipyards on the map) are ignored entirely. For Vandals (an island/Africa
-  start) this is close to disqualifying.
-* No gate control, no tower garrisoning with Skirmishers, no alliance
-  diplomacy, no razing-for-gold, no Elephant/Catapult tech choices.
+Stated up front so §7 of the report is not a surprise. **Round 2 struck four
+items off this list; the strikethroughs are kept deliberately so the record
+shows what changed and why.**
+
+* ~~No pathing awareness — it issues attack-move and trusts the engine.~~
+  Round 2 added approach routing over the gate registry (§8.3). Passes and
+  open terrain are still unmodelled; only wall crossings are.
+* ~~**No naval play.** ... For Vandals (an island/Africa start) this is close
+  to disqualifying.~~ **This was wrong, and it was wrong in the expensive
+  direction.** It was a headless inference from "Mediterranean map, 63
+  shipyards" and nobody checked it. Round 2 flood-filled the actual pathing
+  map: the Vandals reach both capitals **on foot**. See §8.6 for the numbers
+  and for what is really true about naval.
+* ~~No gate control~~ (round 2, §8.3); no tower garrisoning with Skirmishers,
+  no alliance diplomacy, ~~no razing-for-gold~~ (round 2, §8.5), no
+  Elephant/Catapult tech choices.
 * No opponent modelling: it scores targets, not enemies-as-agents.
 * No coordination between two AI players on the same team.
 
@@ -450,4 +461,294 @@ normaliser and the additive `writeOff` — both documented inline above.
 
 **What none of this shows.** No pathing, no collision, no combat resolution, no
 engine. Every result above is about what the AI *decides*, never about whether
-it *wins*. The AI has never run in Warcraft III.
+it *wins*.
+
+### 7.1 Round 2 verification (2026-08-09)
+
+Same tools, re-run against the changed module; the new rows are the ones that
+did not exist in round 1.
+
+| check | tool | result |
+|---|---|---|
+| full-mode JASS type/signature check, module injected | `pjass` + real `common.j`/`Blizzard.j` | **Parse successful, 11803 lines**; the unmodified map is also clean (9822 lines), so nothing hides in existing noise |
+| gotcha-34 apostrophe delta lint | `lint_apostrophe.py` | baseline 0, candidate 0, **none introduced** |
+| the same lint, negative control | `--selftest` | **probe fires** on a planted `don't` |
+| structural validation of the packed map | `tools/validate-map.js` | **191/192, 152 warnings — byte-identical output to the unmodified map** |
+| goal selection over hand-built world states | `trace.py` | **13/13** (10 round-1 scenarios unchanged + 3 new defence cases) |
+| behaviour change under a pure clock sweep | `trace.py` | EXPAND -> SIEGE crossover still between t=300 and t=600 |
+| **order economy: source guards** | `trace.py` | **11/11** — every movement order provably routed through `AI_TryOrder` in the shipped source |
+| **order economy: issuance model** | `trace.py` | peak/tick **1705 -> 204** (8.4x), mean/s **880 -> 55** (15.9x) |
+| **structure value ordering** | `trace.py` | **8/8** — shipyard loses to a control point at 4x the range; raze premium role-gated |
+| **approach routing / gate choice** | `trace.py` | **8/8** — holes beat intact gates, damaged beats intact, silly detours rejected |
+| **defence damping** | `trace.py` | **7/7** — recall predicate and response-budget cap |
+| **land connectivity (naval question)** | `war3map.wpm` flood fill, 3 variants | only **P6 Britons** is cut off; the round-1 Vandals claim is **refuted** |
+| PRNG width-portability | `trace.py` | 200000 states identical to 64-bit modmul; max intermediate 2147464004 < 2^31 |
+
+**Still not shown, and it matters:** none of the above runs the decision loop in
+the engine. Round 2 fixed what a playtest reported; only a playtest can say
+whether it fixed it.
+
+---
+
+## 8. Round 2 — the first real playtest (2026-08-09)
+
+The round-1 module had never been run. It was then run, and the owner reported
+five things. Every one of them is a fact about the game that the headless
+program could not have produced on its own, so this section is written as
+*finding -> what the artifact says -> what changed*, and it is the honest
+record of which round-1 claims were wrong.
+
+Verbatim findings:
+
+1. "The Roman players stutter from unit lag and trying to move everything at once"
+2. "Barbarians center on where they're being attacked"
+3. "serious pathing issues (if you open one door they just get routed around to
+   the worse route or if there's a pre-existing hole in the gate, instead of
+   sieging that gate, allowing you to choke them easily)"
+4. "AI doesn't know how to use gates overall"
+5. "shipyards are worth nearly nothing because naval warfare is worthless in
+   this specific map, but they go for shipyards instead of control points and
+   razing and burning buildings"
+
+and a follow-up question: "can we figure out naval logic so the island-people
+can fight / figure shit out?"
+
+### 8.1 Finding 1 — the order storm (the top priority, and a real bug)
+
+**Diagnosis, from the round-1 code rather than from the symptom.** Three
+independent multipliers, all of which had to be fixed:
+
+* **No dedup.** `AI_SendArmy` enumerated *every* unit of the player and called
+  `IssuePointOrder` on each one, unconditionally, on every think tick — whether
+  or not that unit already carried exactly that order. `AI_MicroEnum` did the
+  same every **1.0 s** for every unit within `AI_TOUCH_R` of the objective and
+  for every unit below 22% HP. Re-issuing an order a unit already has is not
+  free: it restarts the unit's pathing and its attack, which is precisely the
+  "stutter" that was reported.
+* **No slice.** Nothing bounded the number of orders one player could issue in
+  one tick. At the 100 food cap with 1-food squad units that is ~100 orders per
+  player per think and ~55 per player per second from micro.
+* **Everyone in lockstep.** `AI_EnablePlayer` set `ai_nextThink[pid] = 0.0` for
+  every player, and the period is the same for all of them, so all eleven AI
+  slots scanned, scored and issued on the *same* 1 s tick, forever.
+
+**Fix.** A single choke point, `AI_TryOrder`, is now the only place in the
+module that issues a movement order (`trace.py` asserts this against the source:
+"every movement order goes through AI_TryOrder"). It keeps a per-unit record in
+a hashtable — order kind, destination, target handle, issue time — and refuses
+to re-issue when the unit already has that order and is not idle, with a
+20 s safety refresh. Every dispatch arms a budget first (`AI_ORDER_SLICE` = 24
+per player per think, `AI_MICRO_SLICE` = 12 per player per micro tick), and
+`ai_nextThink` is seeded with `ModuloInteger(pid, period)` so the players spread
+across the sub-ticks. `AI_SCAN_SLICE` also drops 40 -> 12, because each visible
+point in a slice costs a `GroupEnumUnitsInRange`.
+
+**Measured** (`trace.py --> ORDER ECONOMY`; 11 AI players x 100 units, 600 s,
+objective changing every 60 s, 55% of the army in contact):
+
+| policy | peak orders in one tick | mean orders/second |
+|---|---|---|
+| round 1 (no dedup, in lockstep) | **1705** | **880.0** |
+| round 2 (dedup + slice + phase) | **204** | **55.3** |
+| reduction | 8.4x | 15.9x |
+
+That table is a **model of the issuance policy**, not an execution of the map:
+it replays the dispatch rules one entry per unit and counts calls, with the
+tuning constants read out of the shipped `for-ai.j`. It is joined to reality by
+eleven source assertions that fail if the module stops containing the guards
+being modelled. Nobody has measured the game's frame time; this measures order
+count, which is the thing the code controls.
+
+Two more changes cut real work rather than just orders: `AI_BestTarget` is
+computed once per think and cached in `ai_bestT` (round 1 ran the whole
+registry scan twice, once in `AI_ScoreExpand` and again in `AI_Execute`), and
+`AI_SendArmy` now holds a garrison back instead of ordering literally every unit
+at the objective — the `garrisonWant` formula §4.8 always described and the code
+never implemented.
+
+### 8.2 Finding 2 — defence tunnel vision
+
+Two round-1 terms *claimed* to prevent this and neither worked:
+
+* **The write-off compared the threat against `A + garrisonCV`.** The garrison
+  is a **subset** of the army, so the bar was inflated by roughly the garrison
+  again — with a typical half-at-home army the effective threshold was ~3.3x the
+  army rather than the intended 2.2x, and the AI defended positions it could not
+  hold. It now reads `T > AI_WRITEOFF * A` with `AI_WRITEOFF = 1.60` against the
+  whole army, which is a ratio that means what it says.
+* **The recall test could essentially never fire.** `vAsset` was hard-coded to
+  1.0 unless a capital was involved and `vObjective` defaulted to 1.0, so
+  `vAsset > vObjective` was false for every barbarian case. The AI therefore
+  selected DEFEND and then issued *no orders at all*, and the army sat.
+
+`wm_asset` now carries the value of the best **owned** point within
+`AI_HOME_R` of the threat centroid, computed in the scan. DEFEND is multiplied
+by `assetF = 0.35 + 0.65 * C01(asset / AI_VAL_CP)`, so an enemy army merely
+walking past nothing of ours cannot read as an emergency. `AI_ShouldRecall` and
+`AI_RespondBudget` are separate functions so `trace.py` can assert them
+directly; the budget caps the response at `AI_DEF_MAX_FRAC` = 0.60 of the army
+and at `1.35 x threat - garrison`, so a raid can never swallow the whole force.
+
+### 8.3 Findings 3 and 4 — gates, established from the artifact
+
+**Gates are units, not destructables.** Four orientations, three unit types
+each, and the map toggles between them by `ReplaceUnit`:
+
+| orientation | closed | open | destroyed | open ability | close ability |
+|---|---|---|---|---|---|
+| horizontal | `h01N` | `h01P` | `h01O` | `A01O` | `A00Z` |
+| diagonal 1 | `h01Q` | `h01S` | `h01R` | `A01Q` | `A01P` |
+| diagonal 2 | `h01T` | `h01V` | `h01U` | `A01R` | `A01S` |
+| vertical   | `h01W` | `h01X` | `h01Y` | `A01T` | `A01U` |
+
+The decisive fact is in the object data, not the script: **only the closed
+variant has a `upat` pathing texture** (`PathTextures\Gate1Path.tga`,
+`Gate2Path.tga`, `Pathing Diagonal Wall 2.1.tga`, `Pathing _2x16.tga`). The
+open and destroyed variants have `upat` = empty. So an open gate and a
+destroyed gate are the *same thing to pathing*: a hole. All gates carry 2000 HP
+and are **not** in the capture list — a gate is destroyed, never captured. The
+eight toggle abilities are all built on the same summon base with a 20 s
+cooldown (`acdn`), and the map applies the cooldown to the sibling ability after
+each toggle.
+
+66 gates are placed, all **closed** at map start: P3 22, P9 23, P10 18, P7 2,
+P5 1. Barbarians own essentially none, which is the whole point — they are
+Roman walls.
+
+**Use (a): route through an opening.** `AI_ChooseApproach` scores every gate
+within `AI_GATE_NEAR` (4200) of the objective by
+`dist(field,gate) + dist(gate,objective)`, plus a break penalty of
+`AI_GATE_BREAK (6000) x remaining life fraction` for an intact enemy gate and a
+token `AI_GATE_OWN` (400) for one of ours. An open or destroyed gate carries no
+penalty at all, so a hole beats an intact gate up to 6000 map units further
+away, and a gate already beaten down to 20% beats an intact one 4800 further
+away. A crossing whose detour exceeds `AI_GATE_DETOUR` (1.60x) of the direct
+distance is rejected, which also handles the case where the army is already
+inside the wall.
+
+**Use (b): siege the right gate, explicitly.** When the chosen crossing is a
+shut enemy gate, the army is no longer given an attack-move at the distant
+objective (which is what let the engine reroute it onto a worse approach). It is
+given the gate: units within `AI_SIEGE_R` attack the gate *unit*, the rest
+attack-move to the gate's position.
+
+**Use (c): our own gates.** `AI_ManageGates` opens an owned gate that is the
+chosen crossing when the crossing is clear or when our own combat value there
+exceeds the visible enemy's, and shuts an owned open gate that has visible
+enemies and none of our field units in it. One toggle per player per tick, with
+the map's own 20 s cooldown imposed on ourselves.
+
+**Honest note on the mechanism.** `AI_SetGate` performs the state change with
+`ReplaceUnitBJ`, exactly as the map's own `Trig_Open_*` / `Trig_Close_*`
+actions do, rather than by ordering the ability. The abilities are custom and
+their order string cannot be verified headlessly, and guessing wrong would
+silently do nothing. This is a deliberate, labelled equivalence, restricted to
+gates the AI **owns** and rate-limited to the map's own cooldown; it is not a
+capability a human player lacks. It is recorded here next to `AI_HANDICAP`
+because that is the standard this module holds itself to.
+
+### 8.4 Finding 5 — the structure value model
+
+The round-1 module had no value model beyond four numbers buried in
+`AI_PointValue`, and it did not register shipyards at all — so it never
+*selected* one. The behaviour the owner saw is best explained by what it did
+instead: one long attack-move at a distant objective drags an army along the
+coast, where it auto-acquires 1000-HP shipyards, and attacking a shipyard below
+500 HP **captures** it (`h00J` is in `Trig_All_Cities`). The army looks like it
+went for the shipyard because, functionally, it did.
+
+There is now a single named table at the top of the module, `AI_VAL_*`, with
+the map evidence for each number written beside it, and both EXPAND and SIEGE
+route through `AI_PointValueFor`. The registry was widened to include shipyards
+and plots precisely so they can be scored at ~0 rather than being invisible.
+
+| kind | value | why, from the artifact |
+|---|---|---|
+| Capital `h000` | 4.00 | the victory test at T=1800; +50 g/+50 l per turn |
+| Control Point `n003` | 1.00 | +10 g/+10 l per turn, 110 of them: the currency |
+| City `h001` | 0.65 (+0.60 raze) | no income; trains 38 types; +250 g/+250 l razed |
+| Barb Camp `h002` | 0.75 | no income; trains 32 types; 5000 HP |
+| Town `h009` | 0.45 (+0.25 raze) | no income; trains 32 types; +100 g/+100 l razed |
+| Plot `n00E/n00F/n008/n009` | 0.25 | capturable, upgradeable, pays nothing yet |
+| **Shipyard `h00J`** | **0.02** | naval does not decide this map (playtest) |
+
+`trace.py` now asserts the ordering behaviourally rather than by inspection: a
+shipyard 500 away loses to a control point 8000 away (0.015 vs 0.296), a
+shipyard at 2000 loses to a razeable city at 4000 (0.012 vs 0.551), a plot loses
+to a further control point, and the raze premium is role-gated (barbarian city
+1.25, Roman city 0.65).
+
+### 8.5 Razing, also finding 5
+
+`R008` "Raze City" costs 0 and sits in the `ures` list of **City `h001` and
+Town `h009` only**. `Trig_Raze_City_tech` kills the researching building;
+`Trig_Cities_Destroyed` then pays the owner **250 g + 250 l** for a city or
+**100 g + 100 l** for a town and leaves a rebuildable plot. `Trig_Limit_Units`
+bars it for P3, P9 and P7, which `wm_canRaze` reads off
+`GetPlayerTechMaxAllowed` rather than assuming.
+
+Since captured cities and towns produce **no income at all** in this map — only
+control points and capitals do — a settlement the AI cannot hold is worth more
+burnt than kept, and 250 gold is five squads of twelve warriors. `AI_TryRaze`
+therefore burns the owned settlement furthest from home beyond `AI_RAZE_DIST`
+(4200), never dropping below `AI_RAZE_KEEP` (3) production sites, one per think.
+
+### 8.6 Naval — what is actually true
+
+The round-1 honest-gap list called the absence of naval logic "near
+disqualifying" and named the Vandals. **That was a headless inference and it is
+false.** The check that should have been run in round 1 was run now: parse
+`war3map.wpm` (1920x1920 cells, 32 units each), take walkable as
+`(flag & 0x02) == 0`, and flood-fill.
+
+| fill | components | mainland cells | factions cut off from both capitals |
+|---|---|---|---|
+| 4-connected | 216 | 1,514,116 | **P6 Britons only** |
+| 8-connected | 99 | 1,516,836 | **P6 Britons only** |
+| 8-connected, 2x2 block (unit collision) | 216 | 1,451,108 | **P6 Britons only** |
+
+Under all three, **the Vandals walk to Rome and to Constantinople**, as do
+Persia and every other barbarian. Exactly one of twelve slots is water-locked.
+
+What is on that island: P6 Britons hold 1 Barbarian Camp and 1 Control Point;
+P10 Western Romans hold 2 Cities, 4 Towns, 5 Control Points and 5 Shipyards
+there. 6 of the map's 110 control points are in Britain, 94 on the mainland.
+
+So the Britons are not inert without ships — they have **eleven enemy holdings
+on their own island**, which is a richer local game than any other barbarian
+starts with (the rest hold 1-3 control points each), and the existing EXPAND
+scorer already goes after all of it.
+
+Transport exists and is cheap. Shipyard `h00J` trains `h026`, `h00R`, `h00Q`,
+`h00S`, all on the `hdes` base. `h00R` (50 g + 50 l, 4 food) carries **6**
+(`S001`, field `Car1` = 6); `h026` (25 g) and `h00Q` (100 g) carry the base
+default; all three have `S002` load and `S003` unload; `h00S` is artillery with
+no cargo hold. No scripted transport triggers exist, so the standard
+load/unload order semantics apply. The map's own loading screen says "Load units
+in ships to attack by the sea", so the author intended it.
+
+**Decision: staged, not built.** The five playtest findings are the round, and
+order spam was the priority; naval transport would serve **one slot in twelve**
+and touches the one area — issuing orders to move units around — that this
+round exists to make quieter. Shipping it half-tested would put the five at
+risk for a marginal gain.
+
+The clean starting point for the next round, in the order it should be built:
+
+1. **Do not build naval combat.** No warships, no sea control. Shipyards stay
+   at `AI_VAL_SHIPYARD` as *targets*.
+2. **The prerequisite is a conflict, and it is deliberate.** A Britons AI
+   needs a shipyard to build a transport, and the value model correctly rates a
+   shipyard at 0.02. Raising it globally would recreate exactly the bug finding
+   5 reports. The fix belongs in one place: a *conditional* term that lifts
+   shipyard value only for a player whose reachable component holds no further
+   worthwhile objective. P6 is the only such player and the flood fill above is
+   the proof, so it can be a named constant with the evidence beside it rather
+   than a runtime connectivity graph.
+3. **Then a five-state machine, not a subsystem**: acquire transport -> gather
+   at an embark point -> load -> cross -> unload at a landing point near the
+   objective -> hand straight back to `AI_MoveOnTarget`. The crossing is
+   *uncontested* (nobody fights at sea in this map), so there is no escort, no
+   interception and no naval engagement model — it is pure logistics.
+4. **Order economy applies**: `load` and `unload` must go through
+   `AI_TryOrder` like everything else, or this round is undone.
