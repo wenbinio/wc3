@@ -863,7 +863,199 @@ maps/*/assets/) or CC0-converted content. Details: docs/ASSETS.md.
 - `.claude/skills/` — wc3-read-map, wc3-build-map, wc3-new-map,
   wc3-import-asset (operational recipes)
 
-## State & open threads (as of 2026-08-07)
+## State & open threads (as of 2026-08-09)
+
+**Everything below the 2026-08-07 block still holds unless contradicted
+here.** This session added a whole capability (translation), a new
+program (AI), six research waves, and four toolkit fixes.
+
+### The TRANSLATION PROGRAM — 23 maps in `test/` (new capability)
+
+`test/*_EN.w3x` + a `.README.md` each: full English translations of
+non-English maps, **gameplay byte-identical**, author credited as
+"<original author>, translated by Serendipity". Owner-directed exception
+to gotcha 9 / Legal — download convenience only, NOT bundled maps,
+excluded from preflight, the freshness guard and all toolkit doctrine.
+Requires `git add -f` (gitignore blocks `*.w3x`).
+
+Shipped: SchoolGhostStory, FindHoseong, DeadByNightlight, RKNBans,
+WhoIsTheAlien, DeathNote, GomelSimulator, PyramidEscape, WhoIsTheKiller,
+TycoonAzeroth, ThemePark, RunForMoney, DouDizhu, Avalon,
+NightFallsCloseYourEyes, NameTagRip, TownOfShadows,
+ZombieEscapeAndSurvival, BuySkillsAndBlock, WhoWillSurvive,
+Schizophrenia, CockroachBattle3, BuildWallsWithAnimals.
+
+**The protocol** (follow it; each rule was paid for):
+1. Translate every player-facing surface — wts, script literals, w3i,
+   object data, `war3mapSkin.txt`. **Measure per map**: there is no
+   dominant shape. Some maps hold 100% in wts, others 98% in object data
+   (BuildWallsWithAnimals: 215,636 of 220,400 hangul in object data),
+   one ships NO wts at all.
+2. **Prove the pipeline byte-faithful BEFORE editing** — round-trip the
+   UNEDITED source and diff. An unedited round-trip does NOT prove
+   edited data is written correctly, so also re-read every EDITED
+   object-data entry field-by-field afterwards.
+3. **Chat commands**: audit every `TriggerRegisterPlayerChatEvent` AND
+   every `SubString*` site. Byte-offset parsers are everywhere. Remap
+   only with matching literals AND corrected offsets; prefer equal-byte
+   renames (`-시야 `→`-vision ` is 7→7 bytes and needs no offset edit).
+   **Never touch save-code checksum literals** — BuildWallsWithAnimals
+   feeds them to `NameToInteger` in both save and load paths; one byte
+   would void every save code in circulation and break interop with the
+   author's other map.
+4. Rebuild by protection state: unprotected → extract/patch/`w3x-pack`
+   copying untouched members byte-for-byte; protected → **stormlib
+   splice on a COPY** (never `REPLACEEXISTING`). Protector-mangled
+   `dwHeaderSize` (`0x504F7856` etc.) forces StormLib read-only —
+   repairing that one dword to `32` is game-neutral and standard here;
+   disclose it. A decoy `MPQ\x1b` header + negative `dwBlockTablePos`
+   also occurs (BuildWallsWithAnimals).
+5. Verify: member diff (count byte-identical, hash the anonymous ones),
+   validate-map **verdict parity** vs the original (pre-existing FAILs
+   are inherited, not yours), pjass parity, markup parity machine-check,
+   non-ASCII sweep with an explicit whitelist, and the **gotcha-35
+   dialect check**.
+6. Internal name in BOTH HM3W pre-header and w3i (gotcha 17).
+
+**Provenance oracles** (check BEFORE downloading): the `path` field
+(`_prot`, `_translated`, `engsub`, `Cheat_`, `000`-prefix, `_CN`/`_ch_`,
+`(4)`/`(24)` melee ancestry, bare hashes); the **`saves` counter as an
+ancestry clock** (within a `saves` cohort the smallest downloadable
+build is the author's, larger siblings are injections — validated 5/5 on
+a lineage holding three cheat forks); and the wts itself for KR/CN
+localizations of Western maps, which metadata cannot catch (grep
+`한글화|한글판|번역|원작자` and for English changelog blocks). The
+site's `cheats` field is unreliable in BOTH directions — a top-5 Korean
+map's canonical build is a cheat fork with `cheats=0`.
+
+### The AI PROGRAM (new)
+
+Goal: competent, self-directed computer players for CUSTOM maps —
+the scene's biggest hole. Dossiers: **`docs/reference/wc3-ai-prior-art.md`**
+(no good custom-map AI exists anywhere; the best decides once per 10s
+and never moves a combat unit; 100% of "hard" AIs are resource-cheats —
+nobody has a competence dial; slot FILLING is free and universal via
+GHost++ `!comp`, slot PLAYING is the unmet need) and
+**`docs/reference/wtoc-ai-spec.md`** (Warhammer: Tides of Chaos
+decomposed as an AI target).
+
+**`scripts/experimental/rome-ai/`** — 1,326 lines of JASS: a
+self-directed AI for Fall of Rome 1.06 (ToaNoah). Six goals scored per
+tick, incumbency + dwell, preemptive defend/retreat, army split rather
+than reflexive recall, write-off for lost positions, clock-scaled siege
+appetite. Fog respected, **no resource cheating**, one Park-Miller
+stream. `trace.py` reads its scoring subset FROM the shipped `.j` so it
+cannot drift — it caught two real design bugs.
+
+**FIRST PLAYTEST FINDINGS (2026-08-09, being fixed)**: order spam →
+unit-lag stutter (top priority; needs per-unit last-order memory +
+sliced issuance); defence tunnel-vision (centres on wherever attacked);
+attack-move reroutes onto worse paths (needs approach routing over a
+connectivity graph); **no gate awareness at all** (sieges an intact gate
+beside an existing breach — a free choke for the human); **no structure
+value model** (chases worthless shipyards over control points and
+razing). Finding 5 **retired a headless inference**: the previous round
+called missing naval logic "near-disqualifying"; the player says naval
+WARFARE is worthless — but naval TRANSPORT is still wanted so cut-off
+factions can reach the land war. Those are different subsystems; the
+transport case is uncontested logistics, not a naval engagement model.
+
+**Eval environment verdict**: `lib/sim` cannot execute JASS maps at all,
+and even for Lua it records orders without executing them (no movement,
+no auto-attack, no pathing) — **decisions are testable, outcomes are
+not**. **WarsmashModEngine is a viable harness with ~3–5 days of bounded
+work** — its simulation layer has ZERO `Gdx.*` calls across 1,153 files,
+`CSimulation.update()` is a fixed 1/20s integer tick callable N times,
+and `CPlayerUnitOrderExecutor` is already a gym-shaped action API. Two
+blockers: it cannot parse w3i v32/v33 (a 3-line fix, drafted at
+`docs/upstream/warsmash-issue-w3i-v33-camera-zoom-fields.md`) and it is
+**JASS-only while our whole fleet is Lua**. It has no AI to subclass
+(`simulation/ai/` is a 16-line enum) and exactly one unit test.
+
+### Toolkit fixes this session
+
+- **`lib/codecs/objects2.js`**: tolerate the trailing-zero-dword dialect
+  (gotcha 2). Before this, affected files were copied raw, so text-volume
+  audits reported **0 non-ASCII for object data holding 215K chars**.
+- **`lib/scriptfiles.js`** (new): case/slash-insensitive script lookup +
+  `scriptLanguage`-driven primary/secondary resolution. Killed two false
+  FAILs on maps that demonstrably run — an uppercase `Scripts\war3map.j`
+  read as "no script", and a 26-byte decoy `.j` in a Lua map failing the
+  whole map through pjass.
+- **`lib/classicdoo.js`** (new): identifies the classic-.doo overread by
+  an EXACT layout walk and demotes it to WARN + raw copy (~40% of the
+  live Latin mid-tail was hard-FAILing). A DETECTOR, not a codec —
+  corrupt and v7 `.doo` still FAIL.
+- **`test/mpq-backend.test.js`**: read-safety guards (READ_ONLY enum
+  non-zero, source lint on every `SFileOpenArchive`, read paths leave
+  archives byte-identical, translation-set scope lint), all
+  negative-controlled.
+- Capability matrix corrected: classic `.doo` is NOT the only read-only
+  classic format — `w3s` v1, `w3c` v0 and w3i v18/v28 are uncovered too.
+
+### Research: six waves (docs/reference/translation-candidates-2026-08.md)
+
+**Canon corrections that matter** (landed in wc3-canon-invariants.md):
+- **The live canon is KOREAN.** `group_hosted_month` over 3,089 groups:
+  Korean **58.3%**, Latin 40.3%, Chinese 1.3%, Russian 0.1% — confirmed
+  independently by the activity gateway (62.1% of games over 28h) and a
+  lobby snapshot. Per-row `hosted_month` is CORRUPT for high-volume
+  lines; **rank on `group_hosted_month`**.
+- **One map is half the network**: 원피스랜덤디펜스R (ORDR) at 47.6% of
+  all hosted games, 5.8× the world #2. Zombie Defense, recorded here as
+  "#1–2", is #8 globally — that was a *Latin*-canon statement.
+- §3's "social sandboxes did not survive" is FALSIFIED (Life of a
+  Peasant Ascension, 227/mo, plus four siblings). I1's "no solo maps" is
+  a property of the modern HOSTED canon, not of WC3 maps (4.6% of the
+  2002 corpus is 1–2 player). I6 needs narrowing (Risk Europe is real
+  elimination at 1,245/mo).
+- **Two genres have NEVER been occupied in any era**: courtroom/trial
+  and automation/logistics. Deckbuilding exists as draft-pick in KR
+  random-defense; only a SEEDED draft is open — "same offers, played
+  better" remains ours alone.
+- **Franchise-vs-file**: a KR author's own English build retains ~0.1%
+  of its hosting; KR→CN localizations retain ~10%. Translation alone
+  does not move a map; a maintainer does (Pumpkin TD, #2 in the canon,
+  is a Korean map by king50 whose EN fork outgrew and de-credited him).
+
+**Sourcing (durable)**: `wc3maps.com/api/search?query=` (the param is
+`query=`, others silently return a generic list — this is why waves 1–2
+misread the KR scene); downloads at
+`storagebox.wc3maps.com/maps/<id>/<urlencoded path>` with a browser UA;
+`/api/map/<id>` carries `path`/`saves`/`script`/`transpiler`;
+`groups=false` walks every point-version. Also: xgm.guru (path-based
+pagination, anonymous `/download` for OPEN projects only), jdrts.com
+(mediafire, raw curl), 32r.com by ID, cdn.m16tool.xyz for KR,
+api.bilibili.com legacy search. **`archive.org` works — only
+`web.archive.org` is blocked**: the EpicWar dump is per-file addressable
+for 2005–2009, and `wc3_maps_2002` ships 5,359 maps with pre-parsed
+metadata sidecars AND serves `war3map.j` from inside per-map zips, so a
+5,000-map JASS survey needs no MPQ backend at all.
+
+**Best untranslated finds**: 아파트 1.45a (the KR-original deduction
+map, evidence is physically destructible), Культисты 3.5 (roles EARNED
+mid-round by hidden tasks), 天黑請閉眼 扩展版 (werewolf + a stock market),
+윷놀이얌 (~365 non-ASCII chars total), Сила слова (665 chars, Typing of
+the Dead). Decompose-not-translate: Челябинск, 綠色循環圈外傳.
+
+### Multi-agent process lessons (paid for the hard way)
+
+- **A dirty committed artifact is more likely another agent's in-flight
+  work than corruption.** Three agents independently "helpfully" ran
+  `git restore` on a fix mid-landing, and one investigation burned
+  serious effort on a phantom "npm test mutates a map" bug that was
+  really a commit-to-commit delta. **Never revert a file you did not
+  modify; report it.** `git add` (staging) survives `git restore <path>`
+  and is a usable guard while a sibling is alive.
+- **Negative-control every probe before trusting a clean sweep**
+  (gotcha 32b generalised). Five agents' apostrophe probes "passed"
+  while structurally incapable of firing — see gotcha 34.
+- Scout briefs are inferences, not facts: three map descriptions in this
+  session were materially wrong (WToC "zero micro" was its own lobby
+  blurb; Тараканья схватка 3 is not stealth; 小镇暗斗 is not
+  Town-of-Salem). **Decompose the artifact; correct the brief.**
+
+## State & open threads (as of 2026-08-07 — superseded above where they conflict)
 
 - **Repo state**: committed + pushed through `db2dfcc` (Last Train from
   Yio Chu Kang phase 1 — the seventh bundled map). The 2026-07-12 audit
