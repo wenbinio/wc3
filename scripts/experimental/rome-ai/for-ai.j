@@ -145,6 +145,11 @@
     // than a fresh opinion every second. It BIASES goal selection; it can
     // never override a DEFEND or RETREAT that would otherwise win -- see
     // AI_SelectGoal, where that is enforced explicitly.
+    // ROUND 4, finding 1: what one train order actually costs. A train order
+    // in this map spawns a SQUAD OF 12, so these are the real units of "can I
+    // mass at all" -- not a tuning knob, a fact about the map.
+    constant real    AI_SQUAD_FOOD    = 12.0
+    constant real    AI_SQUAD_GOLD    = 50.0   // the cheapest squad in the table
     constant real    AI_POSTURE_T     = 45.0
     constant real    AI_POSTURE_BIAS  = 0.20
     constant integer POSTURE_CONSOLIDATE = 0
@@ -403,6 +408,7 @@
     integer array    ai_claim                  // point -> claiming player, -1
     real    array    ai_claimAt
     integer          ai_raidType    = 0
+    string           ai_roster      = ""     // which slots the AI took (finding 2)
 
     // ===================================================================
     //  ROUND 3: RAMS (item 8) AND DISPERSAL (item 10)
@@ -1943,6 +1949,53 @@ endfunction
 //  Goal scoring
 //===========================================================================
 
+//---------------------------------------------------------------------------
+//  ROUND 4, FINDING 1 -- "Red also got stuck at the first city".
+//
+//  The playtest screenshot is this module's own chat line, "Huns: massing at
+//  home", over 25-plus Hun units stacked in their own city doing nothing, for
+//  most of a game. It is a REGRESSION THIS PROJECT INTRODUCED IN ROUND 3, and
+//  the mechanism is worth stating exactly because it is a trap anyone would
+//  fall into again.
+//
+//  AI_ScoreConsolidate weights its first term 0.78, and that term compared the
+//  army against wantArmy = 350 + 750*clock -- a pure CLOCK RAMP with no
+//  relation to what the player can actually field. Round 3 fixed wm_foodCap to
+//  read the REAL cap instead of the 100/200/300 ceiling. Both changes are
+//  individually right and together they deadlock: a food-capped AI now
+//  correctly knows it cannot train (AI_Spend refuses), while CONSOLIDATE keeps
+//  demanding an army it can never build -- and because wantArmy grows with the
+//  clock while a capped army cannot, the urge to sit at home RISES all game.
+//  Measured on the round-3 build, barbarian at 96/100 food with a control
+//  point 3000 away:
+//
+//      t= 300  CONSOLIDATE 0.440  EXPAND 0.333
+//      t= 600  CONSOLIDATE 0.413  EXPAND 0.306
+//      t= 900  CONSOLIDATE 0.449  EXPAND 0.279
+//      t=1500  CONSOLIDATE 0.533  EXPAND 0.225
+//
+//  CONSOLIDATE never loses, and the gap widens. That is the whole finding.
+//
+//  The fix is a POSSIBILITY gate, not a smaller number: massing is only worth
+//  scoring if massing can happen. You cannot buy an army you have no supply
+//  for, and in this map the only way to raise supply is to take settlements
+//  (25 per city, 10 per town) -- so an AI at its cap must expand, and
+//  expanding is what raises the cap. That is the self-reinforcing territory
+//  loop DESIGN.md 9.2 identified, finally wired into the scorer.
+//---------------------------------------------------------------------------
+
+// Can this player actually convert standing still into army? Zero when there
+// is no room for even one squad, or no gold to buy one with.
+function AI_CanMass takes integer pid returns real
+    local real headroom = wm_foodCap[pid] - wm_food[pid]
+    local real room = AI_C01(headroom / AI_SQUAD_FOOD)
+    local real purse = AI_C01(wm_gold[pid] / AI_SQUAD_GOLD)
+    if room < purse then
+        return room
+    endif
+    return purse
+endfunction
+
 function AI_ScoreConsolidate takes integer pid returns real
     local real clock = AI_Clock()
     local real wantArmy = 350.0 + 750.0*clock
@@ -1951,7 +2004,8 @@ function AI_ScoreConsolidate takes integer pid returns real
     set s = 0.78 * AI_C01((wantArmy - a) / wantArmy)
     set s = s + 0.22 * AI_C01(wm_gold[pid] / 900.0)
     set s = s + 0.15 * AI_C01((wm_foodCap[pid] - wm_food[pid]) / wm_foodCap[pid]) * AI_C01(wm_gold[pid] / 400.0)
-    return s
+    // ROUND 4: the possibility gate. An AI that cannot train must not want to.
+    return s * AI_CanMass(pid)
 endfunction
 
 // Playtest fault (2), "barbarians center on where they are being attacked".
@@ -2086,8 +2140,12 @@ function AI_UpdatePosture takes integer pid returns nothing
     else
         if ai_harasser[pid] then
             set np = POSTURE_HARASS             // assigned role, item 7
-        elseif wm_army[pid] < 260.0 + 240.0*AI_Clock() then
-            set np = POSTURE_CONSOLIDATE        // no army yet: buy one
+        elseif wm_army[pid] < 260.0 + 240.0*AI_Clock() and AI_CanMass(pid) > 0.5 then
+            // ROUND 4, finding 1: "buy one" is only a posture if buying is
+            // POSSIBLE. The same clock ramp that deadlocked the scorer would
+            // otherwise pin a food-capped AI in a consolidating posture and
+            // add AI_POSTURE_BIAS to the goal that already could not lose.
+            set np = POSTURE_CONSOLIDATE        // no army yet, and we can fix that
         elseif wm_capReady[pid] >= AI_CAP_COMMIT then
             set np = POSTURE_PUSH
         else
@@ -3467,6 +3525,11 @@ function AI_Init takes nothing returns nothing
         exitwhen pid >= AI_MAX_PLAYERS
         if AI_SlotIsVacant(pid) then
             call AI_EnablePlayer(pid, AI_NORMAL)
+            if n == 0 then
+                set ai_roster = AI_Name(pid)
+            else
+                set ai_roster = ai_roster + ", " + AI_Name(pid)
+            endif
             set n = n + 1
         endif
         set pid = pid + 1
@@ -3488,6 +3551,13 @@ function AI_Init takes nothing returns nothing
         set ai_microTimer = CreateTimer()
         call TimerStart(ai_thinkTimer, AI_MICRO_PERIOD, true, function AI_Think)
         call TimerStart(ai_microTimer, AI_MICRO_PERIOD, true, function AI_MicroTick)
-        call DisplayTextToPlayer(Player(0), 0, 0, "FoR-AI active on vacant slots. Use -aieasy, -ainormal or -aihard.")
+        // ROUND 4, finding 2: "West Rome fell asleep at the wheel." A player
+        // that does NOTHING is a different failure class from one doing the
+        // wrong thing, and the cheapest way to tell them apart from the
+        // outside is to say out loud which slots the AI actually took. If a
+        // faction is missing from this line it was never enabled; if it is
+        // present and still idle, the fault is in its scoring.
+        call AI_Broadcast("FoR-AI is playing: " + ai_roster)
+        call AI_Broadcast("FoR-AI: -aieasy / -ainormal / -aihard, -aiquiet / -aitalk.")
     endif
 endfunction

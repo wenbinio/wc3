@@ -1229,6 +1229,90 @@ def consort():
     return 1 if fails else 0
 
 
+# ------------------- round 4: the passive-AI deadlock (findings 1 and 2)
+
+def unstick():
+    """Round 4, findings 1 and 2 -- "Red also got stuck at the first city" and
+    "West Rome fell asleep at the wheel", with a screenshot of this module's
+    OWN chat line "Huns: massing at home" over 25-plus idle units.
+
+    This was a regression round 3 introduced. AI_ScoreConsolidate weights its
+    first term 0.78 against wantArmy = 350 + 750*clock -- a pure clock ramp --
+    while round 3 made wm_foodCap the REAL cap. Both changes are individually
+    right; together a food-capped AI knows it cannot train yet keeps demanding
+    an army it can never build, and because the ramp grows while a capped army
+    cannot, the urge to sit at home RISES all game.
+
+    Measured on the round-3 build, barbarian at 96/100 food, control point
+    3000 away:  t=300 0.440/0.333, t=600 0.413/0.306, t=900 0.449/0.279,
+    t=1500 0.533/0.225 -- CONSOLIDATE never loses and the gap widens.
+
+    The fix is a POSSIBILITY gate, not a smaller number, so both directions
+    are asserted: capped must expand, and room-to-grow must still mass."""
+    print('\n' + '=' * 78)
+    print('ROUND 4 -- the passive-AI deadlock: massing must be POSSIBLE')
+    print('=' * 78)
+    fails = 0
+
+    def scores(t_now, army, food, cap=100.0, gold=600.0, squad_food=None):
+        sc = dict(role='barb', t=t_now, army=army, gold=gold, lumber=300.0,
+                  food=food, fieldX=0.0, fieldY=0.0,
+                  points=[{'kind': CP, 'x': 3000.0, 'y': 0.0, 'owner': 1}])
+        env = make_env(sc)
+        env['wm_foodCap'][0] = cap
+        consts = dict(CONSTS)
+        if squad_food is not None:
+            consts['AI_SQUAD_FOOD'] = squad_food
+        it = Interp(FUNCS, consts, env, make_natives(env, 0.0))
+        seed_capital(env, it, sc)
+        return it.run('AI_ScoreConsolidate', [0]), it.run('AI_ScoreExpand', [0])
+
+    print('  a FOOD-CAPPED army must go and take ground, at every clock:')
+    capped = [(300.0, 300.0), (600.0, 400.0), (900.0, 450.0), (1500.0, 500.0)]
+    for t_now, army in capped:
+        c, e = scores(t_now, army, 96.0)
+        ok = e > c
+        fails += 0 if ok else 1
+        print('    %s t=%-6.0f CONSOLIDATE=%.3f EXPAND=%.3f' % ('PASS' if ok else 'FAIL', t_now, c, e))
+
+    print('  ... and an army with ROOM TO GROW must still mass early (no over-correction):')
+    for t_now, army, food in [(60.0, 60.0, 20.0), (300.0, 200.0, 20.0)]:
+        c, e = scores(t_now, army, food)
+        ok = c > e
+        fails += 0 if ok else 1
+        print('    %s t=%-6.0f CONSOLIDATE=%.3f EXPAND=%.3f' % ('PASS' if ok else 'FAIL', t_now, c, e))
+
+    def can_mass(food, cap, gold):
+        sc = dict(role='barb', food=food, gold=gold)
+        env = make_env(sc)
+        env['wm_foodCap'][0] = cap
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        return it.run('AI_CanMass', [0])
+
+    gate = [
+        ('no food headroom for even one squad -> cannot mass',
+         can_mass(96.0, 100.0, 900.0) < 0.4),
+        ('no gold for even one squad -> cannot mass', can_mass(0.0, 100.0, 5.0) < 0.2),
+        ('room and money -> can mass fully', can_mass(0.0, 100.0, 900.0) >= 1.0),
+        ('the gate is bounded to 0..1', 0.0 <= can_mass(50.0, 100.0, 60.0) <= 1.0),
+    ]
+    for name, ok in gate:
+        fails += 0 if ok else 1
+        print('  %s %s' % ('PASS' if ok else 'FAIL', name))
+
+    # NEGATIVE CONTROL: make a squad cost ~no food, so the gate saturates to 1
+    # and stops doing anything. The round-3 deadlock must come straight back --
+    # otherwise something other than AI_CanMass flipped these decisions.
+    c, e = scores(1500.0, 500.0, 96.0, squad_food=0.001)
+    ok = c > e
+    fails += 0 if ok else 1
+    print('  %s   negative control: with the gate neutralised the deadlock returns (CONSOLIDATE=%.3f > EXPAND=%.3f)'
+          % ('PASS' if ok else 'FAIL', c, e))
+
+    print('\n%s: %d deadlock assertions failed' % ('PASS' if not fails else 'FAIL', fails))
+    return 1 if fails else 0
+
+
 # --------------------------------------- round 3: raze or hold (item 6)
 
 def holding():
@@ -1504,6 +1588,15 @@ ROUND3_GUARDS = [
      r'function AI_ScoreDefend\b.*?if t > AI_WRITEOFF\*a and not wm_capThreat\[pid\] then', True),
     ('GUARD B: the army SPLIT is still the default response',
      r'function AI_Execute\b.*?if AI_ShouldRecall\(pid\) then.*?call AI_Respond\(pid,', True),
+    # --- round 4: the passive-AI deadlock (findings 1, 2) ----------------
+    ('CONSOLIDATE is gated on massing being POSSIBLE',
+     r'function AI_ScoreConsolidate\b.*?return s \* AI_CanMass\(pid\)', True),
+    ('the gate is food headroom AND gold, in squad units',
+     r'function AI_CanMass\b.*?wm_foodCap\[pid\] - wm_food\[pid\].*?AI_SQUAD_FOOD.*?AI_SQUAD_GOLD', True),
+    ('a consolidating POSTURE also requires that massing be possible',
+     r'function AI_UpdatePosture\b.*?AI_CanMass\(pid\) > 0\.5', True),
+    ('the AI announces which slots it took, so an idle player is diagnosable',
+     r'call AI_Broadcast\("FoR-AI is playing: " \+ ai_roster\)', True),
     # --- tribal preferences (item 9) -------------------------------------
     ('composition is drawn from per-faction weights',
      r'set role = AI_PickRole\(pid\)', True),
@@ -1780,6 +1873,7 @@ def main():
     rc |= strategy()
     rc |= tribes()
     rc |= formation()
+    rc |= unstick()
     rc |= consort()
     rc |= holding()
     rc |= heroes()
