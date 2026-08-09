@@ -180,7 +180,20 @@ function main takes nothing returns nothing
     set probe_tgtY  = 4672
     //>>> PROBE-CONFIG-END
 
-    call ProbeSay("S9 probe starting. No halls, no mines, no workers on this map.")
+    // CHECKPOINT 1 -- the very first statement that can produce output, and
+    // deliberately before ANY AI call. Playtest 6 produced no S9 line at all,
+    // which cannot distinguish "the script never loaded" from "the script
+    // loaded and the captain did nothing". This line separates them: if you
+    // see it, the .ai VM ran our code.
+    call ProbeSay("CHECKPOINT 1 -- .ai script LOADED and running (GetAiPlayer=" + ProbeNum(GetAiPlayer()) + ")")
+
+    // Every working example in the corpus calls InitAI() first -- the World
+    // Editor's generated template and common.ai's own StandardAI both open
+    // with it. It sets ai_player = Player(GetAiPlayer()) and zeroes
+    // sleep_seconds. The round-7 probe omitted it; that omission is now
+    // fixed, and it is checkpointed so a failure inside it is visible.
+    call InitAI()
+    call ProbeSay("CHECKPOINT 2 -- InitAI() returned")
 
     // Melee mode: the engine's normal captain behaviour. SetCampaignAI is
     // the alternative and is what a wave-scheduled AI would use; melee is
@@ -189,11 +202,13 @@ function main takes nothing returns nothing
     call SetTargetHeroes(false)
 
     call CreateCaptains()
+    call ProbeSay("CHECKPOINT 3 -- CreateCaptains() returned; group size now " + ProbeNum(CaptainGroupSize()))
     // MANDATORY on this map -- see the header note about stacked starts.
     call SetCaptainHome(BOTH_CAPTAINS, probe_homeX, probe_homeY)
     call ProbeSay("captains created, home set explicitly (start locations on this map are stacked in a 1280-unit row)")
 
     call Sleep(2.0)
+    call ProbeSay("CHECKPOINT 4 -- first captain tick survived; readiness " + ProbeNum(CaptainReadiness()))
 
     if ProbeStage() then
         call ProbeAttack()

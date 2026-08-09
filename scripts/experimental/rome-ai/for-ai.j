@@ -4199,7 +4199,13 @@ function AI_Init takes nothing returns nothing
         // faction is missing from this line it was never enabled; if it is
         // present and still idle, the fault is in its scoring.
         call AI_Broadcast("FoR-AI is playing: " + ai_roster)
-        call AI_Broadcast("FoR-AI: -aieasy / -ainormal / -aihard, -aiquiet / -aitalk, -aispy to watch every faction.")
+        // ROUND 7: say plainly that reports are ALLY-SCOPED. A playtester
+        // watching from a Roman seat sees no barbarian report and vice versa,
+        // and in playtest 6 three silent Roman factions were read as a bug
+        // when they were the round-4 information fix working exactly as
+        // designed. An instrument has to explain its own blind spot.
+        call AI_Broadcast("FoR-AI: you see reports from your ALLIES only. Type -aispy to watch every faction.")
+        call AI_Broadcast("FoR-AI: -aieasy / -ainormal / -aihard, -aiquiet / -aitalk.")
         call AI_Broadcast("FoR-AI handicap: NONE - no resource or vision cheating, fog is respected.")
     endif
 endfunction

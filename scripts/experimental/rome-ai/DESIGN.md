@@ -1766,3 +1766,108 @@ decision and the S9 answer. Recorded so the reasoning is not re-derived: round
 4's own verdict — *"wrong over time, not at any tick"* — is precisely the
 symptom S1 predicts, and our incumbency and dwell are hysteresis patched over
 what is really a control-flow problem.
+
+---
+
+## 16. Playtest 6 — the probe result, and three inferences corrected
+
+The owner ran the **probe** build and reported *"Franks and Britons not moving"*
+plus the startup chat. Three things were inferred from that chat that the
+artifact does not support, and one real result that it does.
+
+### 16.1 The faction↔player mapping is CORRECT — hypothesis refuted
+
+An index mismatch was proposed as the single cause of both the probe failure and
+the silent factions. **It is not.** Re-derived from four independent sources in
+the map's own data and cross-checked against the module:
+
+| row | multiboard label | CP hashtable | preplaced hero | historical figure | `AI_Name` |
+|---|---|---|---|---|---|
+| 2 | Huns | P0 | H003 | Attila | Huns |
+| 3 | Franks | P1 | H00G | Childeric I | Franks |
+| 4 | Saxons | P2 | H00O | Eadwacer | Saxons |
+| 5 | West Rome | P3 | H00F | *(Roman list)* | West Rome |
+| 6 | Vis**g**oths | P4 | H00I | Alaric | Visigoths |
+| 7 | Vandals | P5 | H008 | Gaiseric | Vandals |
+| 8 | Britons | P6 | H00M | Vortigern | Britons |
+| 9 | Persians | P7 | H00E | Bahram V | Persians |
+| 10 | Ostrogoths | P8 | H00H | Theodoric the Amal | Ostrogoths |
+| 11 | East Rome | P9 | H00F | *(Roman list)* | East Rome |
+| 12 | North Rome | P10 | H00F | *(Roman list)* | North Rome |
+| 13 | Burgundians | P11 | H020 | Gundahar | Burgundians |
+
+Twelve of twelve agree. The only flag is a **spelling difference in the map's
+own TRIGSTR_616** ("Visgoths"); Alaric settles which faction it is. So the probe
+did point at Franks and Britons, and no faction-indexed table is misaligned.
+
+### 16.2 The probe's gating DID take — the roster line cannot show otherwise
+
+The roster line naming Franks and Britons was read as the gating having failed.
+It cannot show that either way: `ai_roster` is broadcast **inside `AI_Init`**
+(line 69 of the packed function) and the probe's `ai_on[N] = false` runs
+**after `AI_Init` returns**. The roster is printed before the gating happens, by
+construction.
+
+The positive evidence that gating worked is in the same chat: of the **eight
+barbarian AI factions**, six emitted a posture line and exactly two did not —
+**Franks and Britons, the two probed slots.** Had `for-ai.j` still been driving
+them they would have reported like the rest. **So there was no contention, and
+the test was clean in that respect** — it simply produced no `.ai` output.
+
+### 16.3 The "five silent factions" fully dissolve — no bug
+
+Silent: Franks, Britons, West Rome, East Rome, North Rome.
+
+* **West / East / North Rome** — the owner plays the **Huns**, a barbarian.
+  `AI_Say` routes through `AI_BroadcastAllies`, so Roman reports are correctly
+  invisible to an enemy. That is the **round-4 information-leak fix working
+  exactly as designed** (§11.4), not a fault.
+* **Franks, Britons** — the probe's own disable, §16.2.
+
+All five are accounted for with no defect. What this *did* expose is an
+instrument problem: a playtester in a Roman seat sees no barbarian report and
+vice versa, and that blind spot was not stated anywhere. The startup line now
+says so — *"you see reports from your ALLIES only. Type -aispy to watch every
+faction"* — because an instrument has to explain its own blind spot. This is the
+third instance of the same lesson (guards matching past `endfunction`; probes
+that cannot fire; a measurement that cannot separate AI from human).
+
+### 16.4 The actual probe result: reading (1), and S9 stays open
+
+**No `RESULT` lines and no output of any kind from the `.ai`.** The map script
+ran fine (its roster printed), so the failure is specifically in the engine path:
+the script never loaded, or never reached its first statement. **Nothing is
+recorded about `CreateCaptains`** — S9 remains completely open.
+
+### 16.5 The hardened probe
+
+Rebuilt so reading (1) can never be silent again:
+
+* **Map-script side** (guaranteed to run): an unmistakable
+  `[S9 PROBE BUILD]` banner, a **corrected roster** stating that FoR-AI is *not*
+  playing the probed factions, `slot`/`controller`/`forAI` reported for each
+  probed player **before and after** the change, a line per `StartMeleeAI` call,
+  and a **25-second silence detector** that states in words what "no green S9
+  lines" means.
+* **`.ai` side**: four checkpoints — **1** the first statement that can produce
+  output, before any AI call at all (this alone separates "never loaded" from
+  "loaded and did nothing"); **2** after `InitAI()`; **3** after
+  `CreateCaptains()` with the group size; **4** after the first captain tick.
+* **`InitAI()` is now called**, which the round-7 probe omitted. Every working
+  example opens with it — the World Editor's generated template and
+  `common.ai`'s own `StandardAI` — and it sets `ai_player = Player(GetAiPlayer())`
+  and zeroes `sleep_seconds`.
+* **The leading hypothesis is now a labelled experiment**: `StartMeleeAI`
+  plausibly requires a **computer** player, and this map sets all twelve slots
+  `MAP_CONTROL_USER` (`war3map.j` line 9409 onward), so an empty slot is not an
+  AI player at all. The probe calls `SetPlayerController(Player(N),
+  MAP_CONTROL_COMPUTER)` before `StartMeleeAI` and reports the controller either
+  side. `for-ai.j` never needed this because it issues orders from the map
+  script; the engine AI needs a player to attach to.
+
+Gates: `pjass common.j common.ai probe*.ai` → Parse successful; probe map script
+clean in full mode; `validate-map` 191/192 identical; both `.ai` members verified
+**on disk** in the packed archive. Artifact sizes for identification — playable
+**19,026,065**, probe **19,035,727**.
+
+**Stage 3 remains unbegun.**
