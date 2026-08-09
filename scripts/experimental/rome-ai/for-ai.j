@@ -104,6 +104,46 @@
     constant real    AI_VAL_RAZE_CITY = 0.60   // +250 g / +250 l on R008
     constant real    AI_VAL_RAZE_TOWN = 0.25   // +100 g / +100 l on R008
 
+    // ===================================================================
+    //  ROUND 3: CONDITIONAL CAPITAL VALUE  (queue item 4)
+    //
+    //  Round 2 gave every capital a flat AI_VAL_CAPITAL of 4.00, which IS a
+    //  beeline instruction. The owner: "rushing Byzantium capital early
+    //  guarantees a loss for Red as opposed to territorial dominance."
+    //
+    //  He is describing the map. The victory test fires only at T=1800, so a
+    //  capital taken at T=600 must be HELD for twenty minutes against three
+    //  Roman powers -- and because food binds while gold does not, and food
+    //  comes from settlements (25 per city, 10 per town, the map own
+    //  tooltips), capturing territory is the ONLY way a barbarian raises its
+    //  army ceiling at all. Territory is self-reinforcing; a capital is not.
+    //
+    //  So capital worth is multiplied by a readiness term: a clock window
+    //  that opens at AI_CAP_T0 and saturates at AI_CAP_T1, times the force
+    //  ratio against the garrison we can actually SEE, over a floor so it
+    //  never becomes worthless.
+    // ===================================================================
+    constant real    AI_CAP_T0        = 810.0
+    constant real    AI_CAP_T1        = 1440.0
+    constant real    AI_CAP_FLOOR     = 0.18   // capital worth never vanishes
+    constant real    AI_CAP_COMMIT    = 0.55   // readiness that justifies PUSH
+
+    // ---- posture: a stance that PERSISTS (queue item 4) ----------------
+    // Goals are re-scored every tick. Posture is the slower layer above them
+    // and moves only every AI_POSTURE_T, so an AI has a coherent plan rather
+    // than a fresh opinion every second. It BIASES goal selection; it can
+    // never override a DEFEND or RETREAT that would otherwise win -- see
+    // AI_SelectGoal, where that is enforced explicitly.
+    constant real    AI_POSTURE_T     = 45.0
+    constant real    AI_POSTURE_BIAS  = 0.20
+    constant integer POSTURE_CONSOLIDATE = 0
+    constant integer POSTURE_EXPAND      = 1
+    constant integer POSTURE_PUSH        = 2
+    constant integer POSTURE_HARASS      = 3
+    integer array    ai_posture
+    real    array    ai_postureAt
+    boolean array    ai_harasser
+
     // point kinds
     constant integer AI_PK_CP         = 0
     constant integer AI_PK_TOWN       = 1
@@ -198,6 +238,8 @@
     real    array    wm_food
     real    array    wm_foodCap
     integer array    wm_cpOwn
+    real    array    wm_capReady        // readiness to TAKE AND HOLD a capital
+    integer array    wm_capIdx          // nearest enemy capital, or -1
     integer array    wm_fieldComp       // land component the field army stands in
     boolean array    wm_wantBoat        // nothing left to take without a crossing
     boolean array    wm_capThreat
@@ -574,8 +616,25 @@ function AI_PointValue takes integer kind returns real
 endfunction
 
 // Worth to THIS player: a settlement is worth more to someone who can burn it.
+// The clock window on capital appetite: shut before AI_CAP_T0, fully open by
+// AI_CAP_T1. Stated as its own function so trace.py can assert the shape.
+function AI_CapWindow takes nothing returns real
+    return AI_C01((ai_now - AI_CAP_T0) / (AI_CAP_T1 - AI_CAP_T0))
+endfunction
+
+// Readiness to take a capital AND HOLD IT to the T=1800 test: the clock
+// window times the force ratio against the garrison we can see, over a floor.
+function AI_CapReadiness takes real army, real capDef returns real
+    local real ratio = AI_C01(army / (2.0*capDef + 500.0))
+    return AI_C01(AI_CAP_FLOOR + (1.0 - AI_CAP_FLOOR) * AI_CapWindow() * ratio)
+endfunction
+
 function AI_PointValueFor takes integer pid, integer kind returns real
     local real v = AI_PointValue(kind)
+    if kind == AI_PK_CAPITAL then
+        // ROUND 3, queue item 4: the flat 4.00 was a beeline instruction.
+        return v * wm_capReady[pid]
+    endif
     if wm_canRaze[pid] then
         if kind == AI_PK_CITY then
             set v = v + AI_VAL_RAZE_CITY
@@ -1127,6 +1186,10 @@ function AI_ScanWorld takes integer pid returns nothing
     local integer k
     local integer cnt = 0
     local integer yards = 0
+    local integer capIdx = -1
+    local real capDist = 999999.0
+    local real capDef = 0.0
+    local real cd
     local boolean landWorth = false
     local boolean capThreat = false
     local boolean capLost = false
@@ -1232,6 +1295,16 @@ function AI_ScanWorld takes integer pid returns nothing
             if AI_Find(i) == wm_fieldComp[pid] and AI_PointValue(ai_ptKind[i]) >= AI_VAL_CP then
                 set landWorth = true
             endif
+            // nearest enemy capital and the garrison we can SEE around it --
+            // the two inputs to the round-3 readiness gate (queue item 4)
+            if ai_ptKind[i] == AI_PK_CAPITAL then
+                set cd = AI_Dist(ai_ptX[i], ai_ptY[i], wm_fieldX[pid], wm_fieldY[pid])
+                if cd < capDist then
+                    set capDist = cd
+                    set capIdx = i
+                    set capDef = ai_ptDef[k]
+                endif
+            endif
         endif
         if ai_pt[i] != null and GetOwningPlayer(ai_pt[i]) == p then
             if ai_ptKind[i] == AI_PK_SHIPYARD then
@@ -1257,6 +1330,8 @@ function AI_ScanWorld takes integer pid returns nothing
     // already hold a shipyard to build one from. Anything wider than this
     // recreates round 2 finding 5, where shipyards outscored real objectives.
     set wm_wantBoat[pid] = (not landWorth) and yards == 0
+    set wm_capIdx[pid] = capIdx
+    set wm_capReady[pid] = AI_CapReadiness(wm_army[pid], capDef)
     set wm_capThreat[pid] = capThreat
     set wm_asset[pid] = asset
 
@@ -1536,22 +1611,24 @@ function AI_ScoreExpand takes integer pid returns real
     return 0.86 * bs * AI_C01(wm_army[pid] / (260.0 + 240.0*clock)) * (1.0 - 0.45*clock)
 endfunction
 
+// ROUND 3, queue item 4. Round 2 multiplied appetite by a flat
+// (0.30 + 0.95*clock) and valued the capital itself at a flat 4.00 -- between
+// them, a standing instruction to beeline one. Both halves of the gate now
+// live in wm_capReady: the clock window (shut before AI_CAP_T0, open by
+// AI_CAP_T1) times the force ratio against the garrison actually observed.
+// Early game a capital is worth little; late game with a real army it is
+// decisive, which is what the map pays.
 function AI_ScoreSiege takes integer pid returns real
-    local real clock = AI_Clock()
-    local integer ci
-    local real capDef
     if ai_role[pid] == AI_ROLE_ROME then
         if wm_capLost[pid] then
             return 1.45
         endif
         return 0.0
     endif
-    set ci = AI_CapitalTarget(pid)
-    if ci < 0 then
+    if wm_capIdx[pid] < 0 then
         return 0.0
     endif
-    set capDef = ai_ptDef[pid*AI_MAX_POINTS + ci]
-    return AI_C01(wm_army[pid] / 900.0) * (0.30 + 0.95*clock) * (1.0 - 0.40*AI_C01(capDef/(wm_army[pid]+100.0)))
+    return AI_C01(wm_army[pid] / 900.0) * wm_capReady[pid]
 endfunction
 
 function AI_ScoreTech takes integer pid returns real
@@ -1575,6 +1652,90 @@ function AI_ScoreRetreat takes integer pid returns real
     return 0.95*losing + 0.50*bleeding
 endfunction
 
+//---------------------------------------------------------------------------
+//  POSTURE  (round 3, queue item 4)
+//
+//  A stance that persists. Goals are re-scored every tick; posture moves only
+//  every AI_POSTURE_T, so an AI has a plan rather than a fresh opinion every
+//  second. It branches on ROLE because the two sides play different games:
+//  the three Romans hold ~72 control points between them and are trying not
+//  to lose them, every barbarian holds 3-6 and is trying to accumulate.
+//---------------------------------------------------------------------------
+
+function AI_PostureName takes integer p returns string
+    if p == POSTURE_PUSH then
+        return "posture: pushing for a capital"
+    elseif p == POSTURE_HARASS then
+        return "posture: harassing the flanks"
+    elseif p == POSTURE_CONSOLIDATE then
+        return "posture: consolidating"
+    endif
+    return "posture: expanding"
+endfunction
+
+function AI_UpdatePosture takes integer pid returns nothing
+    local integer np
+    if ai_now < ai_postureAt[pid] then
+        return
+    endif
+    set ai_postureAt[pid] = ai_now + AI_POSTURE_T
+    if ai_role[pid] == AI_ROLE_ROME then
+        if wm_capLost[pid] then
+            set np = POSTURE_PUSH               // retaking it IS the win test
+        elseif wm_threat[pid] > 0.35*wm_army[pid] then
+            set np = POSTURE_CONSOLIDATE
+        else
+            set np = POSTURE_EXPAND
+        endif
+    else
+        if ai_harasser[pid] then
+            set np = POSTURE_HARASS             // assigned role, item 7
+        elseif wm_army[pid] < 260.0 + 240.0*AI_Clock() then
+            set np = POSTURE_CONSOLIDATE        // no army yet: buy one
+        elseif wm_capReady[pid] >= AI_CAP_COMMIT then
+            set np = POSTURE_PUSH
+        else
+            // the default, and deliberately so: food comes from settlements,
+            // so territory is the only thing that raises the army ceiling
+            set np = POSTURE_EXPAND
+        endif
+    endif
+    if np != ai_posture[pid] then
+        set ai_posture[pid] = np
+        call AI_Say(pid, AI_PostureName(np))
+    endif
+endfunction
+
+// The goal comparison, factored out so AI_SelectGoal can run it twice: once
+// WITHOUT the posture bias to establish whether defence would have won, and
+// once with it. Order of arguments is CONSOLIDATE, EXPAND, DEFEND, SIEGE,
+// TECH, RETREAT.
+function AI_ArgMaxGoal takes real sCon, real sExp, real sDef, real sSie, real sTec, real sRet returns integer
+    local integer g = GOAL_CONSOLIDATE
+    local real bs = sCon
+    if sExp > bs then
+        set bs = sExp
+        set g = GOAL_EXPAND
+    endif
+    if sDef > bs then
+        set bs = sDef
+        set g = GOAL_DEFEND
+    endif
+    if sSie > bs then
+        set bs = sSie
+        set g = GOAL_SIEGE
+    endif
+    if sTec > bs then
+        set bs = sTec
+        set g = GOAL_TECH
+    endif
+    if sRet > bs then
+        set bs = sRet
+        set g = GOAL_RETREAT
+    endif
+    return g
+endfunction
+
 function AI_SelectGoal takes integer pid returns integer
     local real sCon = AI_ScoreConsolidate(pid)
     local real sDef = AI_ScoreDefend(pid)
@@ -1583,8 +1744,7 @@ function AI_SelectGoal takes integer pid returns integer
     local real sTec = AI_ScoreTech(pid)
     local real sRet = AI_ScoreRetreat(pid)
     local real amp  = AI_NoiseAmp(pid)
-    local integer bestGoal = GOAL_CONSOLIDATE
-    local real bestScore
+    local integer bestGoal
     local boolean preempt
 
     set sCon = sCon + AI_Noise(amp)
@@ -1609,27 +1769,27 @@ function AI_SelectGoal takes integer pid returns integer
         set sRet = sRet + 0.12
     endif
 
-    set bestScore = sCon
-    if sExp > bestScore then
-        set bestScore = sExp
-        set bestGoal = GOAL_EXPAND
+    // ROUND 3, GUARD B. The posture layer biases which ACQUISITIVE goal we
+    // prefer. It must never be able to talk the AI out of defending or
+    // retreating: round 2 fixed "barbarians center on where they are being
+    // attacked" with preemptive DEFEND/RETREAT, the army split and the
+    // write-off, and a posture that overrides those is that same bug wearing
+    // a strategy hat. So the comparison is run FIRST without the bias, and if
+    // defence or retreat would have won, the bias is not applied at all.
+    set bestGoal = AI_ArgMaxGoal(sCon, sExp, sDef, sSie, sTec, sRet)
+    if bestGoal != GOAL_DEFEND and bestGoal != GOAL_RETREAT then
+        if ai_posture[pid] == POSTURE_CONSOLIDATE then
+            set sCon = sCon + AI_POSTURE_BIAS
+        elseif ai_posture[pid] == POSTURE_PUSH then
+            set sSie = sSie + AI_POSTURE_BIAS
+        else
+            // EXPAND and HARASS both want ground; HARASS differs in WHICH
+            // ground, which is a targeting question, not a goal question.
+            set sExp = sExp + AI_POSTURE_BIAS
+        endif
+        set bestGoal = AI_ArgMaxGoal(sCon, sExp, sDef, sSie, sTec, sRet)
     endif
-    if sDef > bestScore then
-        set bestScore = sDef
-        set bestGoal = GOAL_DEFEND
-    endif
-    if sSie > bestScore then
-        set bestScore = sSie
-        set bestGoal = GOAL_SIEGE
-    endif
-    if sTec > bestScore then
-        set bestScore = sTec
-        set bestGoal = GOAL_TECH
-    endif
-    if sRet > bestScore then
-        set bestScore = sRet
-        set bestGoal = GOAL_RETREAT
-    endif
+
 
     // DEFEND and RETREAT are preemptive; everything else respects the dwell.
     set preempt = (bestGoal == GOAL_DEFEND or bestGoal == GOAL_RETREAT)
@@ -2476,6 +2636,7 @@ function AI_Think takes nothing returns nothing
             if ai_now >= ai_nextThink[pid] then
                 set ai_nextThink[pid] = ai_now + AI_ThinkPeriod(pid)
                 call AI_ScanWorld(pid)
+                call AI_UpdatePosture(pid)
                 set newGoal = AI_SelectGoal(pid)
                 if newGoal != ai_goal[pid] then
                     set ai_goal[pid] = newGoal
@@ -2557,6 +2718,10 @@ function AI_EnablePlayer takes integer pid, integer difficulty returns nothing
     set ai_navSince[pid] = 0.0
     set wm_fieldComp[pid] = -1
     set wm_wantBoat[pid] = false
+    set wm_capReady[pid] = AI_CAP_FLOOR
+    set wm_capIdx[pid]   = -1
+    set ai_posture[pid]  = POSTURE_CONSOLIDATE
+    set ai_postureAt[pid]= 0.0
     // PHASE OFFSET. Round 1 gave every player nextThink = 0, so all twelve
     // scanned, scored and issued orders on the same 1 s tick, forever: one
     // synchronised spike of work instead of a spread load. This is the
@@ -2628,6 +2793,7 @@ function AI_Init takes nothing returns nothing
         set ai_handicap[pid] = 1.0
         set ai_scanCursor[pid] = 0
         set ai_talk[pid] = true
+        set ai_harasser[pid] = false
         set ai_sayAt[pid] = 0.0
         set ai_sayLast[pid] = ""
         set pid = pid + 1

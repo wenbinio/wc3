@@ -263,6 +263,11 @@ def make_env(sc):
         'wm_food': d(sc.get('food', 0.0)), 'wm_foodCap': d(100.0),
         'wm_cpOwn': d(sc.get('cpOwn', 3)),
         'wm_fieldComp': d(sc.get('fieldComp', 0)),
+        'wm_capReady': d(sc.get('capReady', 1.0)),
+        'wm_capIdx': d(sc.get('capIdx', -1)),
+        'ai_posture': d(sc.get('posture', CONSTS['POSTURE_EXPAND'])),
+        'ai_postureAt': d(sc.get('postureAt', 1e9)),
+        'ai_harasser': d(sc.get('harasser', False)),
         'wm_wantBoat': d(sc.get('wantBoat', False)),
         'ai_comp': {},
         'ai_navState': d(0), 'ai_navShip': d(None),
@@ -335,9 +340,30 @@ def make_natives(env, noise=0.0):
     }
 
 
+def seed_capital(env, it, sc):
+    """wm_capIdx and wm_capReady are produced by AI_ScanWorld, which needs the
+    engine. Reproduce them here from the scenario -- but through the REAL
+    AI_CapReadiness, so the round-3 readiness gate itself stays under test
+    rather than being replaced by a scenario constant."""
+    import math
+    pid = 0
+    CAPK = CONSTS['AI_PK_CAPITAL']
+    idx, dfc, best = -1, 0.0, 1e18
+    for i, p in enumerate(sc.get('points', [])):
+        if p['kind'] == CAPK and p.get('owner', 1) != pid:
+            d = math.hypot(p.get('x', 0.0) - sc.get('fieldX', 0.0),
+                           p.get('y', 0.0) - sc.get('fieldY', 0.0))
+            if d < best:
+                best, idx, dfc = d, i, p.get('defence', 0.0)
+    env['wm_capIdx'][pid] = idx
+    if 'capReady' not in sc:
+        env['wm_capReady'][pid] = it.run('AI_CapReadiness', [sc.get('army', 0.0), dfc])
+
+
 def evaluate(sc, noise=0.0):
     env = make_env(sc)
     it = Interp(FUNCS, CONSTS, env, make_natives(env, noise))
+    seed_capital(env, it, sc)
     scores = {}
     for g, fn in (('CONSOLIDATE', 'AI_ScoreConsolidate'), ('EXPAND', 'AI_ScoreExpand'),
                   ('DEFEND', 'AI_ScoreDefend'), ('SIEGE', 'AI_ScoreSiege'),
@@ -809,6 +835,115 @@ ORDER_GUARDS = [
 ]
 
 
+# --------------------------------- round 3: the strategic layer (item 4)
+
+def strategy():
+    """Queue item 4. Two claims to pin.
+
+    (a) Capital value is no longer flat. The owner: "rushing Byzantium's
+        capital early guarantees a loss for Red as opposed to territorial
+        dominance." An early capital must be worth LESS than a control point;
+        a late one with a real army must be decisive; and it must never fall
+        to zero, or the AI would ignore a capital handed to it.
+
+    (b) GUARD B. Round 2 fixed "barbarians center on where they're being
+        attacked" with preemptive DEFEND/RETREAT, the army split and the
+        write-off. The posture layer is the most likely thing to undo that --
+        a posture that re-centres on the newest threat is the same bug in a
+        strategy hat -- so the bias must be PROVABLY unable to override a
+        defence or a retreat that would otherwise win. Negative-controlled
+        with an absurd bias, both ways."""
+    print('\n' + '=' * 78)
+    print('ROUND 3 -- strategic layer: conditional capital value, GUARD B')
+    print('=' * 78)
+    CAPK = CONSTS['AI_PK_CAPITAL']
+    fails = 0
+
+    def cap_value(t, army, capdef):
+        sc = dict(role='barb', t=t, army=army)
+        env = make_env(sc)
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        env['wm_capReady'][0] = it.run('AI_CapReadiness', [army, capdef])
+        return it.run('AI_PointValueFor', [0, CAPK])
+
+    early = cap_value(300.0, 900.0, 0.0)
+    late = cap_value(1600.0, 900.0, 0.0)
+    guarded = cap_value(1600.0, 900.0, 2000.0)
+    floor = cap_value(0.0, 0.0, 5000.0)
+    cp = CONSTS['AI_VAL_CP']
+    checks = [
+        ('an EARLY capital is worth less than a single control point', early < cp),
+        ('a LATE capital with a real army is decisive', late > 3.0),
+        ('a garrison we can SEE discounts the capital', guarded < late),
+        ('capital value never falls to zero (AI_CAP_FLOOR)', floor > 0.0),
+        ('the floor is the round-2 flat value times AI_CAP_FLOOR',
+         abs(floor - CONSTS['AI_VAL_CAPITAL'] * CONSTS['AI_CAP_FLOOR']) < 1e-6),
+    ]
+    for name, ok in checks:
+        fails += 0 if ok else 1
+        print('  %s %s' % ('PASS' if ok else 'FAIL', name))
+    print('       capital value: early=%.3f late=%.3f late-vs-garrison=%.3f floor=%.3f (control point=%.2f)'
+          % (early, late, guarded, floor, cp))
+
+    # -------------------------------------------------------------- guard B
+    byname = {n: s for n, s, _ in SCEN}
+
+    def pick(scen_name, posture, bias=None, **over):
+        sc = dict(byname[scen_name])
+        sc['posture'] = posture
+        sc.update(over)
+        env = make_env(sc)
+        consts = dict(CONSTS)
+        if bias is not None:
+            consts['AI_POSTURE_BIAS'] = bias
+        it = Interp(FUNCS, consts, env, make_natives(env, 0.0))
+        seed_capital(env, it, sc)
+        return GOALS.get(it.run('AI_SelectGoal', [0]), '?')
+
+    DEF_SCEN = 'home attacked by a beatable force while expanding'
+    RET_SCEN = 'field army losing badly away from home'
+    WOFF_SCEN = 'threat exceeds the WHOLE army by 1.6x: write off, keep the army'
+    EXP_SCEN = 'early: army built, quiet, points nearby'
+    P_EXP, P_CON = CONSTS['POSTURE_EXPAND'], CONSTS['POSTURE_CONSOLIDATE']
+
+    guard = [
+        ('a live DEFEND survives an EXPAND posture', pick(DEF_SCEN, P_EXP), 'DEFEND'),
+        ('GUARD B: ... and survives an ABSURD posture bias of 5.0',
+         pick(DEF_SCEN, P_EXP, bias=5.0), 'DEFEND'),
+        ('a live RETREAT survives an ABSURD posture bias of 5.0',
+         pick(RET_SCEN, P_EXP, bias=5.0), 'RETREAT'),
+    ]
+    for name, got, want in guard:
+        ok = (got == want)
+        fails += 0 if ok else 1
+        print('  %s %-62s -> %s' % ('PASS' if ok else 'FAIL', name, got))
+
+    # The write-off: a threat above AI_WRITEOFF x the whole army with no
+    # capital involved must NOT produce a defence, whatever the posture says.
+    # Asserted for both dwell states, because the round-2 dwell is what
+    # answers the in-dwell case and the write-off answers the other.
+    for label, over in (('inside the dwell', {}),
+                        ('dwell expired', {'goalSince': -100.0})):
+        got = pick(WOFF_SCEN, P_CON, bias=5.0, **over)
+        ok = (got != 'DEFEND')
+        fails += 0 if ok else 1
+        print('  %s the round-2 write-off refuses a hopeless defence, %s -> %s'
+              % ('PASS' if ok else 'FAIL', label, got))
+
+    # NEGATIVE CONTROL for guard B: the same absurd bias MUST be able to move
+    # a decision when defence is not in play. If this does not flip, the guard
+    # above proves nothing -- it would just mean the bias never does anything.
+    quiet_default = pick(EXP_SCEN, P_EXP)
+    quiet_biased = pick(EXP_SCEN, P_CON, bias=5.0)
+    ok = (quiet_default == 'EXPAND' and quiet_biased == 'CONSOLIDATE')
+    fails += 0 if ok else 1
+    print('  %s   negative control: with no defence in play the bias DOES move the goal (%s -> %s)'
+          % ('PASS' if ok else 'FAIL', quiet_default, quiet_biased))
+
+    print('\n%s: %d strategic-layer assertions failed' % ('PASS' if not fails else 'FAIL', fails))
+    return 1 if fails else 0
+
+
 # ------------------------------------------- round 3: naval transport (item 2)
 
 def naval():
@@ -916,6 +1051,27 @@ ROUND3_GUARDS = [
      r'function AI_MoveOnTarget\b.*?AI_TrackProgress\(pid,', True),
     ('a stall forces the nearest own gate open',
      r'function AI_MoveOnTarget\b.*?AI_ForceOpenNear\(pid,', True),
+    # --- strategic layer (item 4) ---------------------------------------
+    ('capital value is multiplied by readiness, not flat',
+     r'function AI_PointValueFor\b.*?if kind == AI_PK_CAPITAL then\s*\n\s*return v \* wm_capReady\[pid\]', True),
+    ('readiness carries the clock window',
+     r'function AI_CapReadiness\b.*?AI_CapWindow\(\)', True),
+    ('readiness carries the force ratio against the OBSERVED garrison',
+     r'function AI_CapReadiness\b.*?army / \(2\.0\*capDef \+ 500\.0\)', True),
+    ('the siege scorer is gated on readiness, not on a bare clock ramp',
+     r'function AI_ScoreSiege\b.*?wm_capReady\[pid\]', True),
+    ('the round-2 flat siege ramp is gone',
+     r'0\.30 \+ 0\.95\*clock', False),
+    ('posture is updated on its own slower clock',
+     r'function AI_UpdatePosture\b.*?if ai_now < ai_postureAt\[pid\] then\s*\n\s*return', True),
+    ('posture branches on ROLE, Rome and barbarian play different games',
+     r'function AI_UpdatePosture\b.*?if ai_role\[pid\] == AI_ROLE_ROME then', True),
+    ('GUARD B: the goal comparison is run UNBIASED first',
+     r'set bestGoal = AI_ArgMaxGoal\(sCon, sExp, sDef, sSie, sTec, sRet\)\s*\n\s*if bestGoal != GOAL_DEFEND and bestGoal != GOAL_RETREAT then', True),
+    ('GUARD B: the round-2 write-off collapse is still in AI_ScoreDefend',
+     r'function AI_ScoreDefend\b.*?if t > AI_WRITEOFF\*a and not wm_capThreat\[pid\] then', True),
+    ('GUARD B: the army SPLIT is still the default response',
+     r'function AI_Execute\b.*?if AI_ShouldRecall\(pid\) then.*?call AI_Respond\(pid,', True),
     # --- naval transport (item 2) ---------------------------------------
     ('the land graph is built once, at init',
      r'function AI_Init\b.*?call AI_BuildLandGraph\(\)', True),
@@ -1092,6 +1248,7 @@ def main():
     rc |= value_ordering()
     rc |= routing()
     rc |= gates_round3()
+    rc |= strategy()
     rc |= naval()
     rc |= round3_guards()
     rc |= defence()
