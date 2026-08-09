@@ -1,4 +1,9 @@
-# Upstream issue drafts — wc3maptranslator (ChiefOfGxBxL/WC3MapTranslator)
+# Upstream issue drafts
+
+Two upstream projects. **Everything here is a DRAFT awaiting maintainer
+filing — nothing has been submitted.**
+
+## wc3maptranslator (ChiefOfGxBxL/WC3MapTranslator)
 
 Ready-to-file issue texts for the four upstream bugs this toolkit works
 around at runtime. **These are DRAFTS awaiting maintainer filing — nothing
@@ -24,3 +29,15 @@ upstream fixes them).
 Filing etiquette when these do get filed: one issue per draft (they are
 independent bugs with independent fixes), repro first, no toolkit-internal
 jargon beyond the linked workaround reference.
+
+## WarsmashModEngine (Retera/WarsmashModEngine)
+
+Found while evaluating Warsmash as a headless AI-evaluation harness (its
+simulation layer runs with no display — zero `Gdx.*` calls across the
+1153-file simulation package — so parser gaps, not architecture, are the
+blockers).
+
+| Draft | Upstream bug | Our position |
+| --- | --- | --- |
+| [warsmash-issue-w3i-v33-camera-zoom-fields.md](warsmash-issue-w3i-v33-camera-zoom-fields.md) | `War3MapW3i` never reads the three v32/v33 camera-zoom i32s, so any modern map either throws `EOFException` or **silently loads with zero players and zero forces** | no workaround needed on our side; we cite our own `docs/FORMATS.md` v31↔v33 delta, which `lib/codecs/w3i31.js` already implements byte-faithfully |
+
