@@ -625,3 +625,199 @@ Author re-runs: `&author=king50` (91) / `loveisanswer` (43) /
 dump, wc3_maps_2002, wc3_maps_2003, warcraft3-map-archive, ...}`.
 Bilibili: `api.bilibili.com/x/web-interface/search/all/v2?keyword=`
 (parse result_type=="video"); `/x/web-interface/view?bvid=`.
+
+---
+
+# Wave 6a — CN/RU/other canon + THE VERSION-FOREST STUDY (2026-08-08)
+
+One of five parallel agents. **Read the instrument correction first — it
+revises wave 5's headline numbers.**
+
+## Instrument correction (affects every wave-5 count) [M]
+
+With `groups=""`, `order=hosted_month` sorts by `group_hosted_month` but
+returns the **latest row of each lineage**, whose own `hosted_month` is
+often near zero. Wave 5 measured the canon through that lens. Walking
+BOTH modes:
+
+| instrument | rows | sum hosted_month |
+|---|---|---|
+| `groups=""` (latest per lineage) | 3,192 | 402,283 |
+| `groups=false` (every point-version) | 9,600 | 3,048,463 |
+
+The grouped view sees ~13% of live hosting mass. **Wave 5's map counts
+are 3–8× undercounts** (canon 1,199 → 3,192 lineages / 9,600+ builds;
+CN 51 → 614 live builds / 29,034 games; RU 11 → 90 / 2,090). Its
+language SHARES broadly survive under sensitivity analysis, but **KR is
+23–30%, not 18.8%** — one build carrying 1.16M (38% of all mass, with
+hosted_month == hosted_total) distorts the raw split, and 63% of mass
+sits in builds where those two fields are equal, so `hosted_month` is
+not a clean 30-day window for recently-first-seen builds. Report the
+capped/established variants, never the raw one. Also: `/api/stats` is
+STALE (series ends 2024-11) and cannot cross-validate.
+
+## THE VERSION-FOREST STUDY (the durable methodology of this wave)
+
+Topology over the canon's top 80 lineages [M]: 22,167 versions ever,
+**1,271 concurrently live builds**; median lineage = **93 versions ever,
+11 live simultaneously**; extremes 원피스랜덤디펜스R 2,520 versions /
+190 live, War of Races 1,441, The World RPG 1,103. The top build holds
+a median 70% of its lineage's hosting — and in 16 of 70 lineages, under
+50%. **`latest=1` is a poor guide** (Otaku Defense's latest hosts 1,379
+while the previous build hosts 6,273).
+
+**The dominant fork mode is NOT renaming — it is identical version
+strings on different binaries.** "3.1 Plus" is six distinct map ids in
+one group; Direct Strike "6.4.23" is two ids, same author, same
+filename, 217,088 bytes apart.
+
+### Canonical-build heuristic — `saves` is an ancestry clock [M, 5/5]
+
+The w3i editor save-counter increases monotonically with genuine
+authorial releases. Anything sharing a `saves` value with a sibling but
+differing in `size` was modified **outside the World Editor** — i.e. by
+a patcher/injector, since a WE edit would have bumped the counter.
+
+1. `/api/map/<id>/history` → enumerate the lineage.
+2. Fetch `size` + `saves` per member.
+3. Partition into `saves` cohorts = real authorial generations.
+4. **Within a cohort, the smallest downloadable build is the author's;
+   larger siblings are injections.**
+5. Rank by `hosted_month` from the `groups=false` walk to find the
+   PLAYED build (usually not `latest=1`).
+
+Validated on 건물 지어 막기 across both cohorts by counting `@`-command
+literals in war3map.j: cohort 315 → 46216 (512KB, 0 cmds, **2,205/mo —
+the real one**) vs 162126 (547KB, 3 cmds); cohort 326 → 98158 (475KB, 0
+cmds, author patch) vs 147103 (554KB, 88 cmds) and 106624 (722KB, **96
+cmds**, `latest=1`, 938/mo). Three cheat forks in one lineage, not the
+one wave 5 found.
+
+### Cheat-fork detection before downloading
+
+- **The site's `cheats` field is unreliable BOTH ways**: it flags
+  464/9,600 builds incl. mainstream maps with legitimate debug commands
+  (Direct Strike, Castle Fight DE, Green Circle TD, Burbenog), and it
+  MISSED the 96-command fork. A prompt to inspect, never a verdict.
+- **Size inflation vs a same-version sibling is the strongest
+  pre-download signal** (+41% archive / +183% script in the KR case).
+  Two known cheat payloads land near +210KB (+210,175 KR; +217,088
+  Direct Strike) — suggestive of a common injected pack, not proof.
+- Post-download confirmation is decisive and cheap: count `"@..."`
+  literals in war3map.j (clean = 0; forks = 88–96, plus 치트팩 발동
+  "cheat pack activated" banners).
+- **Unauthorized re-upload has its own signature**: Burbenog TD vs
+  "Kerbenog TD" — identical author, identical `saves=1241`, identical
+  version string, DIFFERENT wc3maps groups, sizes spanning 2.2×.
+
+**Implication for the translation program**: a translated file lands in
+a FOREST, not a slot — ship into a lineage running 11 concurrent builds
+and it is one leaf among eleven, invisible unless a host adopts it.
+That is the measurable mechanism behind wave 5's "the English builds
+die". The pre-work (3 API calls: history → saves cohorts → smallest in
+cohort → hosting rank) is now mandatory; in this wave alone it caught
+three cheat forks, one Blizzard map, two already-English maps and one
+KR→CN localization.
+
+## Finds (12 downloaded + extracted + measured)
+
+1. **殭屍逃亡與生存 v4.0** (TW, suaohoward; 161765, 106/mo) — build-and-
+   survive zombie co-op: pick difficulty, build defenses, kill the
+   zombie lord, zombies respawn mid-map. 13p, w3i v31, **UNPROTECTED
+   with wtg present**, 4,215 wts entries, **66,485 CJK — 100% in wts,
+   zero in script, zero in object data**: the ideal translation shape,
+   and **the closest live analogue to maps/last-train phase 2B in the
+   entire canon**. TRANSLATE *and* DECOMPOSE. Its victory text names
+   巴哈姆特 (gamer.com.tw) — a TW community channel absent from this
+   dossier and unprobed.
+2. **24 Игрока — Кто выживет?** (RU, 314046) — 24-player survival, wtg
+   present, **530 Cyrillic chars total, 0 in script**: second-cheapest
+   artifact in six waves. Hosting marginal, tractability extreme.
+3. 從前有座練功房 (338819, 87/mo) — 40,503-line JASS but most script CJK
+   is YDWE/雪月 editor boilerplate, not player text.
+4. 惡魔遊戲 (197091, 63/mo) — 12,500 CJK, mostly object data.
+5. 新神偷海盗加勒比海盗 (328334, 79/mo) — 6,159 CJK, cheap.
+6. 尸虐人生 3.8 (444654) — script CJK is a shipped memory-leak detector.
+
+DECOMPOSE-ONLY: **綠色循環圈外傳 8.6.0** (431334, 197/mo) — 187,776 CJK
+of which 186,699 is in SCRIPT LITERALS with only 2 wts entries. The
+inverse of 학교괴담's shape and the worst translation target measured.
+
+REJECTED by measurement: 天災來臨3.5 (357899 — see the engsub trap
+below), 华理TD (wave 3's thief-TD lead: only 1,800 CJK and its wts is
+ALREADY ENGLISH — keep as a 60KB decomposition target with wtg, drop as
+translation), Охотники (path = renamed Blizzard WarChasers), Королевская
+Зарубка (Blizzard-derivative), 隨機技能坦克防守 Cn (KR map localized to
+CN), TestIQ (content-is-the-language).
+
+## Scene shapes [M]
+
+- **CN**: 510 lineages; mass is TD/defense, wuxia-xianxia ARPG, anime-IP.
+  Top lineage is **Otaku Defense** (漂流瓶) at 12,682/mo across 13
+  concurrent builds = 44% of all CN hosting — and it is
+  **English-authored**, localized TO Chinese (`..._CN.w3x`, same
+  `saves`, different group, hosted 0). Explicit localization markers
+  (汉化/漢化/改編/原作者) appear on 5.1% of CN hosting as a measured
+  lower bound. Latin-script author handles are NOT a usable proxy for
+  origin (suaohoward, EXCEED0116 are Chinese handles).
+- **RU is not a live-hosted scene on this network** — 68 lineages, 2,090
+  games/mo total, less than a single mid-tier KR map, 46% of it one
+  arena-RPG lineage. Its value is archival (xgm), already mined. Stop
+  spending hosted-ranking effort there.
+- **Thai / Arabic / Japanese-kana: 0 results each** against the full
+  69,803-group index — the hosted instrument AGREES with waves 1/4.
+
+## Corrections + new traps
+
+1. Wave 5's counts (above). Shares survive; KR is 23–30%.
+2. **NEW TRAP — the "engsub inversion"**: wave 3's 汉化 trap was
+   CN-labeled maps that are translated Western maps; the REVERSE is
+   costlier — **a fully English build keeping its Chinese title**.
+   天災來臨3.5正式版, the top CJK-titled map in the live CN canon, has
+   6,621 wts entries and ZERO CJK. Title-based scouting ranks it #1;
+   the work is already done. The `path` field (`wow3.5.engsub.w3x`)
+   catches it for free.
+3. The 汉化 trap runs in BOTH directions and across CJK/KR: a Korean map
+   shipped in Chinese (`DRDR311_ch_fix.w3x`, author fods1030 (M16)),
+   another authored by 동동주, and loveisanswer's KR map live as a
+   Traditional-Chinese build — confirming wave 5's
+   multi-language-publishing finding from the CN side.
+4. **Script-literal CJK counts OVERSTATE translation cost** (sibling
+   rule to wave 4's never-byte-scan-binaries): CN maps embed YDWE editor
+   boilerplate and shipped leak-detector strings. Sample the literals
+   before costing.
+5. JP absence re-confirmed, with a corrected reason: naive Unicode
+   classification manufactures false JP hits because **の/な are CN
+   decoration** in handles like 守望な云, 魔兽の神.
+6. **Vietnamese is invisible to script classification** — VN titles are
+   typed without diacritics (`Hong Hoang Dai Luc V2.2`). Unicode found
+   3; a `Việt`/`Sinh Tồn` query found 6 live. Magnitude tiny, but the
+   reason the instrument misses VN differs from waves 1/4's assumption.
+
+## Toolkit-gap intel (first-class)
+
+**8 of 13 maps failed `war3map.doo` translation** with the classic-.doo
+past-end overread (`offset out of range … Received N+2..N+8`) — i.e.
+`docs/upstream/` draft (a). This is not an edge case: **doodads are
+raw-copy-only for the MAJORITY of the live CN canon**, which upgrades
+that upstream issue from "classic-format nicety" to a live-canon
+blocker. Separately, 161765 failed `war3map.imp` in BOTH the translator
+("memory outside buffer bounds") and the viewer fallback. The new
+trailing-zero-dword object-data codec threw nothing across all 13 — that
+fix held.
+
+## Wave-6a re-download index
+
+`https://storagebox.wc3maps.com/maps/<id>/<urlencoded path>` (browser UA
++ `Referer: https://wc3maps.com/`): 161765/`v4.0.w3x`;
+314046/`(24)Who Will Survive.w3x`; 338819/`000從前有座練功房test0.2.6.w3x`;
+197091/`Demon039s Game OB v0.8r.w3x`; 328334/`000新神偷海盗加勒比海盗 2.3.w3x`;
+444654/`24.尸虐人生3.8.w3x`; 431334/`000綠色循環圈外傳8.6.0.w3x`;
+394524/`000華理TD[小偷-英雄]天堂版.w3x`; 357899/`wow3.5.engsub.w3x`.
+Fork exemplars: 46216/98158 (clean) vs 106624/147103/162126 (forks);
+Direct Strike 446806 vs 446799; Burbenog 263 / 8825 / 371733; Otaku
+Defense 437696 (EN) vs 445620 (CN). Author re-run: `&author=漂流瓶`.
+Path-oracle patterns to add: `_CN`/`_ch_` (derived localization + its
+DIRECTION), `engsub` (already translated), `000`-prefix (host-list sort
+hack), `(4)`/`(16)`/`(24)` (melee-template ancestry), bare hashes
+(provenance destroyed by a file host).
