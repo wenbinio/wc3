@@ -5,8 +5,8 @@ A **self-directed AI computer player** for *Fall of Rome 1.06* by
 it are third-party and are NOT committed (gotcha 9 / Legal). Any
 derivative you produce must credit ToaNoah.
 
-Written 2026-08-09; **round 2 the same day, driven by the first real
-playtest.** Read §"Honest gap" before trusting any number in here.
+Written 2026-08-09; **rounds 2 and 3 the same day, both driven by real
+playtests.** Read §"Honest gap" before trusting any number in here.
 
 ## The map, in one paragraph
 
@@ -22,10 +22,11 @@ always where the capped army goes.
 
 ## What this is
 
-`for-ai.j` — ~1,970 lines of JASS: PRNG, combat valuation, a structure
-value table, point and gate registries, sliced world scan, six goal
-scorers, selection, approach routing, execution, micro, and slot
-takeover. Six goals are scored every tick from observable state and the
+`for-ai.j` — ~2,600 lines of JASS: PRNG, combat valuation, a structure
+value table, point/gate registries and a land-connectivity graph, sliced
+world scan, six goal scorers under a persistent posture layer, selection,
+corridor-based approach routing, naval transport, hero policy, a shared
+claim ledger, execution, micro, messaging, and slot takeover. Six goals are scored every tick from observable state and the
 highest wins: CONSOLIDATE, DEFEND, EXPAND, SIEGE, TECH, RETREAT.
 Selection carries a +0.12 incumbency bonus and a 9-second dwell so
 near-equal goals cannot vibrate, with DEFEND and RETREAT preemptive so
@@ -37,13 +38,21 @@ The hard cases are handled explicitly rather than reflexively:
   genuinely outmatched AND the asset at risk outvalues the objective.
 - **Not defending a lost position** — a write-off term collapses DEFEND
   when the threat exceeds 1.60× the whole army and no capital is involved.
-- **Deadline pressure** — siege appetite carries `(0.30 + 0.95 × clock)`,
-  so posture shifts with time *and* strength; a weak AI correctly never
-  commits.
-- **Walls** — it picks a crossing before it marches: an existing hole
-  (open or destroyed gate) is free, a half-broken gate is cheaper than an
-  intact one, and when a siege is genuinely required it attacks *that
-  gate*, not the objective behind it.
+- **Deadline pressure** — capital appetite is gated on *readiness*: a
+  clock window that opens at t=810 and saturates by t=1440, times the
+  force ratio against the garrison it can actually see. Early a capital
+  is worth less than one control point; late with a real army it is
+  decisive. A weak AI correctly never commits.
+- **Walls** — it picks a crossing before it marches, by projecting every
+  gate onto the whole `field → objective` segment and crossing walls
+  nearest-first. An existing hole is free, our own gate is nearly free
+  (we just open it), an enemy gate costs a siege priced by how much of it
+  is left — and when a siege is genuinely required it attacks *that
+  gate*, not the objective behind it. A blocked exit is a first-class
+  failure state with a stall backstop behind it.
+- **Water** — if the objective is on another landmass it boards a
+  transport, crosses and unloads. Transport only; there is no naval
+  combat model and there will not be one.
 
 **Fog is respected** — enemy strength counts only units passing
 `IsUnitVisible`. Static point geography is treated as known and declared
@@ -67,7 +76,8 @@ since an empty slot otherwise leaves ~100 structures and a capital inert.
 
 - `for-ai.j` — the AI module.
 - `DESIGN.md` — full design with every scoring formula; §8 is the
-  playtest-driven round-2 record.
+  round-2 playtest record, §9 the round-3 diagnosis and §10 what round 3
+  actually shipped.
 - `inject.py` — splits the module at injection (JASS allows one
   `globals` block and is single-pass, so globals go into the map's block
   and functions before `InitCustomTriggers`). Idempotent. Point it at a
@@ -88,13 +98,22 @@ since an empty slot otherwise leaves ~100 structures and a capital inert.
 
 ## Verification (all that was possible headlessly)
 
-Full-mode pjass with real `common.j`/`Blizzard.j`: **Parse successful**,
-and the unmodified map is also clean, so nothing hides in existing
-noise. `validate-map` on the packed result: **191/192, 152 warnings —
-identical to the unmodified map**. `trace.py`: 13/13 goal scenarios,
-11/11 order-economy source guards, 8/8 value-ordering, 8/8 routing, 7/7
-defence, PRNG bit-exact over 200,000 states. Order issuance model:
-peak per tick 1705 → 204, mean per second 880 → 55.
+Full-mode pjass with real `common.j`/`Blizzard.j`: **Parse successful,
+58,625 lines**, and the unmodified map is also clean, so nothing hides in
+existing noise. `validate-map` on the packed result: **191/192, 152
+warnings — identical to the unmodified map**. `trace.py`: **exit 0, 0
+FAILs across 14 sections** — 13/13 goal scenarios, order-economy and
+round-3 source guards, value ordering, routing, gates, the strategic
+layer, tribes, formation, consort, raze-or-hold, heroes, naval, defence,
+and PRNG bit-exact over 200,000 states. `npm test` 617/0; `npm run
+preflight` 0 FAILs.
+
+**Nine negative controls**, because a probe that cannot fail proves
+nothing — this repo has shipped five such probes before (gotcha 34).
+Guard A (force `AI_GATE_BREAK` to 0 and the intact gate must win
+instead), Guard B in both directions, the naval lift with `wantBoat`
+false, hero hysteresis versus a single threshold (2 transitions vs 8),
+the hold gate with `AI_HOLD_DIST` = 0, and dispersal with `AI_LANES` = 1.
 
 **lib/sim cannot execute this map** — it is JASS, and the sim is
 Lua-only. None of the above is a claim that the AI was *run*; the one
@@ -103,9 +122,10 @@ time it ran, it ran in the game, and that produced the round-2 list.
 ## Honest gap — read this before iterating
 
 1. **We can tell it is coherent, not that it is correct.** Every
-   threshold — 1.60× write-off, 1.15× retreat, `0.30 + 0.95·clock`, and
-   now every number in the `AI_VAL_*` table — is a plausible number
-   someone chose. The trace proves the AI does what the design says;
+   threshold — 1.60× write-off, 1.15× retreat, the t=810/1440 capital
+   window, the hold-versus-raze premiums, the tribal role weights, and
+   every number in the `AI_VAL_*` table — is a plausible number someone
+   chose. The trace proves the AI does what the design says;
    nothing proves the design is right. **This is still the biggest gap
    and it needs an eval environment before any number here is
    trustworthy.** Round 2 is evidence for the claim: five of the design's
@@ -121,47 +141,86 @@ time it ran, it ran in the game, and that produced the round-2 list.
    thing: flood-filling `war3map.wpm` three ways shows **exactly one of
    twelve slots is water-locked** — P6 Britons — and the Vandals walk to
    both capitals. The Britons also have eleven enemy holdings on their
-   own island to fight over, so they are not inert. Transport is
-   **staged, not built**; the scoped plan and all the measurements are in
-   DESIGN.md §8.6.
-3. ~~**Attack-move is not maneuver.**~~ **Partly closed.** Round 2 added
-   approach routing over a gate registry (DESIGN.md §8.3): the AI now
-   chooses a wall crossing before it marches and sieges the gate itself
-   when it has to. What is still missing is everything that is *not* a
-   gate — mountain passes, bridges and open chokepoints are unmodelled,
-   and there is still no connectivity graph, only a corridor test around
-   the objective.
+   own island to fight over, so they are not inert. Transport is now
+   **built** (round 3, DESIGN.md §10.2): a land-connectivity graph, a
+   three-state board/cross/unload machine, and a conditional shipyard
+   value lift narrow enough that it cannot outbid a real objective.
+3. ~~**Attack-move is not maneuver.**~~ **Mostly closed.** Round 3
+   replaced round 2's objective-anchored gate search with a corridor test
+   against the whole march segment, crossing walls nearest-first, and
+   added a stall backstop that force-opens a gate when the army stops
+   making ground — which covers chokepoints the gate model knows nothing
+   about. What is still missing is a *real* connectivity graph for
+   land: mountain passes, bridges and open chokepoints are still
+   unmodelled, and the land graph that does exist is coarse (a point
+   graph, used only to decide whether an objective needs a boat).
 4. **No opponent modelling.** It scores *points*, never *players* — it
    cannot recognise which barbarian is doing the work, bait, anticipate a
    counter-attack, or use the alliance system.
-5. **Squad economics are under-used.** 12 units for ~50 gold against a
-   food cap means many cheap simultaneous raids on undefended points
-   often beat one doomstack. This runs one field army.
+5. ~~**Squad economics are under-used.**~~ **Partly closed.** Round 3
+   added the harasser role (one AI per front raids outlying undefended
+   points with cavalry, concurrently with the push) and lane-based
+   dispersal, so the army is no longer a single point-destination blob.
+   Still missing: a general multi-group army manager. Every AI that is
+   not the harasser still runs one field force.
 6. **The order-economy numbers are a model, not a measurement.** The
-   8.4×/15.9× reduction counts order *calls* under the shipped policy,
+   7.3×/11.1× reduction counts order *calls* under the shipped policy,
    joined to the code by source assertions. Nobody has measured the
    game's frame time. If the next playtest still stutters, the cause is
    somewhere this model does not look — most likely the group
    enumerations in `AI_ScanWorld` and `AI_RefreshPointMemory`, which are
    per-player per-think and were only sliced, not eliminated.
 
-**Round 3 (2026-08-09) is DIAGNOSED, NOT IMPLEMENTED.** A second playtest
-produced seven findings; the working environment was destroyed mid-session
-and recovering it consumed the implementation budget. Round 2 is still the
-shipped behaviour. DESIGN.md §9 carries the verified artifact groundwork,
-including the two things a reader should not have to rediscover: the gate
-jam is a *selection* bug, not a toggle bug (round 2 only ever looked for a
-gate near the objective, never the one beside its own home that it must
-cross on the way out — measured: 3 of Player 9's gates sit 38-85 units off
-its exit path and all three were invisible), and `wm_foodCap` reads the
-wrong player state (`FOOD_CAP_CEILING` instead of
-`PLAYER_STATE_RESOURCE_FOOD_CAP`), so a barbarian believes it has food
-headroom it does not have and issues train orders that cannot succeed.
+**Round 3 (2026-08-09) is IMPLEMENTED** — DESIGN.md §9 diagnosed it, §10
+is what shipped. All ten queue items plus both round-2 bugs, each landed
+as its own commit with its gates green:
 
-Iteration order: **(1)** an eval harness so thresholds stop being
-guesses; (2) multi-group army management; (3) naval transport for P6
-(DESIGN.md §8.6); (4) opponent modelling. Difficulty tuning is
-meaningless until (1) exists.
+1. **The gate jam** (the blocker, screenshot-confirmed). Round 2 only ever
+   considered a gate near the *objective*, so the wall an army must cross
+   leaving its own city was never a candidate — measured, P3 owns 22 gates
+   and considered 0 of them. Replaced with a corridor test against the
+   whole `field → objective` **segment**, walls crossed in `t` order,
+   cheapest crossing per wall, an own gate on our crossing opening
+   unconditionally, the map's own `SetUnitAnimation` copied, a self-verify
+   that latches a failed toggle and routes around it, and a stall backstop
+   for chokepoints we do not model at all.
+2. **Naval transport** — board, cross, unload, nothing else. A land
+   connectivity graph over the point registry (JASS arrays cap at 8192, so
+   a terrain fill does not fit), reachability measured from the *army* so a
+   landed force stands the layer down, and a shipyard value lift narrow
+   enough that it cannot recreate round 2's finding 5.
+3. **Messaging** — state changes only, rate-limited, prefixed with the
+   faction name in the faction colour, read off the map's own multiboard
+   rows. `-aiquiet` / `-aitalk`. This is what makes playtest 4 diagnosable.
+4. **The strategic layer** — capital worth is now readiness-gated (early
+   0.72, less than one control point; late with a real army 4.00), and a
+   posture persists across ticks. The clock sweep moved from
+   `EXPAND,EXPAND,SIEGE×6` to `EXPAND×4,SIEGE×4`.
+5. **Heroes** — no revive trigger exists anywhere in this map and each
+   player has exactly one, so killing theirs is permanent (a bounded
+   focus-fire override) and losing ours is unaffordable (break at 0.50, not
+   the army's 0.22, with hysteresis).
+6. **Raze or hold** — the refund now applies only where a settlement cannot
+   be kept, and a *holdable* one carries a larger premium instead, because
+   round 2 never counted the supply, auras and militia summon that keeping
+   it pays.
+7. **Acting in consort** — a claim ledger that is a discount not a veto and
+   binds only between allies, plus one harasser per front raiding
+   concurrently with the push, drawn from the seeded stream.
+8. **Rams** get an explicit anti-wall role and hold behind the line
+   otherwise.
+9. **Tribal preferences** derived from each faction's actual passive.
+10. **Dispersal** — five lanes, 1040-unit frontage, and provably zero extra
+    orders.
+
+Order issuance across the three rounds, from the model joined to source:
+peak/tick 1705 → 204 → **234** (the budgeted bound), mean/second
+880.0 → 55.3 → **79.3**.
+
+Iteration order from here: **(1)** an eval harness so thresholds stop being
+guesses; (2) opponent modelling; (3) a real connectivity graph for
+chokepoints that are not gates. Difficulty tuning is meaningless until (1)
+exists.
 
 Related: `docs/reference/wc3-ai-prior-art.md` (why no good custom-map AI
 exists), `docs/reference/wtoc-ai-spec.md` (the same analysis for a

@@ -1646,7 +1646,7 @@ def order_guards():
 
 
 def order_model(dedup, players=11, army=100, horizon=600, objective_every=60,
-                engaged=0.5, wounded=0.05):
+                engaged=0.5, wounded=0.05, round3=False):
     """Count movement orders per second under the round-1 and round-2 policies.
 
     This is a MODEL of the issuance policy, not an execution of the map: it
@@ -1682,7 +1682,19 @@ def order_model(dedup, players=11, army=100, horizon=600, objective_every=60,
                         last[p][u] = (objective, tick)
                         issued += 1
                 tick_orders += issued
+                # ROUND 3: the harasser's concurrent cavalry raid is an EXTRA
+                # dispatch on the same think tick, with its own budget. Only
+                # one player per front holds the role, so it is charged to one.
+                if round3 and p == 0:
+                    tick_orders += CONSTS['AI_RAID_SLICE']
             # --- micro, every tick
+            # ROUND 3: hero policy runs on every micro tick for every player,
+            # capped at AI_HERO_SLICE. Naval boarding is NOT added: AI_NavStep
+            # takes the tick in place of the land dispatch and spends the same
+            # AI_ORDER_SLICE, and lanes change destinations without adding
+            # orders at all (a lane is a pure function of the handle id).
+            if round3:
+                tick_orders += CONSTS['AI_HERO_SLICE']
             issued = 0
             n_engaged = int(army * (engaged + wounded))
             for u in range(n_engaged):
@@ -1713,18 +1725,32 @@ def orders():
     print('    AI_ORDER_SLICE=%d  AI_MICRO_SLICE=%d  AI_ORDER_REFRESH=%.0f'
           % (CONSTS['AI_ORDER_SLICE'], CONSTS['AI_MICRO_SLICE'], CONSTS['AI_ORDER_REFRESH']))
     print()
+    print('    round 3 adds AI_RAID_SLICE=%d (one harasser) and AI_HERO_SLICE=%d (all)'
+          % (CONSTS['AI_RAID_SLICE'], CONSTS['AI_HERO_SLICE']))
+    print()
     b_peak, b_mean = order_model(False)
     a_peak, a_mean = order_model(True)
-    print('  %-28s %10s %12s' % ('', 'peak/tick', 'mean/second'))
-    print('  %-28s %10d %12.1f' % ('round 1 (no dedup, in step)', b_peak, b_mean))
-    print('  %-28s %10d %12.1f' % ('round 2 (dedup + slice + phase)', a_peak, a_mean))
-    print('  %-28s %9.1fx %11.1fx' % ('reduction', b_peak / float(a_peak),
-                                      b_mean / float(a_mean)))
+    c_peak, c_mean = order_model(True, round3=True)
+    print('  %-34s %10s %12s' % ('', 'peak/tick', 'mean/second'))
+    print('  %-34s %10d %12.1f' % ('round 1 (no dedup, in step)', b_peak, b_mean))
+    print('  %-34s %10d %12.1f' % ('round 2 (dedup + slice + phase)', a_peak, a_mean))
+    print('  %-34s %10d %12.1f' % ('round 3 (+ raid, hero, lanes, naval)', c_peak, c_mean))
+    print('  %-34s %9.1fx %11.1fx' % ('reduction vs round 1', b_peak / float(c_peak),
+                                      b_mean / float(c_mean)))
     ok = a_peak <= b_peak / 5.0 and a_mean <= b_mean / 5.0
     if not ok:
         fails += 1
-    print('\n%s: order issuance cut by at least 5x on both peak and mean'
+    print('%s: round 2 cut issuance by at least 5x on both peak and mean'
           % ('PASS' if ok else 'FAIL'))
+    # Round 3 must not give that back. The new dispatchers are budgeted, so
+    # the bound is arithmetic rather than hopeful: one raid slice on one
+    # player, plus one hero slice on every player, every tick.
+    bound = a_peak + CONSTS['AI_RAID_SLICE'] + 11 * CONSTS['AI_HERO_SLICE']
+    ok3 = c_peak <= bound and c_peak <= b_peak / 5.0 and c_mean <= b_mean / 5.0
+    if not ok3:
+        fails += 1
+    print('%s: ROUND 3 DOES NOT REGRESS IT -- peak %d <= the budgeted bound %d, and still 5x under round 1'
+          % ('PASS' if ok3 else 'FAIL', c_peak, bound))
     return 1 if fails else 0
 
 

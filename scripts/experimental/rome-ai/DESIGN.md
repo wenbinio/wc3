@@ -948,3 +948,249 @@ wc3maps, and `common.j`/`Blizzard.j` re-fetched from jassdoc and stripped of
 their `/* */` blocks (JASS has no block comments) to make them parse. The
 verification environment is restored and proven: `pjass japi/common.j
 japi/Blizzard.j` -> **Parse successful, 45303 lines**.
+
+---
+
+## 10. Round 3 (2026-08-09) — IMPLEMENTED
+
+Section 9 diagnosed; this section is what shipped. All ten queue items landed,
+plus both round-2 bugs. Each was committed separately with its gates green.
+
+### 10.1 The gate jam (item 1) — the blocker
+
+Root cause exactly as §9.1 established: `AI_ChooseApproach` only considered a
+gate within `AI_GATE_NEAR` of the **objective**, which can only ever find the
+wall being broken *into*.
+
+Replaced with a **corridor test against the whole `field -> objective`
+segment**. Every gate is projected onto it; a candidate has `0 <= t <= 1` and
+perpendicular distance `<= AI_GATE_CORRIDOR` (1600). Walls are crossed in `t`
+order — nearest first — and within one wall (`AI_GATE_SAMEWALL`) the cheapest
+crossing wins.
+
+Crossing cost is now one function, `AI_GateCost`, so the round-2 fix the owner
+asked for is **re-expressed in the new selection rather than inherited**:
+
+| crossing | cost | why |
+|---|---|---|
+| destroyed or open gate | 0 | an existing breach is free |
+| our own shut gate | `AI_GATE_OWN` = 400 | we can simply open it |
+| enemy shut gate | `AI_GATE_BREAK` × life fraction, up to 6000 | it costs a siege |
+
+Everything else follows: an **own gate on our crossing opens unconditionally**
+(round 2 gated it behind an enemy scan, so an army that could see an enemy
+could never leave its own city); `AI_SetGate` copies the map's own
+`SetUnitAnimation` calls and **self-verifies**, latching `ai_gateStuck` so a
+failed toggle is routed around rather than waited on; a **stall backstop**
+(`AI_TrackProgress` + `AI_ForceOpenNear`) forces the nearest own gate after
+`AI_STALL_T` without progress, which also covers chokepoints we do not model;
+and the waypoint is set `AI_GATE_ENTRY` **past** the gate so the crossing is
+walked through, after which it falls behind the segment and the next tick
+routes at the objective.
+
+`AI_GATE_NEAR` and `AI_GATE_DETOUR` are **deleted, not left unused**.
+
+### 10.2 Naval transport (item 2)
+
+Transport only. `AI_BuildLandGraph` unions the point registry at init using the
+engine's own `IsTerrainPathable` (inverted: true means blocked) — a point graph
+rather than a terrain fill because JASS arrays cap at 8192 and the map is 61440
+units square. It is load-bearing for exactly one decision, "does this objective
+need a boat", so a mislabelled component costs a wasted transport and nothing
+else.
+
+Reachability is measured from the **army** (`wm_fieldComp`), not from home, so a
+landed force stands the naval layer down instead of re-boarding. Three states:
+gather and board (`smart` on the transport, verified with `IsUnitLoaded`, with
+an `AI_NAV_LOAD_T` timeout so a stuck loader cannot strand the army), then one
+point-form `unloadall` at the objective — the engine sails and beaches — then
+straight back to the land layer. `h00R` is bought (50 g + 50 l, carries 6);
+`h00S` is artillery with no hold and is never trained.
+
+The shipyard conflict is resolved in one place: the value lift applies only to a
+player whose reachable landmass holds nothing worth taking, who owns no shipyard
+already, and only for a shipyard on **its own side** of the water. Measured:
+default 0.0139, lifted 0.7641, control point 0.6946 — the lift never outbids a
+real objective.
+
+### 10.3 Messaging (item 3)
+
+`AI_Say` / `AI_Broadcast` narrate **state changes only** — posture adopted,
+objective adopted, objective achieved, gate forced, transport boarding, hero
+withdrawn, raid launched — rate-limited to one line per player per
+`AI_SAY_GAP`, identical consecutive lines suppressed, each prefixed with the
+faction name in the faction colour. The names and colour codes are the map's own
+multiboard rows (TRIGSTR_615..2396), so chat matches the scoreboard. No
+`GetLocalPlayer` anywhere: a plain loop over playing user slots. `-aiquiet` /
+`-aitalk`.
+
+### 10.4 The strategic layer (item 4), and the flat capital value
+
+`wm_capReady` = `AI_CapWindow()` (shut before T=810, saturating by T=1440) ×
+force ratio against the **observed** garrison, over `AI_CAP_FLOOR`. It multiplies
+capital value in `AI_PointValueFor` and replaces the flat `(0.30 + 0.95·clock)`
+ramp in `AI_ScoreSiege`.
+
+| capital value | round 2 | round 3 |
+|---|---|---|
+| early (t=300, army 900) | 4.00 | **0.72** — less than one control point |
+| late (t=1600, army 900) | 4.00 | **4.00** |
+| late, garrison 2000 CV | 4.00 | **1.38** |
+| floor | 4.00 | **0.72** |
+
+The clock sweep shows the consequence: round 2 went `EXPAND, EXPAND, SIEGE ×6`
+and round 3 goes `EXPAND ×4, SIEGE ×4`. It takes ground for twice as long
+before committing.
+
+**Posture** moves only every `AI_POSTURE_T` and branches on role, because the
+three Romans hold ~72 control points and are trying not to lose them while each
+barbarian holds 3–6 and is trying to accumulate.
+
+**Guard B is enforced structurally.** `AI_ArgMaxGoal` runs the comparison
+**twice** — once with no posture bias, and if that unbiased winner is `DEFEND`
+or `RETREAT` the bias is never applied at all. Preemption, the write-off and
+the army split are untouched.
+
+### 10.5 Heroes (item 5)
+
+One fact drives both halves: no revive trigger exists anywhere in the map and
+each player has exactly one preplaced hero. Killing theirs is permanent, so
+`AI_FindEnemyHero` gives the army a focus-fire override bounded by
+`AI_HERO_HUNT_R` (a focus, never a chase). Losing ours is unaffordable, so the
+break point is `AI_HERO_BREAK` = 0.50 with re-engagement at 0.78 — not the 0.22
+trip-wire the rest of the army uses. Three interlocks stop the layers fighting:
+heroes are exempt from the generic trip-wire, `AI_SendEnum` will not re-send a
+withdrawn hero, and hero policy runs **before** the difficulty gate.
+
+### 10.6 Raze or hold (item 6)
+
+`AI_Holdable` asks three questions — behind our lines, do we want the supply,
+can we garrison it. It gates both the value of a settlement we might capture and
+the choice of which of our own to burn.
+
+Writing this surfaced a real inversion. Removing the raze premium from a
+holdable city left **nothing in its place**, so a city we could comfortably keep
+scored 0.65 against 1.25 for one we would burn — the exact opposite of the
+instruction. It showed up as a round-2 defence assertion flipping, which is
+Guard B working. The fix is that round 2 never counted what *keeping* a
+settlement pays, all of it in the object data: 25 supply (city) / 10 (town) in a
+map where food binds, a +5 armour aura (`A01M`/`A00M` on `ACav`, `Had1 = 5`), a
+regen aura (`A00K`/`A00J` on `Aoar`), and a 300 s summon of 6 Militia `h010`
+(`A01W`). So `AI_VAL_HOLD_CITY` (0.70) and `AI_VAL_HOLD_TOWN` (0.28) exist,
+deliberately above the refunds, and exactly one premium applies: holdable city
+1.35, unholdable 1.25, Roman 0.65.
+
+### 10.7 Acting in consort (item 7)
+
+A shared claim ledger, and it is a **discount not a veto**: it binds only
+between allied players, expires after `AI_CLAIM_TTL`, and adopting a new
+objective releases the old claim. It shares *intent* between allied AIs, which
+is what human allies do out loud; it reveals nothing about the enemy and does
+not touch the fog contract.
+
+The harasser raids **concurrently with** the push: `AI_Raid` is an extra
+dispatch with its own budget, sending only the faction's cavalry at an outlying
+undefended point that is not the main objective, and it deliberately bypasses
+the garrison hold-back — that hold-back is the stacking heuristic the role
+overrides. A harasser also scores targets differently (weakness squared,
+distance falloff flattened): given a near defended point and a far free one, a
+normal AI scores 0.230 vs 0.238 and a harasser 0.109 vs 0.387.
+
+The draw is the owner's — the Byzantium front, Red / Gray / Pink, strongly
+weighted to Red — on the single seeded stream. Replayed 20,000 times: Red
+0.597, Gray 0.204, Pink 0.198 against weights of 6/2/2.
+
+### 10.8 Rams (item 8) and dispersal (item 10)
+
+A ram gets one job. `ai_ramWork` is the approach layer's own answer to "does
+this march have to break a crossing"; with no wall to break a ram is held
+`AI_RAM_HOLD_R` behind the army. Rams are bought because `ai_apBreak` says a
+wall is in the way, not as a random flavour of the composition roll.
+
+Dispersal: five lanes at 260 units, a 1040-unit frontage, perpendicular to the
+**army** march line. Two details make it free — the normal is computed once per
+dispatch (so a destination does not drift as a unit walks) and the lane index is
+a pure function of the handle id (so a unit keeps its lane) — therefore lanes
+add **zero** orders. Focus fire gets no lane offset; that should converge.
+
+One real finding: the lane index was `(AI_LANES / 2)`, which truncates in JASS
+but divides as a real in the trace interpreter, so the two disagreed about the
+formation. `AI_LANE_MID` is now a stated constant with the reason beside it, and
+trace asserts `2·AI_LANE_MID + 1 == AI_LANES`. It was the module's only integer
+division.
+
+### 10.9 Tribal preferences (item 9)
+
+Reading the object data changed the shape of this twice.
+
+`Trig_Limit_Units` does **not** restrict rosters by faction — it caps `h012` at
+5 for Romans, bars `R008` for Romans, disables `A00V` for barbarians, and that
+is all. Every player can train everything, and the six extra variants of each
+barbarian role are stat-identical. So the difference has to be composition, not
+access — and `AI_UnitFor` deliberately stays three-way, because nothing in the
+artifact maps a cosmetic variant to a tribe.
+
+Each faction hero carries exactly one unique ability, mapped to a player by the
+preplaced heroes and named by the `-skin` `upro` field:
+
+| player | faction | figure | passive | effect |
+|---|---|---|---|---|
+| 0 | Huns | Attila | `A00N` Superior Tactics | +damage, +5 armour aura |
+| 1 | Franks | Childeric I | `A01N` Dispair | −enemy attack damage |
+| 2 | Saxons | Eadwacer | `A00Q` | enemies cannot cast |
+| 3/9/10 | Romans | — | `A021` Local Support | summon 12 at a City |
+| 4 | Visigoths | Alaric | `A01C` Fury | +10 flat attack |
+| 5 | Vandals | Gaiseric | `A01E` Rally | +200% movement |
+| 6 | Britons | Vortigern | `A00P` Druidic Power | +500% regen |
+| 7 | Persians | Bahram V | `A01A` Old Hatred | +50% attack speed |
+| 8 | Ostrogoths | Theodoric | `A01B` Willpower | +5 armour |
+| 11 | Burgundians | Gundahar | `A01Z` Blood Pact | links 12, spreads damage |
+
+Preferences fall out of the **kind** of buff, with history only breaking ties.
+Flat per-unit buffs are worth proportionally most on cheap massed bodies (+10 on
+a 25-attack Warrior is +40%, on a 50-attack Cavalry +20%), so Visigoths,
+Ostrogoths and Huns mass. Blood Pact links exactly 12 and a train order spawns
+exactly 12, so Burgundians mass for a mechanical reason. Proportional buffs
+reward expensive units, so Persia goes heavy and mounted. Mobility is a raiding
+tool, so Vandals ride. Sustain and enemy-damage reduction reward standing and
+taking hits, so Britons and Franks go heavy melee.
+
+### 10.10 The two round-2 bugs
+
+`wm_foodCap` read `PLAYER_STATE_FOOD_CAP_CEILING` — the upper bound on the cap,
+not the cap. The map sets that ceiling to 100 for everyone, 200 for Persia and
+300 for each Roman, while the real cap is produced by buildings. Now
+`PLAYER_STATE_RESOURCE_FOOD_CAP`, with a zero fallback of **1.0** — a divisor
+guard, not a plausible cap, so the bug cannot return in disguise. The flat
+capital value is §10.4.
+
+### 10.11 Round 3 verification
+
+| check | result |
+|---|---|
+| full-mode pjass, module injected | **Parse successful, 58,625 lines** with real `common.j`/`Blizzard.j`; unmodified map also clean |
+| apostrophe delta lint | baseline 0, candidate 0, **none introduced**; negative control fires |
+| `trace.py` | **exit 0, 0 FAILs across 14 sections** |
+| `validate-map` on the packed build | **191/192, 152 warnings — identical to the unmodified map** |
+| `npm test` | **617 pass, 0 fail** |
+| order issuance, peak/tick | round 1 1705 → round 2 204 → **round 3 234** (the budgeted bound) |
+| order issuance, mean/second | round 1 880.0 → round 2 55.3 → **round 3 79.3** |
+
+Round 3 adds `AI_RAID_SLICE` (8, one harasser) and `AI_HERO_SLICE` (2, every
+player) and nothing else: naval takes the tick in place of the land dispatch and
+spends the same budget, and lanes add no orders at all. The bound is arithmetic
+rather than hopeful, and trace asserts it.
+
+**Nine negative controls** were added, because a probe that cannot fail proves
+nothing (this repo has shipped five such probes before — gotcha 34): Guard A
+(force `AI_GATE_BREAK` to 0 and the intact gate must win instead), Guard B in
+both directions (an absurd bias must not move a live DEFEND or RETREAT, and must
+move the goal when no defence is in play), the naval lift with `wantBoat` false,
+hero hysteresis versus a single threshold (2 transitions vs 8), the hold gate
+with `AI_HOLD_DIST` = 0, and dispersal with `AI_LANES` = 1.
+
+**What none of this shows, still.** No pathing, no collision, no combat
+resolution, no engine. `lib/sim` cannot execute JASS. Every result above is
+about what the AI *decides*, never about whether it *wins* — and round 2's
+lesson stands: five of the design's confident numbers were wrong in ways only a
+human playing the map found.
