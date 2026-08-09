@@ -128,6 +128,8 @@
     constant integer AI_ORD_MOVE      = 1
     constant integer AI_ORD_ATTACKP   = 2   // attack-move to a point
     constant integer AI_ORD_ATTACKU   = 3   // attack a specific unit
+    constant integer AI_ORD_LOAD      = 4   // board a transport (round 3)
+    constant integer AI_ORD_UNLOAD    = 5   // unload a transport at a point
     constant real    AI_ORDER_TOL     = 350.0  // same destination if within
     constant real    AI_ORDER_REFRESH = 20.0   // safety re-issue interval
     constant integer AI_ORDER_SLICE   = 24     // orders per player per think
@@ -196,6 +198,8 @@
     real    array    wm_food
     real    array    wm_foodCap
     integer array    wm_cpOwn
+    integer array    wm_fieldComp       // land component the field army stands in
+    boolean array    wm_wantBoat        // nothing left to take without a crossing
     boolean array    wm_capThreat
     boolean array    wm_capLost
     real    array    wm_asset           // value of the best OWN point under threat
@@ -264,6 +268,48 @@
     timer            ai_microTimer   = null
     trigger          ai_cmdTrig      = null
     real             ai_now          = 0.0
+
+    // ===================================================================
+    //  ROUND 3: NAVAL TRANSPORT (queue item 2)
+    //
+    //  Transport only. There is no naval WARFARE here and there never will
+    //  be -- the owner played the map and reported sea combat is worthless,
+    //  so shipyards stay near-zero as targets (AI_VAL_SHIPYARD) and nothing
+    //  below builds a warship, escorts a crossing or contests the water.
+    //  This is pure logistics: board, cross, unload, hand straight back to
+    //  the land layer.
+    //
+    //  Ship types are the map own: shipyard h00J trains h026 / h00R / h00Q
+    //  on the hdes base. h00R is 50 g + 50 l, 4 food and carries 6 (S001,
+    //  Car1 = 6), which is the best cargo per gold, so it is the one bought.
+    //  h00S is artillery with no hold and is deliberately not used.
+    // ===================================================================
+    constant integer AI_NAV_SHIPYARD  = 'h00J'
+    constant integer AI_NAV_SHIP      = 'h00R'  // 50 g + 50 l, carries 6
+    constant real    AI_NAV_SHIP_G    = 50.0
+    constant real    AI_NAV_SHIP_L    = 50.0
+    constant real    AI_NAV_BOARD_R   = 2200.0  // gather radius around the ship
+    constant real    AI_NAV_CD        = 5.0     // seconds between naval orders
+    constant integer AI_NAV_MIN_LOAD  = 3       // sail once this many are aboard
+    constant real    AI_NAV_LOAD_T    = 45.0    // ... or when boarding times out
+    constant integer AI_NAV_NONE      = 0
+    constant integer AI_NAV_LOAD      = 1
+    constant integer AI_NAV_SAIL      = 2
+    integer array    ai_navState
+    unit    array    ai_navShip
+    real    array    ai_navAt          // next time this player may act navally
+    real    array    ai_navSince       // when boarding began
+    real    array    ai_navSay         // rate limit on naval narration
+    unit             ai_navPick     = null
+    integer          ai_navLoaded   = 0
+
+    // ---- land connectivity (round 3) ----------------------------------
+    // Union-find over the POINT registry, not a terrain grid: JASS arrays
+    // cap at 8192 entries, so a real flood fill of a 61440x61440 map does
+    // not fit while 400 points and their near neighbours comfortably do.
+    constant real    AI_LINK_R        = 2600.0  // points this close may link
+    constant integer AI_LINK_SAMPLES  = 8       // walkability samples per link
+    integer array    ai_comp
 
     // ---- ROUND 3: messaging -------------------------------------------
     // The AI narrates its STATE CHANGES so a playtest diagnoses itself. Rate
@@ -686,6 +732,14 @@ function AI_TryOrder takes unit u, integer kind, real x, real y, unit tgt return
         call IssuePointOrder(u, "move", x, y)
     elseif kind == AI_ORD_ATTACKP then
         call IssuePointOrder(u, "attack", x, y)
+    elseif kind == AI_ORD_UNLOAD then
+        // point form: the transport sails there and drops its cargo
+        call IssuePointOrder(u, "unloadall", x, y)
+    elseif kind == AI_ORD_LOAD then
+        // "smart" on a transport is the board order; the unit walks to it
+        if tgt != null then
+            call IssueTargetOrder(u, "smart", tgt)
+        endif
     elseif tgt != null then
         call IssueTargetOrder(u, "attack", tgt)
     endif
@@ -865,6 +919,119 @@ function AI_BuildRegistry takes nothing returns nothing
 endfunction
 
 //===========================================================================
+//  LAND CONNECTIVITY  (round 3, the prerequisite for queue item 2)
+//
+//  Which registered points can be WALKED between. Built once at init from
+//  the engine own pathing, by linking points that are close together and
+//  have a walkable straight line between them, then unioning the links.
+//
+//  Two deliberate limits, both stated rather than hidden:
+//   * it is a POINT graph, not a terrain flood fill. JASS arrays cap at
+//     8192 entries and this map is 61440 units square, so a grid fill does
+//     not fit; 400 registered points and their near neighbours do.
+//   * it is used for exactly ONE decision -- does this objective need a
+//     boat. It never filters targets and never changes a score for a land
+//     objective, so a mislabelled component can cost a wasted transport and
+//     nothing else. A false split in this graph must not be able to break
+//     the land game, which is the whole of the rest of this module.
+//
+//  Ground truth for the shape it should find (flood-filling war3map.wpm
+//  offline, three connectivity variants, DESIGN.md 8.6): exactly one of
+//  twelve starts is water-locked, P6 Britons, and every other faction
+//  including the Vandals walks to both capitals.
+//===========================================================================
+
+function AI_Find takes integer a returns integer
+    loop
+        exitwhen ai_comp[a] == a
+        set ai_comp[a] = ai_comp[ai_comp[a]]   // path halving
+        set a = ai_comp[a]
+    endloop
+    return a
+endfunction
+
+function AI_Union takes integer a, integer b returns nothing
+    local integer ra = AI_Find(a)
+    local integer rb = AI_Find(b)
+    if ra != rb then
+        set ai_comp[ra] = rb
+    endif
+endfunction
+
+// IsTerrainPathable is INVERTED: it returns true when the terrain BLOCKS
+// that pathing type. So a walkable sample is a false.
+function AI_LandLine takes real ax, real ay, real bx, real by returns boolean
+    local integer i = 1
+    local real f
+    loop
+        exitwhen i >= AI_LINK_SAMPLES
+        set f = I2R(i) / I2R(AI_LINK_SAMPLES)
+        if IsTerrainPathable(ax + (bx-ax)*f, ay + (by-ay)*f, PATHING_TYPE_WALKABILITY) then
+            return false
+        endif
+        set i = i + 1
+    endloop
+    return true
+endfunction
+
+function AI_BuildLandGraph takes nothing returns nothing
+    local integer i = 0
+    local integer j
+    loop
+        exitwhen i >= ai_pointCount
+        set ai_comp[i] = i
+        set i = i + 1
+    endloop
+    set i = 0
+    loop
+        exitwhen i >= ai_pointCount
+        set j = i + 1
+        loop
+            exitwhen j >= ai_pointCount
+            // the component test first: it makes most pairs cost one compare
+            if AI_Dist(ai_ptX[i], ai_ptY[i], ai_ptX[j], ai_ptY[j]) <= AI_LINK_R and AI_Find(i) != AI_Find(j) then
+                if AI_LandLine(ai_ptX[i], ai_ptY[i], ai_ptX[j], ai_ptY[j]) then
+                    call AI_Union(i, j)
+                endif
+            endif
+            set j = j + 1
+        endloop
+        set i = i + 1
+    endloop
+endfunction
+
+// Component of the registered point nearest (x,y), or -1 if there are none.
+function AI_CompAt takes real x, real y returns integer
+    local integer i = 0
+    local integer best = -1
+    local real bd = 999999.0
+    local real d
+    loop
+        exitwhen i >= ai_pointCount
+        set d = AI_Dist(ai_ptX[i], ai_ptY[i], x, y)
+        if d < bd then
+            set bd = d
+            set best = i
+        endif
+        set i = i + 1
+    endloop
+    if best < 0 then
+        return -1
+    endif
+    return AI_Find(best)
+endfunction
+
+// Does reaching this point require crossing water? Measured from where the
+// ARMY is, not from home, so that once a crossing has landed the naval layer
+// stands itself down instead of trying to board all over again.
+function AI_NeedsBoat takes integer pid, integer i returns boolean
+    if wm_fieldComp[pid] < 0 or i < 0 or i >= ai_pointCount then
+        return false
+    endif
+    return AI_Find(i) != wm_fieldComp[pid]
+endfunction
+
+//===========================================================================
 //  World scan
 //===========================================================================
 
@@ -959,6 +1126,8 @@ function AI_ScanWorld takes integer pid returns nothing
     local integer i = 0
     local integer k
     local integer cnt = 0
+    local integer yards = 0
+    local boolean landWorth = false
     local boolean capThreat = false
     local boolean capLost = false
     local real asset = 0.0
@@ -1044,13 +1213,30 @@ function AI_ScanWorld takes integer pid returns nothing
 
     call AI_RefreshPointMemory(pid)
 
+    // ROUND 3: which landmass the army is standing on. One O(points) scan per
+    // think tick, the same order of cost as AI_BestTarget, and the only input
+    // the naval layer needs.
+    set wm_fieldComp[pid] = AI_CompAt(wm_fieldX[pid], wm_fieldY[pid])
+
     // owned point counts, capital status, and the value of what is under
     // threat -- the last one is what stops a raid on a bare control point
     // from pulling the whole army home (playtest fault 2).
     loop
         exitwhen i >= ai_pointCount
         set k = pid*AI_MAX_POINTS + i
+        if ai_pt[i] != null and not (GetOwningPlayer(ai_pt[i]) == p or IsPlayerAlly(GetOwningPlayer(ai_pt[i]), p)) then
+            // ROUND 3: is anything worth taking still reachable on foot? This
+            // is the ONE conditional that can lift a shipyard above its
+            // near-zero table value, and it is deliberately narrow: only a
+            // player with nothing left to walk to wants a boat at all.
+            if AI_Find(i) == wm_fieldComp[pid] and AI_PointValue(ai_ptKind[i]) >= AI_VAL_CP then
+                set landWorth = true
+            endif
+        endif
         if ai_pt[i] != null and GetOwningPlayer(ai_pt[i]) == p then
+            if ai_ptKind[i] == AI_PK_SHIPYARD then
+                set yards = yards + 1
+            endif
             if ai_ptKind[i] == AI_PK_CP then
                 set cnt = cnt + 1
             endif
@@ -1067,6 +1253,10 @@ function AI_ScanWorld takes integer pid returns nothing
         set i = i + 1
     endloop
     set wm_cpOwn[pid] = cnt
+    // Want a boat only when the reachable landmass is exhausted AND we do not
+    // already hold a shipyard to build one from. Anything wider than this
+    // recreates round 2 finding 5, where shipyards outscored real objectives.
+    set wm_wantBoat[pid] = (not landWorth) and yards == 0
     set wm_capThreat[pid] = capThreat
     set wm_asset[pid] = asset
 
@@ -1100,6 +1290,15 @@ function AI_TargetScore takes integer pid, integer i returns real
     endif
 
     set v = AI_PointValueFor(pid, ai_ptKind[i])
+    // ROUND 3, the conditional shipyard term. A shipyard is worth ~nothing
+    // (AI_VAL_SHIPYARD = 0.02) because naval warfare does not decide this
+    // map. The single exception is a player that has run out of things to
+    // walk to: for that player a shipyard ON ITS OWN LANDMASS is the way off
+    // it, and only then. Raising the table value globally is exactly the bug
+    // round 2 finding 5 reported, so the lift lives here and nowhere else.
+    if ai_ptKind[i] == AI_PK_SHIPYARD and wm_wantBoat[pid] and not AI_NeedsBoat(pid, i) then
+        set v = AI_VAL_CP * 1.10
+    endif
     set prox = 1.0 / (1.0 + AI_Dist(ai_ptX[i], ai_ptY[i], wm_fieldX[pid], wm_fieldY[pid]) / 4200.0)
     set weak = AI_C01(1.0 - ai_ptDef[k] / (wm_army[pid] + 60.0))
     set stale = 1.0 - 0.35*AI_C01((ai_now - ai_ptSeen[k]) / 240.0)
@@ -1703,10 +1902,168 @@ function AI_TrackProgress takes integer pid, real tx, real ty returns boolean
     return (ai_now - ai_progAt[pid]) >= AI_STALL_T
 endfunction
 
+// ---- naval transport (round 3, queue item 2) ----------------------------
+//
+// Board, cross, unload. Nothing else. The crossing is UNCONTESTED -- nobody
+// fights at sea in this map -- so there is no escort, no interception and no
+// naval engagement model, and the whole thing hands straight back to the land
+// layer the moment the cargo is ashore.
+//
+// Every order still goes through AI_TryOrder, including load and unload, or
+// this undoes the round-2 order economy.
+
+function AI_ShipFilter takes nothing returns boolean
+    return GetOwningPlayer(GetFilterUnit()) == ai_curP and GetUnitTypeId(GetFilterUnit()) == AI_NAV_SHIP and GetUnitState(GetFilterUnit(), UNIT_STATE_LIFE) > 0.405
+endfunction
+
+function AI_YardFilter takes nothing returns boolean
+    return GetOwningPlayer(GetFilterUnit()) == ai_curP and GetUnitTypeId(GetFilterUnit()) == AI_NAV_SHIPYARD and GetUnitState(GetFilterUnit(), UNIT_STATE_LIFE) > 0.405
+endfunction
+
+function AI_NavPickEnum takes nothing returns nothing
+    if ai_navPick == null then
+        set ai_navPick = GetEnumUnit()
+    endif
+endfunction
+
+function AI_FindShip takes integer pid returns unit
+    local group g = CreateGroup()
+    set ai_curP = ai_p[pid]
+    set ai_navPick = null
+    call GroupEnumUnitsOfPlayer(g, ai_p[pid], Filter(function AI_ShipFilter))
+    call ForGroup(g, function AI_NavPickEnum)
+    call DestroyGroup(g)
+    set g = null
+    return ai_navPick
+endfunction
+
+function AI_FindYard takes integer pid returns unit
+    local group g = CreateGroup()
+    set ai_curP = ai_p[pid]
+    set ai_navPick = null
+    call GroupEnumUnitsOfPlayer(g, ai_p[pid], Filter(function AI_YardFilter))
+    call ForGroup(g, function AI_NavPickEnum)
+    call DestroyGroup(g)
+    set g = null
+    return ai_navPick
+endfunction
+
+function AI_LoadedEnum takes nothing returns nothing
+    local unit u = GetEnumUnit()
+    if IsUnitLoaded(u) then
+        set ai_navLoaded = ai_navLoaded + 1
+    endif
+    set u = null
+endfunction
+
+// How many of our units are currently aboard something. IsUnitLoaded is the
+// engine own answer, so the state machine self-verifies rather than assuming
+// an order took.
+function AI_CountLoaded takes integer pid returns integer
+    local group g = CreateGroup()
+    set ai_curP = ai_p[pid]
+    set ai_navLoaded = 0
+    call GroupEnumUnitsOfPlayer(g, ai_p[pid], Filter(function AI_OwnUnitFilter))
+    call ForGroup(g, function AI_LoadedEnum)
+    call DestroyGroup(g)
+    set g = null
+    return ai_navLoaded
+endfunction
+
+function AI_BoardEnum takes nothing returns nothing
+    local unit u = GetEnumUnit()
+    if u == ai_orderTarget or AI_IsStructure(u) or GetUnitState(u, UNIT_STATE_LIFE) <= 0.405 or IsUnitLoaded(u) then
+        set u = null
+        return
+    endif
+    if AI_Dist(GetUnitX(u), GetUnitY(u), ai_orderX, ai_orderY) <= AI_NAV_BOARD_R then
+        call AI_TryOrder(u, AI_ORD_LOAD, ai_orderX, ai_orderY, ai_orderTarget)
+    else
+        call AI_TryOrder(u, AI_ORD_MOVE, ai_orderX, ai_orderY, null)
+    endif
+    set u = null
+endfunction
+
+// True when the naval layer has taken this tick and the caller must NOT also
+// issue a land march.
+function AI_NavStep takes integer pid, integer t returns boolean
+    local unit ship
+    local unit yard
+    local group g
+    local integer loaded
+    if not AI_NeedsBoat(pid, t) then
+        set ai_navState[pid] = AI_NAV_NONE  // same landmass: stand down
+        set ai_navShip[pid] = null
+        return false
+    endif
+    if ai_now < ai_navAt[pid] then
+        return true                         // an order is already in flight
+    endif
+    set ai_navAt[pid] = ai_now + AI_NAV_CD
+    set ship = AI_FindShip(pid)
+    if ship == null then
+        set yard = AI_FindYard(pid)
+        if yard != null and wm_gold[pid] >= AI_NAV_SHIP_G and wm_lumber[pid] >= AI_NAV_SHIP_L then
+            call IssueImmediateOrderById(yard, AI_NAV_SHIP)
+            call AI_Say(pid, "building a transport - the objective is across water")
+        endif
+        set ai_navState[pid] = AI_NAV_NONE
+        set yard = null
+        return false                        // nothing to ferry with yet
+    endif
+    set ai_navShip[pid] = ship
+    set loaded = AI_CountLoaded(pid)
+    if ai_navState[pid] != AI_NAV_SAIL then
+        if ai_navState[pid] != AI_NAV_LOAD then
+            set ai_navState[pid] = AI_NAV_LOAD
+            set ai_navSince[pid] = ai_now
+            call AI_Say(pid, "boarding a transport")
+        endif
+        // sail on a full enough boat, or when boarding has stopped making
+        // progress -- a stuck loader must not strand the whole army
+        if loaded >= AI_NAV_MIN_LOAD or (ai_now - ai_navSince[pid]) >= AI_NAV_LOAD_T then
+            set ai_navState[pid] = AI_NAV_SAIL
+        else
+            set ai_curP = ai_p[pid]
+            set ai_curPid = pid
+            set ai_orderTarget = ship
+            set ai_orderX = GetUnitX(ship)
+            set ai_orderY = GetUnitY(ship)
+            set ai_issued = 0
+            set ai_budget = AI_ORDER_SLICE
+            set g = CreateGroup()
+            call GroupEnumUnitsOfPlayer(g, ai_p[pid], Filter(function AI_OwnUnitFilter))
+            call ForGroup(g, function AI_BoardEnum)
+            call DestroyGroup(g)
+            set g = null
+            set ai_orderTarget = null
+            set ship = null
+            return true
+        endif
+    endif
+    // Sailing. ONE order: the point form of unloadall makes the engine sail
+    // there and beach the cargo, so we model neither the route nor the shore.
+    set ai_issued = 0
+    set ai_budget = AI_ORDER_SLICE
+    call AI_TryOrder(ship, AI_ORD_UNLOAD, ai_ptX[t], ai_ptY[t], null)
+    if loaded <= 0 and (ai_now - ai_navSince[pid]) > AI_NAV_LOAD_T then
+        set ai_navState[pid] = AI_NAV_NONE  // cargo ashore: back to the land layer
+        call AI_Say(pid, "landed across the water")
+    endif
+    set ship = null
+    return true
+endfunction
+
 // Move on a registered point, crossing the wall deliberately.
 function AI_MoveOnTarget takes integer pid, integer t returns nothing
     local integer gi
-    local boolean stalled = AI_TrackProgress(pid, ai_ptX[t], ai_ptY[t])
+    local boolean stalled
+    // ROUND 3: water first. If the objective is on another landmass this
+    // takes the tick entirely -- gates and walls are a land problem.
+    if AI_NavStep(pid, t) then
+        return
+    endif
+    set stalled = AI_TrackProgress(pid, ai_ptX[t], ai_ptY[t])
     call AI_ChooseApproach(pid, ai_ptX[t], ai_ptY[t])
     call AI_ManageGates(pid)
     if stalled then
@@ -2194,6 +2551,12 @@ function AI_EnablePlayer takes integer pid, integer difficulty returns nothing
     set ai_scanCursor[pid] = 0
     set ai_progD[pid]    = 999999.0
     set ai_progAt[pid]   = 0.0
+    set ai_navState[pid] = AI_NAV_NONE
+    set ai_navShip[pid]  = null
+    set ai_navAt[pid]    = 0.0
+    set ai_navSince[pid] = 0.0
+    set wm_fieldComp[pid] = -1
+    set wm_wantBoat[pid] = false
     // PHASE OFFSET. Round 1 gave every player nextThink = 0, so all twelve
     // scanned, scored and issued orders on the same 1 s tick, forever: one
     // synchronised spike of work instead of a spread load. This is the
@@ -2271,6 +2634,10 @@ function AI_Init takes nothing returns nothing
     endloop
 
     call AI_BuildRegistry()
+    // ROUND 3: one-time land connectivity over the point registry. Bounded
+    // by ai_pointCount (<= AI_MAX_POINTS), and only pairs closer than
+    // AI_LINK_R that are not already unioned ever pay for a walkability walk.
+    call AI_BuildLandGraph()
 
     set pid = 0
     loop

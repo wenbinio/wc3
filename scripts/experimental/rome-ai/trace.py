@@ -48,7 +48,15 @@ def parse_globals(text):
     """Constant name -> python literal, for the constants block."""
     g = {}
     for m in re.finditer(r'^\s*constant\s+(integer|real)\s+(\w+)\s*=\s*([^/\n]+)', text, re.M):
-        g[m.group(2)] = float(m.group(3).strip()) if m.group(1) == 'real' else int(m.group(3).strip())
+        raw = m.group(3).strip()
+        if m.group(1) == 'real':
+            g[m.group(2)] = float(raw)
+        elif len(raw) == 6 and raw[0] == "'" and raw[-1] == "'":
+            # a rawcode literal such as 'h00R' -- big-endian FourCC, exactly
+            # what the JASS compiler makes of it
+            g[m.group(2)] = int.from_bytes(raw[1:-1].encode('latin1'), 'big')
+        else:
+            g[m.group(2)] = int(raw)
     return g
 
 
@@ -254,6 +262,11 @@ def make_env(sc):
         'wm_gold': d(sc.get('gold', 300.0)), 'wm_lumber': d(sc.get('lumber', 300.0)),
         'wm_food': d(sc.get('food', 0.0)), 'wm_foodCap': d(100.0),
         'wm_cpOwn': d(sc.get('cpOwn', 3)),
+        'wm_fieldComp': d(sc.get('fieldComp', 0)),
+        'wm_wantBoat': d(sc.get('wantBoat', False)),
+        'ai_comp': {},
+        'ai_navState': d(0), 'ai_navShip': d(None),
+        'ai_navAt': d(0.0), 'ai_navSince': d(0.0),
         'wm_capThreat': d(sc.get('capThreat', False)),
         'wm_capLost': d(sc.get('capLost', False)),
         'wm_asset': d(sc.get('asset', CONSTS['AI_VAL_CP'])),
@@ -281,6 +294,10 @@ def make_env(sc):
         env['ai_ptOwner'][pid * MP + i] = p.get('owner', 1)
         env['ai_ptSeen'][pid * MP + i] = p.get('seen', sc.get('t', 300.0))
         env['ai_ptDef'][pid * MP + i] = p.get('defence', 0.0)
+        env['ai_comp'][i] = i
+    # land component per point; AI_Find is mocked off this so the union-find
+    # implementation is not what the connectivity assertions depend on
+    env['_ptComp'] = {i: p.get('comp', 0) for i, p in enumerate(sc.get('points', []))}
     env['_ptOwner'] = {i + 1: p.get('owner', 1) for i, p in enumerate(sc.get('points', []))}
     # gates: handle = 1000+index so it cannot collide with a point handle
     env['_gateState'] = {}
@@ -311,6 +328,10 @@ def make_natives(env, noise=0.0):
         # code read from for-ai.j
         'AI_GateState': lambda i: env['_gateState'].get(i, CONSTS['AI_GS_GONE']),
         'AI_GateLifeFrac': lambda i: env['_gateLife'].get(i, 1.0),
+        # land component of a point: the union-find is built at init from the
+        # engine's own pathing, which no interpreter can reach, so the graph
+        # comes from the scenario and the CONSUMERS stay under test
+        'AI_Find': lambda i: env['_ptComp'].get(i, 0),
     }
 
 
@@ -788,6 +809,79 @@ ORDER_GUARDS = [
 ]
 
 
+# ------------------------------------------- round 3: naval transport (item 2)
+
+def naval():
+    """Queue item 2. Transport only -- no naval warfare model exists and none
+    is asserted here. What IS asserted: reachability is measured from the ARMY
+    (so a landed force stands the naval layer down instead of re-boarding),
+    and the shipyard value lift is narrow enough that it cannot recreate the
+    round-2 finding where shipyards outscored real objectives."""
+    print('\n' + '=' * 78)
+    print('ROUND 3 -- naval transport: reachability and the shipyard lift')
+    print('=' * 78)
+    SHIP = CONSTS['AI_PK_SHIPYARD']
+    fails = 0
+
+    def needs_boat(field_comp, pt_comp):
+        sc = dict(role='barb', fieldComp=field_comp,
+                  points=[{'kind': CP, 'x': 0.0, 'y': 0.0, 'comp': pt_comp, 'owner': 1}])
+        env = make_env(sc)
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        return it.run('AI_NeedsBoat', [0, 0])
+
+    cases = [
+        ('an objective on our own landmass needs no boat', needs_boat(0, 0), False),
+        ('an objective across water needs a boat', needs_boat(0, 1), True),
+        ('once the army has LANDED, the same objective needs no boat',
+         needs_boat(1, 1), False),
+        ('an unknown landmass (-1) never triggers a crossing', needs_boat(-1, 1), False),
+    ]
+    for name, got, want in cases:
+        ok = (bool(got) == want)
+        fails += 0 if ok else 1
+        print('  %s %-58s -> %s' % ('PASS' if ok else 'FAIL', name, bool(got)))
+
+    # -- the shipyard lift, and the two ways it must NOT fire --------------
+    def yard_score(want_boat, yard_comp, field_comp=0):
+        sc = dict(role='barb', army=600.0, wantBoat=want_boat, fieldComp=field_comp,
+                  points=[{'kind': SHIP, 'x': 1000.0, 'y': 0.0,
+                           'comp': yard_comp, 'owner': 1}])
+        env = make_env(sc)
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        return it.run('AI_TargetScore', [0, 0])
+
+    def cp_score():
+        sc = dict(role='barb', army=600.0,
+                  points=[{'kind': CP, 'x': 1000.0, 'y': 0.0, 'comp': 0, 'owner': 1}])
+        env = make_env(sc)
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        return it.run('AI_TargetScore', [0, 0])
+
+    base = yard_score(False, 0)
+    lifted = yard_score(True, 0)
+    across = yard_score(True, 1)
+    cp = cp_score()
+    lift = [
+        ('a shipyard is near worthless by default', base < 0.1 * cp),
+        ('a stranded player values a shipyard on ITS OWN landmass', lifted > base * 10.0),
+        ('... and still not more than a control point of the same distance',
+         lifted <= cp * 1.25),
+        ('NEGATIVE CONTROL: with wantBoat false the lift does not fire',
+         abs(base - yard_score(False, 0)) < 1e-9 and base < 0.1 * cp),
+        ('a shipyard ACROSS the water is not the way off this island',
+         across < lifted),
+    ]
+    for name, ok in lift:
+        fails += 0 if ok else 1
+        print('  %s %s' % ('PASS' if ok else 'FAIL', name))
+    print('       scores: default=%.4f lifted=%.4f across-water=%.4f control-point=%.4f'
+          % (base, lifted, across, cp))
+
+    print('\n%s: %d naval assertions failed' % ('PASS' if not fails else 'FAIL', fails))
+    return 1 if fails else 0
+
+
 # Round-3 source guards. These run against a COMMENT-STRIPPED copy of the
 # module, because several of them assert the ABSENCE of something and the
 # round-3 comments quote the very identifiers being banned.
@@ -822,6 +916,29 @@ ROUND3_GUARDS = [
      r'function AI_MoveOnTarget\b.*?AI_TrackProgress\(pid,', True),
     ('a stall forces the nearest own gate open',
      r'function AI_MoveOnTarget\b.*?AI_ForceOpenNear\(pid,', True),
+    # --- naval transport (item 2) ---------------------------------------
+    ('the land graph is built once, at init',
+     r'function AI_Init\b.*?call AI_BuildLandGraph\(\)', True),
+    ('reachability is measured from the ARMY, not from home',
+     r'function AI_NeedsBoat\b.*?wm_fieldComp\[pid\]', True),
+    ('the naval layer runs before the land march',
+     r'function AI_MoveOnTarget\b.*?if AI_NavStep\(pid, t\) then\s*\n\s*return', True),
+    ('load orders go through AI_TryOrder',
+     r'function AI_BoardEnum\b.*?call AI_TryOrder\(u, AI_ORD_LOAD', True),
+    ('the unload order goes through AI_TryOrder',
+     r'function AI_NavStep\b.*?call AI_TryOrder\(ship, AI_ORD_UNLOAD', True),
+    ('boarding is verified with the engine own IsUnitLoaded',
+     r'function AI_LoadedEnum\b.*?if IsUnitLoaded\(u\) then', True),
+    ('the transport bought is the map 6-capacity h00R',
+     r"constant integer AI_NAV_SHIP\s*=\s*'h00R'", True),
+    ('no warship, no sea-control model: h00S artillery is never trained',
+     r"IssueImmediateOrderById\([a-z]+, 'h00S'\)", False),
+    ('the shipyard table value is untouched, the lift is conditional',
+     r'constant real\s+AI_VAL_SHIPYARD\s*=\s*0\.02', True),
+    ('the shipyard lift is gated on wm_wantBoat',
+     r'function AI_TargetScore\b.*?wm_wantBoat\[pid\] and not AI_NeedsBoat\(pid, i\)', True),
+    ('wm_wantBoat requires an exhausted landmass AND no shipyard held',
+     r'set wm_wantBoat\[pid\] = \(not landWorth\) and yards == 0', True),
 ]
 
 
@@ -975,6 +1092,7 @@ def main():
     rc |= value_ordering()
     rc |= routing()
     rc |= gates_round3()
+    rc |= naval()
     rc |= round3_guards()
     rc |= defence()
     rc |= prng_check()
