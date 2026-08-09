@@ -126,6 +126,24 @@ function S9SlotReport takes integer pid, string nm returns nothing
     set p = null
 endfunction
 
+// ROUND 8 -- THE GUARD-POSITION TAX, cleared from the MAP SCRIPT.
+//
+// Playtest 7: "Works with Computer slots. They just move their siege towers
+// around though." The captain got the leftovers. Preplaced units hold guard
+// positions and will not join a captain until those are cleared -- exactly
+// the tax the decomposition measured at 61 RemoveGuardPosition call sites in
+// AMAI.
+//
+// The clean fix is that RemoveAllGuardPositions is a native of common.j, the
+// MAP-SCRIPT VM -- not of common.ai. So the whole faction is cleared in one
+// call, from the VM where it is pjass-gated against the real API, with no
+// risk of an undeclared native killing the .ai at load. It repeats, because
+// the captain re-issues guard positions underneath itself; that repetition
+// is AMAI's clear-order-restore handoff without the per-unit bookkeeping.
+function S9ClearGuards takes nothing returns nothing
+    call S9ClearGuardsBody()
+endfunction
+
 // If the .ai VM never speaks, SAY SO. This is the whole point: reading (1)
 // -- "the probe never initialised" -- must not look like silence.
 function S9Silence takes nothing returns nothing
@@ -175,6 +193,17 @@ endfunction
         hook.append('    call S9Say("StartMeleeAI(Player(%d), probe%d.ai) called -- now watch for green S9 lines.")' % (pid, pid))
         ai_path = os.path.join(build, 'probe%d.ai' % pid)
         open(ai_path, 'w', encoding='utf-8').write(make_ai(pid))
+    # clear guard positions before the captains ever ask for units, then keep
+    # clearing, because the captain re-issues them underneath itself
+    clear_body = ['function S9ClearGuardsBody takes nothing returns nothing']
+    for pid in sorted(PROBES):
+        clear_body.append('    call RemoveAllGuardPositions(Player(%d))   // %s' % (pid, PROBES[pid][0]))
+    clear_body.append('endfunction\n')
+    src = src.replace('//>>> S9 PROBE HELPERS BEGIN\n',
+                      '//>>> S9 PROBE HELPERS BEGIN\n' + '\n'.join(clear_body), 1)
+    hook.append('    call S9ClearGuardsBody()')
+    hook.append('    call S9Say("cleared ALL guard positions for the probed factions -- preplaced units hold guard posts and will not join a captain until they are cleared (the RemoveGuardPosition tax).")')
+    hook.append('    call TimerStart(CreateTimer(), 10.0, true, function S9ClearGuards)')
     hook.append('    call TimerStart(CreateTimer(), 25.0, false, function S9Silence)')
     src = src.replace('    call AI_Init(  )\n',
                       '    call AI_Init(  )\n' + '\n'.join(hook) + '\n', 1)

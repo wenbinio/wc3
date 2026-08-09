@@ -69,8 +69,64 @@ function ProbeSay takes string s returns nothing
     endloop
 endfunction
 
+// ROUND 8 -- I2S RETURNS AN EMPTY STRING IN THE AI VM.
+//
+// Playtest 7 printed "group size , readiness  at s": three numbers, all
+// blank, from "... + ProbeNum(sz) + ...". I2S is declared as a native in
+// common.j and pjass therefore accepted it, exactly as it accepted nothing
+// about B2S -- but declaration is not availability. The AI VM is a
+// RESTRICTED VM: it parses against common.j but does not implement all of
+// it at runtime. That is the same lesson as B2S, one layer deeper, and it
+// is the third time an instrument has been half-silent.
+//
+// So the probe converts integers itself, using nothing but integer
+// arithmetic and string concatenation -- both of which are demonstrably
+// working, since the surrounding text printed.
+function ProbeDigit takes integer d returns string
+    if d == 0 then
+        return "0"
+    elseif d == 1 then
+        return "1"
+    elseif d == 2 then
+        return "2"
+    elseif d == 3 then
+        return "3"
+    elseif d == 4 then
+        return "4"
+    elseif d == 5 then
+        return "5"
+    elseif d == 6 then
+        return "6"
+    elseif d == 7 then
+        return "7"
+    elseif d == 8 then
+        return "8"
+    elseif d == 9 then
+        return "9"
+    endif
+    return "?"
+endfunction
+
 function ProbeNum takes integer n returns string
-    return I2S(n)
+    local string s = ""
+    local integer v = n
+    local integer q
+    if v == 0 then
+        return "0"
+    endif
+    if v < 0 then
+        set v = 0 - v
+    endif
+    loop
+        exitwhen v <= 0
+        set q = v / 10                      // JASS integer division truncates
+        set s = ProbeDigit(v - q*10) + s
+        set v = q
+    endloop
+    if n < 0 then
+        return "-" + s
+    endif
+    return s
 endfunction
 
 // The AI VM loads common.j but NOT Blizzard.j, so B2S does not exist here.
@@ -186,6 +242,10 @@ function main takes nothing returns nothing
     // loaded and the captain did nothing". This line separates them: if you
     // see it, the .ai VM ran our code.
     call ProbeSay("CHECKPOINT 1 -- .ai script LOADED and running (GetAiPlayer=" + ProbeNum(GetAiPlayer()) + ")")
+    // Canary: settles whether I2S works in this VM at all, rather than
+    // leaving it inferred. Own conversion first so the line is readable
+    // even if the native half is blank.
+    call ProbeSay("number canary: own=" + ProbeNum(2026) + " I2S=[" + I2S(2026) + "] (if I2S is blank, the AI VM does not implement it)")
 
     // Every working example in the corpus calls InitAI() first -- the World
     // Editor's generated template and common.ai's own StandardAI both open

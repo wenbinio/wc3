@@ -844,3 +844,53 @@ hybrid pattern, and "the live canon designs the AI problem away" — should age
 well. **The one claim most worth re-testing is S9's premise**: that the
 engine captain is usable on a workerless, hall-less, mine-less map. That is a
 30-minute in-game experiment and nothing here substitutes for it.
+
+---
+
+## 12. CORRECTION (2026-08-09, playtest 7) — why nobody uses the engine AI
+
+§1 measured that 82 of 5,350 archived maps reference any AI native and 0 of the
+top 70 hosted maps drive one, and read that as evidence the subsystem is
+unattractive on custom maps. **There is a simpler and much more actionable
+explanation, now demonstrated on Fall of Rome:**
+
+> `StartMeleeAI` attaches the AI VM to a **computer player**. A custom map that
+> sets its slots to `MAP_CONTROL_USER` — which is what the World Editor
+> produces for a non-melee map, and what Fall of Rome does for all twelve
+> (`war3map.j` line 9409 onward) — has **no computer player to attach to**, so
+> the `.ai` never loads and fails **silently**. The fix is one call:
+> `SetPlayerController(Player(n), MAP_CONTROL_COMPUTER)` before `StartMeleeAI`.
+
+**Measured, in game, on Fall of Rome 1.06** (S9 probe, `scripts/experimental/
+rome-ai/probe.ai` + `probe.py`): with the slots left as the map sets them, the
+`.ai` produced **no output at all** — not one line, before any AI call.
+With `SetPlayerController(..., MAP_CONTROL_COMPUTER)` added and nothing else
+changed, the same script **loaded, ran `InitAI`, returned from
+`CreateCaptains`, and reached captain staging** — on a map with **no halls, no
+gold mines and no workers**. Owner's words: *"Works with Computer slots."*
+
+That answers §S9's unproven half affirmatively and narrows the mystery of the
+82/5,350 figure. It is at least plausible that the reason the engine AI is
+"unusable on custom maps" is that custom maps are user-controlled by default,
+the failure is silent, and **the one-line fix is not written down anywhere**.
+The `"map.ai"` placeholder finding supports this reading: those 94 call sites
+name a file that does not exist in any archive, i.e. nobody ever got far enough
+to notice their AI was not running.
+
+Two further runtime facts the probe established, both of the "declaration is
+not availability" family:
+
+* **`B2S` does not exist in the AI VM** — it lives in `Blizzard.j`, which the
+  AI VM does not load. `pjass common.j common.ai` catches this at build time.
+* **`I2S` is declared in `common.j` and accepted by pjass, but returns an
+  EMPTY STRING at runtime in the AI VM.** Playtest 7 printed
+  `"group size , readiness  at s"` — three blank numbers. The AI VM parses
+  against `common.j` without implementing all of it. Any `.ai` needing to print
+  a number must convert it itself or route it to the map script.
+
+Also note for anyone reusing jassdoc's `common.ai`: that copy is the **2003
+ROC-era file** (`$Id: common.ai,v 1.68 2003/05/12`), 123 natives, and it does
+**not** contain `RemoveGuardPosition`. That native — and
+`RemoveAllGuardPositions(player)`, which clears a whole faction in one call —
+are in **`common.j`**, so guard positions are best cleared from the **map
+script**, where they are gated against the real API.

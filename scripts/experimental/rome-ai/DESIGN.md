@@ -1871,3 +1871,85 @@ clean in full mode; `validate-map` 191/192 identical; both `.ai` members verifie
 **19,026,065**, probe **19,035,727**.
 
 **Stage 3 remains unbegun.**
+
+---
+
+## 17. Playtest 7 — S9 IS ANSWERED: the engine AI runs on this map
+
+Owner: *"Works with Computer slots. They just move their siege towers around
+though."* Green probe output confirms captains reached **staging**.
+
+### 17.1 The blocker was the controller, and it is one call
+
+The map sets all twelve slots `MAP_CONTROL_USER` (`war3map.j` 9409+).
+`StartMeleeAI` attaches the AI VM to a **computer player**, so there was nothing
+to attach to and the `.ai` failed **silently** — no output at all, before any AI
+call. Adding `SetPlayerController(Player(n), MAP_CONTROL_COMPUTER)` before
+`StartMeleeAI`, and changing nothing else, made the same script load, run
+`InitAI`, return from `CreateCaptains`, and reach staging — **with no halls, no
+gold mines and no workers**.
+
+So §S9's unproven half is now proven: **the engine AI subsystem runs on Fall of
+Rome.** `for-ai.j` never needed this because it issues orders from the map
+script; the engine AI needs a player to attach to.
+
+This is recorded as a correction in `docs/reference/wc3-map-ai-decompositions.md`
+§12, because it may be the broadest thing this project has found: the
+decomposition measured 82 of 5,350 archived maps referencing any AI native and 0
+of the top 70 hosted maps driving one, and read that as the subsystem being
+unattractive. The likelier reading is now that **custom maps are user-controlled
+by default, the failure is silent, and the one-line fix is written down
+nowhere.** The 94 `"map.ai"` call sites naming a file absent from every archive
+fit that reading exactly — nobody got far enough to notice their AI was not
+running.
+
+### 17.2 The captain has the leftovers, not the army
+
+*"They just move their siege towers around"* is the `RemoveGuardPosition` tax
+the decomposition measured at 61 call sites in AMAI: preplaced units hold guard
+positions and will not join a captain until those are cleared, while unguarded
+units join freely. **No conclusion about captain quality is available yet** —
+it is currently being judged on siege engines.
+
+The clean fix is that **`RemoveAllGuardPositions(player)` is a native of
+`common.j`**, the *map-script* VM — not of `common.ai`. So the probe clears a
+whole faction in one call, from the VM where pjass gates it against the real
+API, with no risk of an undeclared native killing the `.ai` at load. It repeats
+on a 10 s timer, because the captain re-issues guard positions underneath
+itself; that repetition is AMAI's clear-order-restore handoff without the
+per-unit bookkeeping.
+
+(Note for anyone reusing jassdoc's `common.ai`: it is the **2003 ROC-era file**,
+123 natives, and does **not** contain `RemoveGuardPosition`.)
+
+### 17.3 `I2S` returns an empty string in the AI VM
+
+Playtest 7 printed `"group size , readiness  at s"` — three numbers, all blank.
+`I2S` is declared as a native in `common.j`, so **pjass accepted it**; the AI VM
+parses against `common.j` without implementing all of it at runtime. Same family
+as `B2S`, one layer deeper: **declaration is not availability.**
+
+The probe now converts integers itself, using only integer arithmetic and string
+concatenation — both demonstrably working, since the surrounding text printed —
+and carries a **canary** line printing `2026` both ways, so the next run settles
+`I2S` rather than leaving it inferred.
+
+**This is the third half-silent instrument** (guards matching past
+`endfunction`; a measurement that could not separate AI from human; now numbers
+that do not print). The pattern is consistent enough to state as a rule: *every
+instrument needs a test that it can speak, not merely that it can be built.*
+
+### 17.4 Where this leaves the architecture decision
+
+The honest position, unchanged from what should be given to the owner:
+
+* the engine path is **possible** — proven;
+* its first observed behaviour is **poor** — the captain has the leftovers;
+* the guard-position fix is the difference between those two statements.
+
+One more probe run answers whether a captain **holding a real army** gathers,
+moves, arrives, retreats, or reports `CaptainIsHome` — and that is the evidence
+S1/S3 should turn on. **Stage 3 remains unbegun.**
+
+Artifact sizes for identification: playable **19,026,065**, probe
+**19,038,147**.
