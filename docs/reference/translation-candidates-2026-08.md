@@ -821,3 +821,282 @@ Path-oracle patterns to add: `_CN`/`_ch_` (derived localization + its
 DIRECTION), `engsub` (already translated), `000`-prefix (host-list sort
 hack), `(4)`/`(16)`/`(24)` (melee-template ancestry), bare hashes
 (provenance destroyed by a file host).
+
+---
+
+# Wave 6b — Latin-script mid-tail (100–1,500 hosted/mo)
+
+## Instrument correction #2 [M]
+
+**`order=hosted_month` page-walking does NOT enumerate the canon.** Pages
+1–60 yield 1,440 rows; a bounded scan of pages 61–100 surfaced **19 more
+maps at ≥100/mo that pages 1–60 never returned**. Ordering is not a
+stable total order across paginated queries — every count in waves 5/6
+is a FLOOR. Floor measurement here: 984 Latin maps / 328,631 games/mo.
+The 100–1,500 band = **396 maps / 124,534 games/mo = 38% of all
+Latin-script play, in maps nobody has written about.**
+
+## Shape of the mid-tail [M]
+
+Blizzard's own ladder melee = 74 maps / 22,079 games (any Latin canon
+claim must exclude them or it measures W3Champions). ORPG 34, licensed-IP
+27, Green-Circle-TD forks 28, send-and-defend 10, zombie survival 14,
+X Hero Siege 7, Enfo/Footmen 8, Burbenog 6, Legion TD 3 — and 185 maps /
+57,030 games in "everything else". **Fork-swarm is the dominant mode of
+life**: Green Circle TD has 28 simultaneously-hosted point-forks by 28
+editors, none dominant. **Format-wise the mid-tail is OLD**: of 331
+profiled, w3i v25=144 / v31=91 / v33=92, and **133 (40%) were last saved
+by a pre-1.32 editor**. It is a classic-format population, not a
+Reforged one.
+
+## Finds
+
+1. **Tower Survivors v1.90** (430170, 352/mo) — **a Vampire-Survivors-
+   shaped map with no WC3 ancestor**: one tower, between-round shop with
+   **rerolls at escalating cost**, legible multiplicative scaling
+   (+1% dmg per 1000 max HP, diminishing per purchase), crit overflow
+   past 100%, timed challenges — and information warfare: **spy on a
+   rival's tower to see their weapons and DPS**. Fully open, 256/256
+   named, vJASS with `BigNum` + `FileIO`. The closest canon analogue to
+   vaults-of-ash but lobby-shaped. DECOMPOSE + steal the reroll curve.
+2. **Assault the Throne 2.3.3** (271256, 1,345/mo) — a faithful **SC2
+   Co-op Commanders** port: 9 commander factions, **prestige levels**,
+   per-commander tech unlocks, and a **mutator system with in-lobby
+   voting** where stacked mutators raise difficulty AND reward
+   ("3 Mutators: Very Hard, +75% XP"). 92.9MB, 773/773 named,
+   **C#→Lua**, 96k lines, codeless `.pld` save/sync. Answers a question
+   our fleet keeps hitting: how a co-op PvE map keeps players across
+   sessions with no save-code UI.
+3. **War of Races 1.16c** (445814, 1,200/mo) — 13p race-vs-race; its Lua
+   prints its own **C# package manifest** (WCSharp.*); frame-UI **lobby
+   mode selector** (Ranked/AllRandom/AllPick/Draft/Sandbox) with
+   **per-mode save slots** and 69 W3MMD calls reporting to hosting bots.
+   125 BlzCreateFrame — heaviest frame UI measured.
+4. **Risk Europe 4.10** (436962, 1,245/mo) — Risk as a **23-player** map
+   with an **in-map ELO ladder rendered in frames**, account codes,
+   TypeScriptToLua. Note for the canon study: **Risk IS elimination**,
+   at 1,245/mo.
+5. **Sprout TD 2.3** (428641, 190/mo) — **the most stealable mechanic of
+   the wave**: "a mazing TD without a builder — you SPROUT new towers off
+   existing towers." Branch tiers, full refund on blocked sprouts; the
+   maze and the tech tree are the same object. Click-native, sim-testable,
+   337KB, wtg+wct open.
+6. **Life of a Peasant Ascension** (407835, 227/mo) — **CANON
+   CORRECTION**: 24p social sandbox with full/part-time jobs (Doctor,
+   Miner, Cook with real ingredient→fire→Cook chains, Soldier rank-ups
+   granting permanent auto-income), gangs, arena ladder, school
+   scenarios with lawsuits. Alive at 227/mo, and not alone (Uther Party
+   Ultima-X 272, Are you a Lucker? 123, Canned Bread 104, Banjoball 135).
+7. **Random Ability Tank Defense** (342054, 137/mo) — path says
+   `..._translated.w3x` (KR original). Its **reroll economy** is the
+   grammar to copy for random-defense: spend lumber to re-draw, shown 3
+   same-grade alternatives EXCLUDING your current type, one is forced,
+   **no cancel**.
+8. **Divine Roguelike** (441516, 174/mo) and **Just Another Roguelike**
+   (443279, 230/mo) — the two live roguelikes players actually chose;
+   **neither is in docs/reference/roguelike-comparison.md**, which
+   compared three maps chosen by reputation.
+9. **Mansion Murderer** (20596, 132/mo) — the Latin-side deduction
+   incumbent nobody profiled: form-switching, hidden mansion key, and
+   design that assumes real darkness ("Q: I can't see anything! A: Turn
+   off the lights in your room").
+Also: **Power Towers** (2120, 255/mo, from 2011) — "a TD where you must
+provide POWER to your towers", the closest canon thing to coinstead's
+`-link` logistics, with **192 W3MMD calls in a 2011 map**; **Monster
+Defense** (445766, 999/mo) — 24p race-pick base-builder survival, i.e.
+coinstead's genre at scale; **Farmer vs Hunter X** — role reversal as a
+scheduled beat; a live **WoW-timeline grand-strategy shelf** of ~10 maps
+(LORDAERON TA/TF/GENESIS 1,887/mo combined) the canon dossier ignores.
+
+## Technical frontier [M]
+
+- **C# is a first-class WC3 language in the live canon**: `transpiler:2`
+  = CSharpLua (Assault the Throne 1,345/mo, Spectrum TD 1,228, War of
+  Races 1,200, Warcraft Legacies, RKR Remastered); `transpiler:1` =
+  TypeScriptToLua (Risk Europe, Monster Defense, Hero Strife TD, the
+  W3Champions melee shelf). ~5,900 games/mo transpiled in this band alone.
+  **Decompiled C# is LEGIBLE** — namespaces, dispatch tables and enum
+  comments survive into the shipped Lua, making a C# map *easier* to
+  decompose than a JASS one.
+- **Codeless persistence is standard equipment**: the same
+  PreloadGen/Preload + BlzSendSyncData triad everywhere, with two
+  reusable libraries in the wild — **WCSharp.SaveLoad** (C#, `.pld`) and
+  **FileIO** (vJASS). This is ambitious-maps-analysis §6's deferred
+  save-code capability, solved twice.
+- **Frame UI is mainstream in the mid-tail** (War of Races 125 frames,
+  Risk Europe 69, Divine Roguelike 61) and is used for the META layer —
+  mode pickers, ELO boards, prestige buttons, mutator votes — not combat
+  HUDs. **W3MMD spans eras** (a 2011 map has 192 calls).
+- Authoring effort is free via `saves`: Line Tower Wars Reforged 40,711
+  editor saves, Millenium RPG 40,004, Warlock 35,639.
+
+## Negative space re-audited IN ENGLISH [M]
+
+Zero live maps for: incremental, automation, logistics, conveyor,
+courtroom, election, rhythm, deckbuild; chess/tycoon/colony/extraction ≤1
+map at ≤5 hosted. **Wave 5's negative space holds in English** — it is a
+genuine genre gap, not a search-language artifact.
+
+---
+
+# Wave 6c — THE ARCHIVE DEAD LAYER, MINED
+
+## Corrections to the wave-5 archive picture [M]
+
+- **`wc3_maps_2003` is a STUB** (8 files, 58KB, one jpg — the uploader
+  never populated it). The 2002→2003 instrument does not exist;
+  substituted below.
+- **The 121.5GB EpicWar dump IS per-file addressable over HTTP** —
+  `…/epicwar_maps.zip/maps%2F<id>%2Fmeta.json` returns ~495 bytes in ~1s.
+  **Hard limit**: IA's cached central directory covers the first 106,045
+  entries = epicwar ids 1→~117,529 = **2005-02-24 to 2009-12-03**; higher
+  ids return HTTP 400, so the 2010–2021 tail genuinely needs the full
+  121GB. Fully exploiting the accessible head ≈ 53MB of meta.json, ~3
+  hours — yielding category, submission date, **rating (good/bad)** and
+  **download count** for every EpicWar map of 2005–2009, strictly better
+  than canon-invariants' current top-200-scrape evidence base.
+- **`wc3_maps_2002` has two unused instruments**: a complete pre-parsed
+  index as one 3.9MB HTML file (derplayer.neocities.org/repo/wc3maps/2002)
+  and — the big one — **`/download/<item>/<map>.zip/<member>` serves any
+  file INSIDE a per-map zip**, so `war3map.j` for all 5,359 maps is
+  greppable over HTTP **with no MPQ backend at all**.
+- **NEW corpus nobody has listed**: `warcraft-3-map-archive_202307`,
+  1.07GB, **1,442 per-file maps** — "all maps I had on my old hard drive
+  from 2009", i.e. a PLAYED/KEPT sample rather than an upload sample.
+  Most dead-RU-host mirrors are monolithic .rar/.7z; only three
+  (`anime-fight-star-v-2.8` 291, `20479-arrafrro` 153,
+  `underground-chronicles-final` 65) are per-file.
+
+Corpus profile from all 5,358 sidecars: **w3i v18 = 99.8%** (v25 = 13
+maps), median 225 editor saves, 12-slot maps 40.5%, **1–2 player maps
+4.6%**, 2,032 distinct authors, 1.38M chars of loading-screen text.
+
+## THE FIND: an English social-deduction franchise, 2002
+
+`bHawk` authored *Murder at the Graveyard* / *Murder at the Mansion*;
+forked and continued by **Cyde**, **KILLTHEGAYS**, **Garaak** (credits
+bHawk in-map), **ze-Falcon** (*Murder in the City!* — an explicit
+narrative sequel), **Rain Of Terror** — **six authors, 20+ point-versions,
+58 sidecar rows**. Mechanics, read from the artifacts:
+- **physical voting**: "step into the circle that corresponds with who
+  you think is the killer" — click-native voting, zero typing, in 2002
+  (exactly gotcha 33's ideal);
+- **the killer has a kill QUOTA on a timer** — victims win if he
+  under-delivers (an anti-passive constraint modern hidden-role games
+  mostly lack);
+- **discovery does not end the game**: "Your identity has been
+  uncovered!! Get to the gates to escape!" — an escape phase after reveal;
+- **`killspeak`** — an anonymous/spoofed voice for the killer, i.e. an
+  anonymous-messaging primitive, 2002.
+Waves 1–4 spent three passes hunting deduction in CN/KR/RU. It was here,
+in English, twenty-four years ago.
+
+**Methodological bonus**: the `saves` counter reconstructs GENEALOGY
+where no changelog exists — bHawk's builds run 336→414 while Cyde's forks
+sit at 432→441 and KILLTHEGAYS' at 404→426, i.e. the forkers inherited a
+bHawk file and kept saving. (Complements wave 6a's saves-as-ancestry-clock
+finding, independently derived.)
+
+## Other dead mechanics with no living incumbent
+
+- **Stealth Operations v1.1** (234KB, 12p, wtg+wct, unprotected) — a
+  fully-realised asymmetric heist: 4 attacker vs 4 defender classes (the
+  Spy makes illusory doubles of himself AND of others); **defenders are
+  locked inside the base until all items are stolen, then released**; a
+  **security-camera room** only defenders can use, and cameras can be
+  disabled; trainable watch dogs; jails with team-rescue AND self-escape;
+  sentry guns that respawn with you; and three MacGuffins with
+  **distinct asymmetric penalties** (one disables shadowmeld, one
+  debuffs move speed, one buffs attacker damage).
+- **Curse of the Werewolf** — hidden role welded to an RTS economy:
+  **infection spreads by attacking villagers**, infected turn into
+  werewolves **at night under the werewolf's control and die at day**;
+  a no-attack tower whose only function is seeing the invisible.
+  The closest structural ancestor to Last Train's defection mechanic
+  found anywhere.
+- **Dog Eat Dog** — a Survivor-format elimination game with a
+  **reciprocity-gated secret ballot** ("you can only vote for players who
+  voted for you first" — the ballot is a physical, dynamically-edited
+  object) and a **redeem-from-elimination trivia round where the ACTIVE
+  players choose who gets asked**.
+- **CityCraft! v1.8** — competitive SimCity with gold upkeep every 5s, an
+  **attraction score gating whether a citizen fills a slot**, citizens as
+  the SUPPLY buildings consume, and a budget-overrun bailout costing 250
+  of future gains. Systemically richer than the live KR incumbent.
+- **Neo Warcraft Gladiators** (859 saves) — a 17-mode meta-shell with a
+  **jailer-reputation economy** (earn reputation → allowed out to spend
+  winnings → fail to return before the next fight → reputation drops).
+- Also: **Preschool Showdown** ("you receive money for NOT building" — an
+  inverted economy paying restraint), **Taxation** (governance-vs-governed
+  asymmetry), **Multiplication Madness** (unkilled creeps MULTIPLY, so a
+  leak compounds), **DrAwInG ContEsT** (the minimap as a drawing canvas
+  with a judge role) by an author who also shipped Red Light-Green Light
+  in 2002, **The Gambler's Game** (2p hidden-information shell game),
+  full **Monopoly** (mortgages, property groups, 3-doubles-to-jail — and
+  the map itself prints "Monopoly is copyright Hasbro"), **WarChess**
+  (castling, Hold-Position pawn promotion), **Musical Chairs** (with
+  disconnect handling and AI), and an entirely vanished sports/vehicle
+  shelf (Sheep Ball, Mutant League Hockey, Demolition Derby, Steam Tank
+  Racing, Lordaeron Rally, WarCART Racing).
+
+## Diversity: what actually collapsed, and when [M]
+
+2002 corpus (n=5,359) vs the 2009 kept-on-a-hard-drive sample (n=1,442),
+filename match: TD/defense 22.6%→35.6% (1.57×), survival 3.7×, AoS 3.6×,
+RPG 3.1× — while escape/maze 0.35×, arena 0.52×, tag 0.45×, **deduction
+0.26×**, and race/vehicle, stealth, sim/tycoon all → **0.00%**.
+
+Description-text match, 2002 vs an EpicWar 2005–09 sample (n=4,500):
+sandbox 0.12×, karaoke/rhythm 0.24×, stealth 0.40×, and racing, survivor
+shows, drawing, golf, projectile-physics all → **0**. BUT
+social-deduction 1.08×, board-game 0.88×, city-sim 0.95× — **flat**.
+
+**This corrects wave 5's framing.** It was not a uniform collapse of
+"genre diversity". Deduction, board games and city-sim HELD their share
+from 2002 into 2005–09; what died in that window is the **party /
+novelty / physical-experiment shelf** (sandbox, racing, elimination
+shows, drawing, physics-aim, golf) plus escape/maze and arena, while
+TD/RPG/AoS/survival tripled. A SECOND collapse (2009→2026) then took the
+rest, and deduction migrated wholesale into the KR/CN/RU scenes waves
+1–4 documented.
+
+**Two rows have NEVER been occupied in any era measured**:
+**courtroom/trial** and **automation/logistics**. Wave 5 called them
+openings against the 2026 index; they are openings against the entire
+24-year record.
+
+**Canon-invariant I1 falsified for the classic era**: 4.6% of the 2002
+corpus declares 1–2 player slots (9.2% of index rows). "No solo maps" is
+a property of the modern HOSTED canon, not of WC3 custom maps.
+
+## Toolkit gaps, now backed by a 5,341-map corpus [M]
+
+Random sample of 40 maps, 39 extracted+translated:
+terrain 39/39, regions 39/39, strings 39/39, objects-units 35/39 —
+but **info.json 0/39** (w3i **v18**, and v18 is **99.8% of the corpus**),
+**units.json 0/39** (`war3mapUnits.doo` v7 sub-9, no codec), doodads 0/39
+(known), sounds 0/39 (w3s v1), imports 0/39 (imp v0), cameras 24/39
+(w3c v0 over-reads 1–4 bytes per record, cumulative).
+
+**The practical statement**: our capability matrix says classic TFT is
+fully read+write. The 2002 layer is **RoC, not TFT** — so **the entire
+pre-TFT era is read-only for the two things that matter most: map info
+(players/forces/flags/name) and preplaced units.** No CreateAllUnits can
+be generated, no lobby reconfigured, no unit moved.
+
+**But repacking is lossless by passthrough** — a full round-trip on
+Stealth Operations (extract → map-to-json → json-to-map → w3x-pack →
+validate-map) gives **25/31 checks passed, 0 FAILs**, and the viewer
+independently parses all 17 members; w3x-pack correctly derived the HM3W
+header from the packed w3i.
+
+Ranked fix list, cheapest first: (1) **w3c v0 camera codec** — one field,
+38.5% of the sample; (2) **`war3mapUnits.doo` v7.9 reader** — unlocks
+preplaced units for the whole classic era, same family as the doodad
+`.doo` bug already written up in docs/upstream/; (3) **w3i v18 codec** —
+unlocks the lobby layer for 99.8% of the 2002 corpus, and v18→v25 is a
+smaller delta than the v25↔v31↔v33 chain w3i31.js already covers;
+(4) w3s v1 / imp v0 — trivial, low value. Plus: **the 2002 corpus is a
+free source of listfile-grade stock-art PATH facts** for
+lib/data/stock-art.json (its asset zips were scanned against an ~80MB
+listfile), and 2002 maps use dozens of paths not yet in our table.
