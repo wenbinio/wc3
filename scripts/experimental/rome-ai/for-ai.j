@@ -368,6 +368,43 @@
     integer array    ai_comp
 
     // ===================================================================
+    //  ROUND 3: COORDINATION AND HARASSERS  (queue item 7)
+    //
+    //  "AIs should act in consort" -- a shared claim ledger so two allied
+    //  AIs do not duplicate or fight over the same objective, and one AI per
+    //  front playing a harassing role CONCURRENTLY with the push rather than
+    //  instead of it.
+    //
+    //  The ledger is a LABELLED allowance, in the spirit of AI_HANDICAP: it
+    //  shares intent between allied AI players, which is exactly what human
+    //  allies do out loud. It reveals nothing about the enemy and does not
+    //  touch the fog contract -- enemy strength still comes only from
+    //  IsUnitVisible -- and a claim binds only between players the map has
+    //  actually allied. It is a discount, never a veto, so a claimed point
+    //  is still taken when it is the only thing worth taking.
+    //
+    //  The harasser is chosen by the map own seeded stream. The front and
+    //  the weighting are the owner: for the Byzantium fight, between Red
+    //  (Huns), Gray (Ostrogoths) and Pink (Persians), strongly weighted
+    //  towards Red. Player ids come from the map own multiboard rows rather
+    //  than a guess: row 2 Huns = Player(0), row 10 Ostrogoths = Player(8),
+    //  row 9 Persians = Player(7). The western front is left unassigned.
+    // ===================================================================
+    constant real    AI_CLAIM_TTL     = 30.0   // a claim this old is stale
+    constant real    AI_CLAIM_PENALTY = 0.35   // discount, never a veto
+    constant integer AI_HARASS_A      = 0      // Red    Huns
+    constant integer AI_HARASS_B      = 8      // Gray   Ostrogoths
+    constant integer AI_HARASS_C      = 7      // Pink   Persians
+    constant integer AI_HARASS_WA     = 6      // out of 10: strongly Red
+    constant integer AI_HARASS_WB     = 2
+    constant integer AI_HARASS_WC     = 2
+    constant real    AI_RAID_DEF      = 60.0   // "undefended" for a raid
+    constant integer AI_RAID_SLICE    = 8      // orders one raid may spend
+    integer array    ai_claim                  // point -> claiming player, -1
+    real    array    ai_claimAt
+    integer          ai_raidType    = 0
+
+    // ===================================================================
     //  ROUND 3: HEROES  (queue item 5)
     //
     //  The decisive fact, established from the artifact: there is NO revive
@@ -1478,6 +1515,24 @@ function AI_TargetScore takes integer pid, integer i returns real
     else
         set sw = 0.86
     endif
+    // ROUND 3, queue item 7. A harasser is looking for something different:
+    // OUTLYING and UNDEFENDED. Squaring the weakness term punishes any
+    // garrison much harder, and the flatter distance falloff stops the AI
+    // preferring whatever happens to be under its nose -- being out on the
+    // flank is the job, not a cost.
+    if ai_harasser[pid] then
+        set weak = weak * weak
+        set prox = 1.0 / (1.0 + AI_Dist(ai_ptX[i], ai_ptY[i], wm_fieldX[pid], wm_fieldY[pid]) / 9000.0)
+    endif
+    // ROUND 3, the claim ledger: do not duplicate an ally's objective. A
+    // DISCOUNT and not a veto, so a claimed point is still taken when it is
+    // the only thing worth taking, and claims expire so a dead ally cannot
+    // reserve half the map.
+    if ai_claim[i] >= 0 and ai_claim[i] != pid and (ai_now - ai_claimAt[i]) < AI_CLAIM_TTL then
+        if IsPlayerAlly(ai_p[ai_claim[i]], ai_p[pid]) then
+            set sw = sw * AI_CLAIM_PENALTY
+        endif
+    endif
     set u = null
     return v * prox * weak * stale * sw * (1.0 + AI_Noise(AI_NoiseAmp(pid)*0.5))
 endfunction
@@ -2518,6 +2573,86 @@ function AI_RoleCost takes integer pid, integer role returns real
     return AI_BaseCost(AI_UnitFor(pid, role))
 endfunction
 
+// ---- coordination and raiding (round 3, queue item 7) -------------------
+
+// Record our intent in the shared ledger, releasing whatever we held before
+// so a claim can never outlive the interest that created it.
+function AI_Claim takes integer pid, integer t returns nothing
+    local integer old = ai_target[pid]
+    if old >= 0 and old < ai_pointCount and ai_claim[old] == pid then
+        set ai_claim[old] = -1
+    endif
+    if t < 0 or t >= ai_pointCount then
+        return
+    endif
+    set ai_claim[t] = pid
+    set ai_claimAt[t] = ai_now
+endfunction
+
+// The flank objective: something outlying and genuinely undefended, and
+// never the objective the main army is already committed to.
+function AI_RaidTarget takes integer pid returns integer
+    local integer i = 0
+    local integer best = -1
+    local real bs = 0.0
+    local real s
+    loop
+        exitwhen i >= ai_pointCount
+        if i != ai_target[pid] and ai_pt[i] != null and not AI_NeedsBoat(pid, i) then
+            if not (GetOwningPlayer(ai_pt[i]) == ai_p[pid] or IsPlayerAlly(GetOwningPlayer(ai_pt[i]), ai_p[pid])) then
+                if ai_ptDef[pid*AI_MAX_POINTS + i] <= AI_RAID_DEF then
+                    set s = AI_PointValue(ai_ptKind[i]) / (1.0 + AI_Dist(ai_ptX[i], ai_ptY[i], wm_fieldX[pid], wm_fieldY[pid]) / 9000.0)
+                    if s > bs then
+                        set bs = s
+                        set best = i
+                    endif
+                endif
+            endif
+        endif
+        set i = i + 1
+    endloop
+    return best
+endfunction
+
+function AI_RaidEnum takes nothing returns nothing
+    local unit u = GetEnumUnit()
+    if GetUnitTypeId(u) == ai_raidType and GetUnitState(u, UNIT_STATE_LIFE) > 0.405 and not IsUnitLoaded(u) then
+        call AI_TryOrder(u, AI_ORD_ATTACKP, ai_orderX, ai_orderY, null)
+    endif
+    set u = null
+endfunction
+
+// Horses raid the flanks CONCURRENTLY with the push. The owner asked for
+// harassment "with horses and cavalry ... concurrently with pushing, not
+// instead of it", so this is an EXTRA dispatch layered on the normal march
+// with its own small budget, not a replacement for it -- and it deliberately
+// ignores the garrison hold-back in AI_SendEnum, which is the stacking
+// heuristic the harasser role is meant to override.
+function AI_Raid takes integer pid returns nothing
+    local group g
+    local integer t
+    if not ai_harasser[pid] then
+        return
+    endif
+    set t = AI_RaidTarget(pid)
+    if t < 0 then
+        return
+    endif
+    set ai_curP = ai_p[pid]
+    set ai_curPid = pid
+    set ai_raidType = AI_UnitFor(pid, 3)     // the faction cavalry
+    set ai_orderX = ai_ptX[t]
+    set ai_orderY = ai_ptY[t]
+    set ai_issued = 0
+    set ai_budget = AI_RAID_SLICE
+    set g = CreateGroup()
+    call GroupEnumUnitsOfPlayer(g, ai_p[pid], Filter(function AI_OwnUnitFilter))
+    call ForGroup(g, function AI_RaidEnum)
+    call DestroyGroup(g)
+    set g = null
+    call AI_Say(pid, "raiding " + AI_KindName(ai_ptKind[t]) + " on the flank")
+endfunction
+
 // Buy the role that is furthest below its target share of army CV.
 function AI_Spend takes integer pid returns nothing
     local unit b = AI_FindTrainer(pid)
@@ -2756,8 +2891,10 @@ function AI_Execute takes integer pid returns nothing
             if ai_target[pid] != t then
                 call AI_Say(pid, "marching on " + AI_OwnerName(t) + " capital")
             endif
+            call AI_Claim(pid, t)
             set ai_target[pid] = t
             call AI_MoveOnTarget(pid, t)
+            call AI_Raid(pid)              // horses keep working during a push
         endif
 
     elseif goal == GOAL_EXPAND then
@@ -2768,8 +2905,10 @@ function AI_Execute takes integer pid returns nothing
             if ai_target[pid] != t then
                 call AI_Say(pid, "moving on " + AI_KindName(ai_ptKind[t]) + " held by " + AI_OwnerName(t))
             endif
+            call AI_Claim(pid, t)
             set ai_target[pid] = t
             call AI_MoveOnTarget(pid, t)
+            call AI_Raid(pid)
         endif
     endif
 endfunction
@@ -3000,6 +3139,49 @@ function AI_CmdActions takes nothing returns nothing
     call DisplayTextToPlayer(GetTriggerPlayer(), 0, 0, "FoR-AI difficulty set.")
 endfunction
 
+// One AI per front takes the harassing role, drawn from the map own seeded
+// Park-Miller stream (gotcha 29) so the choice is reproducible. The front,
+// the three candidates and the weighting are the owner: the Byzantium fight,
+// between Red, Gray and Pink, strongly weighted towards Red. Only slots the
+// AI actually plays are entered in the draw, so a human in the Hun seat
+// hands the role on rather than voiding it.
+function AI_PickHarasser takes nothing returns nothing
+    local integer total = 0
+    local integer r
+    local integer pick = -1
+    if ai_on[AI_HARASS_A] then
+        set total = total + AI_HARASS_WA
+    endif
+    if ai_on[AI_HARASS_B] then
+        set total = total + AI_HARASS_WB
+    endif
+    if ai_on[AI_HARASS_C] then
+        set total = total + AI_HARASS_WC
+    endif
+    if total <= 0 then
+        return
+    endif
+    set r = ModuloInteger(AI_Rand(), total)
+    if ai_on[AI_HARASS_A] then
+        if r < AI_HARASS_WA then
+            set pick = AI_HARASS_A
+        endif
+        set r = r - AI_HARASS_WA
+    endif
+    if pick < 0 and ai_on[AI_HARASS_B] then
+        if r < AI_HARASS_WB then
+            set pick = AI_HARASS_B
+        endif
+        set r = r - AI_HARASS_WB
+    endif
+    if pick < 0 and ai_on[AI_HARASS_C] then
+        set pick = AI_HARASS_C
+    endif
+    if pick >= 0 then
+        set ai_harasser[pick] = true
+    endif
+endfunction
+
 // Fill every slot that has no human in it.
 function AI_Init takes nothing returns nothing
     local integer pid = 0
@@ -3019,6 +3201,13 @@ function AI_Init takes nothing returns nothing
     endloop
 
     call AI_BuildRegistry()
+    set pid = 0
+    loop
+        exitwhen pid >= ai_pointCount
+        set ai_claim[pid] = -1
+        set ai_claimAt[pid] = -9999.0
+        set pid = pid + 1
+    endloop
     // ROUND 3: one-time land connectivity over the point registry. Bounded
     // by ai_pointCount (<= AI_MAX_POINTS), and only pairs closer than
     // AI_LINK_R that are not already unioned ever pay for a walkability walk.
@@ -3033,6 +3222,8 @@ function AI_Init takes nothing returns nothing
         endif
         set pid = pid + 1
     endloop
+
+    call AI_PickHarasser()
 
     set ai_cmdTrig = CreateTrigger()
     set pid = 0

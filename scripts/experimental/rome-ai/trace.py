@@ -248,7 +248,7 @@ def make_env(sc):
         'ai_goal': d(sc.get('goal', CONSTS['GOAL_CONSOLIDATE'])),
         'ai_goalSince': d(sc.get('goalSince', -100.0)),
         'ai_target': d(sc.get('target', -1)),
-        'ai_p': d(pid),
+        'ai_p': {i: i for i in range(CONSTS['AI_MAX_PLAYERS'])},
         'ai_homeX': d(0.0), 'ai_homeY': d(0.0),
         'ai_scanCursor': d(0),
         'wm_army': d(sc.get('army', 0.0)),
@@ -269,7 +269,7 @@ def make_env(sc):
         'ai_postureAt': d(sc.get('postureAt', 1e9)),
         'ai_harasser': d(sc.get('harasser', False)),
         'wm_wantBoat': d(sc.get('wantBoat', False)),
-        'ai_comp': {},
+        'ai_comp': {}, 'ai_claim': {}, 'ai_claimAt': {},
         'ai_navState': d(0), 'ai_navShip': d(None),
         'ai_navAt': d(0.0), 'ai_navSince': d(0.0),
         'wm_capThreat': d(sc.get('capThreat', False)),
@@ -300,8 +300,11 @@ def make_env(sc):
         env['ai_ptSeen'][pid * MP + i] = p.get('seen', sc.get('t', 300.0))
         env['ai_ptDef'][pid * MP + i] = p.get('defence', 0.0)
         env['ai_comp'][i] = i
+        env['ai_claim'][i] = p.get('claim', -1)
+        env['ai_claimAt'][i] = p.get('claimAt', sc.get('t', 300.0))
     # land component per point; AI_Find is mocked off this so the union-find
     # implementation is not what the connectivity assertions depend on
+    env['_allies'] = set(sc.get('allies', ()))
     env['_ptComp'] = {i: p.get('comp', 0) for i, p in enumerate(sc.get('points', []))}
     env['_ptOwner'] = {i + 1: p.get('owner', 1) for i, p in enumerate(sc.get('points', []))}
     # gates: handle = 1000+index so it cannot collide with a point handle
@@ -326,7 +329,7 @@ def make_natives(env, noise=0.0):
         'SquareRoot': math.sqrt,
         'I2R': float,
         'GetOwningPlayer': lambda h: env['_ptOwner'].get(h, 1),
-        'IsPlayerAlly': lambda a, b: False,
+        'IsPlayerAlly': lambda a, b: (a, b) in env.get('_allies', ()) or (b, a) in env.get('_allies', ()),
         'AI_Noise': lambda amp: noise,
         # gate state is read off the live unit type in the real module; here it
         # comes from the scenario, so the ROUTING logic under test stays the
@@ -944,6 +947,114 @@ def strategy():
     return 1 if fails else 0
 
 
+# ------------------------------ round 3: coordination + harassers (item 7)
+
+def consort():
+    """Queue item 7. Two claims.
+
+    (a) The claim ledger stops two ALLIED AIs duplicating an objective, and
+        does it as a discount rather than a veto -- a claimed point is still
+        taken when it is the only thing worth taking. It must not bind
+        between enemies, and it must expire.
+
+    (b) The harasser is drawn from the map's own seeded Park-Miller stream,
+        between Red / Gray / Pink, strongly weighted to Red, and prefers
+        OUTLYING UNDEFENDED objectives rather than whatever is nearest."""
+    print('\n' + '=' * 78)
+    print('ROUND 3 -- acting in consort: the claim ledger and the harasser')
+    print('=' * 78)
+    fails = 0
+    ALLIED = [(0, 1), (1, 0)]
+
+    def score(claim=-1, claim_age=0.0, allies=(), harasser=False, defence=0.0,
+              x=3000.0):
+        sc = dict(role='barb', t=400.0, army=600.0, harasser=harasser,
+                  allies=allies,
+                  points=[{'kind': CP, 'x': x, 'y': 0.0, 'owner': 2,
+                           'defence': defence, 'claim': claim,
+                           'claimAt': 400.0 - claim_age}])
+        env = make_env(sc)
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        return it.run('AI_TargetScore', [0, 0])
+
+    free = score()
+    claimed = score(claim=1, allies=ALLIED)
+    enemy_claim = score(claim=1, allies=())
+    stale = score(claim=1, claim_age=CONSTS['AI_CLAIM_TTL'] + 5.0, allies=ALLIED)
+    self_claim = score(claim=0, allies=ALLIED)
+    ledger = [
+        ('an ally claim discounts the objective', claimed < free),
+        ('... but does not veto it: the score stays positive', claimed > 0.0),
+        ('the discount is exactly AI_CLAIM_PENALTY',
+         abs(claimed - free * CONSTS['AI_CLAIM_PENALTY']) < 1e-6),
+        ('an ENEMY claim binds us not at all', abs(enemy_claim - free) < 1e-6),
+        ('a stale claim expires', abs(stale - free) < 1e-6),
+        ('our OWN claim never penalises us', self_claim >= free),
+    ]
+    for name, ok in ledger:
+        fails += 0 if ok else 1
+        print('  %s %s' % ('PASS' if ok else 'FAIL', name))
+    print('       score: free=%.4f ally-claimed=%.4f enemy-claimed=%.4f stale=%.4f'
+          % (free, claimed, enemy_claim, stale))
+
+    # -- the harasser wants something different ---------------------------
+    near_def = score(defence=400.0, x=2000.0)
+    far_free = score(defence=0.0, x=11000.0)
+    h_near_def = score(defence=400.0, x=2000.0, harasser=True)
+    h_far_free = score(defence=0.0, x=11000.0, harasser=True)
+    # Stated as a RATIO, because that is the actual claim: the harasser skews
+    # much harder towards outlying-and-undefended than a normal AI does. An
+    # absolute comparison would only be pinning where these two particular
+    # points happen to sit relative to each other.
+    normal_skew = far_free / near_def
+    harass_skew = h_far_free / h_near_def
+    ok = harass_skew > normal_skew * 3.0
+    fails += 0 if ok else 1
+    print('  %s the harasser skews far harder towards OUTLYING and UNDEFENDED (%.2fx vs %.2fx)'
+          % ('PASS' if ok else 'FAIL', harass_skew, normal_skew))
+    ok = h_far_free > h_near_def
+    fails += 0 if ok else 1
+    print('  %s ... and outright prefers the flank objective to the near defended one'
+          % ('PASS' if ok else 'FAIL'))
+    print('       normal: near-defended=%.4f far-free=%.4f | harasser: %.4f vs %.4f'
+          % (near_def, far_free, h_near_def, h_far_free))
+
+    # -- the weighted lottery, replayed on the real PRNG -------------------
+    # AI_Rand is the module's own Park-Miller stream; replaying it here with
+    # the same arithmetic is how the distribution claim is checked without an
+    # engine. The shape is asserted, not a single draw.
+    A, B, C = CONSTS['AI_HARASS_A'], CONSTS['AI_HARASS_B'], CONSTS['AI_HARASS_C']
+    WA, WB, WC = CONSTS['AI_HARASS_WA'], CONSTS['AI_HARASS_WB'], CONSTS['AI_HARASS_WC']
+    seed = CONSTS['AI_SEED_DEFAULT']
+    counts = {A: 0, B: 0, C: 0}
+    N = 20000
+    for _ in range(N):
+        hi, lo = divmod(seed, 127773)
+        seed = 16807 * lo - 2836 * hi
+        if seed <= 0:
+            seed += 2147483647
+        r = seed % (WA + WB + WC)
+        counts[A if r < WA else (B if r < WA + WB else C)] += 1
+    share = {k: v / N for k, v in counts.items()}
+    lot = [
+        ('Red is strongly favoured', share[A] > 0.5),
+        ('Red is the map own weighting, not a monopoly', share[A] < 0.7),
+        ('Gray and Pink both remain live candidates',
+         share[B] > 0.1 and share[C] > 0.1),
+        ('the shares match the declared weights',
+         all(abs(share[k] - w / (WA + WB + WC)) < 0.02
+             for k, w in ((A, WA), (B, WB), (C, WC)))),
+    ]
+    for name, ok in lot:
+        fails += 0 if ok else 1
+        print('  %s %s' % ('PASS' if ok else 'FAIL', name))
+    print('       harasser draw over %d: Red=%.3f Gray=%.3f Pink=%.3f'
+          % (N, share[A], share[B], share[C]))
+
+    print('\n%s: %d consort assertions failed' % ('PASS' if not fails else 'FAIL', fails))
+    return 1 if fails else 0
+
+
 # --------------------------------------- round 3: raze or hold (item 6)
 
 def holding():
@@ -1219,6 +1330,27 @@ ROUND3_GUARDS = [
      r'function AI_ScoreDefend\b.*?if t > AI_WRITEOFF\*a and not wm_capThreat\[pid\] then', True),
     ('GUARD B: the army SPLIT is still the default response',
      r'function AI_Execute\b.*?if AI_ShouldRecall\(pid\) then.*?call AI_Respond\(pid,', True),
+    # --- coordination and harassers (item 7) -----------------------------
+    ('objectives are claimed in the shared ledger when adopted',
+     r'function AI_Execute\b.*?call AI_Claim\(pid, t\)', True),
+    ('a claim releases the previous one, so it cannot outlive our interest',
+     r'function AI_Claim\b.*?if old >= 0 and old < ai_pointCount and ai_claim\[old\] == pid then\s*\n\s*set ai_claim\[old\] = -1', True),
+    ('a claim only binds between ALLIES',
+     r'function AI_TargetScore\b.*?if IsPlayerAlly\(ai_p\[ai_claim\[i\]\], ai_p\[pid\]\) then', True),
+    ('a claim is a discount, never a veto',
+     r'set sw = sw \* AI_CLAIM_PENALTY', True),
+    ('claims expire (AI_CLAIM_TTL)',
+     r'function AI_TargetScore\b.*?\(ai_now - ai_claimAt\[i\]\) < AI_CLAIM_TTL', True),
+    ('the harasser is drawn from the seeded Park-Miller stream',
+     r'function AI_PickHarasser\b.*?ModuloInteger\(AI_Rand\(\), total\)', True),
+    ('only slots the AI actually plays enter the draw',
+     r'function AI_PickHarasser\b.*?if ai_on\[AI_HARASS_A\] then\s*\n\s*set total = total \+ AI_HARASS_WA', True),
+    ('raiding happens CONCURRENTLY with the push, in both acquisitive goals',
+     r'function AI_Execute\b.*?call AI_MoveOnTarget\(pid, t\)\s*\n\s*call AI_Raid\(pid\).*?call AI_MoveOnTarget\(pid, t\)\s*\n\s*call AI_Raid\(pid\)', True),
+    ('the raid dispatches the faction cavalry, not the whole army',
+     r'function AI_Raid\b.*?set ai_raidType = AI_UnitFor\(pid, 3\)', True),
+    ('raid orders still go through AI_TryOrder',
+     r'function AI_RaidEnum\b.*?call AI_TryOrder\(u, AI_ORD_ATTACKP', True),
     # --- raze or hold (item 6) -------------------------------------------
     ('holding and razing are mutually exclusive premiums on holdability',
      r'function AI_PointValueIdx\b.*?if AI_Holdable\(pid, ai_ptX\[i\], ai_ptY\[i\]\) then.*?AI_VAL_HOLD_CITY.*?elseif wm_canRaze\[pid\] then.*?AI_VAL_RAZE_CITY', True),
@@ -1424,6 +1556,7 @@ def main():
     rc |= routing()
     rc |= gates_round3()
     rc |= strategy()
+    rc |= consort()
     rc |= holding()
     rc |= heroes()
     rc |= naval()
