@@ -1665,3 +1665,104 @@ This matters because it changes what the Persian evidence means: under round 5,
 Persia idling after a capture is the bug §13 fixed; under round 6 it is a *new*
 one. **A future build should carry its round number in the startup line** so this
 question never needs asking again.
+
+---
+
+## 15. Round 7 stages 1 and 2 — the centroid fix, and the S9 probe
+
+### 15.1 Stage 1 — shipped (§14.2)
+
+`AI_ValidateField` makes `wm_fieldX/Y` a real place before anything geometric
+measures from it, and loaded units no longer vote on where the army is. Details
+and the six trace assertions are in the commit; the measurement that motivated it
+is §14.2. Nine of twelve factions never pay the extra enumeration.
+
+### 15.2 Stage 2 — the S9 probe, built and gated, awaiting one in-game run
+
+`probe.ai` + `probe.py` produce **`rome-ai-S9PROBE.w3x`**, a *separate* artifact.
+It answers the one thing the decomposition lists as unproven: **do
+`CreateCaptains` + `SetCaptainHome` + `AttackMoveXY` gather and move this map's
+squads with no halls, no gold mines and no workers?**
+
+**Setup.** Two factions — **Franks (P1)** and **Britons (P6)** — are handed to
+the engine's captains; every other slot keeps the hand-rolled AI. Both were
+reported inert under `for-ai.j`, so a positive result answers a question about
+the engine *and* about our own bug at the same time.
+
+Three design choices the result depends on:
+
+* **`for-ai.j` is switched off for the probed slots** (`ai_on[N] = false`,
+  immediately after `AI_Init`). Two systems ordering the same units is the
+  `RemoveGuardPosition` contention AMAI pays 61 times, and it would make the
+  answer noise.
+* **`SetCaptainHome` is mandatory, not a nicety.** Fall of Rome stacks all
+  twelve `DefineStartLocation` calls in a 1,280-unit row, so an inferred home
+  would be nowhere near the faction. Homes are each faction's own Barbarian
+  Camp, measured from `units.json`.
+* **Targets are real and near**: Franks 3,252 units to a West Roman city;
+  Britons 2,107 to a North Roman control point **on its own island**, over a
+  land route verified against `war3map.wpm`. Neither test can fail merely for
+  being far or wet.
+
+**What it reports**, as explicit `RESULT 1` / `RESULT 2` lines in chat:
+
+| line | meaning |
+|---|---|
+| `RESULT 1 = NO` | 60 s and `CaptainGroupSize()` never left 0 — the captain gathers nothing without an economy |
+| `RESULT 1 = YES (partial)` | gathered *n* units but never reported `CaptainIsFull` |
+| `RESULT 1` full | `CaptainIsFull` fired, with size and readiness |
+| `RESULT 2 = YES` | `CaptainAtGoal` — arrival detection works |
+| `RESULT 2 = NO` | `CaptainIsHome` — `common.ai`'s own comment for this state is *"failed to path and returned home"*, so this is the engine reporting unreachability, not a timeout |
+| `RESULT 2 = PARTIAL` | `CaptainRetreating` or `CaptainIsEmpty` — it moved, then broke off or died |
+| `RESULT 2 = TIMEOUT` | 180 s, no terminal state at all |
+
+**Headless verification done.** `jassdoc` ships `common.ai`, and it has
+**exactly 123 natives** — independently corroborating the decomposition's count.
+That gave a real syntax gate: `pjass common.j common.ai probe.ai` → **Parse
+successful**, and it immediately earned its keep by rejecting `B2S`, which lives
+in `Blizzard.j` and is *not* loaded in the AI VM. The packed probe archive
+extracts with `probe1.ai` and `probe6.ai` present on disk (gotcha 4: always
+verify extraction on disk), its map script parses in full mode, and
+`validate-map` gives 191/192 — identical to the unmodified map. The playable
+build is byte-for-byte untouched and contains no `StartMeleeAI` call.
+
+**What it cannot tell us**: nothing here proves the captain behaves *well* — the
+documented ceiling (it chases strays, and stops a winning attack once its
+target's proximity clears) is unaddressed by design. This probe answers *does it
+function at all on this map shape*, which is the only question blocking S1/S3.
+
+### 15.3 Two corrections to `wc3-ai-prior-art.md`, folded in
+
+* **"Nobody has a competence dial" is refuted.** The DotA AI line gates its
+  reflexes behind `GetRandomInt(1,5) <= 2` at its lowest difficulty — stochastic
+  *inattention*, layered on top of resource cheats. So the state of the art is
+  one dial, and it is a crude one; §12.3's plan to keep information and material
+  cheating separable is still the thing nobody has, but the claim that nothing
+  exists was too strong.
+* **The lethality test.** The same map asks whether a target's remaining HP is
+  below the damage about to land. That maps directly onto **Fall of Rome's
+  500-HP capture threshold** — a settlement below 500 flips, so "can we finish
+  it this pass" is a real, cheap question — and onto the hero focus-fire
+  decision. Recorded for the queue, not opened.
+
+### 15.4 The uncomfortable framing, recorded because it is the honest one
+
+Every top-hosted map with a satisfying computer opponent got there by **making
+unit movement automatic** — auto-march lanes, spawn-and-forget waves, fixed
+routes. They designed the AI problem away rather than solving it. Fall of Rome
+did not, which is why this module exists and why almost nothing in the corpus is
+a drop-in. §9 of the decomposition says the same thing from the other side:
+**nobody in the corpus scores a destination on a map with real geography**, and
+nobody has a route or terrain model. That is simultaneously why this work is
+hard and why the parts of it that work — the goal scorer, the corridor/gate
+model, the measured frontage, the deadline-gated capital — have no competitor.
+
+### 15.5 Stage 3 — NOT STARTED
+
+**S1** (attacks as blocking procedures with interrupt flags) and **S3** (AMAI's
+cluster-and-project army tracking with a continuous threat field) are
+architectural rewrites of the core and are **not begun**, pending the owner's
+decision and the S9 answer. Recorded so the reasoning is not re-derived: round
+4's own verdict — *"wrong over time, not at any tick"* — is precisely the
+symptom S1 predicts, and our incumbency and dwell are hysteresis patched over
+what is really a control-flow problem.

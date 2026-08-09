@@ -1,0 +1,205 @@
+//===========================================================================
+//
+//  S9 PROBE  --  does the ENGINE's AI subsystem drive Fall of Rome's armies?
+//
+//  This is an EXPERIMENT, not a migration, and not part of the shipped AI.
+//  It answers one question that docs/reference/wc3-map-ai-decompositions.md
+//  §S9 lists as unproven and cheap to test:
+//
+//      Do CreateCaptains() + SetCaptainHome() + AttackMoveXY() actually
+//      GATHER and MOVE this map's squads, on a map with NO halls, NO gold
+//      mines and NO workers?
+//
+//  Everything else about S9 is already proven by artifacts: .ai scripts run
+//  on non-melee custom maps with custom tech trees (Footmen Frenzy 9.0 AI,
+//  isMeleeMap:false, w3i v33), the AI VM has the whole of common.j, and
+//  Fall of Rome has the one hard prerequisite -- all twelve
+//  DefineStartLocation calls are present. What no artifact answers is
+//  whether the captain works without an economy to hang itself on.
+//
+//  DESIGN NOTES, so a reader can trust the result either way:
+//
+//  * SetCaptainHome is MANDATORY here and is not a nicety. Fall of Rome
+//    stacks all twelve start locations in a 1,280-unit row, so a captain
+//    left to infer its home from the start location would gather at a point
+//    that is nowhere near the faction it belongs to. Home is passed
+//    explicitly, measured from the faction's own Barbarian Camp.
+//  * The hand-rolled AI is DISABLED for the probed slots by the packager
+//    (ai_on[N] = false). Otherwise for-ai.j and the captain would both be
+//    issuing orders to the same units, which is the RemoveGuardPosition tax
+//    AMAI pays 61 times, and the result would mean nothing.
+//  * Every terminal state the engine can report is checked and NAMED, and
+//    the probe reports the one it saw. CaptainIsHome in particular is the
+//    engine telling us "failed to path and returned home" -- a negative
+//    result there is just as informative as a positive one, and it is
+//    reported as such rather than as a timeout.
+//  * There is no fallback and no cleverness on purpose. If the captain does
+//    nothing, the probe must SAY the captain did nothing.
+//
+//  Targets and homes are the map's own measured coordinates (see
+//  scripts/experimental/rome-ai/probe.py, which packages this file).
+//
+//===========================================================================
+
+globals
+    integer probe_pid        = -1
+    real    probe_homeX      = 0.0
+    real    probe_homeY      = 0.0
+    integer probe_tgtX       = 0
+    integer probe_tgtY       = 0
+    string  probe_name       = "probe"
+    integer probe_staged     = 0
+    integer probe_ready      = 0
+    real    probe_t          = 0.0
+endglobals
+
+//---------------------------------------------------------------------------
+//  Reporting. The AI VM has all of common.j, so the probe talks directly to
+//  every human in the game. Deliberately NOT GetLocalPlayer: a plain loop
+//  over playing user slots, the same rule the map-script module follows.
+//---------------------------------------------------------------------------
+function ProbeSay takes string s returns nothing
+    local integer i = 0
+    loop
+        exitwhen i >= 12
+        if GetPlayerSlotState(Player(i)) == PLAYER_SLOT_STATE_PLAYING and GetPlayerController(Player(i)) == MAP_CONTROL_USER then
+            call DisplayTimedTextToPlayer(Player(i), 0, 0, 25.0, "|cff00ff00S9|r " + probe_name + ": " + s)
+        endif
+        set i = i + 1
+    endloop
+endfunction
+
+function ProbeNum takes integer n returns string
+    return I2S(n)
+endfunction
+
+// The AI VM loads common.j but NOT Blizzard.j, so B2S does not exist here.
+// (The pjass gate against common.j + common.ai caught this, which is the
+// whole reason that gate exists.)
+function ProbeBool takes boolean b returns string
+    if b then
+        return "yes"
+    endif
+    return "no"
+endfunction
+
+//---------------------------------------------------------------------------
+//  Phase 1 -- STAGING. Does the captain collect units it was never told
+//  about, with no economy anywhere on the map?
+//
+//  This is a hand-rolled FormGroup rather than Blizzard's, on purpose: the
+//  real FormGroup lives in the common.ai script layer and blocks on
+//  CaptainIsFull() and CaptainReadiness() >= 50 with a 60 s escape. Writing
+//  the loop out means the probe reports the group size it actually saw at
+//  each step, which is the measurement, instead of a single boolean at the
+//  end.
+//---------------------------------------------------------------------------
+function ProbeStage takes nothing returns boolean
+    local integer waited = 0
+    local integer sz = 0
+    local integer best = 0
+    call ProbeSay("staging at home (" + ProbeNum(R2I(probe_homeX)) + "," + ProbeNum(R2I(probe_homeY)) + ")")
+    loop
+        exitwhen waited >= 60
+        set sz = CaptainGroupSize()
+        if sz > best then
+            set best = sz
+        endif
+        if CaptainIsFull() then
+            call ProbeSay("STAGED: captain reports FULL at " + ProbeNum(sz) + " units, readiness " + ProbeNum(CaptainReadiness()))
+            set probe_staged = sz
+            set probe_ready = CaptainReadiness()
+            return true
+        endif
+        if waited == 10 or waited == 30 or waited == 50 then
+            call ProbeSay("staging... group size " + ProbeNum(sz) + ", readiness " + ProbeNum(CaptainReadiness()) + " at " + ProbeNum(waited) + "s")
+        endif
+        call Sleep(2.0)
+        set waited = waited + 2
+    endloop
+    set probe_staged = best
+    set probe_ready = CaptainReadiness()
+    if best <= 0 then
+        // The single most important negative result this probe can produce.
+        call ProbeSay("RESULT 1 = NO: after 60s the captain gathered NOTHING. CaptainGroupSize stayed 0.")
+        return false
+    endif
+    call ProbeSay("RESULT 1 = YES (partial): gathered " + ProbeNum(best) + " units in 60s but never reported FULL. Sending anyway.")
+    return true
+endfunction
+
+//---------------------------------------------------------------------------
+//  Phase 2 -- MOVEMENT and TERMINAL STATE. Does AttackMoveXY move them, and
+//  does the engine tell us how it ended?
+//---------------------------------------------------------------------------
+function ProbeAttack takes nothing returns nothing
+    local integer waited = 0
+    call ProbeSay("ordering AttackMoveXY(" + ProbeNum(probe_tgtX) + "," + ProbeNum(probe_tgtY) + ") with " + ProbeNum(probe_staged) + " units")
+    call AttackMoveXY(probe_tgtX, probe_tgtY)
+    loop
+        exitwhen waited >= 180
+        if CaptainAtGoal() then
+            call ProbeSay("RESULT 2 = YES: ARRIVED at the objective after " + ProbeNum(waited) + "s. CaptainAtGoal fired.")
+            return
+        endif
+        if CaptainIsHome() then
+            // common.ai's own comment on this state is "failed to path and
+            // returned home". A clean, engine-reported negative.
+            call ProbeSay("RESULT 2 = NO: captain RETURNED HOME after " + ProbeNum(waited) + "s -- the engine could not path there.")
+            return
+        endif
+        if CaptainRetreating() then
+            call ProbeSay("RESULT 2 = PARTIAL: captain is RETREATING at " + ProbeNum(waited) + "s (it moved and then broke off).")
+            return
+        endif
+        if CaptainIsEmpty() then
+            call ProbeSay("RESULT 2 = PARTIAL: captain group EMPTY at " + ProbeNum(waited) + "s (it moved and died).")
+            return
+        endif
+        if waited == 20 or waited == 60 or waited == 120 then
+            call ProbeSay("marching... " + ProbeNum(waited) + "s, group " + ProbeNum(CaptainGroupSize()) + ", in combat " + ProbeBool(CaptainInCombat(true)))
+        endif
+        call Sleep(2.0)
+        set waited = waited + 2
+    endloop
+    call ProbeSay("RESULT 2 = TIMEOUT: 180s with no terminal state. group " + ProbeNum(CaptainGroupSize()) + ", at goal " + ProbeBool(CaptainAtGoal()) + ", home " + ProbeBool(CaptainIsHome()))
+endfunction
+
+//---------------------------------------------------------------------------
+//  main. The .ai entry point.
+//---------------------------------------------------------------------------
+function main takes nothing returns nothing
+    // Which faction this instance is driving. The packager writes one .ai
+    // per probed player, so this block is rewritten per copy.
+    //>>> PROBE-CONFIG-BEGIN
+    set probe_pid   = 1
+    set probe_name  = "Franks"
+    set probe_homeX = -5888.0
+    set probe_homeY = 8512.0
+    set probe_tgtX  = -5440
+    set probe_tgtY  = 4672
+    //>>> PROBE-CONFIG-END
+
+    call ProbeSay("S9 probe starting. No halls, no mines, no workers on this map.")
+
+    // Melee mode: the engine's normal captain behaviour. SetCampaignAI is
+    // the alternative and is what a wave-scheduled AI would use; melee is
+    // the one whose captain gathers and attacks on its own.
+    call SetMeleeAI()
+    call SetTargetHeroes(false)
+
+    call CreateCaptains()
+    // MANDATORY on this map -- see the header note about stacked starts.
+    call SetCaptainHome(BOTH_CAPTAINS, probe_homeX, probe_homeY)
+    call ProbeSay("captains created, home set explicitly (start locations on this map are stacked in a 1280-unit row)")
+
+    call Sleep(2.0)
+
+    if ProbeStage() then
+        call ProbeAttack()
+    else
+        call ProbeSay("skipping the attack phase: there was nothing to send.")
+    endif
+
+    call ProbeSay("probe complete. Report RESULT 1 (gathering) and RESULT 2 (movement) back to the design doc.")
+endfunction
