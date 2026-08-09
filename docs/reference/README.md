@@ -46,3 +46,18 @@ question it answers, its date, and how it goes stale.
   concept-forward non-RPG criterion)? Merged top-5 + decomposition
   candidates + scene sourcing notes; staleness: hosting/obtainability
   facts decay fast — re-verify URLs before starting a pass.
+
+## wc3-ai-prior-art.md (2026-08-09)
+
+**Question answered**: does a good AI for a WC3 custom map exist, and what
+can we reuse? **Answer: no, and almost nothing.** Reads the actual code of
+the native AI system, AMAI, and four shipped custom-map AIs. Headlines:
+the best readable custom-map AI decides once every 10 seconds and never
+moves a combat unit; 100% of measured "hard" AIs achieve difficulty by
+resource-cheating (nobody has a competence dial); slot FILLING is free and
+universal via GHost++ `!comp` while slot PLAYING is the unmet need; and
+the target genre (Warhammer: Tides of Chaos, Footmen vs Grunts) has
+literally zero AI. Ends with an 8-point gap statement and the
+sim-testability constraint (we can test decisions, never outcomes).
+**Staleness**: the code read is current as of 2026-08; the gap statement
+is structural and should age well.
