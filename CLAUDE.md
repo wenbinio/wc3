@@ -610,6 +610,15 @@ never third-party maps, gotcha 9).
       TycoonAzeroth 7, DouDizhu 2, Avalon 1), flagged on doctrine, not
       on a reproduced failure. A single in-game load of any one of them
       settles this permanently — resolve it that way, not by argument.
+    - **Counter-evidence from the wild (2026-08-09)**: a PUBLISHED,
+      WORKING, actively-hosted RU map (Тараканья схватка 3) ships **5
+      ASCII apostrophes inside double-quoted JASS literals** —
+      `"Can't leap there."`, `Asura's Wrath`, `Nero's battle theme` — an
+      ODD count, interleaved with genuine rawcode literals, and it
+      runs. That is a real artifact contradicting the stated mechanism,
+      not just a failure to reproduce it in a checker. Treat the rule as
+      a cheap style precaution, nothing more, until someone observes an
+      actual in-game failure.
 35. **Text members inside an archive have a BYTE DIALECT, and editing
     one silently destroys it.** The real, evidenced cause of a shipped
     map crashing on load: `war3mapSkin.txt` went from 12 CRLF line
