@@ -13,7 +13,7 @@ thresholds fire where the design says, and that the PRNG is bit-exact.
 What it does NOT verify: anything about whether the AI wins. There is no
 pathing, no combat, no engine here.
 """
-import re, sys, os
+import re, sys, os, math
 
 W = os.path.dirname(os.path.abspath(__file__))
 # The module of record sits next to this script in the repo, and under ai/ in a
@@ -944,6 +944,73 @@ def strategy():
     return 1 if fails else 0
 
 
+# ------------------------------------------------- round 3: heroes (item 5)
+
+def heroes():
+    """Queue item 5. Every assertion here descends from one fact about the
+    artifact: there is NO revive trigger anywhere in the map and each player
+    has exactly one preplaced hero, so a dead hero is dead for the game.
+
+    The hysteresis walk below is a MODEL of AI_HeroMicro's branch structure,
+    driven by the thresholds read from the shipped module, and joined to the
+    code by the source guards. Its negative control is a single-threshold
+    version of the same walk: if hysteresis were not doing anything, the two
+    would flicker the same number of times."""
+    print('\n' + '=' * 78)
+    print('ROUND 3 -- heroes: a permanent unit, so a conservative policy')
+    print('=' * 78)
+    B, E = CONSTS['AI_HERO_BREAK'], CONSTS['AI_HERO_ENGAGE']
+    fails = 0
+
+    checks = [
+        ('the break point is real hysteresis, not one threshold', B < E),
+        ('the hero break point is far above the 22 percent army trip-wire', B > 0.40),
+        ('re-engagement demands a genuine heal', E >= 0.70),
+        ('the hero hunt is bounded, so it is a focus and not a chase',
+         CONSTS['AI_HERO_HUNT_R'] <= 4000.0),
+        ('the hero layer cannot eat the order budget',
+         CONSTS['AI_HERO_SLICE'] <= CONSTS['AI_MICRO_SLICE']),
+    ]
+    for name, ok in checks:
+        fails += 0 if ok else 1
+        print('  %s %s' % ('PASS' if ok else 'FAIL', name))
+    print('       thresholds: break=%.2f engage=%.2f hunt=%.0f' % (B, E, CONSTS['AI_HERO_HUNT_R']))
+
+    # a fight that grinds the hero down and back up, hovering on the break
+    seq = []
+    for i in range(200):
+        seq.append(B + 0.03 * math.sin(i * 0.9) - 0.0015 * i)
+    seq += [min(1.0, B + 0.02 * i) for i in range(40)]
+
+    def walk(hyst):
+        out, flips, engaged_below = False, 0, 0
+        for frac in seq:
+            if out:
+                if frac >= (E if hyst else B):
+                    out = False
+                    flips += 1
+            elif frac <= B:
+                out = True
+                flips += 1
+            if not out and frac < B:
+                engaged_below += 1
+        return flips, engaged_below
+
+    flips_h, below_h = walk(True)
+    flips_s, below_s = walk(False)
+    ok = (below_h == 0)
+    fails += 0 if ok else 1
+    print('  %s the hero is never left engaged below the break point (%d ticks)'
+          % ('PASS' if ok else 'FAIL', below_h))
+    ok = (flips_h * 3 < flips_s)
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL: hysteresis suppresses flicker (%d transitions vs %d single-threshold)'
+          % ('PASS' if ok else 'FAIL', flips_h, flips_s))
+
+    print('\n%s: %d hero assertions failed' % ('PASS' if not fails else 'FAIL', fails))
+    return 1 if fails else 0
+
+
 # ------------------------------------------- round 3: naval transport (item 2)
 
 def naval():
@@ -1072,6 +1139,21 @@ ROUND3_GUARDS = [
      r'function AI_ScoreDefend\b.*?if t > AI_WRITEOFF\*a and not wm_capThreat\[pid\] then', True),
     ('GUARD B: the army SPLIT is still the default response',
      r'function AI_Execute\b.*?if AI_ShouldRecall\(pid\) then.*?call AI_Respond\(pid,', True),
+    # --- heroes (item 5) -------------------------------------------------
+    ('a hero is exempt from the 22 percent army trip-wire',
+     r'function AI_MicroEnum\b.*?if IsUnitType\(u, UNIT_TYPE_HERO\) then\s*\n\s*set u = null\s*\n\s*return', True),
+    ('the hero hysteresis re-engages only above AI_HERO_ENGAGE',
+     r'function AI_HeroMicro\b.*?if ai_heroOut\[pid\] then\s*\n\s*if frac >= AI_HERO_ENGAGE then', True),
+    ('the hero withdraws at AI_HERO_BREAK',
+     r'function AI_HeroMicro\b.*?elseif frac <= AI_HERO_BREAK then\s*\n\s*set ai_heroOut\[pid\] = true', True),
+    ('a withdrawn hero is not re-sent to the front by the think tick',
+     r'function AI_SendEnum\b.*?if ai_heroOut\[ai_curPid\] and IsUnitType\(u, UNIT_TYPE_HERO\) then', True),
+    ('hero policy runs before the difficulty gate',
+     r'function AI_MicroPlayer\b.*?call AI_HeroMicro\(pid\).*?if ai_diff\[pid\] == AI_EASY then', True),
+    ('enemy heroes are hunted only within AI_HERO_HUNT_R of the army',
+     r'function AI_FindEnemyHero\b.*?set ai_heroDist = AI_HERO_HUNT_R', True),
+    ('the hero hunt respects fog',
+     r'function AI_EnemyHeroEnum\b.*?IsUnitVisible\(u, ai_curP\)', True),
     # --- naval transport (item 2) ---------------------------------------
     ('the land graph is built once, at init',
      r'function AI_Init\b.*?call AI_BuildLandGraph\(\)', True),
@@ -1249,6 +1331,7 @@ def main():
     rc |= routing()
     rc |= gates_round3()
     rc |= strategy()
+    rc |= heroes()
     rc |= naval()
     rc |= round3_guards()
     rc |= defence()

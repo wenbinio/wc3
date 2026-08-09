@@ -353,6 +353,32 @@
     constant integer AI_LINK_SAMPLES  = 8       // walkability samples per link
     integer array    ai_comp
 
+    // ===================================================================
+    //  ROUND 3: HEROES  (queue item 5)
+    //
+    //  The decisive fact, established from the artifact: there is NO revive
+    //  trigger anywhere in this map -- no ReviveHero call, no altar -- and
+    //  each player has exactly ONE preplaced hero. A dead hero is dead for
+    //  the rest of the game. Trig_Kill_Count levels non-hero killers only.
+    //
+    //  Both halves of the policy follow from that one fact, and neither is
+    //  a normal RTS setting:
+    //   * killing THEIR hero is permanently worth more than any building on
+    //     the board, so it is worth a detour and a focus-fire override.
+    //   * losing OURS is unaffordable, so the break point is deliberately
+    //     conservative -- half health, not the 22 percent trip-wire the rest
+    //     of the army uses -- and re-engagement waits for a real heal, with
+    //     hysteresis so a hero cannot flicker in and out of a fight.
+    // ===================================================================
+    constant real    AI_HERO_ENGAGE   = 0.78   // re-commit only this healthy
+    constant real    AI_HERO_BREAK    = 0.50   // disengage here; death is FINAL
+    constant real    AI_HERO_HUNT_R   = 3000.0 // focus a hero found this close
+    constant integer AI_HERO_SLICE    = 2      // orders the hero layer may spend
+    boolean array    ai_heroOut       // withdrawn and healing
+    unit             ai_heroUnit    = null
+    unit             ai_heroTarget  = null
+    real             ai_heroDist    = 0.0
+
     // ---- ROUND 3: messaging -------------------------------------------
     // The AI narrates its STATE CHANGES so a playtest diagnoses itself. Rate
     // limited per player and de-duplicated, because twelve narrating players
@@ -1842,6 +1868,13 @@ function AI_SendEnum takes nothing returns nothing
         set u = null
         return
     endif
+    // ROUND 3: a withdrawn hero stays withdrawn. Without this the think tick
+    // would order it back to the front every time the micro tick pulled it
+    // out, and the two layers would fight over an irreplaceable unit.
+    if ai_heroOut[ai_curPid] and IsUnitType(u, UNIT_TYPE_HERO) then
+        set u = null
+        return
+    endif
     // hold a garrison back when home is under threat: the round-1 build sent
     // literally every unit at the objective, which is half of "trying to move
     // everything at once"
@@ -2214,13 +2247,113 @@ function AI_NavStep takes integer pid, integer t returns boolean
     return true
 endfunction
 
+// ---- heroes (round 3, queue item 5) -------------------------------------
+
+function AI_EnemyHeroEnum takes nothing returns nothing
+    local unit u = GetEnumUnit()
+    local real d
+    if IsUnitEnemy(u, ai_curP) and IsUnitVisible(u, ai_curP) and IsUnitType(u, UNIT_TYPE_HERO) and GetUnitState(u, UNIT_STATE_LIFE) > 0.405 then
+        set d = AI_Dist(GetUnitX(u), GetUnitY(u), ai_orderX, ai_orderY)
+        if d < ai_heroDist then
+            set ai_heroDist = d
+            set ai_heroTarget = u
+        endif
+    endif
+    set u = null
+endfunction
+
+// Nearest VISIBLE enemy hero within AI_HERO_HUNT_R of the field army, or null.
+// Bounded by that radius on purpose: this is a local focus-fire override, not
+// a map-wide chase, so it can never pull an army off across the board.
+function AI_FindEnemyHero takes integer pid returns unit
+    local group g = CreateGroup()
+    set ai_curP = ai_p[pid]
+    set ai_orderX = wm_fieldX[pid]
+    set ai_orderY = wm_fieldY[pid]
+    set ai_heroTarget = null
+    set ai_heroDist = AI_HERO_HUNT_R
+    call GroupEnumUnitsInRange(g, wm_fieldX[pid], wm_fieldY[pid], AI_HERO_HUNT_R, null)
+    call ForGroup(g, function AI_EnemyHeroEnum)
+    call DestroyGroup(g)
+    set g = null
+    return ai_heroTarget
+endfunction
+
+function AI_OwnHeroEnum takes nothing returns nothing
+    local unit u = GetEnumUnit()
+    if ai_heroUnit == null and IsUnitType(u, UNIT_TYPE_HERO) and GetUnitState(u, UNIT_STATE_LIFE) > 0.405 then
+        set ai_heroUnit = u
+    endif
+    set u = null
+endfunction
+
+// Our own hero, played as a skirmisher with hysteresis. The break point is
+// AI_HERO_BREAK (half health) rather than the 0.22 the rest of the army uses,
+// because a hero lost here is lost for the game -- see the globals block.
+function AI_HeroMicro takes integer pid returns nothing
+    local group g = CreateGroup()
+    local real frac
+    local unit eh
+    set ai_curP = ai_p[pid]
+    set ai_curPid = pid
+    set ai_heroUnit = null
+    call GroupEnumUnitsOfPlayer(g, ai_p[pid], Filter(function AI_OwnUnitFilter))
+    call ForGroup(g, function AI_OwnHeroEnum)
+    call DestroyGroup(g)
+    set g = null
+    if ai_heroUnit == null then
+        return
+    endif
+    set ai_issued = 0
+    set ai_budget = AI_HERO_SLICE
+    set frac = GetUnitState(ai_heroUnit, UNIT_STATE_LIFE) / AI_Max(1.0, GetUnitState(ai_heroUnit, UNIT_STATE_MAX_LIFE))
+    if ai_heroOut[pid] then
+        if frac >= AI_HERO_ENGAGE then
+            set ai_heroOut[pid] = false          // healed: back to the line
+        else
+            call AI_TryOrder(ai_heroUnit, AI_ORD_MOVE, ai_homeX[pid], ai_homeY[pid], null)
+            set ai_heroUnit = null
+            return
+        endif
+    elseif frac <= AI_HERO_BREAK then
+        set ai_heroOut[pid] = true
+        call AI_Say(pid, "pulling the hero out - it cannot be replaced")
+        call AI_TryOrder(ai_heroUnit, AI_ORD_MOVE, ai_homeX[pid], ai_homeY[pid], null)
+        set ai_heroUnit = null
+        return
+    endif
+    // Healthy: hit and run. If an enemy hero is in reach, that is the fight
+    // worth taking; otherwise the hero rides with the normal field orders.
+    set eh = AI_FindEnemyHero(pid)
+    if eh != null then
+        set ai_issued = 0
+        set ai_budget = AI_HERO_SLICE
+        call AI_TryOrder(ai_heroUnit, AI_ORD_ATTACKU, GetUnitX(eh), GetUnitY(eh), eh)
+    endif
+    set eh = null
+    set ai_heroUnit = null
+endfunction
+
 // Move on a registered point, crossing the wall deliberately.
 function AI_MoveOnTarget takes integer pid, integer t returns nothing
     local integer gi
     local boolean stalled
+    local unit eh
     // ROUND 3: water first. If the objective is on another landmass this
     // takes the tick entirely -- gates and walls are a land problem.
     if AI_NavStep(pid, t) then
+        return
+    endif
+    // ROUND 3, queue item 5. A visible enemy hero near our army outranks the
+    // objective: no revive trigger exists in this map and each player has
+    // exactly one hero, so the kill is PERMANENT and worth more than any
+    // building on the board. Bounded by AI_HERO_HUNT_R, so it is a focus and
+    // never a chase across the map.
+    set eh = AI_FindEnemyHero(pid)
+    if eh != null then
+        call AI_Say(pid, "focusing an enemy hero")
+        call AI_SendArmy(pid, GetUnitX(eh), GetUnitY(eh), AI_ORD_ATTACKU, eh)
+        set eh = null
         return
     endif
     set stalled = AI_TrackProgress(pid, ai_ptX[t], ai_ptY[t])
@@ -2578,6 +2711,13 @@ endfunction
 function AI_MicroEnum takes nothing returns nothing
     local unit u = GetEnumUnit()
     local real mx = GetUnitState(u, UNIT_STATE_MAX_LIFE)
+    // ROUND 3: heroes are NOT subject to the 22 percent trip-wire. They have
+    // their own, far more conservative policy in AI_HeroMicro, because a hero
+    // lost in this map is lost for the game.
+    if IsUnitType(u, UNIT_TYPE_HERO) then
+        set u = null
+        return
+    endif
     // retreat trip-wire: pull badly wounded units, veterancy is worth keeping
     if mx > 0.0 and (GetUnitState(u, UNIT_STATE_LIFE)/mx) < 0.22 then
         call AI_TryOrder(u, AI_ORD_MOVE, ai_homeX[ai_curPid], ai_homeY[ai_curPid], null)
@@ -2593,6 +2733,10 @@ endfunction
 function AI_MicroPlayer takes integer pid returns nothing
     local group g
     local integer t = ai_target[pid]
+    // ROUND 3: hero policy runs at EVERY difficulty. Difficulty is meant to
+    // make an AI play worse, not to make it throw away a unit that the map
+    // gives it exactly one of and never replaces.
+    call AI_HeroMicro(pid)
     if ai_diff[pid] == AI_EASY then
         return
     endif
@@ -2722,6 +2866,7 @@ function AI_EnablePlayer takes integer pid, integer difficulty returns nothing
     set wm_capIdx[pid]   = -1
     set ai_posture[pid]  = POSTURE_CONSOLIDATE
     set ai_postureAt[pid]= 0.0
+    set ai_heroOut[pid]  = false
     // PHASE OFFSET. Round 1 gave every player nextThink = 0, so all twelve
     // scanned, scored and issued orders on the same 1 s tick, forever: one
     // synchronised spike of work instead of a spread load. This is the
