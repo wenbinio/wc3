@@ -944,6 +944,86 @@ def strategy():
     return 1 if fails else 0
 
 
+# --------------------------------------- round 3: raze or hold (item 6)
+
+def holding():
+    """Queue item 6. The owner: "AI shouldnt burn cities its comfortable in
+    being able to hold." Round 2 added the raze refund unconditionally, so it
+    told the AI to burn its own supply, its own +5 armour aura, its own regen
+    aura and its own 300 s militia summon. The premium must now survive only
+    where the settlement genuinely cannot be kept."""
+    print('\n' + '=' * 78)
+    print('ROUND 3 -- raze or hold: the refund is conditional now')
+    print('=' * 78)
+    CITYK, TOWNK = CONSTS['AI_PK_CITY'], CONSTS['AI_PK_TOWN']
+    fails = 0
+
+    def holdable(x, army, food, cap=100.0, role='barb'):
+        sc = dict(role=role, army=army, food=food)
+        env = make_env(sc)
+        env['wm_foodCap'][0] = cap
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        return it.run('AI_Holdable', [0, x, 0.0])
+
+    ARMY = CONSTS['AI_HOLD_ARMY']
+    FAR = CONSTS['AI_HOLD_DIST'] + 1000.0
+    cases = [
+        ('a settlement behind our lines with an army is holdable',
+         holdable(1000.0, ARMY + 100.0, 0.0), True),
+        ('the same settlement with no army is not', holdable(1000.0, 10.0, 0.0), False),
+        ('... unless we are at our food cap and need the supply it makes',
+         holdable(1000.0, 10.0, 95.0), True),
+        ('a settlement far beyond our lines is never holdable',
+         holdable(FAR, 5000.0, 95.0), False),
+    ]
+    for name, got, want in cases:
+        ok = (bool(got) == want)
+        fails += 0 if ok else 1
+        print('  %s %-62s -> %s' % ('PASS' if ok else 'FAIL', name, bool(got)))
+
+    def value(kind, x, army, role='barb', hold_dist=None):
+        sc = dict(role=role, army=army,
+                  points=[{'kind': kind, 'x': x, 'y': 0.0, 'owner': 1}])
+        env = make_env(sc)
+        consts = dict(CONSTS)
+        if hold_dist is not None:
+            consts['AI_HOLD_DIST'] = hold_dist
+        it = Interp(FUNCS, consts, env, make_natives(env, 0.0))
+        return it.run('AI_PointValueIdx', [0, 0])
+
+    near = value(CITYK, 1000.0, ARMY + 100.0)
+    far = value(CITYK, FAR, ARMY + 100.0)
+    rome = value(CITYK, FAR, ARMY + 100.0, role='rome')
+    bare = CONSTS['AI_VAL_CITY']
+    v = [
+        ('a city we can hold carries the HOLD premium, not the refund',
+         abs(near - (bare + CONSTS['AI_VAL_HOLD_CITY'])) < 1e-6),
+        ('a city we cannot hold carries the refund instead',
+         abs(far - (bare + CONSTS['AI_VAL_RAZE_CITY'])) < 1e-6),
+        ('Rome, barred from R008 by the map, gets no refund on what it cannot hold',
+         abs(rome - bare) < 1e-6),
+        ('HOLDING is worth more than BURNING -- the whole of item 6', near > far),
+        ('a holdable city outvalues the control point it might cost us',
+         near > CONSTS['AI_VAL_CP']),
+    ]
+    for name, ok in v:
+        fails += 0 if ok else 1
+        print('  %s %s' % ('PASS' if ok else 'FAIL', name))
+
+    # NEGATIVE CONTROL: collapse the hold radius to nothing, so the SAME near
+    # city becomes unholdable. If the premium does not appear, the gate above
+    # was not what suppressed it.
+    forced = value(CITYK, 1000.0, ARMY + 100.0, hold_dist=0.0)
+    ok = forced < near and abs(forced - (bare + CONSTS['AI_VAL_RAZE_CITY'])) < 1e-6
+    fails += 0 if ok else 1
+    print('  %s   negative control: with AI_HOLD_DIST=0 the same city flips to the raze premium (%.2f -> %.2f)'
+          % ('PASS' if ok else 'FAIL', near, forced))
+    print('       city value: holdable=%.2f unholdable=%.2f roman=%.2f' % (near, far, rome))
+
+    print('\n%s: %d raze-or-hold assertions failed' % ('PASS' if not fails else 'FAIL', fails))
+    return 1 if fails else 0
+
+
 # ------------------------------------------------- round 3: heroes (item 5)
 
 def heroes():
@@ -1139,6 +1219,19 @@ ROUND3_GUARDS = [
      r'function AI_ScoreDefend\b.*?if t > AI_WRITEOFF\*a and not wm_capThreat\[pid\] then', True),
     ('GUARD B: the army SPLIT is still the default response',
      r'function AI_Execute\b.*?if AI_ShouldRecall\(pid\) then.*?call AI_Respond\(pid,', True),
+    # --- raze or hold (item 6) -------------------------------------------
+    ('holding and razing are mutually exclusive premiums on holdability',
+     r'function AI_PointValueIdx\b.*?if AI_Holdable\(pid, ai_ptX\[i\], ai_ptY\[i\]\) then.*?AI_VAL_HOLD_CITY.*?elseif wm_canRaze\[pid\] then.*?AI_VAL_RAZE_CITY', True),
+    ('the hold premium is set above the raze refund',
+     r'constant real\s+AI_VAL_HOLD_CITY\s*=\s*0\.70', True),
+    ('target scoring uses the holdability-gated value',
+     r'function AI_TargetScore\b.*?set v = AI_PointValueIdx\(pid, i\)', True),
+    ('burning our OWN settlements asks the same question',
+     r'function AI_RazeEnum\b.*?if not AI_Holdable\(ai_curPid, GetUnitX\(u\), GetUnitY\(u\)\)', True),
+    ('the round-2 bare distance test for razing is gone',
+     r'AI_RAZE_DIST', False),
+    ('razing still never drops us below AI_RAZE_KEEP production sites',
+     r'function AI_TryRaze\b.*?ai_razeCount >= AI_RAZE_KEEP', True),
     # --- heroes (item 5) -------------------------------------------------
     ('a hero is exempt from the 22 percent army trip-wire',
      r'function AI_MicroEnum\b.*?if IsUnitType\(u, UNIT_TYPE_HERO\) then\s*\n\s*set u = null\s*\n\s*return', True),
@@ -1331,6 +1424,7 @@ def main():
     rc |= routing()
     rc |= gates_round3()
     rc |= strategy()
+    rc |= holding()
     rc |= heroes()
     rc |= naval()
     rc |= round3_guards()

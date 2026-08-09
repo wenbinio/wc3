@@ -103,6 +103,17 @@
     constant real    AI_VAL_SHIPYARD  = 0.02
     constant real    AI_VAL_RAZE_CITY = 0.60   // +250 g / +250 l on R008
     constant real    AI_VAL_RAZE_TOWN = 0.25   // +100 g / +100 l on R008
+    // ROUND 3, queue item 6. A settlement we can KEEP is worth more than one
+    // we would burn, and round 2 never counted any of what keeping it pays:
+    //   25 supply for a city, 10 for a town (TRIGSTR_1005 / TRIGSTR_1868) --
+    //     and food is the binding constraint in this map, gold is not;
+    //   a +5 armour aura (A01M/A00M on the ACav base, Had1 = 5);
+    //   a regeneration aura (A00K/A00J on Aoar);
+    //   a 300 s zero-mana summon of 6 Militia h010 at a city (A01W).
+    // So the hold premium is deliberately set ABOVE the raze refund: burning
+    // something we are comfortable holding must always score worse.
+    constant real    AI_VAL_HOLD_CITY = 0.70
+    constant real    AI_VAL_HOLD_TOWN = 0.28
 
     // ===================================================================
     //  ROUND 3: CONDITIONAL CAPITAL VALUE  (queue item 4)
@@ -205,8 +216,11 @@
     constant real    AI_STALL_R       = 4000.0 // force-open radius around the army
 
     // ---- razing, playtest fault (5) -----------------------------------
-    constant real    AI_RAZE_DIST     = 4200.0 // only raze what we cannot hold
     constant integer AI_RAZE_KEEP     = 3      // never drop below this many trainers
+    // ROUND 3, queue item 6: what "comfortable being able to hold" means.
+    constant real    AI_HOLD_DIST     = 5200.0 // behind our lines
+    constant real    AI_HOLD_FOOD     = 26.0   // food headroom that still wants supply
+    constant real    AI_HOLD_ARMY     = 240.0  // enough army to garrison anything
 
     // gate states
     constant integer AI_GS_CLOSED     = 0
@@ -666,6 +680,62 @@ function AI_PointValueFor takes integer pid, integer kind returns real
             set v = v + AI_VAL_RAZE_CITY
         endif
         if kind == AI_PK_TOWN then
+            set v = v + AI_VAL_RAZE_TOWN
+        endif
+    endif
+    return v
+endfunction
+
+//---------------------------------------------------------------------------
+//  RAZE OR HOLD  (round 3, queue item 6)
+//
+//  The owner: "AI shouldnt burn cities its comfortable in being able to
+//  hold." Round 2 added the raze refund UNCONDITIONALLY, which tells an AI
+//  to burn its own supply and its own defences. What a settlement actually
+//  gives you, from the object data: a +5 armour aura (A01M/A00M on the ACav
+//  base, Had1 = 5), a regeneration aura (A00K/A00J on Aoar), 25 supply for a
+//  city or 10 for a town (the map own tooltips, TRIGSTR_1005/1868) and a
+//  300 s zero-mana summon of 12 Militia at a capital or 6 at a city
+//  (A00V/A01W -> h010). The 250 gold refund is worth less than all of that
+//  anywhere we can actually keep the building.
+//
+//  Three questions, each answerable from state already kept:
+//   * is it behind our lines -- within AI_HOLD_DIST of home?
+//   * do we want the supply -- are we near our real food cap?
+//   * can we garrison it -- do we have an army at all?
+//---------------------------------------------------------------------------
+function AI_Holdable takes integer pid, real x, real y returns boolean
+    if AI_Dist(x, y, ai_homeX[pid], ai_homeY[pid]) > AI_HOLD_DIST then
+        return false                       // too far forward to keep
+    endif
+    if wm_food[pid] >= wm_foodCap[pid] - AI_HOLD_FOOD then
+        return true                        // we NEED the supply it produces
+    endif
+    return wm_army[pid] >= AI_HOLD_ARMY
+endfunction
+
+// Value of a registered point to this player, WITH the holdability gate. The
+// kind-only form above stays for callers that have no position.
+function AI_PointValueIdx takes integer pid, integer i returns real
+    local integer kind = ai_ptKind[i]
+    local real v = AI_PointValue(kind)
+    if kind == AI_PK_CAPITAL then
+        return v * wm_capReady[pid]
+    endif
+    // Exactly one of the two premiums applies. A settlement we can hold pays
+    // its supply, auras and militia summon; one we cannot pays its refund,
+    // and only to a player the map lets research R008. The hold premium is
+    // the larger of the two, which is the whole point of queue item 6.
+    if AI_Holdable(pid, ai_ptX[i], ai_ptY[i]) then
+        if kind == AI_PK_CITY then
+            set v = v + AI_VAL_HOLD_CITY
+        elseif kind == AI_PK_TOWN then
+            set v = v + AI_VAL_HOLD_TOWN
+        endif
+    elseif wm_canRaze[pid] then
+        if kind == AI_PK_CITY then
+            set v = v + AI_VAL_RAZE_CITY
+        elseif kind == AI_PK_TOWN then
             set v = v + AI_VAL_RAZE_TOWN
         endif
     endif
@@ -1390,7 +1460,7 @@ function AI_TargetScore takes integer pid, integer i returns real
         return 0.0
     endif
 
-    set v = AI_PointValueFor(pid, ai_ptKind[i])
+    set v = AI_PointValueIdx(pid, i)
     // ROUND 3, the conditional shipyard term. A shipyard is worth ~nothing
     // (AI_VAL_SHIPYARD = 0.02) because naval warfare does not decide this
     // map. The single exception is a player that has run out of things to
@@ -1839,7 +1909,7 @@ function AI_ShouldRecall takes integer pid returns boolean
         return false                       // the garrison can deal with this
     endif
     if ai_target[pid] >= 0 then
-        set vObj = AI_PointValueFor(pid, ai_ptKind[ai_target[pid]])
+        set vObj = AI_PointValueIdx(pid, ai_target[pid])
     endif
     return wm_asset[pid] > vObj
 endfunction
@@ -2502,7 +2572,11 @@ function AI_RazeEnum takes nothing returns nothing
     local unit u = GetEnumUnit()
     local real d = AI_Dist(GetUnitX(u), GetUnitY(u), ai_homeX[ai_curPid], ai_homeY[ai_curPid])
     set ai_razeCount = ai_razeCount + 1
-    if d > AI_RAZE_DIST and d > ai_razeDist then
+    // ROUND 3, queue item 6: burn only what we cannot HOLD. Round 2 used a
+    // bare distance test, which still burned a defensible forward city; the
+    // holdability measure also asks whether we want the supply and whether we
+    // have an army to garrison with.
+    if not AI_Holdable(ai_curPid, GetUnitX(u), GetUnitY(u)) and d > ai_razeDist then
         set ai_razeDist = d
         set ai_razeUnit = u
     endif
