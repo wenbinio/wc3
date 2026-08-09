@@ -578,26 +578,58 @@ never third-party maps, gotcha 9).
     ("constant typing is bad"). Sim note: sim.cast/pickup/useItem/sell/
     moveUnit+regions/damage make click-driven design equally testable —
     chat was never the only assertable surface.
-34. **An ASCII apostrophe inside a JASS string literal breaks the parse.**
-    `'...'` is rawcode syntax and the JASS lexer does NOT treat `"..."`
-    as opaque, so `"don't"` in a war3map.j string makes the map
-    UNLOADABLE — while still passing member-diff, markup-parity and CJK
-    sweeps (they only compare text shape). **Detection is harder than it
-    looks** (two passes, two different outcomes): whole-file pjass
-    parity catches it only when the script otherwise parses clean; on a
-    map that ALREADY has thousands of grammar-only errors (protected /
-    no common.j) the new errors vanish into the noise and parity still
-    "passes" — a second translation build shipped 40 apostrophes across
-    13 literals past member-diff, markup parity, CJK sweep AND whole-file
-    pjass parity. Reliable detectors, in order: (a) a direct lint —
-    assert the EN script introduces no `'` inside a double-quoted literal
-    beyond what the original had (cheapest, always works); (b) a
-    full-mode per-literal pjass probe, NEGATIVE-CONTROLLED (plant a known
-    bad literal and confirm it fires — gotcha 32b's discipline).
-    Rule when WRITING English into JASS: rephrase to apostrophe-free
-    wording (or a typographic ’ if the font renders it) and hard-fail the
-    build on recurrence. Only war3map.j is parsed — wts and object data
-    keep apostrophes safely (CN originals ship them). Lua maps unaffected.
+34. **DISPUTED — apostrophes in JASS string literals. Read this before
+    citing it.** The original claim was: `'...'` is rawcode syntax, the
+    lexer does not treat `"..."` as opaque, so `"don't"` in a war3map.j
+    string makes the map UNLOADABLE. **Two independent agents have since
+    failed to reproduce it**, from opposite directions: one tried 9
+    variants (single/multiple/boundary-position apostrophes, nested
+    single-quoted words) — all parsed clean, exit 0 — then read pjass's
+    own lexer (`token.l`) and found the bare-apostrophe→RAWCODE rule is
+    scoped to the **INITIAL state only, not INSTRING**, i.e. apostrophes
+    inside a properly-opened `"..."` are invisible to pjass *by
+    construction*; the other, diagnosing a real crash, likewise got
+    `"don't"` to parse clean and found its own negative control would
+    not fire, so it discarded the probe as an oracle. **The earlier
+    reports that pjass detects this class were wrong**, and the class
+    itself has NEVER been observed in the game — it was inferred, not
+    witnessed. Current status:
+    - **pjass does NOT detect it.** Do not use pjass parity, in any
+      mode, as evidence either way. Discard the "per-literal probe".
+    - **A direct lint is the only working detector**: assert the EN
+      script introduces no `'` inside a double-quoted literal beyond
+      what the original had. That is a *delta* check, and it works
+      regardless of whether the underlying failure is real.
+    - **Cost-free precaution, so keep doing it**: write apostrophe-free
+      English into war3map.j (rephrase, or use a typographic ’). Only
+      war3map.j is parsed — wts and object data keep apostrophes safely
+      (CN originals ship them). Lua maps unaffected.
+    - **Do NOT declare a map broken on this basis.** Eight shipped
+      translations carry 127 such literals (FindHoseong 64,
+      SchoolGhostStory 22, WhoIsTheAlien 14, DeathNote 9, Gomel 8,
+      TycoonAzeroth 7, DouDizhu 2, Avalon 1), flagged on doctrine, not
+      on a reproduced failure. A single in-game load of any one of them
+      settles this permanently — resolve it that way, not by argument.
+35. **Text members inside an archive have a BYTE DIALECT, and editing
+    one silently destroys it.** The real, evidenced cause of a shipped
+    map crashing on load: `war3mapSkin.txt` went from 12 CRLF line
+    endings to 12 bare LF. Mechanism — Python's `open(p)` applies
+    universal-newline translation on READ (CRLF → LF), and pairing that
+    with `newline=''` on WRITE emits the collapsed endings verbatim.
+    **This is invisible to every check we run**: member diff (the member
+    is *supposed* to differ), markup parity, CJK sweeps, and pjass.
+    It was found only by diffing the same member across 17 sibling
+    translations — every other map preserved its dialect exactly
+    (2→2, 47→47, 22→22, 61→61 …); this one went 12→0.
+    Rules: read and write every archive text member in **binary**, or
+    carry a `_dialect` sidecar the way `lib/wts.js` does (gotcha 16 —
+    which is exactly why the wts survived the same pass unharmed).
+    Applies to `.txt/.wts/.j/.lua/.slk/.fdf/.toc/.ini`; `war3mapSkin.txt`
+    in particular is parsed by the game at load. Proposed automated
+    check: a differential gate (`tools/diff-archives.js`) failing on
+    line-ending/BOM flips in text members of any derived archive, plus a
+    validate-map WARN when one `.txt` member is LF-only while its
+    siblings are CRLF.
 
 ## Testing & validation doctrine
 
