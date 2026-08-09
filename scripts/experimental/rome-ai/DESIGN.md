@@ -1367,3 +1367,91 @@ the deadlock and the leash — were both invisible to a 190-assertion trace that
 passed completely**, because both were emergent over time rather than wrong at
 a point. A trace pins decisions; only play reveals a decision that is right
 every tick and wrong every game.
+
+---
+
+## 12. Round 5 (2026-08-09) — the Roman lock, and what is deferred
+
+### 12.1 What shipped
+
+| finding | cause | fix |
+|---|---|---|
+| Romans passive (3, 4, and "North Rome doing the same") | CONSOLIDATE **0.300 flat at every clock** — a pure gold floor, since the army term is already zero and Rome is rich by construction. EXPAND crushed to 0.067 by a proximity term scaled to a barbarian's 4200 while Rome's nearest enemy is 18000 away | `AI_WantsMore` sufficiency gate + `wm_proxScale` adapting to the faction's own geography. **0.300 → 0.000, 0.113 → 0.299** |
+| "Romans don't use starting units" | they were **enrolled all along**; CONSOLIDATE spent the whole 24-order budget re-ordering units already home | skip units already inside the home radius on a MOVE-home dispatch |
+| "Romans struggle with gates" | **not a gate bug** — CONSOLIDATE sets `ai_apGate = -1`, so a locked Roman army never reached the gate model | resolved by unlocking the Romans |
+| Gray at a 1992/2000 gate | `AI_APPROACH_MIN` 2200 turned routing **off on arrival**: `ai_apBreak` went false, rams were rear-guarded, none were bought | lowered to 600; rams buy from a remembered wall (`AI_WALL_MEM`) at the real cost; a break we cannot perform is priced out (`AI_NOBREAK_COST`) |
+| West Rome's boats | three defects: land dispatch attack-moving transports; hero boarding first; `AI_NavStep` unreachable outside EXPAND/SIEGE | transports excluded from land dispatch; hero boards only behind its army; `AI_NavIdle` runs every tick |
+| "players generally too static" | no floor under the decision layer | **idle-army floor**: no commitment for `AI_IDLE_T` → take the nearest contestable objective, unconditionally |
+| barbarians "seem less active" | **hypothesis 0 confirmed as the leading cause** — round 4 scoped chat to allies, the owner plays Rome, so the barbarian stream went silent | `-aispy` observer mode |
+
+### 12.2 The success metric, adopted
+
+The coordinator's framing is now the verdict that counts: across a whole game the
+multiboard read **West Rome 24/24/24, East Rome 32/33/32, North Rome 20/21/20,
+barbarians 2–5 throughout**. In a thirty-minute game about taking territory,
+territory did not change hands. **A round succeeds if the city and control-point
+counts move substantially, and fails if they do not, however clean the trace is.**
+Every fix above is aimed at that number rather than at a threshold.
+
+### 12.3 Deferred, deliberately, with what each needs
+
+* **Cheating dial (owner-authorised, doctrine reversal).** Not implemented. The
+  design is settled and stated here so it is not re-derived: **two independent
+  knobs**, `AI_INFO_LEVEL` (fog: 0 honest `IsUnitVisible`, 1 point ownership
+  known, 2 enemy composition and hero positions known, 3 full map) and
+  `AI_MATERIAL_LEVEL` (0 none, then resource rate / build speed / upkeep
+  relief). **The honest path must keep working at 0 on both** — the research
+  output nobody in the scene has is *how much cheat competence actually needs*,
+  and that is only answerable if the layers stay separable
+  (`docs/reference/wc3-ai-prior-art.md`: 100% of "hard" WC3 AIs are resource
+  cheats with no competence dial). Information first, material only if the
+  behavioural fixes are not enough — the owner's ordering. The startup line
+  already reports the level, currently `NONE`.
+* **Theatres (finding 5).** Each faction gets an operating region derived from
+  start positions and nearest control points; objectives outside it score far
+  lower rather than being forbidden, so a faction whose theatre is conquered is
+  not stranded. Note it **composes with the harasser** — "one AI per front"
+  only means something once fronts exist. `wm_proxScale` is a partial stand-in:
+  it makes distance relative to the faction, which already discourages the
+  cross-map march the owner objected to.
+* **Heroes into defended positions (finding 1).** Round 4's leash is geometric
+  only. The missing term is **defence at the destination** — `ai_ptDef` already
+  measures exactly this for points and the same enumeration would serve. With
+  the irreplaceable branch live, the bar for entering defended ground should be
+  very high.
+* **Control points as explicit income.** The map states it: *"Each Control
+  Point you control at the beginning of each 2 minute round gives you 10 gold
+  and lumber."* That makes `AI_VAL_CP = 1.00` a measured anchor rather than a
+  choice, lets the other `AI_VAL_*` numbers be **derived** from it, and makes
+  taking a point *just before* a round boundary strictly better than just
+  after. The round timer is readable from `udg_Turn_Timer`.
+* **Temporary Roman–barbarian alliance.** The map announces *"The Romans may
+  now temporarily ally a Barbarian Player!"* mid-game. The AI ignores it
+  entirely. Worth having: an ally on one front frees an army for another, and
+  it composes with theatres.
+* **Counter relationships.** The map's own hint: *"Swordsman are great
+  frontline units, but can be easily bested against large numbers of
+  Cavalry."* Composition against **what the enemy actually fields** is a
+  different axis from faction identity (§10.9, which stayed three-way because
+  the rosters are identical). Not to be opened while armies are still standing
+  still.
+
+### 12.4 A disagreement recorded, not acted on
+
+The map's own text says *"Building a large fleet is extremely important.
+Whoever controls the sea controls the flow of reinforcements around the
+Empire."* The owner has played the map and reports naval **warfare** is
+worthless and only **transport** is wanted. **The owner's verdict wins** — naval
+combat stays unimplemented and `AI_VAL_SHIPYARD` stays at 0.02. Recorded because
+a future reader will find that hint string and wonder.
+
+### 12.5 The harness defect that keeps recurring
+
+Round 4 found one source guard whose unbounded `.*?` with `re.S` walked past
+`endfunction` and matched a **later** function. Round 5 found **two more** — the
+transport guard was passing against `AI_BoardEnum` while `AI_SendEnum` had no
+such check at all, i.e. a green guard over a missing fix. All are now bounded to
+their own function body. **Twice is a pattern**: every `function X\b.*?` guard in
+`trace.py` should be treated as suspect until bounded. This is the same family as
+gotcha 34 — a check that cannot fail, or that can pass for the wrong reason, is
+worse than no check, because it is counted as evidence.
