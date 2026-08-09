@@ -510,14 +510,54 @@
     //     of the army uses -- and re-engagement waits for a real heal, with
     //     hysteresis so a hero cannot flicker in and out of a fight.
     // ===================================================================
-    constant real    AI_HERO_ENGAGE   = 0.78   // re-commit only this healthy
-    constant real    AI_HERO_BREAK    = 0.50   // disengage here; death is FINAL
+    // ROUND 4 -- A CORRECTION TO ROUND 3'S OWN DIAGNOSIS. Round 3 said "there
+    // is no revive trigger anywhere and each player has exactly one preplaced
+    // hero, so a dead hero is gone for the game". The search was for a
+    // TRIGGER, and absence of a trigger is not absence of a mechanism -- the
+    // repo's own doctrine, and round 3 broke it.
+    //
+    // What the artifact actually says. The map's own tooltip, TRIGSTR_1000:
+    // "Your hero cannot be revived if he dies, but you can get a new Hero by
+    // researching Appoint a New General at your Forge." That research is R007
+    // (TRIGSTR_1805 "Appoint New General"), it costs 250 gold + 250 lumber
+    // (gglb/glmb) and it IS in the Forge's research list (h00W ures). What
+    // there is NOT: any altar or tavern base, any revive ability, any
+    // ReviveHero call, and any revive item -- the item every hero starts with,
+    // I000, is a Battle Standard.
+    //
+    // And the twist: Trig_Melee_Initialization_Func003A runs over
+    // udg_AllPlayers and calls SetPlayerTechMaxAllowedSwap('R007', 0), and
+    // NOTHING anywhere sets it back. So in this build the replacement the map
+    // advertises is disabled for everyone -- the conclusion round 3 reached,
+    // reached for entirely the wrong reason.
+    //
+    // The owner reports heroes can be replaced for 100 gold, which matches
+    // neither the 250/250 measured here nor a build with R007 disabled. Rather
+    // than argue the point, the risk tolerance ASKS THE GAME at runtime, the
+    // same way wm_canRaze asks about R008: if a replacement is purchasable the
+    // hero is a setback and worth risking, and if it is not it is irreplaceable
+    // and worth protecting. That is correct under every reading.
+    constant real    AI_HERO_ENGAGE   = 0.78   // re-commit: irreplaceable hero
+    constant real    AI_HERO_BREAK    = 0.50   // disengage: irreplaceable hero
+    constant real    AI_HERO_ENGAGE_R = 0.55   // re-commit: replacement available
+    constant real    AI_HERO_BREAK_R  = 0.30   // disengage: replacement available
+    constant integer AI_HERO_REPLACE  = 'R007' // "Appoint New General", at the Forge
     constant real    AI_HERO_HUNT_R   = 3000.0 // focus a hero found this close
+    // ROUND 4, finding 6: "they overpush for hero aim." The round-3 hunt was
+    // bounded by distance from the ARMY -- a MOVING reference, so the bound
+    // travelled with the chase and bounded nothing at all. These anchor it to
+    // things that do not run away: the objective, and the formation.
+    constant real    AI_HERO_LEASH    = 3400.0 // hunt only this far from the objective
+    constant real    AI_HERO_SOLO_R   = 1200.0 // our hero never leaves the formation
     constant integer AI_HERO_SLICE    = 2      // orders the hero layer may spend
     boolean array    ai_heroOut       // withdrawn and healing
+    boolean array    wm_canReplaceHero// R007 purchasable: a hero is a setback
+    real             ai_anchorX     = 0.0     // the point a hero hunt is tied to
+    real             ai_anchorY     = 0.0
     unit             ai_heroUnit    = null
     unit             ai_heroTarget  = null
     real             ai_heroDist    = 0.0
+    real             ai_heroLeash   = 0.0
 
     // ---- ROUND 3: messaging -------------------------------------------
     // The AI narrates its STATE CHANGES so a playtest diagnoses itself. Rate
@@ -1699,6 +1739,11 @@ function AI_ScanWorld takes integer pid returns nothing
     // PLAYER_STATE_RESOURCE_FOOD_CAP is the real cap.
     set wm_foodCap[pid] = I2R(GetPlayerState(p, PLAYER_STATE_RESOURCE_FOOD_CAP))
     set wm_canRaze[pid] = (GetPlayerTechMaxAllowed(p, 'R008') != 0)
+    // ROUND 4: ask the game whether a dead hero can be replaced, exactly the
+    // way wm_canRaze asks about razing. In THIS build the answer is no,
+    // because Trig_Melee_Initialization disables R007 for everyone and never
+    // re-enables it -- but the AI does not assume that, it checks.
+    set wm_canReplaceHero[pid] = (GetPlayerTechMaxAllowed(p, AI_HERO_REPLACE) != 0)
     if wm_foodCap[pid] <= 0.0 then
         // A player with no settlements really does have no headroom. The
         // floor exists only to keep the CONSOLIDATE divisor non-zero -- it
@@ -2891,14 +2936,38 @@ endfunction
 
 // ---- heroes (round 3, queue item 5) -------------------------------------
 
+// How badly hurt our hero may get before we pull it, and how healed it must
+// be to go back in. A replaceable hero is a 250-gold setback and worth
+// risking; an irreplaceable one is worth protecting.
+function AI_HeroBreak takes integer pid returns real
+    if wm_canReplaceHero[pid] then
+        return AI_HERO_BREAK_R
+    endif
+    return AI_HERO_BREAK
+endfunction
+
+function AI_HeroEngage takes integer pid returns real
+    if wm_canReplaceHero[pid] then
+        return AI_HERO_ENGAGE_R
+    endif
+    return AI_HERO_ENGAGE
+endfunction
+
 function AI_EnemyHeroEnum takes nothing returns nothing
     local unit u = GetEnumUnit()
     local real d
     if IsUnitEnemy(u, ai_curP) and IsUnitVisible(u, ai_curP) and IsUnitType(u, UNIT_TYPE_HERO) and GetUnitState(u, UNIT_STATE_LIFE) > 0.405 then
-        set d = AI_Dist(GetUnitX(u), GetUnitY(u), ai_orderX, ai_orderY)
-        if d < ai_heroDist then
-            set ai_heroDist = d
-            set ai_heroTarget = u
+        // ROUND 4, finding 6: the LEASH. A candidate must be near the army
+        // (reachable) AND near the anchor (not a chase away from what we are
+        // actually here to do). Round 3 only had the first test, and because
+        // the army centroid follows the chase, that bound moved with the
+        // target and therefore bounded nothing.
+        if AI_Dist(GetUnitX(u), GetUnitY(u), ai_anchorX, ai_anchorY) <= ai_heroLeash then
+            set d = AI_Dist(GetUnitX(u), GetUnitY(u), ai_orderX, ai_orderY)
+            if d < ai_heroDist then
+                set ai_heroDist = d
+                set ai_heroTarget = u
+            endif
         endif
     endif
     set u = null
@@ -2907,8 +2976,11 @@ endfunction
 // Nearest VISIBLE enemy hero within AI_HERO_HUNT_R of the field army, or null.
 // Bounded by that radius on purpose: this is a local focus-fire override, not
 // a map-wide chase, so it can never pull an army off across the board.
-function AI_FindEnemyHero takes integer pid returns unit
+function AI_FindEnemyHero takes integer pid, real ax, real ay, real leash returns unit
     local group g = CreateGroup()
+    set ai_anchorX = ax
+    set ai_anchorY = ay
+    set ai_heroLeash = leash
     set ai_curP = ai_p[pid]
     set ai_orderX = wm_fieldX[pid]
     set ai_orderY = wm_fieldY[pid]
@@ -2950,14 +3022,14 @@ function AI_HeroMicro takes integer pid returns nothing
     set ai_budget = AI_HERO_SLICE
     set frac = GetUnitState(ai_heroUnit, UNIT_STATE_LIFE) / AI_Max(1.0, GetUnitState(ai_heroUnit, UNIT_STATE_MAX_LIFE))
     if ai_heroOut[pid] then
-        if frac >= AI_HERO_ENGAGE then
+        if frac >= AI_HeroEngage(pid) then
             set ai_heroOut[pid] = false          // healed: back to the line
         else
             call AI_TryOrder(ai_heroUnit, AI_ORD_MOVE, ai_homeX[pid], ai_homeY[pid], null)
             set ai_heroUnit = null
             return
         endif
-    elseif frac <= AI_HERO_BREAK then
+    elseif frac <= AI_HeroBreak(pid) then
         set ai_heroOut[pid] = true
         call AI_Say(pid, "pulling the hero out - it cannot be replaced")
         call AI_TryOrder(ai_heroUnit, AI_ORD_MOVE, ai_homeX[pid], ai_homeY[pid], null)
@@ -2966,7 +3038,10 @@ function AI_HeroMicro takes integer pid returns nothing
     endif
     // Healthy: hit and run. If an enemy hero is in reach, that is the fight
     // worth taking; otherwise the hero rides with the normal field orders.
-    set eh = AI_FindEnemyHero(pid)
+    // ROUND 4, finding 6: our hero skirmishes, it does not go hunting. The
+    // anchor is the army itself on a short leash, so a hero cannot leave the
+    // formation to chase -- "they overpush for hero aim".
+    set eh = AI_FindEnemyHero(pid, wm_fieldX[pid], wm_fieldY[pid], AI_HERO_SOLO_R)
     if eh != null then
         set ai_issued = 0
         set ai_budget = AI_HERO_SLICE
@@ -2991,7 +3066,9 @@ function AI_MoveOnTarget takes integer pid, integer t returns nothing
     // exactly one hero, so the kill is PERMANENT and worth more than any
     // building on the board. Bounded by AI_HERO_HUNT_R, so it is a focus and
     // never a chase across the map.
-    set eh = AI_FindEnemyHero(pid)
+    // ROUND 4, finding 6: anchored to the OBJECTIVE, which does not move, so
+    // the army cannot be walked off the map one tick at a time.
+    set eh = AI_FindEnemyHero(pid, ai_ptX[t], ai_ptY[t], AI_HERO_LEASH)
     if eh != null then
         call AI_Say(pid, "focusing an enemy hero")
         call AI_SendArmy(pid, GetUnitX(eh), GetUnitY(eh), AI_ORD_ATTACKU, eh)

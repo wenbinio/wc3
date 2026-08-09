@@ -270,6 +270,9 @@ def make_env(sc):
         'ai_harasser': d(sc.get('harasser', False)),
         'wm_wantBoat': d(sc.get('wantBoat', False)),
         'wm_landLeft': d(sc.get('landLeft', False)),
+        'wm_canReplaceHero': d(sc.get('canReplaceHero', False)),
+        'ai_heroOut': d(sc.get('heroOut', False)),
+        'ai_anchorX': 0.0, 'ai_anchorY': 0.0, 'ai_heroLeash': 0.0,
         'ai_comp': {}, 'ai_claim': {}, 'ai_claimAt': {},
         'ai_laneN': CONSTS['AI_LANES'], 'ai_laneMid': CONSTS['AI_LANE_MID'],
         'ai_laneNX': sc.get('laneNX', 0.0), 'ai_laneNY': sc.get('laneNY', 1.0),
@@ -1499,7 +1502,37 @@ def heroes():
     print('ROUND 3 -- heroes: a permanent unit, so a conservative policy')
     print('=' * 78)
     B, E = CONSTS['AI_HERO_BREAK'], CONSTS['AI_HERO_ENGAGE']
+    BR, ER = CONSTS['AI_HERO_BREAK_R'], CONSTS['AI_HERO_ENGAGE_R']
     fails = 0
+
+    # ROUND 4 -- the correction. Round 3 concluded "a dead hero is gone for the
+    # game" from the ABSENCE OF A TRIGGER, which is not evidence of absence of
+    # a mechanism. What the artifact says: TRIGSTR_1000 tells the player to
+    # research "Appoint a New General" at the Forge; that is R007, it costs
+    # 250 gold + 250 lumber, and it is in h00W's ures list. But
+    # Trig_Melee_Initialization disables R007 for udg_AllPlayers and nothing
+    # re-enables it -- so round 3's conclusion held for the wrong reason.
+    # Rather than argue with the owner's "100 gold", the AI asks the game.
+    def thresh(fn, replaceable):
+        sc = dict(role='barb', canReplaceHero=replaceable)
+        env = make_env(sc)
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        return it.run(fn, [0])
+
+    adaptive = [
+        ('an IRREPLACEABLE hero is protected: high break point',
+         thresh('AI_HeroBreak', False) == B),
+        ('a REPLACEABLE hero is a setback, so it is risked further',
+         thresh('AI_HeroBreak', True) == BR and BR < B),
+        ('re-engagement relaxes the same way',
+         thresh('AI_HeroEngage', True) == ER and ER < E),
+        ('both readings keep real hysteresis', BR < ER and B < E),
+    ]
+    for name, ok in adaptive:
+        fails += 0 if ok else 1
+        print('  %s %s' % ('PASS' if ok else 'FAIL', name))
+    print('       irreplaceable break/engage %.2f/%.2f   replaceable %.2f/%.2f'
+          % (B, E, BR, ER))
 
     checks = [
         ('the break point is real hysteresis, not one threshold', B < E),
@@ -1545,6 +1578,61 @@ def heroes():
     fails += 0 if ok else 1
     print('  %s NEGATIVE CONTROL: hysteresis suppresses flicker (%d transitions vs %d single-threshold)'
           % ('PASS' if ok else 'FAIL', flips_h, flips_s))
+
+    # -- ROUND 4, finding 6: the leash ------------------------------------
+    # "they overpush for hero aim." Round 3 bounded the hunt by distance from
+    # the ARMY -- a moving reference, so the bound travelled with the chase.
+    print('  -- round 4, finding 6: the hunt is anchored to things that do not run --')
+
+    def hunt(hero_x, anchor_x, leash):
+        """Run the REAL AI_EnemyHeroEnum against one visible enemy hero and
+        report whether it was accepted as a target. Mocking the enum unit is
+        the only way to reach a ForGroup callback from here; the decision
+        under test is still the shipped code."""
+        sc = dict(role='barb', fieldX=0.0, fieldY=0.0)
+        env = make_env(sc)
+        nat = make_natives(env, 0.0)
+        HERO = 999
+        nat['GetEnumUnit'] = lambda: HERO
+        nat['GetUnitX'] = lambda u: hero_x
+        nat['GetUnitY'] = lambda u: 0.0
+        nat['GetUnitState'] = lambda u, st: 1000.0
+        nat['IsUnitEnemy'] = lambda u, p: True
+        nat['IsUnitVisible'] = lambda u, p: True
+        nat['IsUnitType'] = lambda u, ty: True
+        nat['UNIT_TYPE_HERO'] = 1
+        nat['UNIT_STATE_LIFE'] = 1
+        it = Interp(FUNCS, CONSTS, env, nat)
+        env['ai_anchorX'] = anchor_x
+        env['ai_anchorY'] = 0.0
+        env['ai_heroLeash'] = leash
+        env['ai_heroDist'] = CONSTS['AI_HERO_HUNT_R']
+        env['ai_heroTarget'] = None
+        env['ai_orderX'] = 0.0
+        env['ai_orderY'] = 0.0
+        it.run('AI_EnemyHeroEnum', [])
+        return env['ai_heroTarget'] is not None
+
+    L = CONSTS['AI_HERO_LEASH']
+    S = CONSTS['AI_HERO_SOLO_R']
+    leash = [
+        ('a hero beside the objective is worth focusing', hunt(0.0, 0.0, L), True),
+        ('a hero fleeing well past the leash is let go', hunt(L + 2000.0, 0.0, L), False),
+        ('... and it is the LEASH that let it go, not the army radius',
+         hunt(1000.0, 0.0, 100.0), False),
+        ('our own hero is on a much shorter leash than the army', S < L),
+        ('the solo leash keeps the hero inside the formation', S <= 1500.0),
+    ]
+    for row in leash:
+        if len(row) == 3:
+            name, got, want = row
+            ok = (got == want)
+        else:
+            name, ok = row
+        fails += 0 if ok else 1
+        print('    %s %s' % ('PASS' if ok else 'FAIL', name))
+    print('       army leash %.0f (anchored to the objective), solo leash %.0f (anchored to the army)'
+          % (L, S))
 
     print('\n%s: %d hero assertions failed' % ('PASS' if not fails else 'FAIL', fails))
     return 1 if fails else 0
@@ -1740,6 +1828,21 @@ ROUND3_GUARDS = [
      r'function AI_ScoreDefend\b.*?if t > AI_WRITEOFF\*a and not wm_capThreat\[pid\] then', True),
     ('GUARD B: the army SPLIT is still the default response',
      r'function AI_Execute\b.*?if AI_ShouldRecall\(pid\) then.*?call AI_Respond\(pid,', True),
+    # --- round 4: finding 6 and the revive correction --------------------
+    ('replaceability is asked of the GAME, not assumed',
+     r"set wm_canReplaceHero\[pid\] = \(GetPlayerTechMaxAllowed\(p, AI_HERO_REPLACE\) != 0\)", True),
+    ('the replacement research is the map own R007',
+     r"constant integer AI_HERO_REPLACE  = 'R007'", True),
+    ('the break point adapts to whether a hero can be replaced',
+     r'function AI_HeroBreak\b.*?if wm_canReplaceHero\[pid\] then\s*\n\s*return AI_HERO_BREAK_R', True),
+    ('the hero micro uses the adaptive thresholds, not the constants',
+     r'function AI_HeroMicro\b(?:(?!\nendfunction)[\s\S])*?AI_HeroEngage\(pid\)', True),
+    ('the hunt is leashed to an anchor as well as to the army',
+     r'function AI_EnemyHeroEnum\b.*?ai_anchorX, ai_anchorY\) <= ai_heroLeash', True),
+    ('the army hunt is anchored to the OBJECTIVE, which does not move',
+     r'AI_FindEnemyHero\(pid, ai_ptX\[t\], ai_ptY\[t\], AI_HERO_LEASH\)', True),
+    ('our own hero is anchored to the formation on a short leash',
+     r'AI_FindEnemyHero\(pid, wm_fieldX\[pid\], wm_fieldY\[pid\], AI_HERO_SOLO_R\)', True),
     # --- round 4: findings 4, 5, 8 ---------------------------------------
     ('AI reports go to ALLIES only, never to everyone',
      r'function AI_Say\b.*?call AI_BroadcastAllies\(pid, AI_Name\(pid\)', True),
@@ -1834,10 +1937,10 @@ ROUND3_GUARDS = [
     # --- heroes (item 5) -------------------------------------------------
     ('a hero is exempt from the 22 percent army trip-wire',
      r'function AI_MicroEnum\b.*?if IsUnitType\(u, UNIT_TYPE_HERO\) then\s*\n\s*set u = null\s*\n\s*return', True),
-    ('the hero hysteresis re-engages only above AI_HERO_ENGAGE',
-     r'function AI_HeroMicro\b.*?if ai_heroOut\[pid\] then\s*\n\s*if frac >= AI_HERO_ENGAGE then', True),
-    ('the hero withdraws at AI_HERO_BREAK',
-     r'function AI_HeroMicro\b.*?elseif frac <= AI_HERO_BREAK then\s*\n\s*set ai_heroOut\[pid\] = true', True),
+    ('the hero hysteresis re-engages only above the engage threshold',
+     r'function AI_HeroMicro\b.*?if ai_heroOut\[pid\] then\s*\n\s*if frac >= AI_HeroEngage\(pid\) then', True),
+    ('the hero withdraws at the break threshold',
+     r'function AI_HeroMicro\b.*?elseif frac <= AI_HeroBreak\(pid\) then\s*\n\s*set ai_heroOut\[pid\] = true', True),
     ('a withdrawn hero is not re-sent to the front by the think tick',
      r'function AI_SendEnum\b.*?if ai_heroOut\[ai_curPid\] and IsUnitType\(u, UNIT_TYPE_HERO\) then', True),
     ('hero policy runs before the difficulty gate',
