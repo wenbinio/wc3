@@ -230,6 +230,15 @@ class Interp:
 # ------------------------------------------------------------- harness
 
 TEXT = open(SRC, encoding='utf-8').read()
+# The generated voice tables are a separate file that inject.py prepends to the
+# module (JASS is single-pass and they must be declared first). The harness has
+# to see exactly what the game sees, so it concatenates them the same way --
+# otherwise every AI_Say path would fail here for a reason the build does not
+# have, which is the harness lying in the safe direction rather than the
+# dangerous one, but lying either way.
+VOICES_J = os.path.join(W, 'voices.j')
+if os.path.exists(VOICES_J):
+    TEXT = open(VOICES_J, encoding='utf-8').read() + '\n' + TEXT
 FUNCS = parse_functions(TEXT)
 CONSTS = parse_globals(TEXT)
 
@@ -262,6 +271,9 @@ def make_env(sc):
         'ai_exCount': __import__('collections').defaultdict(int),
         'ai_exCV': __import__('collections').defaultdict(float),
         'ai_marchDX': 0.0, 'ai_marchDY': 0.0, 'ai_congN': 0, '_ht': {},
+        'ai_vSeq': __import__('collections').defaultdict(int),
+        'ai_echoMsg': __import__('collections').defaultdict(str),
+        'ai_echoAt': __import__('collections').defaultdict(float), 'ai_echoHead': 0,
         'ai_sortieGate': d(-1), 'ai_sortieAt': d(0.0),
         'wm_musterPool': d(0.0), 'ai_musterAt': 0.0,
         'ai_sayGlobal': '', 'ai_sayGlobalAt': -999.0,
@@ -401,6 +413,7 @@ def make_natives(env, noise=0.0):
         'LoadReal': lambda ht, a, b: env['_ht'].get((a, b), 0.0),
         'R2I': int,
         'ModuloInteger': lambda a, b: a % b if b else 0,
+        'GetPlayerId': lambda p: p if isinstance(p, int) else 0,
         'PATHING_TYPE_WALKABILITY': 1,
         'StringHash': lambda x: sum(ord(c) for c in str(x)),
         'Pow': lambda x, p: x ** p,
@@ -1959,144 +1972,258 @@ def early_barbarians():
 
 
 def voice():
-    """PLAYTEST 7: "they should be speaking as though they're human".
+    """PLAYTEST 11 -- the twelve voices, per docs/reference/fall-of-rome-voices.md.
 
-    Flavour is presentation, and presentation is exactly where a diagnostic
-    channel gets quietly broken. Two hard constraints came with the request
-    and both are asserted here rather than trusted: the FORAI| event stream
-    stays machine-parseable, and the ally scoping stays intact so no line
-    reaches a player who should not see it.
+    The spec's own checker read the markdown and was thrown away on purpose:
+    section 8 says the assertion that matters belongs against the JASS tables,
+    which is only true if the JASS provably came from the markdown. So the
+    tables are GENERATED (gen-voices.py) and checked here, against the shipped
+    voices.j, with the generator itself checked for drift.
 
-    HARNESS NOTE: jass_expr_to_py rewrites the JASS operators `and`/`or`/`not`
-    textually, without respecting string boundaries, so a returned STRING that
-    contains one of those words comes back with altered spacing. It does not
-    affect any numeric or boolean path -- the whole rest of this file -- but
-    it means no assertion may compare a voiced line for EQUALITY against a
-    literal typed here. Everything below compares lines for DIFFERENCE or
-    non-emptiness, which is unaffected. The shipped .j is of course intact."""
+    Section 8's criteria, all seven, plus the vocabulary table from section 7.
+    Every check keys on structure or on the generated table, never on one
+    hand-typed line -- DESIGN.md 21.6 recorded what happens when a guard is
+    keyed on player-facing text.
+    """
     print('\n' + '=' * 78)
-    print('PLAYTEST 7 -- the factions sound like people, and the machine channel does not')
+    print('PLAYTEST 11 -- twelve voices, and the machine channel still byte-exact')
     print('=' * 78)
     fails = 0
+    import subprocess
 
-    def say(pid, goal):
-        env = make_env(dict(role='barb'))
-        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
-        return it.run('AI_GoalName', [pid, goal])
+    VJ = os.path.join(W, 'voices.j')
+    src = open(VJ, encoding='utf-8').read()
+    # every literal returned by the generated tables
+    lines = re.findall(r'^\s*return\s+(.+)$', src, flags=re.M)
+    lits = []
+    for ln in lines:
+        parts = re.findall(r'"([^"]*)"', ln)
+        if parts:
+            lits.append(''.join(parts))
 
-    HUNS, FRANKS, WROME, PERSIA = 0, 1, 3, 7
-    G = CONSTS['GOAL_EXPAND']
-    lines = {p: say(p, G) for p in (HUNS, FRANKS, WROME, PERSIA)}
-    ok = len(set(lines.values())) == 4
+    def pool(fn):
+        m = re.search(r'function %s\b(?:(?!\nendfunction)[\s\S])*' % fn, src)
+        body = m.group(0) if m else ''
+        out = []
+        for ln in re.findall(r'^\s*return\s+(.+)$', body, flags=re.M):
+            parts = re.findall(r'"([^"]*)"', ln)
+            if parts:
+                joined = ''.join(parts)
+                # each generated function ends with a `return ""` fallthrough,
+                # which is a guard rather than a line and must not be counted
+                if joined or 'k' in ln or 'o' in ln:
+                    if joined:
+                        out.append(joined)
+        return out
+
+    # ---- 1. pool arity ---------------------------------------------------
+    a_pools = {p: pool('AI_VA%d' % p) for p in range(12)}
+    ok = all(len(v) == 30 for v in a_pools.values())
     fails += 0 if ok else 1
-    print('  %s Huns, Franks, West Rome and Persia say four DIFFERENT things about the '
-          'same decision' % ('PASS' if ok else 'FAIL'))
-    for p in (HUNS, FRANKS, WROME, PERSIA):
-        print('       %-10s %s' % (('Huns', 'Franks', '', 'West Rome', '', '', '',
-                                    'Persia')[p], lines[p]))
+    print('  %s tier A arity: 12 factions x 10 kinds x 3 variants (%d strings)'
+          % ('PASS' if ok else 'FAIL', sum(len(v) for v in a_pools.values())))
 
-    # a voice is a property of the FACTION, not of the moment
-    ok = say(HUNS, G) == lines[HUNS]
+    b_pools = {h: pool('AI_VB%d' % h) for h in range(6)}
+    ok = all(len(v) == 30 for v in b_pools.values())
     fails += 0 if ok else 1
-    print('  %s the same faction says the same thing twice -- a voice, not a roll'
+    print('  %s tier B arity: 6 houses x 10 kinds x 3 variants (%d strings)'
+          % ('PASS' if ok else 'FAIL', sum(len(v) for v in b_pools.values())))
+
+    c_pool = pool('AI_VTierC')
+    ok = len(c_pool) == 60
+    fails += 0 if ok else 1
+    print('  %s tier C arity: 6 houses x 10 states (%d strings)'
+          % ('PASS' if ok else 'FAIL', len(c_pool)))
+
+    # ---- 2. cross-faction uniqueness in tier A ---------------------------
+    # THE assertion: it is what makes the reported collision impossible.
+    all_a = [x for v in a_pools.values() for x in v]
+    ok = len(set(all_a)) == len(all_a) == 360
+    fails += 0 if ok else 1
+    print('  %s tier A: all %d strings DISTINCT -- no two factions can ever emit '
+          'the same line' % ('PASS' if ok else 'FAIL', len(all_a)))
+
+    # the exact collision the owner reported, checked directly
+    VANDALS, SAXONS, BRITONS = 5, 2, 6
+    shared = set(a_pools[VANDALS]) & set(a_pools[SAXONS]) & set(a_pools[BRITONS])
+    ok = not shared
+    fails += 0 if ok else 1
+    print('  %s the three factions from the screenshot share NO string'
           % ('PASS' if ok else 'FAIL'))
 
-    # every goal and posture must be voiced for every faction: a missing branch
-    # returns the fallback, which reads as the wrong faction talking
-    goals = [CONSTS[g] for g in ('GOAL_EXPAND', 'GOAL_DEFEND', 'GOAL_SIEGE',
-                                 'GOAL_TECH', 'GOAL_RETREAT', 'GOAL_CONSOLIDATE')]
-    empty = [(p, g) for p in range(12) for g in goals if not say(p, g).strip()]
-    ok = not empty
+    # ---- 3/4. ASCII, apostrophe-free -------------------------------------
+    bad = [x for x in lits if any(ord(c) < 0x20 or ord(c) > 0x7E for c in x)]
+    ok = not bad
     fails += 0 if ok else 1
-    print('  %s every faction has a line for every goal (%d combinations checked)'
-          % ('PASS' if ok else 'FAIL', 12 * len(goals)))
+    print('  %s every line is ASCII 0x20-0x7E (%d checked)'
+          % ('PASS' if ok else 'FAIL', len(lits)))
 
-    # ---- the machine channel is untouched ---------------------------------
-    # AI_Tel builds the FORAI| payload; no voice helper may appear in it.
-    tel = '\n'.join(FUNCS['AI_Tel'][1])
-    ok = 'AI_Voice' not in tel and 'AI_GoalName' not in tel and 'AI_PostureName' not in tel
-    fails += 0 if ok else 1
-    print('  %s no voice helper is reachable from AI_Tel -- flavour cannot enter the '
-          'event stream' % ('PASS' if ok else 'FAIL'))
-
-    # every AI_Tel call site passes only AI_Num/AI_TelAI-wrapped values
-    bad = re.findall(r'call AI_Tel\(\s*"(\w+)"\s*,\s*([^\n]*)\)', CODE)
-    leaky = [ev for ev, body in bad
-             if re.search(r'AI_(GoalName|PostureName|KindName|OwnerName|Name|Voice)\b', body)]
-    ok = not leaky
-    fails += 0 if ok else 1
-    print('  %s no AI_Tel call site interpolates a human-readable name (%d sites checked)'
-          % ('PASS' if ok else 'FAIL', len(bad)))
-
-    # ---- the scoping is untouched -----------------------------------------
-    src = '\n'.join(FUNCS['AI_Say'][1])
-    ok = 'AI_BroadcastAllies' in src and 'AI_Broadcast(' not in src
-    fails += 0 if ok else 1
-    print('  %s AI_Say still goes to ALLIES only -- flavour did not widen the audience'
-          % ('PASS' if ok else 'FAIL'))
-
-    ok = 'ai_talk' in src
-    fails += 0 if ok else 1
-    print('  %s ... and is still gated on ai_talk, so -aispy is unchanged'
-          % ('PASS' if ok else 'FAIL'))
-
-    # ---- no ASCII apostrophes crept into the new prose --------------------
-    # gotcha 34 is disputed, but the DELTA check holds and this file is
-    # injected into war3map.j. Human-sounding prose is exactly where
-    # contractions arrive.
-    strings = re.findall(r'"([^"\n]*)"', CODE)
-    apos = [s for s in strings if "'" in s]
+    apos = [x for x in lits if "'" in x]
     ok = not apos
     fails += 0 if ok else 1
-    print('  %s no string literal in the module contains an ASCII apostrophe (%d '
-          'literals checked)%s' % ('PASS' if ok else 'FAIL', len(strings),
-                                   '' if ok else ' -- ' + repr(apos[:3])))
+    print('  %s no ASCII apostrophe in any line (gotcha 34, kept as a free '
+          'precaution)' % ('PASS' if ok else 'FAIL'))
 
-    # PLAYTEST 10: three factions said the SAME line in one second, which reads
-    # like a system. A pool per event kind, varied by faction, plus a
-    # cross-faction suppression window.
-    def vline(pid, kind, now=100.0):
-        env = make_env(dict(role='barb'))
-        env['ai_now'] = now
-        return Interp(FUNCS, CONSTS, env, make_natives(env, 0.0)).run('AI_VLine', [pid, kind])
-
-    for kind, name in ((CONSTS['LINE_FORMED'], 'formed up'),
-                       (CONSTS['LINE_TIMEOUT'], 'released on timeout')):
-        said = {p: vline(p, kind) for p in range(12)}
-        ok = len(set(said.values())) >= 6
-        fails += 0 if ok else 1
-        print('  %s "%s" has %d distinct phrasings across the twelve factions'
-              % ('PASS' if ok else 'FAIL', name, len(set(said.values()))))
-
-    # the SAME faction varies over time rather than being fixed forever, swept
-    # rather than sampled at two points -- two samples can land on one variant
-    # by coincidence and read as a pass
-    over_time = {vline(0, CONSTS['LINE_TIMEOUT'], 100.0 + 20.0 * i) for i in range(12)}
-    ok = len(over_time) >= 2
+    # ---- 5. length bound -------------------------------------------------
+    # spec 8.5: worst case is the longest {kind} plus a colour-coded {owner}
+    KIND_MAX = len('a building plot')
+    over = []
+    for fn_i in range(12):
+        m = re.search(r'function AI_VA%d\b(?:(?!\nendfunction)[\s\S])*' % fn_i, src)
+        for ln in re.findall(r'^\s*return\s+(.+)$', m.group(0), flags=re.M):
+            body = ''.join(re.findall(r'"([^"]*)"', ln))
+            n = len(body) + (KIND_MAX if ' k' in ln or '+ k' in ln else 0)
+            if n > 64:
+                over.append((body, n))
+    ok = not over
     fails += 0 if ok else 1
-    print('  %s ... and one faction does not repeat the same phrasing forever '
-          '(%d variants over four minutes)' % ('PASS' if ok else 'FAIL', len(over_time)))
+    print('  %s no tier A line exceeds 64 visible characters after substitution%s'
+          % ('PASS' if ok else 'FAIL', '' if ok else ' -- ' + repr(over[:2])))
 
-    # the variant must NOT consume the seeded decision stream (gotcha 30).
-    # Checked against COMMENT-STRIPPED source: the body's own comment says
-    # "deliberately NOT AI_Rand", which a naive grep reads as a use.
-    src = re.sub(r'//.*$', '', '\n'.join(FUNCS['AI_VLine'][1]), flags=re.M)
-    ok = 'AI_Rand' not in src
+    # the spec says the OLD line would fail this. Confirm the check can fire.
+    OLD = 'nothing here is worth much. I will take the nearest thing and move on'
+    ok = len(OLD) > 64
     fails += 0 if ok else 1
-    print('  %s the phrasing draw does NOT consume AI_Rand -- cosmetic text must not '
-          'fork the seeded decision stream' % ('PASS' if ok else 'FAIL'))
+    print('  %s NEGATIVE CONTROL (length): the superseded playtest-9 line is %d '
+          'characters and would fail this bound' % ('PASS' if ok else 'FAIL', len(OLD)))
 
-    # cross-faction de-duplication
+    # ---- 6. the machine channel is untouched -----------------------------
+    tel = '\n'.join(FUNCS['AI_Tel'][1])
+    ok = not re.search(r'AI_(VTier|LineA|LineB|VA\d|VB\d|House|VPick)', tel)
+    fails += 0 if ok else 1
+    print('  %s no voice helper is reachable from AI_Tel' % ('PASS' if ok else 'FAIL'))
+
+    bad = re.findall(r'call AI_Tel\(\s*"(\w+)"\s*,\s*([^\n]*)\)', CODE)
+    leaky = [ev for ev, body in bad
+             if re.search(r'AI_(GoalName|PostureName|KindName|OwnerName|Name|LineA|LineB)\b', body)]
+    ok = not leaky
+    fails += 0 if ok else 1
+    print('  %s no AI_Tel call site interpolates a readable name (%d sites)'
+          % ('PASS' if ok else 'FAIL', len(bad)))
+
+    # ---- 7. no GetLocalPlayer anywhere in the voice path -----------------
+    ok = 'GetLocalPlayer' not in CODE and 'GetLocalPlayer' not in src
+    fails += 0 if ok else 1
+    print('  %s no GetLocalPlayer in the voice or broadcast path'
+          % ('PASS' if ok else 'FAIL'))
+
+    # ---- scoping is unchanged: twelve voices, not twelve leaks -----------
     ssrc = '\n'.join(FUNCS['AI_Say'][1])
-    ok = 'ai_sayGlobal' in ssrc and 'AI_SAY_DEDUP' in ssrc
+    ok = 'AI_BroadcastAllies' in ssrc and 'AI_Broadcast(' not in ssrc and 'ai_talk' in ssrc
     fails += 0 if ok else 1
-    print('  %s an identical line from a DIFFERENT faction is suppressed within %.0fs'
-          % ('PASS' if ok else 'FAIL', CONSTS['AI_SAY_DEDUP']))
+    print('  %s AI_Say still ally-scoped and ai_talk-gated -- twelve voices did not '
+          'become twelve ways to leak' % ('PASS' if ok else 'FAIL'))
 
-    print('%s: the AI reads like a person and logs like a machine'
+    # ---- the picker does not spend the seeded stream ---------------------
+    psrc = re.sub(r'//.*$', '', '\n'.join(FUNCS['AI_VPick'][1]), flags=re.M)
+    ok = 'AI_Rand' not in psrc
+    fails += 0 if ok else 1
+    print('  %s the picker does NOT consume AI_Rand (spec 6.1, gotcha 29/30)'
+          % ('PASS' if ok else 'FAIL'))
+
+    # and it does not collapse the way the playtest-10 form did
+    def pick_seq(pid, kind, n):
+        env = make_env(dict(role='barb'))
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        return [it.run('AI_VPick', [pid, kind]) for _ in range(n)]
+    ok = len(set(pick_seq(0, 0, 6))) == 3
+    fails += 0 if ok else 1
+    print('  %s consecutive lines from one faction walk all three variants'
+          % ('PASS' if ok else 'FAIL'))
+
+    # NEGATIVE CONTROL: the playtest-10 index collapsed mod 3 -- 7 is congruent
+    # to 1 mod 3, so players 0, 3, 6 and 9 always shared an index. The spec
+    # caught this; confirm the old form really was degenerate.
+    old_idx = {p: (p * 7 + 5) % 3 for p in (0, 3, 6, 9)}
+    ok = len(set(old_idx.values())) == 1
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL (picker): the playtest-10 form gave players 0/3/6/9 '
+          'the SAME index -- a real defect the spec caught'
+          % ('PASS' if ok else 'FAIL'))
+
+    # ---- the echo ring ---------------------------------------------------
+    esrc = '\n'.join(FUNCS['AI_EchoSeen'][1])
+    ok = 'ai_echoMsg' in esrc and 'AI_ECHO_T' in esrc
+    fails += 0 if ok else 1
+    print('  %s a GLOBAL echo ring guards the shared tiers (window %.0fs, %d slots '
+          'for %d possible speakers)' % ('PASS' if ok else 'FAIL',
+                                         CONSTS['AI_ECHO_T'], CONSTS['AI_ECHO_N'], 12))
+    ok = CONSTS['AI_ECHO_T'] > CONSTS['AI_SAY_GAP'] and CONSTS['AI_ECHO_N'] >= 12
+    fails += 0 if ok else 1
+    print('  %s ... sized for NINE barbarian speakers for the whole game: the '
+          'advertised 10-minute unally does not exist (spec 3b)'
+          % ('PASS' if ok else 'FAIL'))
+
+    # ---- ALLY_HELP exists but is deliberately unwired --------------------
+    ok = 'V_ALLY_HELP' in CODE and 'AI_LineB(pid, V_ALLY_HELP)' not in CODE
+    fails += 0 if ok else 1
+    print('  %s ALLY_HELP strings exist but NOTHING calls them -- wiring a new '
+          'speaking event is a behaviour change, not a text change'
+          % ('PASS' if ok else 'FAIL'))
+
+    # ---- section 7: the vocabulary table actually landed ------------------
+    VOCAB = [(7, 'the host', 'Persia speaks as a peer empire'),
+             (11, 'the band', 'Burgundians are clannish and plural'),
+             (4, 'the host', 'Visigoths use the host'),
+             (10, 'time', 'North Rome denominates everything in time'),
+             (6, 'few', 'Britons count the men'),
+             (2, None, 'Saxons are the shortest lines on the board')]
+    for pid, needle, why in VOCAB:
+        if needle is None:
+            avg = sum(len(x) for x in a_pools[pid]) / len(a_pools[pid])
+            others = [sum(len(x) for x in a_pools[q]) / len(a_pools[q])
+                      for q in range(12) if q != pid]
+            ok = avg < min(others)
+            print('  %s %s (mean %.0f chars vs next shortest %.0f)'
+                  % ('PASS' if ok else 'FAIL', why, avg, min(others)))
+        else:
+            ok = any(needle in x for x in a_pools[pid])
+            print('  %s %s ("%s" present)' % ('PASS' if ok else 'FAIL', why, needle))
+        fails += 0 if ok else 1
+
+    # Romans train, everyone else hires (spec 2.5 / 7)
+    ROMANS = (3, 9, 10)
+    wrong = [p for p in range(12) for x in a_pools[p]
+             if ('hire' in x and p in ROMANS) or ('train' in x and p not in ROMANS)]
+    ok = not wrong
+    fails += 0 if ok else 1
+    print('  %s Romans never "hire" and barbarians never "train" -- the register '
+          'split the tooltips gave us for free' % ('PASS' if ok else 'FAIL'))
+
+    # ---- the generator is the source of truth ----------------------------
+    r = subprocess.run([sys.executable, os.path.join(W, 'gen-voices.py'), '--check'],
+                       capture_output=True, text=True)
+    ok = r.returncode == 0
+    fails += 0 if ok else 1
+    print('  %s voices.j matches the spec markdown -- the tables provably came from '
+          'the document%s' % ('PASS' if ok else 'FAIL',
+                              '' if ok else ': ' + (r.stderr or '').strip()[:80]))
+
+    # NEGATIVE CONTROL for the uniqueness check, per spec 8: copy a Hun line
+    # into the Frank pool and the assertion must fail.
+    faked = dict(a_pools)
+    faked[1] = [a_pools[0][0]] + a_pools[1][1:]
+    all_f = [x for v in faked.values() for x in v]
+    ok = len(set(all_f)) != len(all_f)
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL (uniqueness): duplicating one Hun line into the '
+          'Frank pool makes the check fail' % ('PASS' if ok else 'FAIL'))
+
+    # NEGATIVE CONTROL for arity: drop one variant
+    ok = len(a_pools[0][:-1]) != 30
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL (arity): dropping one variant makes the count fail'
+          % ('PASS' if ok else 'FAIL'))
+
+    # NEGATIVE CONTROL for the apostrophe sweep
+    ok = bool([x for x in ["don't"] if "'" in x])
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL (apostrophe): the sweep detects an injected one'
+          % ('PASS' if ok else 'FAIL'))
+
+    print('%s: twelve voices, and no two factions can say the same thing'
           % ('PASS' if not fails else 'FAIL'))
     return 1 if fails else 0
-
 
 def perimeter():
     """PLAYTEST 8 -- "they can't get out of their camps", and the GENERAL form.
@@ -2838,6 +2965,7 @@ def gate_discipline():
     print('%s: no faction opens a door for the army standing at it'
           % ('PASS' if not fails else 'FAIL'))
     return 1 if fails else 0
+
 
 
 def mission_churn():

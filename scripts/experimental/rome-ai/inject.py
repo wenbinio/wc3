@@ -23,6 +23,10 @@ SRC = os.path.join(W, 'extract', 'war3map.j')
 AI = os.path.join(H, 'for-ai.j')
 if not os.path.exists(AI):
     AI = os.path.join(W, 'ai', 'for-ai.j')
+# The generated voice tables (gen-voices.py, from docs/reference/fall-of-rome-
+# voices.md). Pure functions, no globals, and they must be DECLARED FIRST
+# because JASS is single-pass and for-ai.j's AI_VLine calls into them.
+VOICES = os.path.join(H, 'voices.j')
 OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(W, 'ai', 'war3map.ai.j')
 
 GB, GE = '//>>> FORAI-GLOBALS-BEGIN', '//>>> FORAI-GLOBALS-END'
@@ -38,6 +42,8 @@ module = open(AI, encoding='utf-8').read()
 gi, gj = module.index(GB), module.index(GE)
 mod_globals = module[gi + len(GB):gj].strip('\n')
 mod_funcs = module[:gi].rstrip('\n') + '\n\n' + module[gj + len(GE):]
+if os.path.exists(VOICES):
+    mod_funcs = open(VOICES, encoding='utf-8').read() + '\n' + mod_funcs
 
 # strip any previous injection (idempotent)
 for a, b in ((VB, VE), (MB, ME)):

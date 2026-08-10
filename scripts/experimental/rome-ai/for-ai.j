@@ -259,8 +259,10 @@
     integer          ai_dispPid      = 0
     integer          ai_congN        = 0
     real             ai_musterAt     = 0.0   // fraction measured this tick
-    string           ai_sayGlobal    = ""    // last line said by ANY faction
-    real             ai_sayGlobalAt  = -999.0
+    integer array    ai_vSeq                 // per-faction line sequence (spec 6.1)
+    string  array    ai_echoMsg              // cross-faction echo ring (spec 6.2)
+    real    array    ai_echoAt
+    integer          ai_echoHead     = 0
     integer array    ai_sortieGate           // gate opened to let THIS army out
     real    array    ai_sortieAt             // when we opened it
     real             ai_marchDX      = 0.0   // unit vector along the march line
@@ -504,9 +506,35 @@
     constant real    AI_HOLD_ARMY     = 240.0  // enough army to garrison anything
 
     // gate states
-    constant real    AI_SAY_DEDUP     = 12.0   // same line from another faction
-    constant integer LINE_FORMED      = 0
-    constant integer LINE_TIMEOUT     = 1
+    // Spec 6.2 sizes the ring at 8/6s. Sized UP here: the decomposition found
+    // that barbarians never unally on a timer -- the advertised 10-minute
+    // free-for-all does not exist and they only split when one takes a Roman
+    // bribe -- so an ally-scoped feed carries NINE speakers for the whole
+    // thirty minutes, not ten. One slot per faction, and a window comfortably
+    // wider than AI_SAY_GAP so a burst cannot walk out of the ring.
+    constant integer AI_ECHO_N        = 12
+    constant real    AI_ECHO_T        = 20.0
+    // voice event kinds -- indices match gen-voices.py A_KINDS / B_KINDS
+    constant integer V_OBJ_POINT      = 0
+    constant integer V_OBJ_CAPITAL    = 1
+    constant integer V_TAKEN          = 2
+    constant integer V_ABORT_HOME     = 3
+    constant integer V_ABORT_LOST     = 4
+    constant integer V_ABORT_TAKEN    = 5
+    constant integer V_ABORT_STALL    = 6
+    constant integer V_FORMED         = 7
+    constant integer V_TIMEOUT        = 8
+    constant integer V_RAID           = 9
+    constant integer V_FALLBACK       = 0
+    constant integer V_REGROUP        = 1
+    constant integer V_GATE           = 2
+    constant integer V_HERO_OUT       = 3
+    constant integer V_HERO_FOCUS     = 4
+    constant integer V_NAVAL_NEED     = 5
+    constant integer V_NAVAL_BOARD    = 6
+    constant integer V_NAVAL_ASHORE   = 7
+    constant integer V_NAVAL_CANCEL   = 8
+    constant integer V_ALLY_HELP      = 9
     constant integer AI_GS_CLOSED     = 0
     constant integer AI_GS_OPEN       = 1
     constant integer AI_GS_GONE       = 2
@@ -1190,86 +1218,109 @@ function AI_Voice takes integer pid returns integer
     return 1
 endfunction
 
+
 //===========================================================================
-//  PLAYTEST 10 -- VOICED LINE POOLS, AND CROSS-FACTION DE-DUPLICATION
+//  VOICE SELECTION -- spec sections 6.1 and 6.2
 //
-//  The screenshot showed three factions emitting the IDENTICAL line in the
-//  same instant:
-//      Vandals: I am not waiting all day. move, with whoever turned up
-//      Saxons:  I am not waiting all day. move, with whoever turned up
-//      Britons: I am not waiting all day. move, with whoever turned up
-//  which reads like a system, the exact opposite of what the flavour pass was
-//  for. Two cheap fixes, no subsystem: a small pool per event kind varied by
-//  faction and by the map's own PRNG, and a short suppression window on an
-//  identical line from a DIFFERENT faction.
+//  The tables themselves are generated (voices.j, from
+//  docs/reference/fall-of-rome-voices.md). This is only the picker and the
+//  cross-faction echo guard.
 //===========================================================================
 
-function AI_VLine takes integer pid, integer kind returns string
-    local integer v = AI_Voice(pid)
-    // Deliberately NOT AI_Rand: that is the map's single seeded decision
-    // stream, and consuming it for cosmetic text would fork every downstream
-    // decision (gotcha 30). This varies by faction and slowly over time, and
-    // costs the stream nothing.
-    local integer r = ModuloInteger(pid*7 + R2I(ai_now/17.0), 3)
-    if kind == LINE_FORMED then
-        if v == 0 then
-            if r == 0 then
-                return "everyone is here. go"
-            elseif r == 1 then
-                return "that is the lot of them. move"
-            endif
-            return "good. now we go"
-        elseif v == 2 then
-            if r == 0 then
-                return "the column is formed. advance"
-            elseif r == 1 then
-                return "ranks are made. we march"
-            endif
-            return "assembled. forward"
-        elseif v == 3 then
-            if r == 0 then
-                return "the host is gathered. we ride"
-            elseif r == 1 then
-                return "all are come. let us go"
-            endif
-            return "we are ready. onward"
+// Spec 6.1. NOT AI_Rand: that is the map-owned Park-Miller stream and spending
+// it on cosmetic text forks every downstream decision (gotcha 29/30). A
+// per-faction sequence counter is cheaper, fully deterministic, and guarantees
+// no immediate repeat.
+//
+// This also fixes a real defect in the playtest-10 picker, which the spec
+// caught: that form was ModuloInteger(pid*7 + ..., 3), and 7 is congruent to 1
+// mod 3, so it only ever distinguished pid mod 3 -- players 0, 3, 6 and 9
+// always shared an index. The "+ kind" term decorrelates two different events
+// fired back to back by the same faction.
+function AI_VPick takes integer pid, integer kind returns integer
+    set ai_vSeq[pid] = ai_vSeq[pid] + 1
+    return ModuloInteger(ai_vSeq[pid] + kind, 3)
+endfunction
+
+// Spec 6.2. Tier A is per faction, so an exact cross-faction collision is
+// impossible there by construction. Tier B and C are shared inside a house and
+// can still collide up to four ways, so one GLOBAL ring covers them -- global
+// rather than per-player on purpose, because the collision the owner saw was
+// between different players and ai_sayLast (per player) cannot see it.
+function AI_EchoSeen takes string msg returns boolean
+    local integer i = 0
+    loop
+        exitwhen i >= AI_ECHO_N
+        if ai_echoMsg[i] == msg and (ai_now - ai_echoAt[i]) < AI_ECHO_T then
+            return true
         endif
-        if r == 0 then
-            return "all here. move"
-        elseif r == 1 then
-            return "that will do. off we go"
-        endif
-        return "everyone up. we are going"
+        set i = i + 1
+    endloop
+    return false
+endfunction
+
+function AI_EchoRecord takes string msg returns nothing
+    set ai_echoMsg[ai_echoHead] = msg
+    set ai_echoAt[ai_echoHead] = ai_now
+    set ai_echoHead = ai_echoHead + 1
+    if ai_echoHead >= AI_ECHO_N then
+        set ai_echoHead = 0
     endif
-    // LINE_TIMEOUT
-    if v == 0 then
-        if r == 0 then
-            return "I am done waiting. move, the rest can catch up"
-        elseif r == 1 then
-            return "no more standing about. go"
-        endif
-        return "we go now, with who we have"
-    elseif v == 2 then
-        if r == 0 then
-            return "we will wait no longer. advance as we are"
-        elseif r == 1 then
-            return "the hour is past. march with those assembled"
-        endif
-        return "enough delay. forward"
-    elseif v == 3 then
-        if r == 0 then
-            return "we have waited long enough. we ride regardless"
-        elseif r == 1 then
-            return "no more delay. those here will suffice"
-        endif
-        return "we go, ready or not"
+endfunction
+
+// Tier A: per faction, with placeholders already computed by the caller.
+function AI_LineA takes integer pid, integer kind, string k, string o returns string
+    local integer v = AI_VPick(pid, kind)
+    local string m = AI_VTierA(pid, kind, v, k, o)
+    if AI_EchoSeen(m) then
+        set m = AI_VTierA(pid, kind, ModuloInteger(v + 1, 3), k, o)
     endif
-    if r == 0 then
-        return "not waiting all day. move, with whoever turned up"
-    elseif r == 1 then
-        return "stragglers can follow. we are off"
+    return m
+endfunction
+
+// Tier B: per house.
+function AI_LineB takes integer pid, integer kind returns string
+    local integer h = AI_House(pid)
+    local integer v = AI_VPick(pid, kind)
+    local string m = AI_VTierB(h, kind, v)
+    if AI_EchoSeen(m) then
+        set m = AI_VTierB(h, kind, ModuloInteger(v + 1, 3))
+        if AI_EchoSeen(m) then
+            return ""                   // spec 6.2 step 2: silence is valid
+        endif
     endif
-    return "right, that is long enough. go"
+    return m
+endfunction
+
+// Tier C, spec 5.5: one line per house per state. A goal or posture
+// announcement fires on a transition the player can see anyway and is already
+// dwell-gated, so three synonyms for it would be noise rather than variety.
+function AI_GoalName takes integer pid, integer goal returns string
+    local integer st = 0
+    if goal == GOAL_EXPAND then
+        set st = 1
+    elseif goal == GOAL_DEFEND then
+        set st = 2
+    elseif goal == GOAL_SIEGE then
+        set st = 3
+    elseif goal == GOAL_TECH then
+        set st = 4
+    elseif goal == GOAL_RETREAT then
+        set st = 5
+    endif
+    return AI_VTierC(AI_House(pid), st)
+endfunction
+
+function AI_PostureName takes integer pid, integer p returns string
+    local integer st = 9
+    if p == POSTURE_PUSH then
+        set st = 6
+    elseif p == POSTURE_HARASS then
+        set st = 7
+    elseif p == POSTURE_CONSOLIDATE then
+        set st = 8
+    endif
+    return AI_VTierC(AI_House(pid), st)
 endfunction
 
 function AI_KindName takes integer kind returns string
@@ -1289,63 +1340,6 @@ function AI_KindName takes integer kind returns string
     return "a control point"
 endfunction
 
-function AI_GoalName takes integer pid, integer goal returns string
-    local integer v = AI_Voice(pid)
-    if goal == GOAL_EXPAND then
-        if v == 0 then
-            return "right. who is next"
-        elseif v == 2 then
-            return "the borders will be extended"
-        elseif v == 3 then
-            return "there is land to be had. I intend to have it"
-        endif
-        return "time to take something"
-    elseif goal == GOAL_DEFEND then
-        if v == 0 then
-            return "someone is at my door and I am going to regret it for them"
-        elseif v == 2 then
-            return "we hold. as we always have"
-        elseif v == 3 then
-            return "my house is threatened. that will be answered"
-        endif
-        return "trouble at home, dealing with it"
-    elseif goal == GOAL_SIEGE then
-        if v == 0 then
-            return "enough raiding. I want a capital"
-        elseif v == 2 then
-            return "the legions march on a capital"
-        elseif v == 3 then
-            return "the time is right. a capital, then"
-        endif
-        return "going for a capital"
-    elseif goal == GOAL_TECH then
-        if v == 0 then
-            return "sharpening things"
-        elseif v == 2 then
-            return "the armouries are at work"
-        elseif v == 3 then
-            return "better steel first, then war"
-        endif
-        return "upgrading"
-    elseif goal == GOAL_RETREAT then
-        if v == 0 then
-            return "not today. back, all of you"
-        elseif v == 2 then
-            return "a withdrawal. it is not a rout"
-        elseif v == 3 then
-            return "we withdraw. there is no shame in it"
-        endif
-        return "falling back"
-    endif
-    if v == 0 then
-        return "waiting. I hate waiting"
-    elseif v == 2 then
-        return "we consolidate what is ours"
-    elseif v == 3 then
-        return "patience. the army grows"
-    endif
-    return "building up a bit first"
-endfunction
 
 // Owner of a registered point, safe for neutral and out-of-range ids.
 function AI_OwnerName takes integer i returns string
@@ -1394,10 +1388,13 @@ function AI_Say takes integer pid, string msg returns nothing
     if msg == ai_sayLast[pid] then
         return                              // nothing changed; do not repeat
     endif
-    // PLAYTEST 10: three factions emitted the IDENTICAL line in one second,
-    // which reads like a system rather than like people. Suppress an identical
-    // line from a DIFFERENT faction inside a short window.
-    if msg == ai_sayGlobal and (ai_now - ai_sayGlobalAt) < AI_SAY_DEDUP then
+    // Spec 6.2. The echo ring sits IN FRONT of the per-player guards above,
+    // not instead of them. An empty string is a deliberate outcome from
+    // AI_LineB when both variants collided -- silence is valid.
+    if msg == "" then
+        return
+    endif
+    if AI_EchoSeen(msg) then
         return
     endif
     if ai_now < ai_sayAt[pid] then
@@ -1405,8 +1402,7 @@ function AI_Say takes integer pid, string msg returns nothing
     endif
     set ai_sayLast[pid] = msg
     set ai_sayAt[pid] = ai_now + AI_SAY_GAP
-    set ai_sayGlobal = msg
-    set ai_sayGlobalAt = ai_now
+    call AI_EchoRecord(msg)
     // ROUND 4, finding 4: allies only. Never AI_Broadcast from here.
     call AI_BroadcastAllies(pid, AI_Name(pid) + ": " + msg)
 endfunction
@@ -2715,7 +2711,7 @@ function AI_ScanWorld takes integer pid returns nothing
     if AI_ValidateField(pid) then
         if not ai_scattered[pid] then
             set ai_scattered[pid] = true
-            call AI_Say(pid, "my lot are spread out all over the place - pulling them in")
+            call AI_Say(pid, AI_LineB(pid, V_REGROUP))
         endif
     else
         set ai_scattered[pid] = false
@@ -3457,37 +3453,6 @@ endfunction
 //  to lose them, every barbarian holds 3-6 and is trying to accumulate.
 //---------------------------------------------------------------------------
 
-function AI_PostureName takes integer pid, integer p returns string
-    local integer v = AI_Voice(pid)
-    if p == POSTURE_PUSH then
-        if v == 0 then
-            return "no more scraps. a throne"
-        elseif v == 2 then
-            return "we set ourselves against a capital"
-        endif
-        return "thinking about a capital now"
-    elseif p == POSTURE_HARASS then
-        if v == 0 then
-            return "I will bleed them at the edges"
-        elseif v == 2 then
-            return "their flanks are soft. we will use that"
-        endif
-        return "working the edges"
-    elseif p == POSTURE_CONSOLIDATE then
-        if v == 0 then
-            return "fine. we wait and we grow"
-        elseif v == 2 then
-            return "we set our house in order"
-        endif
-        return "tightening up"
-    endif
-    if v == 0 then
-        return "more land. always more land"
-    elseif v == 2 then
-        return "outward, then"
-    endif
-    return "looking outward"
-endfunction
 
 function AI_UpdatePosture takes integer pid returns nothing
     local integer np
@@ -4387,7 +4352,7 @@ function AI_NavIdle takes integer pid returns nothing
         set ai_issued = 0
         set ai_budget = AI_ORDER_SLICE
         call AI_TryOrder(ship, AI_ORD_UNLOAD, ai_homeX[pid], ai_homeY[pid], null)
-        call AI_Say(pid, "crossing is off. bring the boat back")
+        call AI_Say(pid, AI_LineB(pid, V_NAVAL_CANCEL))
     endif
     set ai_navState[pid] = AI_NAV_NONE
     set ai_sortieGate[pid] = -1
@@ -4416,7 +4381,7 @@ function AI_NavStep takes integer pid, integer t returns boolean
         set yard = AI_FindYard(pid)
         if yard != null and wm_gold[pid] >= AI_NAV_SHIP_G and wm_lumber[pid] >= AI_NAV_SHIP_L then
             call IssueImmediateOrderById(yard, AI_NAV_SHIP)
-            call AI_Say(pid, "that one is over water. we will need a boat")
+            call AI_Say(pid, AI_LineB(pid, V_NAVAL_NEED))
         endif
         set ai_navState[pid] = AI_NAV_NONE
         set yard = null
@@ -4429,7 +4394,7 @@ function AI_NavStep takes integer pid, integer t returns boolean
             set ai_navState[pid] = AI_NAV_LOAD
             set ai_navSince[pid] = ai_now
             call AI_Tel("emb", AI_Num(pid) + "|" + AI_TelAI(pid) + "|" + AI_Num(t))
-            call AI_Say(pid, "everyone on the boat")
+            call AI_Say(pid, AI_LineB(pid, V_NAVAL_BOARD))
         endif
         // sail on a full enough boat, or when boarding has stopped making
         // progress -- a stuck loader must not strand the whole army
@@ -4461,7 +4426,7 @@ function AI_NavStep takes integer pid, integer t returns boolean
     if loaded <= 0 and (ai_now - ai_navSince[pid]) > AI_NAV_LOAD_T then
         set ai_navState[pid] = AI_NAV_NONE  // cargo ashore: back to the land layer
         call AI_Tel("dis", AI_Num(pid) + "|" + AI_TelAI(pid) + "|" + AI_Num(t))
-        call AI_Say(pid, "ashore. that was the hard part")
+        call AI_Say(pid, AI_LineB(pid, V_NAVAL_ASHORE))
     endif
     set ship = null
     return true
@@ -4565,7 +4530,7 @@ function AI_HeroMicro takes integer pid returns nothing
     elseif frac <= AI_HeroBreak(pid) then
         set ai_heroOut[pid] = true
         call AI_Tel("hero", AI_Num(pid) + "|" + AI_TelAI(pid) + "|withdraw|" + AI_Num(R2I(100.0*frac)))
-        call AI_Say(pid, "get him out of there - I cannot buy another one")
+        call AI_Say(pid, AI_LineB(pid, V_HERO_OUT))
         call AI_TryOrder(ai_heroUnit, AI_ORD_MOVE, ai_homeX[pid], ai_homeY[pid], null)
         set ai_heroUnit = null
         return
@@ -4604,7 +4569,7 @@ function AI_MoveOnTarget takes integer pid, integer t returns nothing
     // the army cannot be walked off the map one tick at a time.
     set eh = AI_FindEnemyHero(pid, ai_ptX[t], ai_ptY[t], AI_HERO_LEASH)
     if eh != null then
-        call AI_Say(pid, "kill their champion first")
+        call AI_Say(pid, AI_LineB(pid, V_HERO_FOCUS))
         call AI_SendArmy(pid, GetUnitX(eh), GetUnitY(eh), AI_ORD_ATTACKU, eh)
         set eh = null
         return
@@ -4616,7 +4581,7 @@ function AI_MoveOnTarget takes integer pid, integer t returns nothing
         // Backstop: something we do not model is in the way. Force the
         // nearest own shut gate and give the reroute time to take effect.
         if AI_ForceOpenNear(pid, wm_fieldX[pid], wm_fieldY[pid]) then
-            call AI_Say(pid, "we are getting nowhere. open that gate")
+            call AI_Say(pid, AI_LineB(pid, V_GATE))
         endif
         set ai_progAt[pid] = ai_now
     endif
@@ -4741,7 +4706,7 @@ function AI_Raid takes integer pid returns nothing
     call ForGroup(g, function AI_RaidEnum)
     call DestroyGroup(g)
     set g = null
-    call AI_Say(pid, "hitting " + AI_KindName(ai_ptKind[t]) + " while they are looking elsewhere")
+    call AI_Say(pid, AI_LineA(pid, V_RAID, AI_KindName(ai_ptKind[t]), AI_OwnerName(t)))
 endfunction
 
 // Buy the role that is furthest below its target share of army CV.
@@ -5046,13 +5011,13 @@ function AI_MissionAbort takes integer pid, integer reason returns nothing
         // owed a close. The abort path is the one that used to leak them.
         call AI_CloseSortie(pid)
         if reason == 1 then
-            call AI_Say(pid, "leave it. home needs us")
+            call AI_Say(pid, AI_LineA(pid, V_ABORT_HOME, AI_KindName(ai_ptKind[t]), AI_OwnerName(t)))
         elseif reason == 2 then
-            call AI_Say(pid, "this one is lost. out, out")
+            call AI_Say(pid, AI_LineA(pid, V_ABORT_LOST, AI_KindName(ai_ptKind[t]), AI_OwnerName(t)))
         elseif reason == 3 then
-            call AI_Say(pid, "never mind, someone else got there")
+            call AI_Say(pid, AI_LineA(pid, V_ABORT_TAKEN, AI_KindName(ai_ptKind[t]), AI_OwnerName(t)))
         else
-            call AI_Say(pid, "this is going nowhere. calling it off")
+            call AI_Say(pid, AI_LineA(pid, V_ABORT_STALL, AI_KindName(ai_ptKind[t]), AI_OwnerName(t)))
         endif
     endif
 endfunction
@@ -5215,7 +5180,7 @@ function AI_MissionTick takes integer pid returns boolean
         // PLAYTEST 10: release reason 0 = MEASURED ARRIVAL. The ratio of this
         // to reason 1 is the direct measure of whether the muster works at all.
         call AI_Tel("mus", AI_Num(pid) + "|" + AI_TelAI(pid) + "|0|" + AI_Num(R2I(1000.0*ai_musterAt)) + "|" + AI_Num(R2I(wm_massed[pid])) + "|" + AI_Num(R2I(wm_musterPool[pid])))
-        call AI_Say(pid, AI_VLine(pid, LINE_FORMED))
+        call AI_Say(pid, AI_LineA(pid, V_FORMED, "", ""))
     endif
     // 4. DEADLINE. A phase that cannot finish RELEASES rather than waiting.
     if ai_now >= ai_msPhaseEnd[pid] then
@@ -5230,7 +5195,7 @@ function AI_MissionTick takes integer pid returns boolean
             // work has not landed and everything downstream is being judged on
             // a false premise -- which is exactly what playtest 10 showed.
             call AI_Tel("mus", AI_Num(pid) + "|" + AI_TelAI(pid) + "|1|" + AI_Num(R2I(1000.0*AI_MusterFrac(pid))) + "|" + AI_Num(R2I(wm_massed[pid])) + "|" + AI_Num(R2I(wm_musterPool[pid])))
-            call AI_Say(pid, AI_VLine(pid, LINE_TIMEOUT))
+            call AI_Say(pid, AI_LineA(pid, V_TIMEOUT, "", ""))
         else
             call AI_MissionAbort(pid, 4)
             set ai_ifStuck[pid] = true
@@ -5310,7 +5275,7 @@ function AI_Execute takes integer pid returns nothing
             // floor could never fire -- which is exactly how a full army sat
             // in a captured city with the floor supposedly in place.
             if ai_target[pid] != t then
-                call AI_Say(pid, "marching on the capital of " + AI_OwnerName(t))
+                call AI_Say(pid, AI_LineA(pid, V_OBJ_CAPITAL, AI_KindName(ai_ptKind[t]), AI_OwnerName(t)))
                 set ai_commitAt[pid] = ai_now
             endif
             call AI_Claim(pid, t)
@@ -5326,7 +5291,7 @@ function AI_Execute takes integer pid returns nothing
         set t = ai_bestT[pid]
         if t >= 0 then
             if ai_target[pid] != t then
-                call AI_Say(pid, "going for " + AI_KindName(ai_ptKind[t]) + " - " + AI_OwnerName(t) + " has it")
+                call AI_Say(pid, AI_LineA(pid, V_OBJ_POINT, AI_KindName(ai_ptKind[t]), AI_OwnerName(t)))
                 set ai_commitAt[pid] = ai_now      // ROUND 6: on CHANGE only
                 // score components, x1000: a win/loss alone cannot diagnose a
                 // broken selector, and every impossible-goal bug we shipped
@@ -5354,7 +5319,7 @@ function AI_Execute takes integer pid returns nothing
             call AI_Claim(pid, t)
             set ai_target[pid] = t
             set ai_commitAt[pid] = ai_now
-            call AI_Say(pid, "nothing here is worth much. I will take the nearest thing and move on")
+            call AI_Say(pid, AI_LineB(pid, V_FALLBACK))
             call AI_MoveOnTarget(pid, t)
         endif
     endif
@@ -5419,7 +5384,7 @@ function AI_MicroPlayer takes integer pid returns nothing
             // faction paused for exactly as long as its objective had been
             // sticky. A completed objective also has to be released or an
             // ally cannot pick up the next one.
-            call AI_Say(pid, "that is " + AI_KindName(ai_ptKind[t]) + " taken")
+            call AI_Say(pid, AI_LineA(pid, V_TAKEN, AI_KindName(ai_ptKind[t]), AI_OwnerName(t)))
             if t >= 0 and t < ai_pointCount and ai_claim[t] == pid then
                 set ai_claim[t] = -1                // release it for allies
             endif

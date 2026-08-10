@@ -2699,3 +2699,94 @@ should be read before any change is made there.
 Playable **19,055,674**. Trace **495 assertions, 0 FAILs**; `npm test` 620
 pass; validate-map 191/192 with 152 warnings (parity); order economy peak 234 /
 mean 74.4, unchanged.
+
+---
+
+## §25 The twelve voices, built in
+
+Implements `docs/reference/fall-of-rome-voices.md` (876 lines, `5395288`),
+which is a compatible superset of the four-voice `AI_VLine` from §24.3.
+
+### 25.1 Generated, not transcribed
+
+600 strings across three tiers. Hand-transcribing them into JASS would be six
+hundred chances to drop a variant, and the spec's §8 says the assertion that
+matters belongs against the **JASS tables** rather than the markdown — which is
+only true if the JASS provably came from the markdown. So
+`gen-voices.py` reads the spec and emits `voices.j` (1,777 lines), `inject.py`
+prepends it (JASS is single-pass; the tables must be declared before
+`AI_LineA`/`AI_LineB` call them), and `trace.py` runs the generator in
+`--check` mode as an assertion. Drift is negative-controlled: appending one
+line to `voices.j` makes the check exit 1.
+
+Structure: tier A per **faction** (12 × 10 kinds × 3 = 360), tier B per
+**house** (6 × 10 × 3 = 180), tier C one per house per state (60).
+
+### 25.2 The spec caught a real defect in my picker
+
+§24.3 used `ModuloInteger(pid*7 + R2I(ai_now/17.0), 3)`. **7 is congruent to 1
+mod 3**, so that term only ever distinguished `pid` mod 3 — players 0, 3, 6 and
+9 always shared an index. Replaced with the spec's per-faction sequence counter
+(§6.1), which also guarantees no immediate repeat. The decision to keep the
+draw **out of `AI_Rand`** is preserved and still asserted: that is the
+map-owned Park-Miller stream and spending it on cosmetic text would fork every
+downstream decision (gotchas 29/30). The negative control pins the old form's
+degeneracy directly.
+
+### 25.3 The echo window, sized up on evidence
+
+The spec suggested 8 slots / 6 s. Sized to **12 slots / 20 s** because the
+decomposition (§3b of the spec) found that **barbarians never unally on a
+timer** — the advertised 10-minute free-for-all does not exist; they only split
+when one takes a Roman bribe. So an ally-scoped feed carries **nine speakers
+for the whole thirty minutes**, and the window must be comfortably wider than
+`AI_SAY_GAP` so a burst cannot walk out of the ring. Tier A per-faction
+uniqueness already makes exact cross-faction collision **impossible by
+construction**; the ring is a backstop for the shared tiers only.
+
+### 25.4 Owner rulings recorded
+
+* **The two unimplemented victory conditions do not matter.** The owner said so
+  directly. Recorded, acted on in nothing; our design assumption (DESIGN §1.2)
+  was already correct. Voice lines never promise a win on points.
+* **Persia being unbribable is intentional**, and Persia is a **peer empire**,
+  not a barbarian. Written that way with confidence: its own roster, two
+  cities, 200 food ceiling, a flat +50/+50 stipend, and the one power Rome
+  cannot put on a retainer.
+* **The Saxon alliance research is a genuine artifact defect.** `R002`
+  announces a temporary alliance with "the **Goths**" while allying
+  `Player(2)`, the Saxons. Confirmed by the owner. **It is the map's bug, not
+  ours. We do not edit the map's own text, and nobody should later "fix" our
+  side to match a wrong string.**
+
+### 25.5 What was deliberately not done
+
+`ALLY_HELP` has strings so the table is complete, and **nothing calls them**.
+The spec flags that no call site exists; adding one is a behaviour change, not
+a text change, and belongs with whatever makes the AI actually ask for help. An
+assertion pins that the strings exist and are unwired.
+
+`AI_KindName` is not deepened per faction: it feeds the telemetry path, and the
+spec puts it out of scope for that reason.
+
+### 25.6 Invariants asserted
+
+All seven of the spec's §8 checks now run against the shipped `voices.j`:
+arity, cross-faction uniqueness (360 distinct), ASCII-only, apostrophe-free,
+the 64-visible-character bound, voice helpers unreachable from `AI_Tel`, and no
+`GetLocalPlayer`. Plus ally scoping unchanged, the picker's independence from
+`AI_Rand`, and the **vocabulary table from §7** — Persia and the Visigoths use
+"the host", the Burgundians "the band", North Rome denominates in time, the
+Britons count the men, and the Saxons are measurably the shortest lines on the
+board (mean 14 characters against the next shortest 25). The tooltip-derived
+register split is enforced too: Romans never "hire" and barbarians never
+"train".
+
+Four negative controls, all firing: a duplicated line breaks uniqueness, a
+dropped variant breaks arity, an injected apostrophe is caught, and the
+superseded playtest-9 fallback line (69 characters) fails the length bound —
+which is exactly the example the spec used to justify having the bound.
+
+Playable **19,069,240**. Trace **512 assertions, 0 FAILs**; `npm test` 620
+pass; validate-map 191/192 with 152 warnings (parity); pjass FULL clean on
+17,376 lines; the playable build still carries **zero** engine-AI calls.
