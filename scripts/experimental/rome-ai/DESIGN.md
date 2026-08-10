@@ -2143,3 +2143,88 @@ Guards A and B green; all three possibility gates green; idle floor still under
 the decision layer; `validate-map` 191/192 identical; `npm test` 617/0. The
 playable build still carries **no engine-AI calls**. Playable **19,031,050**,
 probe **19,038,147**.
+
+---
+
+## 20. Outcome telemetry — making the verdict machine-readable
+
+Research brief 8 §5. **The problem**: for eight rounds every verdict came from a
+human reading chat and typing it back. That is why "barbarians seem less active"
+cost a round, and why a before/after table compared two different games and
+credited the **human's** conquests to the AI.
+
+### 20.1 Schema
+
+`FORAI|<ver>|<seq>|<t>|<event>|<fields…>|<checksum>` — pipe-delimited, one line
+per **state transition**, monotonic `seq`, running `StringHash` checksum so
+truncation or duplicate extraction is *detectable* rather than silently
+producing a plausible wrong answer.
+
+| event | fields | answers |
+|---|---|---|
+| `run` | seed, **AI-slot bitmask**, handicap, game length | reproducibility, and **which factions to exclude** |
+| `ctrl` | point, kind, old owner, new owner, oldAI, newAI | **the scoreboard** |
+| `exit` / `home` | faction, isAI, army value, distance | **did it leave its own city** |
+| `obj` | faction, isAI, point, kind, owner, score, value, army, capReady, goal, posture | decision quality |
+| `mis` | faction, isAI, start/end, reason, target | stalls, S1 terminal states |
+| `gate` | gate, old state, new state, owner | gate semantics |
+| `emb` / `dis` | faction, isAI, target | naval utility |
+| `hero` | faction, isAI, withdraw, hp% | permanent-loss policy |
+
+Adapted from the brief's baseline to what this map *has*: no `region_entered`
+(we have no region graph) and no `alliance_changed` (the AI ignores the map's
+temporary-alliance mechanic). Not inventing events for mechanics we do not
+implement.
+
+`run` carries the **AI-slot bitmask** and every faction line carries `isAI`,
+which is the specific defence against the mistake that produced the wrong table.
+
+### 20.2 Channels — designed around the brief's warning
+
+The stock W3MMD emitter elects only `MAP_CONTROL_USER` slots while our AI
+factions are computer-controlled, so a stock integration may emit **nothing** in
+the configuration we run. So the **primary channel is `PreloadGenEnd`** — a
+map-side file write to `forai-events.txt` that does not depend on emitter
+election at all — with a **chat channel** (`-ailog`, default **off**) as
+fallback. Both carry the *identical* schema, so one parser reads either. The log
+is **rewritten** in full on each 20 s flush, so a partial write is always a
+prefix-complete snapshot.
+
+`I2S` is not used: `AI_Num` is our own converter, per the four independent
+reports and our own observation.
+
+### 20.3 Diagnostics only
+
+The observer reads **ground-truth** ownership — correct, because it is an
+observer producing a record, not a player making a decision. `tel_*` is written
+by the emitter and read by nothing else, and a source guard asserts **no scorer
+reads `tel_owner`**. Emission is not dispatch: a guard asserts the emitter
+issues no orders, and the order economy is unchanged at **234 peak / 74.4 mean**.
+
+### 20.4 The parser
+
+`parse-events.py <log>` prints territory per faction **excluding non-AI slots**,
+whether each AI faction ever left home and when, first objective with its score
+components, and mission outcomes with stall counts. `--csv` writes a territory
+timeline. `--selftest` runs a synthetic log end to end and **negative-controls
+the integrity checks**: a deleted line must be reported as truncation, and a
+doubled log as duplicate extraction. Both fire.
+
+If no `run` event is present it says so and warns that the human's faction
+**cannot** be excluded — refusing to produce the confident wrong number.
+
+### 20.5 The smoke test is NOT done, and it is the gate
+
+Brief 8 makes a five-minute all-computer smoke run the release gate for the
+channel. **It requires the game and has not been run.** What is verified
+headlessly: every native exists in `common.j`; the module compiles in full-mode
+pjass; the schema round-trips through the parser with both integrity controls
+firing. What is **not** verified: that `PreloadGenEnd` writes the file under
+Reforged 2.x, and where. The fallback is already built (`-ailog`) and needs no
+code change if the file channel fails.
+
+**What to run**: a match, then look for `forai-events.txt` (Warcraft III
+install or `CustomMapData`); if absent, `-ailog` and capture chat. Either output
+feeds the same parser.
+
+Playable **19,036,091**, probe **19,048,128**. Trace **348 assertions, 0 FAILs**.

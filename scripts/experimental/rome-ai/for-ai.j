@@ -278,6 +278,54 @@
     real    array    wm_townThreat     // threat on our most threatened point
     integer array    wm_townIdx        // which point that is, or -1
 
+    // ===================================================================
+    //  OUTCOME TELEMETRY (research brief 8 §5)
+    //
+    //  The problem it solves: every verdict in eight rounds came from a human
+    //  reading chat and typing it back. That is why "barbarians seem less
+    //  active" cost a round, and why a before/after table compared two
+    //  different games and counted the HUMAN's conquests as the AI's. This
+    //  makes a machine able to answer "did the AI play the map?" from one run.
+    //
+    //  Design constraints taken from the brief rather than discovered later:
+    //   * a .w3g does NOT record computer-AI actions or outcome state, so the
+    //     map must emit its own events; replay parsing can never be the oracle.
+    //   * the stock W3MMD emitter elects only MAP_CONTROL_USER slots and our
+    //     AI factions are computer-controlled, so a stock integration may emit
+    //     nothing in an all-computer match. The primary channel here is
+    //     therefore PreloadGenEnd, a map-side FILE write that does not depend
+    //     on emitter election at all, with a chat channel as the fallback --
+    //     both carrying the IDENTICAL schema, so one parser reads either.
+    //   * emit on STATE TRANSITIONS, never per tick, with a monotonic
+    //     sequence number and a checksum so truncation or duplicate
+    //     extraction is detectable.
+    //
+    //  Two events are non-negotiable because they are the agreed criteria:
+    //   ctrl -- the scoreboard, and every line carries whether the faction is
+    //           AI-controlled so the human's own conquests can be EXCLUDED.
+    //   exit -- did the army leave its own city. Five of eight rounds of bugs
+    //           were "the army never moved"; this is the one-line detector.
+    //
+    //  DIAGNOSTICS ONLY. It reads ground truth (it is an observer, not a
+    //  player), and nothing it computes is ever fed back into a decision --
+    //  tel_* is written by the emitter and read by nothing else.
+    // ===================================================================
+    constant integer AI_TEL_MAX      = 400    // buffered lines before truncation
+    constant real    AI_TEL_FLUSH    = 20.0   // seconds between file rewrites
+    constant integer AI_TEL_SLICE    = 40     // points checked for ownership per tick
+    boolean          ai_telOn      = true     // file channel
+    boolean          ai_telChat    = false    // chat channel: OFF by default
+    integer          ai_telSeq     = 0
+    integer          ai_telCount   = 0
+    integer          ai_telSum     = 0
+    boolean          ai_telTrunc   = false
+    real             ai_telNext    = 0.0
+    string  array    ai_telBuf
+    integer array    tel_owner                // ground-truth owner per point
+    integer          tel_cursor    = 0
+    boolean array    tel_out                  // has this faction left home
+    integer array    tel_heroSeen             // hero alive last we looked
+
     constant real    AI_IDLE_T        = 25.0
     // The cheapest thing the Forge can research. Below this, TECH is not a
     // cheap goal, it is an impossible one. ROUND 6.
@@ -885,6 +933,118 @@ function AI_Broadcast takes string msg returns nothing
         set i = i + 1
     endloop
 endfunction
+
+//===========================================================================
+//  OUTCOME TELEMETRY -- emitter. See the globals block for the rationale.
+//===========================================================================
+
+// Integer to string WITHOUT I2S. I2S is corroborated broken across four
+// independent reports (empty string or crash, version-dependent) and we
+// observed it ourselves in the AI VM. It happens to work map-side, but the
+// telemetry is the one thing whose whole value is being machine-readable, so
+// it does not depend on a native with that record.
+function AI_Dig takes integer d returns string
+    if d == 0 then
+        return "0"
+    elseif d == 1 then
+        return "1"
+    elseif d == 2 then
+        return "2"
+    elseif d == 3 then
+        return "3"
+    elseif d == 4 then
+        return "4"
+    elseif d == 5 then
+        return "5"
+    elseif d == 6 then
+        return "6"
+    elseif d == 7 then
+        return "7"
+    elseif d == 8 then
+        return "8"
+    elseif d == 9 then
+        return "9"
+    endif
+    return "?"
+endfunction
+
+function AI_Num takes integer n returns string
+    local string r = ""
+    local integer v = n
+    local integer q
+    if v == 0 then
+        return "0"
+    endif
+    if v < 0 then
+        set v = 0 - v
+    endif
+    loop
+        exitwhen v <= 0
+        set q = v / 10
+        set r = AI_Dig(v - q*10) + r
+        set v = q
+    endloop
+    if n < 0 then
+        return "-" + r
+    endif
+    return r
+endfunction
+
+// 1 when this slot is played by the AI, 0 when a human holds it. Every
+// faction-bearing event carries it, because the one measurement that mattered
+// was got wrong by counting the HUMAN's conquests as the AI's.
+function AI_TelAI takes integer pid returns string
+    if pid < 0 or pid >= AI_MAX_PLAYERS then
+        return "0"
+    endif
+    if ai_on[pid] then
+        return "1"
+    endif
+    return "0"
+endfunction
+
+// One event. Sequence number is monotonic and the running checksum folds every
+// line, so truncation or a duplicated extraction is detectable by the parser.
+function AI_Tel takes string ev, string body returns nothing
+    local string line
+    if not ai_telOn and not ai_telChat then
+        return
+    endif
+    set ai_telSeq = ai_telSeq + 1
+    set line = "FORAI|1|" + AI_Num(ai_telSeq) + "|" + AI_Num(R2I(ai_now)) + "|" + ev + "|" + body
+    set ai_telSum = ai_telSum + StringHash(line)
+    set line = line + "|" + AI_Num(ai_telSum)
+    if ai_telCount < AI_TEL_MAX then
+        set ai_telBuf[ai_telCount] = line
+        set ai_telCount = ai_telCount + 1
+    else
+        set ai_telTrunc = true
+    endif
+    if ai_telChat then
+        call AI_Broadcast(line)
+    endif
+endfunction
+
+// Rewrite the whole log. Rewriting rather than appending makes a partial write
+// harmless: the file is always a prefix-complete snapshot.
+function AI_TelFlush takes nothing returns nothing
+    local integer i = 0
+    if not ai_telOn then
+        return
+    endif
+    call PreloadGenClear()
+    call PreloadGenStart()
+    loop
+        exitwhen i >= ai_telCount
+        call Preload(ai_telBuf[i])
+        set i = i + 1
+    endloop
+    if ai_telTrunc then
+        call Preload("FORAI|1|0|0|trunc|buffer full at " + AI_Num(AI_TEL_MAX) + "|0")
+    endif
+    call PreloadGenEnd("forai-events.txt")
+endfunction
+
 
 function AI_KindName takes integer kind returns string
     if kind == AI_PK_CAPITAL then
@@ -2303,6 +2463,54 @@ function AI_ScanWorld takes integer pid returns nothing
 endfunction
 
 //===========================================================================
+//  TELEMETRY OBSERVER -- ground truth, read by nothing else in the module.
+//
+//  This is the one place that reads ownership WITHOUT the fog contract, and
+//  that is correct: it is an observer producing a diagnostic record, not a
+//  player making a decision. tel_* is written here and read by no scorer.
+//===========================================================================
+
+// ctrl: the scoreboard. Sliced so a full sweep costs a bounded number of
+// reads per tick regardless of how many points the map has.
+function AI_TelScanControl takes nothing returns nothing
+    local integer done = 0
+    local integer i = tel_cursor
+    local integer o
+    if ai_pointCount <= 0 then
+        return
+    endif
+    loop
+        exitwhen done >= AI_TEL_SLICE or done >= ai_pointCount
+        if i >= ai_pointCount then
+            set i = 0
+        endif
+        if ai_pt[i] != null then
+            set o = GetPlayerId(GetOwningPlayer(ai_pt[i]))
+            if o != tel_owner[i] then
+                call AI_Tel("ctrl", AI_Num(i) + "|" + AI_Num(ai_ptKind[i]) + "|" + AI_Num(tel_owner[i]) + "|" + AI_Num(o) + "|" + AI_TelAI(tel_owner[i]) + "|" + AI_TelAI(o))
+                set tel_owner[i] = o
+            endif
+        endif
+        set i = i + 1
+        set done = done + 1
+    endloop
+    set tel_cursor = i
+endfunction
+
+// exit: did this faction's army leave its own city. Emitted on the TRANSITION
+// in both directions, so a faction that leaves and returns is visible as such.
+function AI_TelCheckExit takes integer pid returns nothing
+    local boolean out = AI_Dist(wm_fieldX[pid], wm_fieldY[pid], ai_homeX[pid], ai_homeY[pid]) > AI_HOME_R
+    if out and not tel_out[pid] then
+        set tel_out[pid] = true
+        call AI_Tel("exit", AI_Num(pid) + "|" + AI_TelAI(pid) + "|" + AI_Num(R2I(wm_army[pid])) + "|" + AI_Num(R2I(AI_Dist(wm_fieldX[pid], wm_fieldY[pid], ai_homeX[pid], ai_homeY[pid]))))
+    elseif (not out) and tel_out[pid] then
+        set tel_out[pid] = false
+        call AI_Tel("home", AI_Num(pid) + "|" + AI_TelAI(pid) + "|" + AI_Num(R2I(wm_army[pid])))
+    endif
+endfunction
+
+//===========================================================================
 //  Target selection
 //===========================================================================
 
@@ -3182,6 +3390,7 @@ function AI_SetGate takes integer i, integer newType returns nothing
     if AI_GateState(i) == before then
         set ai_gateStuck[i] = true
     endif
+    call AI_Tel("gate", AI_Num(i) + "|" + AI_Num(before) + "|" + AI_Num(AI_GateState(i)) + "|" + AI_Num(GetPlayerId(GetOwningPlayer(ai_gate[i]))))
     set u = null
 endfunction
 
@@ -3430,6 +3639,7 @@ function AI_NavStep takes integer pid, integer t returns boolean
         if ai_navState[pid] != AI_NAV_LOAD then
             set ai_navState[pid] = AI_NAV_LOAD
             set ai_navSince[pid] = ai_now
+            call AI_Tel("emb", AI_Num(pid) + "|" + AI_TelAI(pid) + "|" + AI_Num(t))
             call AI_Say(pid, "boarding a transport")
         endif
         // sail on a full enough boat, or when boarding has stopped making
@@ -3461,6 +3671,7 @@ function AI_NavStep takes integer pid, integer t returns boolean
     call AI_TryOrder(ship, AI_ORD_UNLOAD, ai_ptX[t], ai_ptY[t], null)
     if loaded <= 0 and (ai_now - ai_navSince[pid]) > AI_NAV_LOAD_T then
         set ai_navState[pid] = AI_NAV_NONE  // cargo ashore: back to the land layer
+        call AI_Tel("dis", AI_Num(pid) + "|" + AI_TelAI(pid) + "|" + AI_Num(t))
         call AI_Say(pid, "landed across the water")
     endif
     set ship = null
@@ -3564,6 +3775,7 @@ function AI_HeroMicro takes integer pid returns nothing
         endif
     elseif frac <= AI_HeroBreak(pid) then
         set ai_heroOut[pid] = true
+        call AI_Tel("hero", AI_Num(pid) + "|" + AI_TelAI(pid) + "|withdraw|" + AI_Num(R2I(100.0*frac)))
         call AI_Say(pid, "pulling the hero out - it cannot be replaced")
         call AI_TryOrder(ai_heroUnit, AI_ORD_MOVE, ai_homeX[pid], ai_homeY[pid], null)
         set ai_heroUnit = null
@@ -3992,14 +4204,24 @@ function AI_SetFlags takes integer pid returns nothing
     set ai_ifRetreat[pid] = (wm_fieldCV[pid] > 1.0) and (wm_fieldEnemyCV[pid] > AI_RETREAT_RATIO * wm_fieldCV[pid])
 endfunction
 
-function AI_MissionAbort takes integer pid, string why returns nothing
+function AI_MissionAbort takes integer pid, integer reason returns nothing
     if ai_msState[pid] != AI_MS_NONE then
         set ai_msState[pid] = AI_MS_NONE
-        call AI_Say(pid, "breaking off - " + why)
+        call AI_Tel("mis", AI_Num(pid) + "|" + AI_TelAI(pid) + "|end|" + AI_Num(reason) + "|" + AI_Num(ai_msTarget[pid]))
+        if reason == 1 then
+            call AI_Say(pid, "breaking off - home is under real threat")
+        elseif reason == 2 then
+            call AI_Say(pid, "breaking off - this fight is lost")
+        elseif reason == 3 then
+            call AI_Say(pid, "breaking off - the objective is gone")
+        else
+            call AI_Say(pid, "breaking off - this attack is going nowhere")
+        endif
     endif
 endfunction
 
 function AI_MissionStart takes integer pid, integer t returns nothing
+    call AI_Tel("mis", AI_Num(pid) + "|" + AI_TelAI(pid) + "|start|0|" + AI_Num(t))
     set ai_msState[pid] = AI_MS_STAGE
     set ai_msTarget[pid] = t
     set ai_msPhaseEnd[pid] = ai_now + AI_MS_STAGE_T
@@ -4015,16 +4237,16 @@ function AI_MissionTick takes integer pid returns boolean
     endif
     // 1. INTERRUPTS. Flags, checked; never weighed.
     if ai_ifThreat[pid] then
-        call AI_MissionAbort(pid, "home is under real threat")
+        call AI_MissionAbort(pid, 1)
         return false
     endif
     if ai_ifRetreat[pid] then
-        call AI_MissionAbort(pid, "this fight is lost")
+        call AI_MissionAbort(pid, 2)
         return false
     endif
     // 2. terminal: the objective is gone, or it is ours
     if t < 0 or t >= ai_pointCount or ai_pt[t] == null then
-        call AI_MissionAbort(pid, "the objective is gone")
+        call AI_MissionAbort(pid, 3)
         return false
     endif
     if GetOwningPlayer(ai_pt[t]) == ai_p[pid] or IsPlayerAlly(GetOwningPlayer(ai_pt[t]), ai_p[pid]) then
@@ -4037,7 +4259,7 @@ function AI_MissionTick takes integer pid returns boolean
             set ai_msState[pid] = AI_MS_MARCH
             set ai_msPhaseEnd[pid] = ai_now + AI_MS_MARCH_T
         else
-            call AI_MissionAbort(pid, "this attack is going nowhere")
+            call AI_MissionAbort(pid, 4)
             set ai_ifStuck[pid] = true
             return false
         endif
@@ -4121,6 +4343,10 @@ function AI_Execute takes integer pid returns nothing
             if ai_target[pid] != t then
                 call AI_Say(pid, "moving on " + AI_KindName(ai_ptKind[t]) + " held by " + AI_OwnerName(t))
                 set ai_commitAt[pid] = ai_now      // ROUND 6: on CHANGE only
+                // score components, x1000: a win/loss alone cannot diagnose a
+                // broken selector, and every impossible-goal bug we shipped
+                // would have shown here as a goal whose action never fired.
+                call AI_Tel("obj", AI_Num(pid) + "|" + AI_TelAI(pid) + "|" + AI_Num(t) + "|" + AI_Num(ai_ptKind[t]) + "|" + AI_Num(GetPlayerId(GetOwningPlayer(ai_pt[t]))) + "|" + AI_Num(R2I(1000.0*ai_bestS[pid])) + "|" + AI_Num(R2I(1000.0*AI_PointValueIdx(pid, t))) + "|" + AI_Num(R2I(wm_army[pid])) + "|" + AI_Num(R2I(1000.0*wm_capReady[pid])) + "|" + AI_Num(ai_goal[pid]) + "|" + AI_Num(ai_posture[pid]))
             endif
             call AI_Claim(pid, t)
             set ai_target[pid] = t
@@ -4235,6 +4461,11 @@ function AI_Think takes nothing returns nothing
     local integer newGoal
     set ai_now = ai_now + 1.0
     set ai_ordersTick = 0
+    call AI_TelScanControl()
+    if ai_now >= ai_telNext then
+        set ai_telNext = ai_now + AI_TEL_FLUSH
+        call AI_TelFlush()
+    endif
     loop
         exitwhen pid >= AI_MAX_PLAYERS
         if ai_on[pid] then
@@ -4259,6 +4490,7 @@ function AI_Think takes nothing returns nothing
                 // always be ended by something other than the goal that
                 // started it.
                 call AI_NavIdle(pid)
+                call AI_TelCheckExit(pid)
             endif
         endif
         set pid = pid + 1
@@ -4381,6 +4613,11 @@ function AI_CmdActions takes nothing returns nothing
     local integer d = -1
     // ROUND 3: the AI can be told to stop talking, or to talk again.
     // ROUND 5: observer mode, for the issuing player only.
+    if s == "-ailog" or s == "-ailogoff" then
+        set ai_telChat = (s == "-ailog")
+        call DisplayTextToPlayer(GetTriggerPlayer(), 0, 0, "FoR-AI: event stream to chat toggled. The file channel (forai-events.txt) is always on.")
+        return
+    endif
     if s == "-aispy" or s == "-aispyoff" then
         set ai_spy[GetPlayerId(GetTriggerPlayer())] = (s == "-aispy")
         if s == "-aispy" then
@@ -4474,6 +4711,7 @@ function AI_Init takes nothing returns nothing
         set ai_handicap[pid] = 1.0
         set ai_scanCursor[pid] = 0
         set ai_talk[pid] = true
+        set tel_out[pid] = false
         set ai_harasser[pid] = false
         set ai_sayAt[pid] = 0.0
         set ai_sayLast[pid] = ""
@@ -4492,6 +4730,17 @@ function AI_Init takes nothing returns nothing
     // by ai_pointCount (<= AI_MAX_POINTS), and only pairs closer than
     // AI_LINK_R that are not already unioned ever pay for a walkability walk.
     call AI_BuildLandGraph()
+    // telemetry observer baseline: ground-truth ownership at t=0
+    set pid = 0
+    loop
+        exitwhen pid >= ai_pointCount
+        if ai_pt[pid] != null then
+            set tel_owner[pid] = GetPlayerId(GetOwningPlayer(ai_pt[pid]))
+        else
+            set tel_owner[pid] = -1
+        endif
+        set pid = pid + 1
+    endloop
 
     set pid = 0
     loop
@@ -4515,6 +4764,7 @@ function AI_Init takes nothing returns nothing
     loop
         exitwhen pid >= AI_MAX_PLAYERS
         call TriggerRegisterPlayerChatEvent(ai_cmdTrig, Player(pid), "-ai", false)
+        set tel_heroSeen[pid] = 0
         set ai_spy[pid] = false
         set pid = pid + 1
     endloop
@@ -4531,6 +4781,21 @@ function AI_Init takes nothing returns nothing
         // outside is to say out loud which slots the AI actually took. If a
         // faction is missing from this line it was never enabled; if it is
         // present and still idle, the fault is in its scoring.
+        set n = 0
+        set pid = 0
+        loop
+            exitwhen pid >= AI_MAX_PLAYERS
+            if ai_on[pid] then
+                set n = n + R2I(Pow(2.0, I2R(pid)) + 0.5)
+            endif
+            set pid = pid + 1
+        endloop
+        // run_started: seed, AI-slot bitmask, handicap level. The bitmask is
+        // what lets the parser exclude the human's faction from the
+        // scoreboard -- the exact mistake that produced a confident wrong
+        // before/after table.
+        call AI_Tel("run", AI_Num(AI_SEED_DEFAULT) + "|" + AI_Num(n) + "|0|" + AI_Num(R2I(AI_GAME_LEN)))
+        call AI_TelFlush()
         call AI_Broadcast("FoR-AI is playing: " + ai_roster)
         // ROUND 7: say plainly that reports are ALLY-SCOPED. A playtester
         // watching from a Roman seat sees no barbarian report and vice versa,
