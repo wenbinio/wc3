@@ -947,7 +947,9 @@ appetite. Fog respected, **no resource cheating**, one Park-Miller
 stream. `trace.py` reads its scoring subset FROM the shipped `.j` so it
 cannot drift — it caught two real design bugs.
 
-**FIRST PLAYTEST FINDINGS (2026-08-09, being fixed)**: order spam →
+**FIRST PLAYTEST FINDINGS (2026-08-09; all five FIXED in round 2,
+`a7b5c39`, plus `describe.js` in `04c088d` — the round-2 build is
+sim-verified only and has NOT been played)**: order spam →
 unit-lag stutter (top priority; needs per-unit last-order memory +
 sliced issuance); defence tunnel-vision (centres on wherever attacked);
 attack-move reroutes onto worse paths (needs approach routing over a
@@ -959,6 +961,28 @@ called missing naval logic "near-disqualifying"; the player says naval
 WARFARE is worthless — but naval TRANSPORT is still wanted so cut-off
 factions can reach the land war. Those are different subsystems; the
 transport case is uncontested logistics, not a naval engagement model.
+
+**`scripts/experimental/banjo-ai/`** (2026-08-10) — the second AI target,
+and a very different one: **Banjoball v1.22C1**, a 6v6 physics football
+map. Protected archive but the script is only whitespace-minified, so
+vJass struct members survive as global arrays and the AI reads the map's
+OWN world model (`s__Ball_owner/hold/vel`, `s__Vector_x/y/z`,
+`Players___playerUnit`) instead of keeping a shadow copy. Core is a
+tick-for-tick replay of the map's `s__Ball_movement` (32 Hz, 3-D length
+semantics, bounce) feeding an interception solver, then four cases
+(carry / mate carries / opponent carries / loose ball) with keeper,
+defender and attacker roles recomputed live. Order economy built in from
+day one per the rome-ai lesson. **Decomposition facts worth not
+re-deriving**: goals score only below height 300; carrying applies a slow
+so a pass is 3.2× a dribble; the goal rects are MOVED per field (fields
+differ in size) so geometry must be read at runtime; the friction globals
+are MUTABLE and ice fields lower them; `Kick` is a Channel ability whose
+`Ncl6` base order is unset, so the AI calls the map's own
+`s__Ball_castUtil` (a labelled equivalence) while Slam/Powershot use the
+declared order strings `sacrifice`/`parasite`. `trace.py` 30/30 with all
+four probe classes negative-controlled; it caught a real design bug (shoot
+range 1500 > the 1353 a kick actually carries). **Never run — not in the
+game and not in a simulator.**
 
 **Eval environment verdict**: `lib/sim` cannot execute JASS maps at all,
 and even for Lua it records orders without executing them (no movement,
