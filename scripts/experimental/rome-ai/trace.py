@@ -276,6 +276,9 @@ def make_env(sc):
         'wm_canReplaceHero': d(sc.get('canReplaceHero', False)),
         'wm_proxScale': d(sc.get('proxScale', CONSTS['AI_PROX_MIN'])),
         'wm_hasSiege': d(sc.get('hasSiege', True)),
+        'ai_clCount': d(0), 'ai_clX': {}, 'ai_clY': {}, 'ai_clS': {},
+        'ai_clDX': {}, 'ai_clDY': {},
+        'wm_townThreat': d(0.0), 'wm_townIdx': d(-1),
         'ai_msState': d(sc.get('msState', 0)), 'ai_msTarget': d(sc.get('msTarget', -1)),
         'ai_msPhaseEnd': d(sc.get('msPhaseEnd', 1e9)), 'ai_msNextOrder': d(1e9),
         'ai_ifThreat': d(False), 'ai_ifRetreat': d(False), 'ai_ifStuck': d(False),
@@ -364,6 +367,7 @@ def make_natives(env, noise=0.0):
         'AI_Find': lambda i: env['_ptComp'].get(i, 0),
         'R2I': int,
         'PATHING_TYPE_WALKABILITY': 1,
+        'Pow': lambda x, p: x ** p,
         'UNIT_STATE_LIFE': 1, 'UNIT_STATE_MAX_LIFE': 2, 'UNIT_TYPE_HERO': 3,
         'UNIT_TYPE_STRUCTURE': 4,
         # IsTerrainPathable is INVERTED: true means BLOCKED. Two independent
@@ -1339,6 +1343,111 @@ def consort():
           % (N, share[A], share[B], share[C]))
 
     print('\n%s: %d consort assertions failed' % ('PASS' if not fails else 'FAIL', fails))
+    return 1 if fails else 0
+
+
+# ---------------------------------- STAGE 3 / S3: the threat field
+
+def threatfield():
+    """S3, implemented as OURS with AMAI only as a shape reference. The
+    research brief verified the original against source at a pinned revision
+    and found three apparent defects plus omniscient enumeration, so the
+    assertions below are as much about what we did NOT copy.
+
+    Real constants from that source: 540*S/d^0.8, d floored at 1000, counted
+    only within a 2000 horizon, and a heading override needing BOTH
+    |angle| <= 0.4 rad AND current distance < the whole last displacement."""
+    print('\n' + '=' * 78)
+    print('STAGE 3 / S3 -- cluster-and-project threat field (ours, not AMAI\'s)')
+    print('=' * 78)
+    fails = 0
+
+    def threat(cl, tx=0.0, ty=0.0):
+        """cl: list of (x, y, strength, dx, dy). Point 0 is our town."""
+        sc = dict(role='barb', points=[{'kind': CP, 'x': tx, 'y': ty, 'owner': 0}])
+        env = make_env(sc)
+        env['ai_clCount'][0] = len(cl)
+        for k, (x, y, st, dx, dy) in enumerate(cl):
+            env['ai_clX'][k] = x
+            env['ai_clY'][k] = y
+            env['ai_clS'][k] = st
+            env['ai_clDX'][k] = dx
+            env['ai_clDY'][k] = dy
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        return it.run('AI_ThreatOn', [0, 0])
+
+    COEF, DMIN, HOR = CONSTS['AI_TF_COEF'], CONSTS['AI_TF_DMIN'], CONSTS['AI_TF_HORIZON']
+
+    near = threat([(1500.0, 0.0, 100.0, 0.0, 0.0)])
+    far = threat([(9000.0, 0.0, 100.0, 0.0, 0.0)])
+    checks = [
+        ('an army inside the horizon contributes threat', near > 0.0),
+        ('an army beyond the 2000 horizon contributes NOTHING', far == 0.0),
+        ('the distance floor caps the contribution at 540*S/1000^0.8',
+         abs(threat([(0.0, 0.0, 100.0, 0.0, 0.0)]) - COEF * 100.0 / (DMIN ** 0.8)) < 1e-6),
+        ('threat adds across clusters',
+         abs(threat([(1200.0, 0.0, 50.0, 0.0, 0.0), (0.0, 1200.0, 50.0, 0.0, 0.0)])
+             - 2.0 * threat([(1200.0, 0.0, 50.0, 0.0, 0.0)])) < 1e-6),
+    ]
+    for name, ok in checks:
+        fails += 0 if ok else 1
+        print('  %s %s' % ('PASS' if ok else 'FAIL', name))
+
+    # the heading override needs BOTH conditions -- this is where the relayed
+    # description was wrong, so each half is pinned separately
+    head_on = threat([(1800.0, 0.0, 100.0, -2000.0, 0.0)])   # closing, aligned
+    aligned_short = threat([(1800.0, 0.0, 100.0, -100.0, 0.0)])  # aligned, tiny step
+    sideways = threat([(1800.0, 0.0, 100.0, 0.0, -2000.0)])  # big step, wrong way
+    over = [
+        ('an army heading AT the town with a step that overshoots gets the floor',
+         abs(head_on - COEF * 100.0 / (DMIN ** 0.8)) < 1e-6),
+        ('aligned but with a SHORT step does not trigger the override',
+         aligned_short < head_on),
+        ('a long step in the WRONG direction does not trigger it either',
+         sideways < head_on),
+    ]
+    for name, ok in over:
+        fails += 0 if ok else 1
+        print('  %s %s' % ('PASS' if ok else 'FAIL', name))
+
+    # THE DEFECT WE DID NOT COPY: the projected point must not be normalised,
+    # so threat must be invariant to translating the whole world away from the
+    # map origin. AMAI's version is contaminated by distance from (0,0).
+    a = threat([(1500.0, 0.0, 100.0, -300.0, 0.0)], 0.0, 0.0)
+    b = threat([(21500.0, 0.0, 100.0, -300.0, 0.0)], 20000.0, 0.0)
+    ok = abs(a - b) < 1e-6
+    fails += 0 if ok else 1
+    print('  %s the projection is ORIGIN-INDEPENDENT (AMAI defect 1 not inherited): %.4f vs %.4f'
+          % ('PASS' if ok else 'FAIL', a, b))
+
+    # NEGATIVE CONTROL: the field must be capable of returning different
+    # numbers, or every equality above passes for free.
+    ok = near != threat([(1200.0, 0.0, 100.0, 0.0, 0.0)])
+    fails += 0 if ok else 1
+    print('  %s   negative control: distance actually changes the number' % ('PASS' if ok else 'FAIL'))
+
+    # AMAI defect 3: a real maximum, not the last town processed
+    def field(pts):
+        sc = dict(role='barb', points=pts)
+        env = make_env(sc)
+        env['ai_clCount'][0] = 1
+        env['ai_clX'][0] = 0.0
+        env['ai_clY'][0] = 0.0
+        env['ai_clS'][0] = 100.0
+        env['ai_clDX'][0] = 0.0
+        env['ai_clDY'][0] = 0.0
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        it.run('AI_ThreatField', [0])
+        return env['wm_townIdx'][0], env['wm_townThreat'][0]
+
+    idx, val = field([{'kind': CP, 'x': 500.0, 'y': 0.0, 'owner': 0},
+                      {'kind': CP, 'x': 9000.0, 'y': 0.0, 'owner': 0}])
+    ok = (idx == 0) and val > 0.0
+    fails += 0 if ok else 1
+    print('  %s the field takes a REAL maximum, not the last town processed (AMAI defect 3): idx=%s'
+          % ('PASS' if ok else 'FAIL', idx))
+
+    print('\n%s: %d threat-field assertions failed' % ('PASS' if not fails else 'FAIL', fails))
     return 1 if fails else 0
 
 
@@ -2333,6 +2442,25 @@ ROUND3_GUARDS = [
      r'function AI_BoardEnum\b.*?IsUnitType\(u, UNIT_TYPE_HERO\) and ai_navLoaded < AI_NAV_MIN_LOAD', True),
     ('no transport is left with cargo and no destination',
      r'function AI_NavIdle\b.*?call AI_TryOrder\(ship, AI_ORD_UNLOAD, ai_homeX\[pid\]', True),
+    ('goal switching is a real Schmitt trigger: the bonus goes to the INCUMBENT',
+     r'if ai_goal\[pid\] == GOAL_CONSOLIDATE then\s*\n\s*set sCon = sCon \+ 0\.12', True),
+    # --- stage 3 / S3: the threat field ----------------------------------
+    ('the threat field is built from OBSERVED point memory, not global enumeration',
+     r'function AI_TrackArmies\b(?:(?!\nendfunction)[\s\S])*?ai_ptDef\[pid\*AI_MAX_POINTS \+ i\]', True),
+    ('no global player enumeration anywhere in the threat field',
+     r'function AI_TrackArmies\b(?:(?!\nendfunction)[\s\S])*?GroupEnumUnitsOfPlayer', False),
+    ('the projected point is never normalised (AMAI defect 1 not inherited)',
+     r'set dfut = AI_Dist\(cx \+ AI_TF_PROJ\*dx, cy \+ AI_TF_PROJ\*dy, ai_ptX\[t\], ai_ptY\[t\]\)', True),
+    ('the heading override requires BOTH conditions',
+     r'if dl > 0\.0 and vl > 0\.0 and dcur < dl then\s*\n\s*if \(dx\*vx \+ dy\*vy\) >= AI_TF_COS', True),
+    ('the field indexes towns by the TOWN loop (AMAI defect 2 not inherited)',
+     r'function AI_ThreatField\b(?:(?!\nendfunction)[\s\S])*?GetOwningPlayer\(ai_pt\[i\]\) == ai_p\[pid\]', True),
+    ('the maximum is conditional and never overwritten (AMAI defect 3)',
+     r'if v > best then\s*\n\s*set best = v\s*\n\s*set bestI = i', True),
+    ('the verified constants are used, not the relayed ones',
+     r'AI_TF_COEF      = 540\.0[\s\S]*?AI_TF_DMIN      = 1000\.0[\s\S]*?AI_TF_HORIZON   = 2000\.0', True),
+    ('the threat field drives the S1 interrupt flag',
+     r'function AI_SetFlags\b(?:(?!\nendfunction)[\s\S])*?wm_townThreat\[pid\] > AI_TF_COEF[\s\S]*?set ai_ifThreat\[pid\] = true', True),
     # --- stage 3 / S1: attacks as procedures -----------------------------
     ('a running mission holds the tick instead of re-scoring',
      r'if not AI_MissionTick\(pid\) then\s*\n\s*call AI_UpdatePosture\(pid\)', True),
@@ -2672,6 +2800,7 @@ def main():
     rc |= strategy()
     rc |= tribes()
     rc |= formation()
+    rc |= threatfield()
     rc |= missions()
     rc |= centroid()
     rc |= impossible()

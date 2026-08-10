@@ -1912,15 +1912,24 @@ units join freely. **No conclusion about captain quality is available yet** —
 it is currently being judged on siege engines.
 
 The clean fix is that **`RemoveAllGuardPositions(player)` is a native of
-`common.j`**, the *map-script* VM — not of `common.ai`. So the probe clears a
-whole faction in one call, from the VM where pjass gates it against the real
-API, with no risk of an undeclared native killing the `.ai` at load. It repeats
-on a 10 s timer, because the captain re-issues guard positions underneath
-itself; that repetition is AMAI's clear-order-restore handoff without the
-per-unit bookkeeping.
+`common.j`**, the *map-script* VM. So the probe clears a whole faction in one
+call, from the VM where pjass gates it against the real API. It repeats on a
+10 s timer, because the captain re-issues guard positions underneath itself;
+that repetition is AMAI's clear-order-restore handoff without the per-unit
+bookkeeping.
 
-(Note for anyone reusing jassdoc's `common.ai`: it is the **2003 ROC-era file**,
-123 natives, and does **not** contain `RemoveGuardPosition`.)
+> **CORRECTION (research brief 3 / README correction 2).** An earlier version of
+> this section said `RemoveGuardPosition` was "missing from the 2003 ROC-era
+> `common.ai`" and implied a version difference. **That was a category error.**
+> The guard-position natives belong to the map-side `common.j` interface and
+> always have, classic copies included; they were never expected in `common.ai`
+> at all. The jassdoc `common.ai` we have is fine — we looked in the wrong
+> file. The fix above is right; the reason given for it was wrong.
+>
+> Also from brief 3: the shipped World Editor help says guard positions
+> **exclude heroes and peon-type units**, and *exact captain exclusion remains
+> unknown* — so clearing guards is necessary but not proven sufficient to make
+> a captain take a given unit.
 
 ### 17.3 `I2S` returns an empty string in the AI VM
 
@@ -2032,3 +2041,105 @@ Cluster-and-project army tracking with a continuous threat field: cluster at
 `Σ strength / dist^0.8` floored at 600 with horizon 3000, and override distance
 entirely when an army is heading at you within 23°. It feeds `ai_ifThreat`
 directly. **Not started at this commit.**
+
+---
+
+## 19. Stage 3 / S3 — the threat field, and what the research changed
+
+Read `docs/reference/ai-research-2026-08/README.md` and `brief-04-amai.md §4`
+before implementing. **The description I was originally given was wrong in ways
+that mattered, and the brief was right to stop the transplant.**
+
+### 19.1 Acted on
+
+**S3 is implemented as ours, with AMAI as a shape reference only.** Verified
+against the pinned revision, the original has no velocity (one-sample
+displacement, no time normalisation), no multi-tick projection, and three
+apparent defects. All three are avoided by construction and each is pinned by a
+trace assertion:
+
+| AMAI defect | ours |
+|---|---|
+| builds the absolute point `C+3D` then hands it to a helper that **normalises it as a vector**, so heading is contaminated by distance from `(0,0)` | the projected point is `F = C + AI_TF_PROJ·D` and is **never normalised**. Trace asserts translating the whole world 20,000 units leaves the threat identical (214.9779 vs 214.9779) |
+| army loop tests `town_owner[i]` where `i` indexes **armies** | `AI_ThreatField` indexes towns by the **town loop** |
+| conditional maximum, then an **unconditional** assignment lets the last town win | a real maximum; trace asserts the nearer town wins over the later-processed one |
+
+**The relayed constants were wrong and are corrected**: `540·S/d^0.8`, `d`
+floored at **1000**, counted only within a **2000** horizon — not floor 600 /
+horizon 3000. The heading override needs **both** `|angle| ≤ 0.4 rad` **and**
+current distance shorter than the whole last displacement; each half is pinned
+separately, because that was the specific thing mis-relayed. Angles are compared
+as **cosines** against `cos(0.4)`, so there is no trig at all.
+
+**Fog honesty preserved, deliberately.** AMAI is strategically omniscient —
+global `GroupEnumUnitsOfPlayer` per player, with only *aggregate strength* fuzzed
+at low difficulty. Ours seeds clusters **only from `ai_ptDef`**, the observed
+enemy strength this player has already seen under the `IsUnitVisible` contract.
+A source guard asserts there is **no global enumeration** in the tracker. Copying
+AMAI wholesale would have silently switched on information cheating we have kept
+behind an unbuilt dial.
+
+**S1 × S3 compose as designed**: the field sets `ai_ifThreat`, which is the
+interrupt the mission layer already consumes. The plumbing was built for it
+rather than bolted on.
+
+**The Schmitt trigger is already correct.** Brief 5 distinguishes a two-threshold
+trigger from a timer, noting a timer alone only changes the *frequency* of
+oscillation. Our incumbency bonus is added to the **incumbent**, so switching
+`i→j` requires `U(j) > U(i) + 0.12` and switching back requires the mirror —
+activation and deactivation thresholds differ by `2H = 0.24`. That is a genuine
+Schmitt trigger; the 9 s dwell sits on top of it. Now pinned by a guard.
+
+**Two corrections to our own record**, both made where the wrong claim lived:
+
+* `RemoveGuardPosition` was **never missing from an old `common.ai`** — it is a
+  map-side `common.j` native and always has been. Our "version difference" note
+  was a **category error**; §17.2 now says so. The fix was right, the reason was
+  wrong. Brief 3 adds that guard positions **exclude heroes and peon-type
+  units**, and exact captain exclusion is still unknown — so clearing guards is
+  necessary, not proven sufficient.
+* The controller requirement **is documented** (World Editor help; stock
+  `Blizzard.j` gates on it). Narrowed in the decomposition doc to the defensible
+  claim: what appears novel is the **runtime conversion of an
+  already-configured user slot immediately before `Start*AI`**.
+
+**Hazards recorded, not yet hit:**
+
+* **`SuicideOnPlayer` crashes Reforged on maps with a dimension ≥ 256.
+  Fall of Rome is 480×480.** We do not call it. If captain work ever reaches for
+  a player-target wave, it will take the game down — **use point targets only**.
+* **Captain calls are reported to freeze when the AI owns no structures.** Our
+  probe proved the VM *launches* without halls or workers, but launching and
+  being safe to command are different states. Model them separately:
+  `VM_READY` then `CAPTAIN_READY`.
+
+### 19.2 Judged NOT to apply
+
+* **The unsafe-native list (`I2S`, `SubString`, `ForGroup`/filters/`boolexpr`)
+  is an AI-VM restriction, not a map-script one.** `for-ai.j` runs in the
+  map-script VM, where callback enumeration demonstrably works — it is the
+  backbone of every world scan across seven playtests. The finding applies to
+  `probe.ai` only, which already uses no group enumeration. The `I2S` fix
+  already shipped there.
+* **The `FirstOfGroup`/`GroupRemoveUnit` pattern** is the right AI-VM
+  workaround and the wrong map-side change; adopting it in `for-ai.j` would be
+  a rewrite of working code to satisfy a constraint that does not apply.
+* **Six thread slots per AI player, never recycled** — relevant only to `.ai`
+  code. `probe.ai` starts no threads.
+
+### 19.3 Numbers
+
+Trace **338 assertions, 0 FAILs** (was 300 before stage 3; +11 S1, +10 S3, +17
+guards). Order economy unchanged by S3 — it adds no dispatch:
+
+| policy | peak/tick | mean/second |
+|---|---|---|
+| round 1 | 1705 | 880.0 |
+| round 2 | 204 | 55.3 |
+| round 3 | 234 | 79.3 |
+| **S1 + S3** | **234** | **74.4** |
+
+Guards A and B green; all three possibility gates green; idle floor still under
+the decision layer; `validate-map` 191/192 identical; `npm test` 617/0. The
+playable build still carries **no engine-AI calls**. Playable **19,031,050**,
+probe **19,038,147**.

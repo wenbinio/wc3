@@ -228,6 +228,56 @@
     boolean array    ai_ifRetreat
     boolean array    ai_ifStuck
 
+    // ===================================================================
+    //  S3 -- CLUSTER-AND-PROJECT THREAT FIELD (stage 3)
+    //
+    //  Shape borrowed from AMAI's ARMY_TRACK; the implementation is OURS,
+    //  because the research brief verified the original against source at a
+    //  pinned revision and found it unsafe to transplant:
+    //
+    //   * it has NO velocity -- D is a one-sample displacement with no time
+    //     normalisation, no history, no smoothing. We keep that (it is cheap
+    //     and adequate) but we call it displacement, not velocity.
+    //   * it has NO multi-tick projection. We keep a single projection.
+    //   * its projection is apparently DEFECTIVE: it forms the absolute point
+    //     C + 3D and hands it to a helper that normalises its argument as a
+    //     VECTOR, so the predicted heading is contaminated by the army's
+    //     distance from map origin (0,0). We never normalise a point: the
+    //     projected point is F = C + AI_TF_PROJ*D directly, which is what the
+    //     original comment says was intended.
+    //   * its army loop indexes towns with the ARMY index. Ours indexes towns
+    //     by the town loop.
+    //   * it takes a conditional maximum and then unconditionally overwrites
+    //     it, so the LAST town wins. Ours takes a real maximum.
+    //   * it is strategically OMNISCIENT -- global enumeration of every
+    //     player's units, with only aggregate strength fuzzed at low
+    //     difficulty. Ours is built only from what this player has OBSERVED,
+    //     so it cannot silently turn on information cheating that we have
+    //     deliberately kept behind a dial.
+    //
+    //  Real constants from the pinned source: 540*S/d^0.8, d floored at 1000,
+    //  counted only within a 2000 horizon; the heading override needs BOTH
+    //  |angle| <= 0.4 rad AND the current distance to be shorter than the
+    //  whole last displacement. (The values relayed to us earlier -- floor
+    //  600, horizon 3000, angle-only override -- were wrong.)
+    // ===================================================================
+    constant integer AI_MAX_CLUSTERS = 16
+    constant real    AI_CL_RADIUS    = 1500.0
+    constant real    AI_TF_COEF      = 540.0
+    constant real    AI_TF_DMIN      = 1000.0
+    constant real    AI_TF_HORIZON   = 2000.0
+    constant real    AI_TF_PROJ      = 3.0
+    // cos(0.4 rad); comparing cosines avoids trig entirely and is exact
+    constant real    AI_TF_COS       = 0.92106
+    integer array    ai_clCount        // per player
+    real    array    ai_clX            // [pid*AI_MAX_CLUSTERS + k]
+    real    array    ai_clY
+    real    array    ai_clS            // observed strength
+    real    array    ai_clDX           // one-sample displacement
+    real    array    ai_clDY
+    real    array    wm_townThreat     // threat on our most threatened point
+    integer array    wm_townIdx        // which point that is, or -1
+
     constant real    AI_IDLE_T        = 25.0
     // The cheapest thing the Forge can research. Below this, TECH is not a
     // cheap goal, it is an impossible one. ROUND 6.
@@ -1756,6 +1806,142 @@ function AI_WantsCrossing takes integer pid, integer i returns boolean
 endfunction
 
 //===========================================================================
+//  S3 -- the threat field
+//
+//  Fog-honest by construction: clusters are seeded ONLY from enemy strength
+//  this player has actually observed around its own registered points, which
+//  AI_RefreshPointMemory already records under the IsUnitVisible contract.
+//  Nothing here enumerates a player globally.
+//===========================================================================
+
+// Greedy radius partition over observed enemy mass, keeping the previous
+// centroid so a one-sample displacement can be taken. Deliberately NOT called
+// velocity: there is no time normalisation and no history.
+function AI_TrackArmies takes integer pid returns nothing
+    local integer i = 0
+    local integer k
+    local integer base = pid*AI_MAX_CLUSTERS
+    local integer n = 0
+    local real px
+    local real py
+    local boolean merged
+    loop
+        exitwhen i >= ai_pointCount
+        // observed enemy strength sitting on one of OUR points
+        if ai_pt[i] != null and ai_ptDef[pid*AI_MAX_POINTS + i] > 0.0 then
+            if GetOwningPlayer(ai_pt[i]) == ai_p[pid] then
+                set k = 0
+                set merged = false
+                loop
+                    exitwhen k >= n or merged
+                    if AI_Dist(ai_clX[base+k], ai_clY[base+k], ai_ptX[i], ai_ptY[i]) <= AI_CL_RADIUS then
+                        // absorb: strength-weighted centroid
+                        set px = ai_clS[base+k] + ai_ptDef[pid*AI_MAX_POINTS + i]
+                        set ai_clX[base+k] = (ai_clX[base+k]*ai_clS[base+k] + ai_ptX[i]*ai_ptDef[pid*AI_MAX_POINTS + i]) / px
+                        set ai_clY[base+k] = (ai_clY[base+k]*ai_clS[base+k] + ai_ptY[i]*ai_ptDef[pid*AI_MAX_POINTS + i]) / px
+                        set ai_clS[base+k] = px
+                        set merged = true
+                    endif
+                    set k = k + 1
+                endloop
+                if not merged and n < AI_MAX_CLUSTERS then
+                    // new cluster: displacement measured against the nearest
+                    // OLD cluster centre, which is the only history we keep
+                    set ai_clDX[base+n] = 0.0
+                    set ai_clDY[base+n] = 0.0
+                    set ai_clX[base+n] = ai_ptX[i]
+                    set ai_clY[base+n] = ai_ptY[i]
+                    set ai_clS[base+n] = ai_ptDef[pid*AI_MAX_POINTS + i]
+                    set n = n + 1
+                endif
+            endif
+        endif
+        set i = i + 1
+    endloop
+    set ai_clCount[pid] = n
+endfunction
+
+// Threat on one of OUR points from the observed clusters.
+//
+// AMAI's equation, with its three source defects fixed:
+//   d_future = max(dist(F, T), AI_TF_DMIN) where F = C + AI_TF_PROJ*D
+//              -- F is a POINT and is never normalised
+//   heading override: BOTH dist(C,T) < |D| AND the angle between D and T-C
+//              is at most 0.4 rad. Compared as cosines, so no trig.
+//   contribution: AI_TF_COEF * S / d^0.8, only when d <= AI_TF_HORIZON
+function AI_ThreatOn takes integer pid, integer t returns real
+    local integer base = pid*AI_MAX_CLUSTERS
+    local integer k = 0
+    local real total = 0.0
+    local real cx
+    local real cy
+    local real dx
+    local real dy
+    local real vx
+    local real vy
+    local real dl
+    local real vl
+    local real dcur
+    local real dfut
+    local real d
+    loop
+        exitwhen k >= ai_clCount[pid]
+        set cx = ai_clX[base+k]
+        set cy = ai_clY[base+k]
+        set dx = ai_clDX[base+k]
+        set dy = ai_clDY[base+k]
+        set vx = ai_ptX[t] - cx
+        set vy = ai_ptY[t] - cy
+        set dcur = SquareRoot(vx*vx + vy*vy)
+        set dl = SquareRoot(dx*dx + dy*dy)
+        set vl = dcur
+        set dfut = AI_Dist(cx + AI_TF_PROJ*dx, cy + AI_TF_PROJ*dy, ai_ptX[t], ai_ptY[t])
+        if dfut < AI_TF_DMIN then
+            set dfut = AI_TF_DMIN
+        endif
+        set d = dfut
+        if dcur < d then
+            set d = dcur
+        endif
+        // heading override: BOTH conditions, per the pinned source
+        if dl > 0.0 and vl > 0.0 and dcur < dl then
+            if (dx*vx + dy*vy) >= AI_TF_COS * dl * vl then
+                set d = AI_TF_DMIN
+            endif
+        endif
+        if d < AI_TF_DMIN then
+            set d = AI_TF_DMIN
+        endif
+        if d <= AI_TF_HORIZON then
+            set total = total + AI_TF_COEF * ai_clS[base+k] / Pow(d, 0.8)
+        endif
+        set k = k + 1
+    endloop
+    return total
+endfunction
+
+// The field: a REAL maximum over OUR points, indexed by the town loop.
+function AI_ThreatField takes integer pid returns nothing
+    local integer i = 0
+    local real best = 0.0
+    local integer bestI = -1
+    local real v
+    loop
+        exitwhen i >= ai_pointCount
+        if ai_pt[i] != null and GetOwningPlayer(ai_pt[i]) == ai_p[pid] then
+            set v = AI_ThreatOn(pid, i)
+            if v > best then
+                set best = v
+                set bestI = i                // conditional, and NOT overwritten
+            endif
+        endif
+        set i = i + 1
+    endloop
+    set wm_townThreat[pid] = best
+    set wm_townIdx[pid] = bestI
+endfunction
+
+//===========================================================================
 //  World scan
 //===========================================================================
 
@@ -2100,6 +2286,9 @@ function AI_ScanWorld takes integer pid returns nothing
         set nearest = AI_PROX_MIN
     endif
     set wm_proxScale[pid] = nearest
+    // S3: clusters and the threat field, from observed state only
+    call AI_TrackArmies(pid)
+    call AI_ThreatField(pid)
     set wm_capIdx[pid] = capIdx
     set wm_capReady[pid] = AI_CapReadiness(wm_army[pid], capDef)
     set wm_capThreat[pid] = capThreat
@@ -3793,7 +3982,13 @@ endfunction
 // which then picks DEFEND or RETREAT on its own merits. That is what keeps
 // Guard B intact through the rewrite.
 function AI_SetFlags takes integer pid returns nothing
+    // S1 + S3: the threat FIELD is what sets the interrupt, which is the
+    // composition the two were designed for. The round-2 asset gate is kept
+    // -- a threat against nothing we own is still not an emergency.
     set ai_ifThreat[pid] = (wm_threat[pid] > 0.0) and (wm_asset[pid] > 0.0) and (wm_threat[pid] > AI_MS_THREAT * wm_garrison[pid])
+    if wm_townIdx[pid] >= 0 and wm_townThreat[pid] > AI_TF_COEF then
+        set ai_ifThreat[pid] = true
+    endif
     set ai_ifRetreat[pid] = (wm_fieldCV[pid] > 1.0) and (wm_fieldEnemyCV[pid] > AI_RETREAT_RATIO * wm_fieldCV[pid])
 endfunction
 
@@ -4131,6 +4326,9 @@ function AI_EnablePlayer takes integer pid, integer difficulty returns nothing
     set ai_scanCursor[pid] = 0
     set ai_wallSince[pid]= -9999.0
     set ai_commitAt[pid] = 0.0
+    set wm_townThreat[pid] = 0.0
+    set wm_townIdx[pid]  = -1
+    set ai_clCount[pid]  = 0
     set ai_msState[pid]  = AI_MS_NONE
     set ai_msTarget[pid] = -1
     set ai_ifThreat[pid] = false

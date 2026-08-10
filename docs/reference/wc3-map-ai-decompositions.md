@@ -870,9 +870,16 @@ changed, the same script **loaded, ran `InitAI`, returned from
 gold mines and no workers**. Owner's words: *"Works with Computer slots."*
 
 That answers §S9's unproven half affirmatively and narrows the mystery of the
-82/5,350 figure. It is at least plausible that the reason the engine AI is
-"unusable on custom maps" is that custom maps are user-controlled by default,
-the failure is silent, and **the one-line fix is not written down anywhere**.
+82/5,350 figure. **Narrowed (research brief 2 / README correction 1).** The controller
+*requirement* is **not** undocumented: the World Editor's own help says the
+AI-start actions are for computer-controlled slots, and stock `Blizzard.j` gates
+on exactly that. The defensible novel part is narrower — the **runtime
+conversion of an already-configured user slot immediately before `Start*AI`**,
+which is what makes the subsystem reachable on a map whose slots the author set
+to user control. It is at least plausible that the reason the engine AI looks
+"unusable on custom maps" is that custom maps are user-controlled by default and
+the failure is silent, but the requirement itself was documented and we had not
+read it.
 The `"map.ai"` placeholder finding supports this reading: those 94 call sites
 name a file that does not exist in any archive, i.e. nobody ever got far enough
 to notice their AI was not running.
