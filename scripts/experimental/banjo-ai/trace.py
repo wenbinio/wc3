@@ -160,6 +160,12 @@ globals
     boolean       gameEnded   = false
     rect          gg_rct_Goal_1 = null
     rect          gg_rct_Goal_2 = null
+    rect          gg_rct_Start_1 = null
+    rect          gg_rct_Start_2 = null
+
+    integer       EVENT_FIELD_CHOOSE = 0
+    integer       Players___playerCountHuman = 0
+    trigger array s__Event_e
 
     integer array s__Ball_balls
     unit    array s__Ball_ball
@@ -178,6 +184,11 @@ endglobals
 function s__Ball_castUtil takes unit u, real x, real y returns nothing
 endfunction
 function Pick___addAbilities takes unit u returns nothing
+endfunction
+function Players___initPlayer takes player p returns nothing
+endfunction
+function ArrangeStartPositions takes nothing returns boolean
+    return false
 endfunction
 """
 

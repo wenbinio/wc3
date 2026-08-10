@@ -73,6 +73,7 @@
     real    array    BAI_reaction           // difficulty: added decision latency
     real    array    BAI_aimNoise           // difficulty: aim error in units
     boolean array    BAI_useAbilities
+    boolean array    BAI_registered         // registered into the map's player list
 
     timer            BAI_timer              = null
     integer          BAI_subTick            = 0
@@ -768,19 +769,84 @@ endfunction
 // computer) -- exactly the case where the map otherwise fields ten men against
 // eleven. An athlete is created if the slot never picked one.
 //----------------------------------------------------------------------------
+function BAI_StartXOf takes integer pid, integer team returns real
+    // A slot the map never registered has no start position at all, so the
+    // raw array reads 0.0 -- which is the map ORIGIN, thousands of units off
+    // the pitch. That is what shipped in the first build: the bots existed and
+    // stood nowhere. Never spawn on an unset position; fall back to the team's
+    // own start rect.
+    if Players___playerStartX[pid] != 0.0 then
+        return Players___playerStartX[pid]
+    endif
+    if team == 0 then
+        return GetRectCenterX(gg_rct_Start_1)
+    endif
+    return GetRectCenterX(gg_rct_Start_2)
+endfunction
+
+function BAI_StartYOf takes integer pid, integer team returns real
+    if Players___playerStartY[pid] != 0.0 then
+        return Players___playerStartY[pid]
+    endif
+    if team == 0 then
+        return GetRectCenterY(gg_rct_Start_1)
+    endif
+    return GetRectCenterY(gg_rct_Start_2)
+endfunction
+
+//----------------------------------------------------------------------------
+// Registration. The map builds its player list in Players___init from slots in
+// PLAYER_SLOT_STATE_PLAYING only, and ArrangeStartPositions -- which hands out
+// the start positions -- walks that list. An empty slot is therefore invisible
+// to every per-player system in the map: no start position, no kickoff reset,
+// no place in the spacing of its own team.
+//
+// So the AI registers the slot through the map's OWN Players___initPlayer
+// rather than bolting a unit on beside it.
+//
+// One side effect has to be undone by hand: initPlayer increments
+// Players___playerCountHuman for any MAP_CONTROL_USER slot, and an empty slot
+// still reads as USER. Inflating the human count could change what the map
+// waits for, so it is snapshotted and restored.
+//----------------------------------------------------------------------------
+function BAI_Register takes integer pid returns nothing
+    local integer humans
+    if BAI_registered[pid] then
+        return
+    endif
+    set BAI_registered[pid] = true
+    // A slot the map already registered (a real computer slot that is PLAYING)
+    // must not be registered twice.
+    if GetPlayerSlotState(Player(pid)) == PLAYER_SLOT_STATE_PLAYING then
+        return
+    endif
+    set humans = Players___playerCountHuman
+    call Players___initPlayer(Player(pid))
+    set Players___playerCountHuman = humans
+endfunction
+
 function BAI_EnsureAthlete takes integer pid returns nothing
     local unit u = BAI_UnitOf(pid)
+    local integer team = GetPlayerTeam(Player(pid))
     if BAI_Alive(u) then
         set u = null
         return
     endif
-    set u = CreateUnit(Player(pid), BAI_ATHLETE_CLASS, Players___playerStartX[pid], Players___playerStartY[pid], Players___playerFacing[pid])
+    // h00P is classified "ancient,giant" = UNIT_TYPE_OBJECT + UNIT_TYPE_PLAYER,
+    // so CreateUnit alone gets it auto-indexed into the map's Object system
+    // (s__Object_AutoCreate___creator) and recognised by the ball catch filter.
+    set u = CreateUnit(Player(pid), BAI_ATHLETE_CLASS, BAI_StartXOf(pid, team), BAI_StartYOf(pid, team), Players___playerFacing[pid])
     set Players___playerUnit[pid] = u
     call SetUnitColor(u, GetPlayerColor(Player(pid)))
     call Pick___addAbilities(u)
     set u = null
 endfunction
 
+//----------------------------------------------------------------------------
+// THINK LOOP. One sub-tick per BAI_THINK_PERIOD; each slot is handled on the
+// sub-tick matching its id modulo BAI_SLOT_STAGGER, so the twelve slots never
+// decide in the same frame.
+//----------------------------------------------------------------------------
 function BAI_Tick takes nothing returns nothing
     local integer i = 0
     if not BAI_enabled then
@@ -788,18 +854,14 @@ function BAI_Tick takes nothing returns nothing
     endif
     // The field is chosen after the game starts and MOVES the goal rects, and
     // a field can be re-picked between matches -- so geometry is re-read every
-    // tick (five rect reads) rather than latched at boot. Latching it was a
-    // real bug: the AI would have attacked coordinates from whichever field
-    // happened to be loaded first.
+    // tick (five rect reads) rather than latched at boot.
     call BAI_RefreshGeometry()
     set BAI_subTick = ModuloInteger(BAI_subTick + 1, BAI_SLOT_STAGGER)
-    // Slots that pick late, or that a human leaves mid-match, are adopted on
-    // the sub-tick that comes back round to them.
+    // Slots that lose their athlete mid-match are given a new one on a rescan.
     if BAI_subTick == 0 then
         set BAI_rescan = BAI_rescan + 1
         if BAI_rescan >= 16 then
             set BAI_rescan = 0
-            set i = 0
             loop
                 exitwhen i >= MAX_PLAYERS
                 if BAI_on[i] then
@@ -829,7 +891,7 @@ function BAI_EnablePlayer takes integer pid returns nothing
     set BAI_useAbilities[pid] = true
     set BAI_sprintWorks[pid] = true
     call BAI_ForgetOrder(pid)
-    call BAI_EnsureAthlete(pid)
+    call BAI_Register(pid)
 endfunction
 
 function BAI_SetDifficulty takes integer level returns nothing
@@ -855,9 +917,18 @@ function BAI_SetDifficulty takes integer level returns nothing
     endloop
 endfunction
 
+//----------------------------------------------------------------------------
+// Claim every slot nobody is playing, then hand the athletes out.
+//
+// Order matters. Registration has to happen BEFORE positions are handed out,
+// because ArrangeStartPositions divides each team's start rect by how many
+// players that team has. The map runs it on EVENT_FIELD_CHOOSE and this
+// handler is registered later, so it runs after -- which is why it re-runs
+// ArrangeStartPositions itself once the AI slots are in the list. Human
+// positions shift to make room, which is correct: there are now more players.
+//----------------------------------------------------------------------------
 function BAI_Start takes nothing returns nothing
     local integer i = 0
-    call BAI_RefreshGeometry()
     loop
         exitwhen i >= MAX_PLAYERS
         if GetPlayerSlotState(Player(i)) != PLAYER_SLOT_STATE_PLAYING or GetPlayerController(Player(i)) == MAP_CONTROL_COMPUTER then
@@ -865,11 +936,29 @@ function BAI_Start takes nothing returns nothing
         endif
         set i = i + 1
     endloop
+
+    call ArrangeStartPositions()
+    call BAI_RefreshGeometry()
+
+    set i = 0
+    loop
+        exitwhen i >= MAX_PLAYERS
+        if BAI_on[i] then
+            call BAI_EnsureAthlete(i)
+        endif
+        set i = i + 1
+    endloop
+
     set BAI_enabled = true
     if BAI_timer == null then
         set BAI_timer = CreateTimer()
     endif
     call TimerStart(BAI_timer, BAI_THINK_PERIOD, true, function BAI_Tick)
+endfunction
+
+function BAI_OnFieldChoose takes nothing returns boolean
+    call BAI_Start()
+    return false
 endfunction
 
 function BAI_Chat takes nothing returns boolean
@@ -898,12 +987,13 @@ function BAI_Boot takes nothing returns nothing
     endloop
     call TriggerAddCondition(t, Condition(function BAI_Chat))
     set t = null
-    call BAI_Start()
 endfunction
 
 function BAI_Init takes nothing returns nothing
-    // The field is chosen after the game starts, so geometry and athletes are
-    // read once the match is actually up rather than at map init.
-    call TimerStart(CreateTimer(), 45.0, false, function BAI_Boot)
+    call BAI_Boot()
+    // Athletes are handed out when the field is chosen, because that is when
+    // the map moves the goal rects and hands out start positions -- not on a
+    // guessed delay, which is what the first build used.
+    call TriggerAddCondition(s__Event_e[EVENT_FIELD_CHOOSE], Condition(function BAI_OnFieldChoose))
 endfunction
 //! BAI_FUNCTIONS_END
