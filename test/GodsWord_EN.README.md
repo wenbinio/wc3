@@ -1,16 +1,5 @@
 # test/GodsWord_EN.w3x
 
-> **Shipped in two parts.** At 115.36 MB the archive exceeds GitHub's
-> hard 100 MB per-file limit, so it is committed as
-> `GodsWord_EN.w3x.part00` + `.part01`. Reassemble with:
->
-> ```bash
-> cat test/GodsWord_EN.w3x.part* > GodsWord_EN.w3x
-> ```
->
-> The result must be **120,965,053 bytes**, sha256
-> `e046fb12ee777afe6fbadca3e347f674429e291ed7e403129be66620e9736ad2`.
-> (Verified: the concatenation reproduces that hash exactly.)
 
 English translation of **God's Word: The True Way (v.0.80)** by
 **PUVer** and the **Divine Style Team** — credited in-map as
