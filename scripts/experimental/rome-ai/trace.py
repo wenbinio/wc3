@@ -261,7 +261,7 @@ def make_env(sc):
         'ai_dispCursor': d(0), 'ai_dispN': d(0), 'ai_dispSeen': 0, 'ai_dispPid': 0,
         'ai_exCount': __import__('collections').defaultdict(int),
         'ai_exCV': __import__('collections').defaultdict(float),
-        'ai_marchDX': 0.0, 'ai_marchDY': 0.0,
+        'ai_marchDX': 0.0, 'ai_marchDY': 0.0, 'ai_congN': 0, '_ht': {},
         'ai_msRX': d(0.0), 'ai_msRY': d(0.0),
         'wm_fieldCV': d(sc.get('fieldCV', 0.0)),
         'wm_fieldX': d(sc.get('fieldX', 0.0)), 'wm_fieldY': d(sc.get('fieldY', 0.0)),
@@ -382,10 +382,20 @@ def make_natives(env, noise=0.0):
         # section models; everywhere else it comes from the scenario and
         # defaults to "already gathered" so the S1 assertions are unchanged
         'AI_MusterFrac': lambda pid: env.get('_musterFrac', 1.0),
+        # congestion needs a live unit enum; only the congestion section models
+        # one, so elsewhere it is scenario-driven and defaults to "room enough"
+        'AI_Congestion': lambda pid, x, y: env.get('_congestion', 0),
         # land component of a point: the union-find is built at init from the
         # engine's own pathing, which no interpreter can reach, so the graph
         # comes from the scenario and the CONSUMERS stay under test
         'AI_Find': lambda i: env['_ptComp'].get(i, 0),
+        # a real hashtable: the corridor ledger lives in one, so the claim
+        # logic under test is the shipped logic rather than a stand-in
+        'ai_ht': 'HT',
+        'SaveInteger': lambda ht, a, b, v: env['_ht'].__setitem__((a, b), v),
+        'LoadInteger': lambda ht, a, b: env['_ht'].get((a, b), 0),
+        'SaveReal': lambda ht, a, b, v: env['_ht'].__setitem__((a, b), v),
+        'LoadReal': lambda ht, a, b: env['_ht'].get((a, b), 0.0),
         'R2I': int,
         'PATHING_TYPE_WALKABILITY': 1,
         'StringHash': lambda x: sum(ord(c) for c in str(x)),
@@ -2435,6 +2445,159 @@ def partition():
     return 1 if fails else 0
 
 
+def congestion():
+    """PLAYTEST 9 -- "they block themselves" and "cooperating factions and
+    themselves blocking one another".
+
+    Screenshot 2: over a hundred units from several ALLIED factions packed
+    solid around one Roman city, with Britons reporting "this is going
+    nowhere. calling it off". The stall detector was right; the cause was
+    friendly congestion, which we had no representation of at all.
+
+    The ally ledger claims OBJECTIVES. Two factions with DIFFERENT objectives
+    down one trail read as no conflict whatsoever -- so the ledger was blind
+    to precisely the situation in the screenshot. This adds the corridor claim
+    and a congestion count, and keeps them apart from the threat field, which
+    brief-05 sec 1 is explicit about: threat asks "am I in danger", congestion
+    asks "is there room"."""
+    print('\n' + '=' * 78)
+    print('PLAYTEST 9 -- allies do not march down the same trail')
+    print('=' * 78)
+    fails = 0
+
+    def world(allies=True):
+        sc = dict(role='barb', t=100.0, allies=((0, 1),) if allies else ())
+        env = make_env(sc)
+        env['ai_now'] = 100.0
+        env['ai_p'] = {0: 0, 1: 1}
+        return env, Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+
+    A, B = (0.0, 0.0), (9000.0, 0.0)
+
+    # ---- a corridor claim is exclusive between ALLIES ----------------------
+    env, it = world()
+    it.run('AI_CorrTakeRoute', [0, A[0], A[1], B[0], B[1]])
+    ok = it.run('AI_RouteBusy', [1, A[0], A[1], B[0], B[1]])
+    fails += 0 if ok else 1
+    print('  %s an ally reading a route we are already walking finds it BUSY'
+          % ('PASS' if ok else 'FAIL'))
+
+    ok = not it.run('AI_RouteBusy', [0, A[0], A[1], B[0], B[1]])
+    fails += 0 if ok else 1
+    print('  %s ... and our own claim never blocks us' % ('PASS' if ok else 'FAIL'))
+
+    # a DIFFERENT axis out of the same start is free: the point is to send the
+    # second army somewhere else, not to stop it
+    ok = not it.run('AI_RouteBusy', [1, A[0], A[1], 0.0, 9000.0])
+    fails += 0 if ok else 1
+    print('  %s a different axis from the same start is FREE -- the claim redirects, '
+          'it does not forbid' % ('PASS' if ok else 'FAIL'))
+
+    # ---- an ENEMY corridor is not congestion ------------------------------
+    env, it = world(allies=False)
+    it.run('AI_CorrTakeRoute', [0, A[0], A[1], B[0], B[1]])
+    ok = not it.run('AI_RouteBusy', [1, A[0], A[1], B[0], B[1]])
+    fails += 0 if ok else 1
+    print('  %s a NON-ally on the same route is not a congestion problem -- that is '
+          'the threat field\'s job, and brief-05 warns against merging them'
+          % ('PASS' if ok else 'FAIL'))
+
+    # ---- the lease expires FAST -------------------------------------------
+    env, it = world()
+    it.run('AI_CorrTakeRoute', [0, A[0], A[1], B[0], B[1]])
+    env['ai_now'] = 100.0 + CONSTS['AI_CORR_LEASE'] + 1.0
+    ok = not it.run('AI_RouteBusy', [1, A[0], A[1], B[0], B[1]])
+    fails += 0 if ok else 1
+    print('  %s the lease expires after %.0fs -- a corridor is busy only while '
+          'someone is walking down it' % ('PASS' if ok else 'FAIL', CONSTS['AI_CORR_LEASE']))
+
+    # NEGATIVE CONTROL: the objective ledger alone cannot see this. Two
+    # DIFFERENT objectives down one trail is no conflict to it at all.
+    env, it = world()
+    env['ai_claim'][7] = 0                       # ally holds objective 7
+    ok = env['ai_claim'].get(9, -1) == -1
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL: the objective ledger records nothing about a '
+          'DIFFERENT objective (9) reached down the same trail -- which is exactly '
+          'the hundred-unit jam it could not see' % ('PASS' if ok else 'FAIL'))
+
+    # ---- a busy corridor makes a target dearer, never impossible ----------
+    def score(busy):
+        sc = dict(role='barb', t=100.0, army=600.0, allies=((0, 1),),
+                  points=[dict(kind=CONSTS['AI_PK_CITY'], x=9000.0, y=0.0, owner=5)])
+        env = make_env(sc)
+        env['ai_now'] = 100.0
+        env['ai_p'] = {0: 0, 1: 1}
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        if busy:
+            it.run('AI_CorrTakeRoute', [1, 0.0, 0.0, 9000.0, 0.0])
+        return it.run('AI_TargetScore', [0, 0])
+
+    free_s, busy_s = score(False), score(True)
+    ok = 0.0 < busy_s < free_s
+    fails += 0 if ok else 1
+    print('  %s a target down a busy trail is DISCOUNTED (%.4f vs %.4f) and never '
+          'zeroed' % ('PASS' if ok else 'FAIL', busy_s, free_s))
+
+    # ---- congestion counts FRIENDLY bodies, allies included ---------------
+    def crowd(units, owners):
+        sc = dict(role='barb', allies=((0, 1),))
+        env = make_env(sc)
+        env['ai_p'] = {0: 0, 1: 1}
+        nat = make_natives(env, 0.0)
+        del nat['AI_Congestion']                  # interpret the REAL body
+        seq, st = list(zip(units, owners)), {}
+        def enum_range(g, x, y, r, f):
+            import math
+            st['hits'] = [(u, o) for u, o in seq if math.hypot(u[0]-x, u[1]-y) <= r]
+        def enum_driver(g, fn):
+            for pair in st.get('hits', []):
+                st['cur'] = pair
+                fn()
+        nat['GetEnumUnit'] = lambda: st.get('cur')
+        nat['GetFilterUnit'] = lambda: st.get('cur')
+        nat['GetOwningPlayer'] = lambda p: p[1]
+        nat['GetUnitState'] = lambda p, s: 1000.0
+        nat['IsUnitType'] = lambda p, t: False
+        nat['CreateGroup'] = lambda: 'g'
+        nat['DestroyGroup'] = lambda g: None
+        nat['GroupEnumUnitsInRange'] = enum_range
+        nat['ForGroup'] = enum_driver
+        nat['Filter'] = lambda f: f
+        it = Interp(FUNCS, CONSTS, env, nat)
+        return it.run('AI_Congestion', [0, 0.0, 0.0])
+
+    near = [(100.0 * i, 0.0) for i in range(6)]
+    ours = crowd(near, [0] * 6)
+    ok = ours == 6
+    fails += 0 if ok else 1
+    print('  %s congestion counts our own bodies (%d of 6)' % ('PASS' if ok else 'FAIL', ours))
+
+    mixed = crowd(near, [0, 0, 0, 1, 1, 1])
+    ok = mixed == 6
+    fails += 0 if ok else 1
+    print('  %s ... and an ALLY\'S bodies too (%d of 6) -- counting only our own '
+          'would measure the wrong crowd entirely' % ('PASS' if ok else 'FAIL', mixed))
+
+    # ---- congestion is NOT threat -----------------------------------------
+    src = '\n'.join(FUNCS['AI_Congestion'][1] + FUNCS['AI_CorrFree'][1])
+    ok = 'wm_threat' not in src and 'ai_clS' not in src and 'wm_townThreat' not in src
+    fails += 0 if ok else 1
+    print('  %s congestion and corridors read NOTHING from the threat field -- '
+          'brief-05 sec 1 says merging them is the wrong shape'
+          % ('PASS' if ok else 'FAIL'))
+
+    tsrc = '\n'.join(FUNCS['AI_ThreatOn'][1] + FUNCS['AI_ThreatField'][1])
+    ok = 'AI_Congestion' not in tsrc and 'AI_CorrFree' not in tsrc
+    fails += 0 if ok else 1
+    print('  %s ... and the threat field reads nothing from them: the separation '
+          'holds in both directions' % ('PASS' if ok else 'FAIL'))
+
+    print('%s: allies price each other\'s corridors instead of walking into them'
+          % ('PASS' if not fails else 'FAIL'))
+    return 1 if fails else 0
+
+
 def mission_churn():
     """EXTERNAL AUDIT, defect 4 -- CONFIRMED BY RUNTIME DATA, not by reading.
 
@@ -4024,6 +4187,7 @@ def main():
     rc |= voice()
     rc |= perimeter()
     rc |= partition()
+    rc |= congestion()
     rc |= centroid()
     rc |= impossible()
     rc |= romanlock()

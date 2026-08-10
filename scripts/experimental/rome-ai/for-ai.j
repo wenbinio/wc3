@@ -254,6 +254,7 @@
     integer array    ai_exCount              // census by exclusion reason
     real    array    ai_exCV
     integer          ai_dispPid      = 0
+    integer          ai_congN        = 0
     real             ai_marchDX      = 0.0   // unit vector along the march line
     real             ai_marchDY      = 0.0
     real    array    ai_msRX                 // PLAYTEST 7: the muster point
@@ -769,6 +770,18 @@
                                                 // two disagree about the formation.
     constant real    AI_LANE_W        = 260.0   // lateral spacing between lanes
     constant real    AI_RANK_W        = 220.0   // PLAYTEST 9: depth spacing between ranks
+    // PLAYTEST 9 -- CONGESTION AND CORRIDORS (brief-05 sec 1 and sec 3).
+    // Deliberately NOT part of the threat field: the research is explicit that
+    // merging friendly crowding into enemy threat is the wrong shape. Threat
+    // asks "am I in danger", congestion asks "is there room".
+    constant real    AI_CORR_CELL     = 1600.0  // corridor cell size
+    constant real    AI_CORR_LEASE    = 45.0    // a route claim expires FAST
+    constant integer AI_CORR_SLOT     = 91173   // hashtable parent key, ours alone
+    constant real    AI_CONG_R        = 700.0   // friendly crowding radius
+    constant integer AI_CONG_FULL     = 14      // this many nearby is crowded
+    constant real    AI_CONG_STEP     = 900.0   // how far a rally slides to breathe
+    constant integer AI_CORR_SAMPLES  = 4       // route samples per claim
+    constant real    AI_CORR_PENALTY  = 0.55    // an ally is already on that trail
     integer          ai_ramType     = 0
     boolean          ai_ramWork     = false
     real             ai_ramX        = 0.0
@@ -2335,6 +2348,23 @@ endfunction
 //  World scan
 //===========================================================================
 
+// PLAYTEST 9: own units AND allies. The jam was allied armies in one another's
+// way, so a congestion count that saw only our own would measure the wrong
+// crowd entirely.
+function AI_FriendlyFilter takes nothing returns boolean
+    local unit f = GetFilterUnit()
+    if GetUnitState(f, UNIT_STATE_LIFE) <= 0.405 or IsUnitType(f, UNIT_TYPE_STRUCTURE) then
+        set f = null
+        return false
+    endif
+    if GetOwningPlayer(f) == ai_curP or IsPlayerAlly(GetOwningPlayer(f), ai_curP) then
+        set f = null
+        return true
+    endif
+    set f = null
+    return false
+endfunction
+
 function AI_OwnUnitFilter takes nothing returns boolean
     return GetOwningPlayer(GetFilterUnit()) == ai_curP and GetUnitState(GetFilterUnit(), UNIT_STATE_LIFE) > 0.405
 endfunction
@@ -2759,6 +2789,110 @@ endfunction
 //  Target selection
 //===========================================================================
 
+//===========================================================================
+//  PLAYTEST 9 -- CONGESTION AND CORRIDOR CLAIMS
+//
+//  The owner: "they block themselves" and "cooperating factions and
+//  themselves blocking one another" -- a hundred allied units packed solid
+//  around one Roman city, with Britons correctly reporting "this is going
+//  nowhere. calling it off". The stall detector was right; the cause was
+//  friendly congestion, which we had no representation of at all.
+//
+//  brief-05 sec 1 asks for a LOCAL, FAST-EXPIRING reservation layer near
+//  gates, landing sites and rally points, and is explicit that it must not be
+//  conflated with enemy threat. So this is its own subsystem: threat asks "am
+//  I in danger", congestion asks "is there room", and the two never mix.
+//
+//  The ally ledger claims OBJECTIVES. Two factions with different objectives
+//  reached through one trail read as no conflict at all -- which is precisely
+//  screenshot 2. A corridor claim covers the ROUTE, on a coarse grid, with a
+//  lease far shorter than an objective claim because a corridor is only busy
+//  while someone is walking down it.
+//===========================================================================
+
+// Coarse cell id for a point. Cells are big -- a corridor, not a tile.
+function AI_CorrKey takes real x, real y returns integer
+    local integer cx = R2I((x + 32768.0) / AI_CORR_CELL)
+    local integer cy = R2I((y + 32768.0) / AI_CORR_CELL)
+    return cx * 4096 + cy
+endfunction
+
+// Who holds this corridor cell, or -1 when it is free or the lease has run out.
+function AI_CorrHolder takes real x, real y returns integer
+    local integer k = AI_CorrKey(x, y)
+    local integer who = LoadInteger(ai_ht, AI_CORR_SLOT, k) - 1     // 0 = unset
+    if who < 0 then
+        return -1
+    endif
+    if ai_now - LoadReal(ai_ht, AI_CORR_SLOT + 1, k) >= AI_CORR_LEASE then
+        return -1                       // expired: leases are short on purpose
+    endif
+    return who
+endfunction
+
+// Free for this player when nobody holds it, we hold it, or the holder is not
+// an ally. An ENEMY corridor is not a reason to go elsewhere -- that is the
+// threat field's job, and confusing the two is the mistake brief-05 warns of.
+function AI_CorrFree takes integer pid, real x, real y returns boolean
+    local integer who = AI_CorrHolder(x, y)
+    if who < 0 or who == pid then
+        return true
+    endif
+    return not IsPlayerAlly(ai_p[who], ai_p[pid])
+endfunction
+
+function AI_CorrTake takes integer pid, real x, real y returns nothing
+    local integer k = AI_CorrKey(x, y)
+    call SaveInteger(ai_ht, AI_CORR_SLOT, k, pid + 1)
+    call SaveReal(ai_ht, AI_CORR_SLOT + 1, k, ai_now)
+endfunction
+
+// Claim the whole route, sampled along its length: the objective alone was
+// never the contended thing.
+// Sampling starts at 1, not 0: the origin cell is where the army already
+// STANDS, and claiming it would mark every route out of one home as busy --
+// which prices nothing, because it prices everything equally. The contended
+// thing is the trail and the ground at the far end, not the doorstep.
+function AI_CorrTakeRoute takes integer pid, real ax, real ay, real bx, real by returns nothing
+    local integer i = 1
+    loop
+        exitwhen i > AI_CORR_SAMPLES
+        call AI_CorrTake(pid, ax + (bx-ax)*I2R(i)/I2R(AI_CORR_SAMPLES), ay + (by-ay)*I2R(i)/I2R(AI_CORR_SAMPLES))
+        set i = i + 1
+    endloop
+endfunction
+
+// Is any part of this route held by an ALLY right now?
+function AI_RouteBusy takes integer pid, real ax, real ay, real bx, real by returns boolean
+    local integer i = 1
+    loop
+        exitwhen i > AI_CORR_SAMPLES
+        if not AI_CorrFree(pid, ax + (bx-ax)*I2R(i)/I2R(AI_CORR_SAMPLES), ay + (by-ay)*I2R(i)/I2R(AI_CORR_SAMPLES)) then
+            return true
+        endif
+        set i = i + 1
+    endloop
+    return false
+endfunction
+
+function AI_CongEnum takes nothing returns nothing
+    set ai_congN = ai_congN + 1
+endfunction
+
+// How crowded a point is with FRIENDLY bodies. Own units and allies both --
+// the screenshot was allies jamming each other, so counting only our own
+// would have measured the wrong thing.
+function AI_Congestion takes integer pid, real x, real y returns integer
+    local group g = CreateGroup()
+    set ai_curP = ai_p[pid]
+    set ai_congN = 0
+    call GroupEnumUnitsInRange(g, x, y, AI_CONG_R, Filter(function AI_FriendlyFilter))
+    call ForGroup(g, function AI_CongEnum)
+    call DestroyGroup(g)
+    set g = null
+    return ai_congN
+endfunction
+
 // AUDIT 4. Is this target barred because a mission just failed on it? Declared
 // here rather than beside the mission code because the SCORER is its first
 // consumer and JASS is single-pass.
@@ -2839,6 +2973,16 @@ function AI_TargetScore takes integer pid, integer i returns real
     // loop the live log recorded.
     if AI_MissionHeld(pid, i) then
         set sw = sw * AI_MS_HOLD_PENALTY
+    endif
+    // PLAYTEST 9. The ally ledger above claims OBJECTIVES. Two factions with
+    // DIFFERENT objectives down one trail read as no conflict at all, which is
+    // exactly the hundred-unit jam outside the Roman city. So the ROUTE is
+    // priced too: a corridor an ally is already walking makes this target
+    // dearer, and a different axis cheaper. A discount, never a veto -- the
+    // lease is short and the alternative to sharing a trail must never be
+    // standing still.
+    if AI_RouteBusy(pid, wm_fieldX[pid], wm_fieldY[pid], ai_ptX[i], ai_ptY[i]) then
+        set sw = sw * AI_CORR_PENALTY
     endif
     set u = null
     return v * prox * weak * stale * sw * (1.0 + AI_Noise(AI_NoiseAmp(pid)*0.5))
@@ -3726,7 +3870,10 @@ function AI_SendArmy takes integer pid, real x, real y, integer kind, unit tgt r
             set ai_holdCV = AI_HOLD_CAP * wm_army[pid]
         endif
     endif
-    // PLAYTEST 9: open the census and the rotating window for this dispatch
+    // PLAYTEST 9: walking a route CLAIMS it, for a short lease. This is what
+    // lets a second faction price the trail before it marches into it.
+    call AI_CorrTakeRoute(pid, wm_fieldX[pid], wm_fieldY[pid], x, y)
+    // open the census and the rotating window for this dispatch
     set ai_dispPid = pid
     set ai_dispSeen = 0
     set k = 0
@@ -4762,6 +4909,8 @@ endfunction
 // broken the loop was itself disarmed by the loop.
 function AI_MissionStart takes integer pid, integer t returns nothing
     local real d
+    local real nx
+    local real ny
     if ai_msState[pid] != AI_MS_NONE and ai_msTarget[pid] == t then
         set ai_msRestarts = ai_msRestarts + 1
         return
@@ -4799,6 +4948,23 @@ function AI_MissionStart takes integer pid, integer t returns nothing
     if IsTerrainPathable(ai_msRX[pid], ai_msRY[pid], PATHING_TYPE_WALKABILITY) then
         set ai_msRX[pid] = ai_homeX[pid]
         set ai_msRY[pid] = ai_homeY[pid]
+    endif
+    // PLAYTEST 9. A rally point is a place bodies have to FIT. If it is already
+    // crowded -- by our own army or an ally's, which is how the jam happened --
+    // slide it sideways along the march normal rather than gathering a second
+    // army on top of the first. One step, then accept it: hunting for perfect
+    // ground is how a muster becomes a way of standing still.
+    if AI_Congestion(pid, ai_msRX[pid], ai_msRY[pid]) >= AI_CONG_FULL and d > 1.0 then
+        set nx = -(ai_ptY[t] - ai_homeY[pid])/d
+        set ny = (ai_ptX[t] - ai_homeX[pid])/d
+        if AI_Congestion(pid, ai_msRX[pid] + nx*AI_CONG_STEP, ai_msRY[pid] + ny*AI_CONG_STEP) > AI_Congestion(pid, ai_msRX[pid] - nx*AI_CONG_STEP, ai_msRY[pid] - ny*AI_CONG_STEP) then
+            set nx = -nx
+            set ny = -ny
+        endif
+        if not IsTerrainPathable(ai_msRX[pid] + nx*AI_CONG_STEP, ai_msRY[pid] + ny*AI_CONG_STEP, PATHING_TYPE_WALKABILITY) then
+            set ai_msRX[pid] = ai_msRX[pid] + nx*AI_CONG_STEP
+            set ai_msRY[pid] = ai_msRY[pid] + ny*AI_CONG_STEP
+        endif
     endif
 endfunction
 

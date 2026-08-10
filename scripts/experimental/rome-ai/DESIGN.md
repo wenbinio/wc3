@@ -2501,3 +2501,111 @@ edge-firing fix predicted. Not the old problem.
 
 Playable **19,045,571**. Trace **448 assertions, 0 FAILs**; `npm test` 620
 pass; validate-map 191/192 with 152 warnings (parity).
+
+---
+
+## §23 Playtest 9 — the army arrives but does not fight properly
+
+Three complaints, two root causes, and one subsystem the research named that
+we had skipped.
+
+### 23.1 "Not with their entire army… they seem not to move berserkers"
+
+The type symptom named a filter, but the filter was not a type test.
+
+**From the map**: "Barbarian Berserker" is **six rawcodes**, one per barbarian
+faction, all cloned from `hfoo` — `h006 h00Z h013 h014 h016 h021` — with 24
+preplaced each. All six are already in `AI_BaseCost` (heavy melee, 100 gold),
+so they were valued correctly and never type-excluded. **Hypotheses A, B and D
+are refuted on the artifact**: no whitelist, no morph lineage, and no
+ability-keyed skip anywhere in the order path (they carry `Adef`/`Absk`, and
+nothing in our code reads an ability).
+
+**The cause was enumeration order against a fixed budget.** The Franks field
+70 units in their camp. In creation order — which is enumeration order — slots
+0–23 are the camp, hero, two `h011`, some `n001`, and twelve `h01I` spearmen.
+Their twelve `h013` berserkers occupy **slots 24–35**. `AI_ORDER_SLICE` is
+**24**. Every berserker sat one slot past the cut-off, every tick, forever,
+because `AI_NeedsOrder` returns true for any idle unit — so the prefix
+re-consumed the budget and the tail was never reached.
+
+**Head-of-line starvation: a fixed budget over a stable enumeration always
+serves the same prefix.** Both halves of the complaint, one cause. Hypothesis C
+was the closest — the garrison *is* type-blind, but it was the slice, not the
+hold, doing the selecting.
+
+The slice now **rotates**: same orders per dispatch, different units, every
+unit reached within `ceil(n / slice)` dispatches. The order economy is
+unchanged *by construction* — rotation changes which units are ordered, never
+how many (peak 234, mean 74.4, both unmoved).
+
+### 23.2 "They block themselves"
+
+`AI_LaneOf` produced **five** destination points for seventy units, so
+ordering the army anywhere piled it fourteen deep at the first constriction.
+A formation **slot** now replaces it — lane across the march line, rank back
+along it, dealt inside-out so the formation grows around the objective instead
+of queueing into it. That is brief-05 §3 (Pottinger), and it is the trail
+screenshot.
+
+### 23.3 "Cooperating factions blocking one another" — the missing subsystem
+
+The stall detector was **right**: `Britons: this is going nowhere. calling it
+off` is a correct observation of a real condition. The condition was friendly
+congestion, and we had no representation of it.
+
+The ally ledger claims **objectives**. Two factions with *different* objectives
+down one trail read as **no conflict at all** — precisely the hundred-unit jam.
+So two things were added, and deliberately kept apart from the threat field
+(brief-05 §1 is explicit that merging them is the wrong shape):
+
+* **Corridor claims** — a coarse cell grid, claimed along the route when an
+  army is dispatched, with a **45 s lease** because a corridor is busy only
+  while someone is walking down it. A busy trail makes a target dearer
+  (`AI_CORR_PENALTY`), never impossible. Sampling starts at the *second*
+  sample: the origin cell is where the army already stands, and claiming it
+  would mark every route out of one home as busy, which prices nothing because
+  it prices everything equally.
+* **Congestion** — a count of *friendly* bodies (own **and allied**, since
+  allies were the crowd) near a point, consulted when placing a rally, which
+  slides one step along the march normal rather than gathering a second army
+  on top of the first. One step only: hunting for perfect ground is how a
+  muster becomes a way of standing still.
+
+An **enemy** on our corridor is explicitly not a congestion problem — that is
+the threat field's job. The separation is asserted in both directions.
+
+### 23.4 The general forms now enforced
+
+Three, cumulative across rounds:
+
+1. A dispatch that issues nothing is never correct. *(§22)*
+2. Every mobile unit lands in exactly one census bucket — dispatched,
+   garrisoned, or excluded with a reason. **There is no silent fourth
+   category**, and "the berserkers just stand there" *was* one.
+3. No two units are ordered to the same point, and no two allied armies hold
+   one corridor at the same time.
+
+All three are code, not comment: the census is a real per-reason tally in
+`AI_SendEnum`, and it feeds the telemetry.
+
+### 23.5 Telemetry
+
+The `exit` event now carries committed / garrisoned / unreached counts and
+values, so the parser prints **"committed 34% (24 units); garrisoned 6,
+unreached 40"** and flags any non-zero *unreached*. The owner's "not with
+their entire army" is now a number rather than an impression.
+Negative-controlled: an `exit` event without the census fields must report no
+percentage rather than invent one.
+
+### 23.6 Harness fidelity
+
+The slot helpers are written `R2I(I2R(a)/I2R(b))` because **JASS integer
+division truncates and `trace.py` evaluates this source as Python, where `/`
+does not**. That mismatch already cost this project one bug (`AI_LANE_MID`);
+it is now impossible in the formation code, and the reason is in the source
+where the next person will see it.
+
+Playable **19,051,594**. Trace **472 assertions, 0 FAILs**; `npm test` 620
+pass; validate-map 191/192 with 152 warnings (parity); order economy peak 234
+/ mean 74.4, unchanged.
