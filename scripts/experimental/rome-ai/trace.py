@@ -257,7 +257,8 @@ def make_env(sc):
         'wm_army': d(sc.get('army', 0.0)),
         'wm_garrison': d(sc.get('garrison', 0.0)),
         'wm_threat': d(sc.get('threat', 0.0)),
-        'wm_threatX': d(0.0), 'wm_threatY': d(0.0),
+        'wm_threatX': d(0.0), 'wm_threatY': d(0.0), 'wm_massed': d(0.0), 'ai_scattered': d(False),
+        'ai_msRX': d(0.0), 'ai_msRY': d(0.0),
         'wm_fieldCV': d(sc.get('fieldCV', 0.0)),
         'wm_fieldX': d(sc.get('fieldX', 0.0)), 'wm_fieldY': d(sc.get('fieldY', 0.0)),
         'wm_fieldHPFrac': d(sc.get('fieldHP', 1.0)),
@@ -373,6 +374,10 @@ def make_natives(env, noise=0.0):
         # code read from for-ai.j
         'AI_GateState': lambda i: env['_gateState'].get(i, CONSTS['AI_GS_GONE']),
         'AI_GateLifeFrac': lambda i: env['_gateLife'].get(i, 1.0),
+        # the muster fraction needs a live unit enum, which only the muster
+        # section models; everywhere else it comes from the scenario and
+        # defaults to "already gathered" so the S1 assertions are unchanged
+        'AI_MusterFrac': lambda pid: env.get('_musterFrac', 1.0),
         # land component of a point: the union-find is built at init from the
         # engine's own pathing, which no interpreter can reach, so the graph
         # comes from the scenario and the CONSUMERS stay under test
@@ -1621,6 +1626,292 @@ def threatfield():
 
 
 # ------------------------------- STAGE 3 / S1: attacks as procedures
+
+def muster():
+    import math
+    """PLAYTEST 7, the owner's headline finding, verbatim:
+
+        "Ostrogoths push with half their army at base; practically true of
+         all factions."
+
+    Two causes, and the first is not subtle. AI_SendArmy sized the home
+    garrison as a FRACTION OF OUR OWN ARMY -- 0.55*wm_army, ramping in on any
+    visible threat at all -- so the bigger the army the more of it stayed
+    home. "Half their army at base" was that formula, literally. A garrison
+    is sized by what it has to beat.
+
+    The second is the muster. Round 7 deliberately refused to stage, arguing
+    that a staging hold is a new way to stand still. That was sound reasoning
+    about an UNBOUNDED hold, but it left AI_MS_STAGE a no-op that marched, so
+    nothing ever gathered -- which is why four factions were reporting a
+    scattered centroid every tick. The version of the round-7 argument that
+    survives the evidence is a BOUNDED muster: it gathers, it leaves when
+    enough has arrived, and the phase deadline guarantees it cannot wait
+    forever."""
+    print('\n' + '=' * 78)
+    print('PLAYTEST 7 -- the army concentrates before it commits')
+    print('=' * 78)
+    fails = 0
+    STAGE, MARCH = CONSTS['AI_MS_STAGE'], CONSTS['AI_MS_MARCH']
+
+    # ---- cause 1: the garrison hold ---------------------------------------
+    def held(army, threat):
+        """ai_holdCV after AI_SendArmy has sized it, via the REAL function."""
+        sc = dict(role='rome', army=army, threat=threat, fieldX=0.0, fieldY=0.0)
+        env = make_env(sc)
+        nat = make_natives(env, 0.0)
+        nat['CreateGroup'] = lambda: 'g'
+        nat['DestroyGroup'] = lambda g: None
+        nat['GroupEnumUnitsOfPlayer'] = lambda g, p, f: None
+        nat['ForGroup'] = lambda g, fn: None      # nobody to order; we want the sizing
+        nat['Filter'] = lambda f: f
+        nat['AI_UnitFor'] = lambda pid, k: 0
+        nat['AI_LanesAt'] = lambda x, y: CONSTS['AI_LANES']
+        nat['AI_SetLanes'] = lambda n: None
+        Interp(FUNCS, CONSTS, env, nat).run('AI_SendArmy', [0, 5000.0, 0.0,
+                                                           CONSTS['AI_ORD_ATTACKP'], None])
+        return env['ai_holdCV']
+
+    ARMY, SMALL = 600.0, 60.0
+    h = held(ARMY, SMALL)
+    ok = h <= 0.25 * ARMY
+    fails += 0 if ok else 1
+    print('  %s a SMALL threat (%.0f) against a big army (%.0f) holds %.0f back, not half'
+          % ('PASS' if ok else 'FAIL', SMALL, ARMY, h))
+
+    ok = h >= SMALL
+    fails += 0 if ok else 1
+    print('  %s ... but it does hold enough to BEAT that threat (%.0f >= %.0f)'
+          % ('PASS' if ok else 'FAIL', h, SMALL))
+
+    # the hold must scale with the THREAT, not with our army
+    h_big_army = held(2.0 * ARMY, SMALL)
+    ok = abs(h_big_army - h) < 1e-6
+    fails += 0 if ok else 1
+    print('  %s doubling OUR army does not change the garrison at all (%.0f vs %.0f) '
+          '-- this is the reported bug, inverted' % ('PASS' if ok else 'FAIL', h_big_army, h))
+
+    h_big_threat = held(ARMY, 4.0 * SMALL)
+    ok = h_big_threat > h
+    fails += 0 if ok else 1
+    print('  %s quadrupling the THREAT does raise it (%.0f -> %.0f)'
+          % ('PASS' if ok else 'FAIL', h, h_big_threat))
+
+    ok = held(ARMY, 10000.0) <= CONSTS['AI_HOLD_CAP'] * ARMY + 1e-6
+    fails += 0 if ok else 1
+    print('  %s an overwhelming threat is still capped at %.0f%% -- the army is never '
+          'entirely swallowed' % ('PASS' if ok else 'FAIL', 100.0 * CONSTS['AI_HOLD_CAP']))
+
+    # NEGATIVE CONTROL: the round-6 formula, on the same inputs
+    old = min(1.0, SMALL / 400.0) * 0.55 * ARMY
+    old_big = min(1.0, SMALL / 400.0) * 0.55 * (2.0 * ARMY)
+    ok = old_big > old
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL: the OLD formula grew with our own army (%.0f -> %.0f) '
+          'and this test distinguishes them' % ('PASS' if ok else 'FAIL', old, old_big))
+
+    # ---- cause 2: STAGE actually gathers ----------------------------------
+    def tick(frac, elapsed=0.0, units=None):
+        """A real AI_MissionStart, then one AI_MissionTick.
+
+        The mission is STARTED rather than hand-poked into STAGE, so the rally
+        point under test is the one the shipped AI_MissionStart computes.
+        `units` drives the REAL AI_MusterFrac; the enum driver applies the
+        radius the engine would apply."""
+        sc = dict(role='barb', t=100.0, army=400.0,
+                  points=[dict(kind=CONSTS['AI_PK_CITY'], x=8000.0, y=0.0, owner=5)],
+                  msState=CONSTS['AI_MS_NONE'], msTarget=-1)
+        env = make_env(sc)
+        env['ai_now'] = 100.0
+        env['ai_homeX'][0] = 0.0
+        env['ai_homeY'][0] = 0.0
+        nat = make_natives(env, 0.0)
+        nat['AI_Say'] = lambda pid, s: None
+        nat['AI_Tel'] = lambda ev, b: None
+        nat['AI_Num'] = str
+        nat['AI_TelAI'] = lambda pid: '1'
+        nat['AI_Raid'] = lambda pid: None
+        nat['AI_MoveOnTarget'] = lambda pid, t: env.setdefault('_orders', []).append('target')
+        nat['AI_SendArmy'] = lambda pid, x, y, k, tg: env.setdefault(
+            '_orders', []).append(('rally', x, y))
+        if units is None:
+            env['_musterFrac'] = frac
+        else:
+            del nat['AI_MusterFrac']                  # interpret the REAL body
+            seq, st, span = list(units), {}, {}
+            def enum_range(g, x, y, r, f):
+                # the ENGINE applies the radius; the driver must model that,
+                # or the muster count would be "every unit we own" and the
+                # assertion below could not distinguish arrived from absent
+                span['hits'] = [u for u in seq
+                                if math.hypot(u[0] - x, u[1] - y) <= r]
+            def enum_driver(g, fn):
+                for u in span.get('hits', []):
+                    st['cur'] = u
+                    fn()
+            nat['GetEnumUnit'] = lambda: st.get('cur')
+            nat['CreateGroup'] = lambda: 'g'
+            nat['DestroyGroup'] = lambda g: None
+            nat['GroupEnumUnitsInRange'] = enum_range
+            nat['ForGroup'] = enum_driver
+            nat['Filter'] = lambda f: f
+            nat['AI_CV'] = lambda u: u[2]
+            nat['GetUnitX'] = lambda u: u[0]
+            nat['GetUnitY'] = lambda u: u[1]
+            nat['GetUnitTypeId'] = lambda u: 0
+            nat['GetUnitState'] = lambda u, s: 100.0
+            nat['IsUnitLoaded'] = lambda u: False
+        it = Interp(FUNCS, CONSTS, env, nat)
+        it.run('AI_MissionStart', [0, 0])       # the REAL rally computation
+        env['ai_now'] = 100.0 + elapsed
+        it.run('AI_MissionTick', [0])
+        return env
+
+    env = tick(0.10)
+    ok = env['ai_msState'][0] == STAGE
+    fails += 0 if ok else 1
+    print('  %s with 10%% gathered the mission STAYS in the muster'
+          % ('PASS' if ok else 'FAIL'))
+
+    ok = any(isinstance(o, tuple) and o[0] == 'rally' for o in env.get('_orders', []))
+    fails += 0 if ok else 1
+    print('  %s ... and the army is ordered to the RALLY, not at the objective -- STAGE '
+          'was a no-op that marched' % ('PASS' if ok else 'FAIL'))
+
+    rally = [o for o in env.get('_orders', []) if isinstance(o, tuple)][0]
+    ok = 0.0 < rally[1] < 8000.0
+    fails += 0 if ok else 1
+    print('  %s ... at a point BETWEEN home and the objective (x=%.0f of 8000), so '
+          'gathering is the first step of the march' % ('PASS' if ok else 'FAIL', rally[1]))
+
+    env = tick(0.95)
+    ok = env['ai_msState'][0] == MARCH
+    fails += 0 if ok else 1
+    print('  %s once %.0f%% has arrived it MOVES OUT -- on arrival, not on a clock'
+          % ('PASS' if ok else 'FAIL', 100.0 * CONSTS['AI_MUSTER_FRAC']))
+
+    # the deadline is the escape hatch: the muster can never become a stall
+    env = tick(0.10, elapsed=CONSTS['AI_MS_STAGE_T'] + 1.0)
+    ok = env['ai_msState'][0] == MARCH
+    fails += 0 if ok else 1
+    print('  %s a muster that never fills LEAVES ANYWAY at the deadline -- round 7\'s '
+          'objection answered, not ignored' % ('PASS' if ok else 'FAIL'))
+
+    # ---- AI_MusterFrac itself, against real units -------------------------
+    # rally is at (1200, 0); AI_MUSTER_R is the counting radius
+    NEAR, FAR = (1200.0, 0.0, 100.0), (9000.0, 0.0, 100.0)
+    env = tick(None, units=[NEAR, NEAR, NEAR, FAR])
+    ok = env['ai_msState'][0] == MARCH and env['wm_massed'][0] == 300.0
+    fails += 0 if ok else 1
+    print('  %s the REAL AI_MusterFrac counts what arrived (%.0f CV of 400) and releases '
+          'at 75%%' % ('PASS' if ok else 'FAIL', env['wm_massed'][0]))
+
+    env = tick(None, units=[NEAR, FAR, FAR, FAR])
+    ok = env['ai_msState'][0] == STAGE and env['wm_massed'][0] == 100.0
+    fails += 0 if ok else 1
+    print('  %s ... and holds at 25%% (%.0f CV) -- the count is real, not a constant'
+          % ('PASS' if ok else 'FAIL', env['wm_massed'][0]))
+
+    print('%s: the army gathers before it commits, and cannot wait forever'
+          % ('PASS' if not fails else 'FAIL'))
+    return 1 if fails else 0
+
+
+def early_barbarians():
+    """PLAYTEST 7, the owner: "Early Barbarians should be extremely aggressive."
+
+    The scoreboard read West Rome 25 / East Rome 34 / North Rome 24 against
+    barbarians on 2-4. That was not a tuning miss. AI_UpdatePosture tested
+    `wm_army < 260 + 240*clock` BEFORE anything else and sent the faction to
+    POSTURE_CONSOLIDATE -- and early game a barbarian army is always under
+    that ramp, so the factions whose entire premise is arriving before Rome
+    is ready spent the opening massing instead.
+
+    The window is a posture WITH A CLOCK, so it expires on its own and cannot
+    become another state the AI can never leave."""
+    print('\n' + '=' * 78)
+    print('PLAYTEST 7 -- the opening belongs to the barbarians')
+    print('=' * 78)
+    fails = 0
+    EARLY = CONSTS['AI_EARLY_T']
+
+    def posture(role, t, army):
+        sc = dict(role=role, t=t, army=army, postureAt=-1.0,
+                  points=[dict(kind=CONSTS['AI_PK_CP'], x=900.0, y=0.0, owner=5)])
+        env = make_env(sc)
+        env['ai_now'] = t
+        env['ai_role'] = {0: CONSTS['AI_ROLE_ROME'] if role == 'rome'
+                          else CONSTS['AI_ROLE_BARB']}
+        nat = make_natives(env, 0.0)
+        nat['AI_Say'] = lambda pid, s: None
+        nat['AI_CanMass'] = lambda pid: 1.0        # massing IS possible: the trap
+        nat['AI_PostureName'] = lambda p: ''
+        Interp(FUNCS, CONSTS, env, nat).run('AI_UpdatePosture', [0])
+        return env['ai_posture'][0]
+
+    SMALL = 80.0        # a barbarian opening army, well under the clock ramp
+    p = posture('barb', EARLY * 0.25, SMALL)
+    ok = p == CONSTS['POSTURE_EXPAND']
+    fails += 0 if ok else 1
+    print('  %s an early barbarian with a SMALL army takes ground (posture=%s), it does '
+          'not mass first' % ('PASS' if ok else 'FAIL', p))
+
+    # NEGATIVE CONTROL: the same faction, same army, after the window
+    p_late = posture('barb', EARLY + 60.0, SMALL)
+    ok = p_late == CONSTS['POSTURE_CONSOLIDATE']
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL: the SAME faction and army after the window does '
+          'consolidate (posture=%s) -- the window is what changed, and it EXPIRES'
+          % ('PASS' if ok else 'FAIL', p_late))
+
+    # Rome is deliberately NOT given the window: the opening belonging to the
+    # barbarians is the point. Reported, not asserted -- Rome's posture is
+    # decided by its own branch and this work did not touch it.
+    print('  INFO Rome in the same window: posture=%s (its own branch, untouched)'
+          % posture('rome', EARLY * 0.25, SMALL))
+
+    # ---- the commit threshold ---------------------------------------------
+    def expand(role, t, army):
+        sc = dict(role=role, t=t, army=army,
+                  points=[dict(kind=CONSTS['AI_PK_CP'], x=900.0, y=0.0, owner=5,
+                               defence=0.0)])
+        env = make_env(sc)
+        env['ai_now'] = t
+        env['ai_role'] = {0: CONSTS['AI_ROLE_ROME'] if role == 'rome'
+                          else CONSTS['AI_ROLE_BARB']}
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        return it.run('AI_ScoreExpand', [0])
+
+    e_early = expand('barb', EARLY * 0.25, SMALL)
+    e_late = expand('barb', EARLY + 60.0, SMALL)
+    ok = e_early > e_late
+    fails += 0 if ok else 1
+    print('  %s the same small army wants the same point MORE inside the window '
+          '(%.3f vs %.3f)' % ('PASS' if ok else 'FAIL', e_early, e_late))
+
+    ok = expand('barb', EARLY * 0.25, 0.0) < 0.05
+    fails += 0 if ok else 1
+    print('  %s ... but a faction with NO army still scores near zero: the gate is '
+          'lowered, not removed' % ('PASS' if ok else 'FAIL'))
+
+    # ---- it commits on less of the army -----------------------------------
+    env = make_env(dict(role='barb', t=EARLY * 0.25))
+    env['ai_now'] = EARLY * 0.25
+    env['ai_role'] = {0: CONSTS['AI_ROLE_BARB']}
+    it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+    need_early = it.run('AI_MusterNeed', [0])
+    env['ai_now'] = EARLY + 60.0
+    need_late = it.run('AI_MusterNeed', [0])
+    ok = need_early < need_late
+    fails += 0 if ok else 1
+    print('  %s and it moves out on %.0f%% of its army rather than %.0f%% -- risk '
+          'tolerance up is exactly this' % ('PASS' if ok else 'FAIL',
+                                            100.0 * need_early, 100.0 * need_late))
+
+    print('%s: the opening is aggressive, and the aggression expires on a clock'
+          % ('PASS' if not fails else 'FAIL'))
+    return 1 if fails else 0
+
 
 def mission_churn():
     """EXTERNAL AUDIT, defect 4 -- CONFIRMED BY RUNTIME DATA, not by reading.
@@ -3186,6 +3477,8 @@ def main():
     rc |= threatfield()
     rc |= missions()
     rc |= mission_churn()
+    rc |= muster()
+    rc |= early_barbarians()
     rc |= centroid()
     rc |= impossible()
     rc |= romanlock()

@@ -222,6 +222,17 @@
     constant real    AI_MS_HOLD_HARD = 120.0  // the march itself failed: deadline/stall
     constant real    AI_MS_HOLD_PENALTY = 0.10 // discount, never a veto
     constant real    AI_STUCK_BIAS   = 0.30   // one decision's worth, then cleared
+    // PLAYTEST 7: a garrison is sized by the threat, not by our own army size
+    constant real    AI_HOLD_MATCH   = 1.50   // beat the visible threat, with margin
+    constant real    AI_HOLD_CAP     = 0.40   // ... but never more than this share
+    // PLAYTEST 7: the muster. STAGE was a no-op that marched; it now gathers.
+    constant real    AI_MUSTER_OFF   = 1200.0 // rally this far from home, toward the objective
+    constant real    AI_MUSTER_R     = 1400.0 // counted as "at the rally" within this
+    constant real    AI_MUSTER_FRAC  = 0.70   // march once this share has arrived
+    // PLAYTEST 7: "Early Barbarians should be extremely aggressive."
+    constant real    AI_EARLY_T      = 420.0  // the opening, in game seconds
+    constant real    AI_EARLY_COMMIT = 120.0  // army the opening treats as enough
+    constant real    AI_MUSTER_FRAC_EARLY = 0.45  // and it commits on less of it
     constant real    AI_MS_REFRESH   = 8.0    // re-issue interval while running
     constant real    AI_MS_THREAT    = 1.10   // threat vs garrison that interrupts
     constant real    AI_RETREAT_RATIO = 1.15   // the round-2 retreat bar, as a FLAG
@@ -233,6 +244,8 @@
     // A target a mission just failed on is barred until this game time.
     real    array    ai_msHold
     integer          ai_msRestarts   = 0     // suppressed same-target restarts
+    real    array    ai_msRX                 // PLAYTEST 7: the muster point
+    real    array    ai_msRY
     // Interrupt flags: SET by other subsystems, never scored against anything.
     // S3's threat field is designed to drive exactly these.
     boolean array    ai_ifThreat
@@ -473,6 +486,8 @@
     real    array    wm_army            // own combat value
     real    array    wm_garrison        // own CV within AI_HOME_R of home
     real    array    wm_threat          // VISIBLE enemy CV near own structures
+    boolean array    ai_scattered       // PLAYTEST 7: narrate the EDGE, not the tick
+    real    array    wm_massed          // PLAYTEST 7: own CV at the muster point
     real    array    wm_threatX
     real    array    wm_threatY
     real    array    wm_fieldCV
@@ -897,6 +912,20 @@ endfunction
 
 function AI_Clock takes nothing returns real
     return AI_C01(ai_now / AI_GAME_LEN)
+endfunction
+
+// PLAYTEST 7, the owner: "Early Barbarians should be extremely aggressive."
+// The scoreboard read Rome 25/34/24 against barbarians on 2-4, and the reason
+// was structural rather than a tuning miss: AI_UpdatePosture sent every
+// barbarian to POSTURE_CONSOLIDATE while its army was under the clock ramp,
+// which early game is always -- so the factions whose entire premise is
+// arriving before Rome is ready spent the opening building up.
+//
+// A migration-era barbarian does not wait to out-produce an empire. It takes
+// what is weakly held, now, and lives off it. That is a POSTURE WITH A CLOCK:
+// it expires on its own, so nothing here can become a permanent state.
+function AI_EarlyBarb takes integer pid returns boolean
+    return ai_role[pid] != AI_ROLE_ROME and ai_now < AI_EARLY_T
 endfunction
 
 //===========================================================================
@@ -2433,8 +2462,20 @@ function AI_ScanWorld takes integer pid returns nothing
     // ROUND 7: before ANYTHING geometric is measured from it. Every later
     // consumer -- the water test, the nearest-target scan, the march origin,
     // the lane normal, the ram hold point -- assumes this is a place.
+    // PLAYTEST 7. This fired EVERY TICK for four factions at once in the
+    // owner's log. It is not a state and nothing "regroups": AI_ValidateField
+    // is a per-tick correction that snaps an unwalkable mean onto real ground,
+    // so saying it repeatedly described a permanent condition as if it were an
+    // event -- and AI_Say only suppresses an IMMEDIATE repeat, so alternating
+    // with any other line let it through again. Narrate the EDGE, and say what
+    // is actually true.
     if AI_ValidateField(pid) then
-        call AI_Say(pid, "regrouping - the army was too scattered to have a centre")
+        if not ai_scattered[pid] then
+            set ai_scattered[pid] = true
+            call AI_Say(pid, "my lot are spread out all over - pulling them together")
+        endif
+    else
+        set ai_scattered[pid] = false
     endif
 
     // garrison = own CV near home
@@ -2979,6 +3020,13 @@ function AI_ScoreExpand takes integer pid returns real
     // expansion lose to every other goal; 1.20 makes a nearby undefended point
     // score near 1.0 and a town or city saturate, which is the intent.
     set bs = AI_C01(ai_bestS[pid] / 1.20)
+    // PLAYTEST 7. The commit threshold comes DOWN for an early barbarian: the
+    // army gate that says "not enough troops yet" is exactly the instinct that
+    // has to be switched off for the first few minutes. The gate is lowered,
+    // not removed -- a faction with no army at all still scores near zero.
+    if AI_EarlyBarb(pid) then
+        return 0.86 * bs * AI_C01(wm_army[pid] / AI_EARLY_COMMIT)
+    endif
     return 0.86 * bs * AI_C01(wm_army[pid] / (260.0 + 240.0*clock)) * (1.0 - 0.45*clock)
 endfunction
 
@@ -3077,6 +3125,12 @@ function AI_UpdatePosture takes integer pid returns nothing
     else
         if ai_harasser[pid] then
             set np = POSTURE_HARASS             // assigned role, item 7
+        elseif AI_EarlyBarb(pid) then
+            // PLAYTEST 7. Before the build-up branch, deliberately. This is
+            // the line that was keeping barbarians at home: their army is
+            // always under the clock ramp early, so CONSOLIDATE always won,
+            // so the opening was always spent massing. Expires on the clock.
+            set np = POSTURE_EXPAND
         elseif wm_army[pid] < 260.0 + 240.0*AI_Clock() and AI_CanMass(pid) > 0.5 then
             // ROUND 4, finding 1: "buy one" is only a posture if buying is
             // POSSIBLE. The same clock ramp that deadlocked the scorer would
@@ -3417,9 +3471,23 @@ function AI_SendArmy takes integer pid, real x, real y, integer kind, unit tgt r
     set ai_orderTarget = tgt
     set ai_issued = 0
     set ai_budget = AI_ORDER_SLICE
+    // PLAYTEST 7, the owner's headline finding: "Ostrogoths push with half
+    // their army at base; practically true of all factions." This formula was
+    // it, literally. The hold was sized as a FRACTION OF OUR OWN ARMY --
+    // 0.55*wm_army, ramping in on any threat at all -- so the bigger the army
+    // the more of it stayed home, and a single visible raider near a Roman
+    // capital pinned hundreds of CV in place. wm_threat > 0 is close to
+    // permanent on this map.
+    //
+    // A garrison is sized by WHAT IT HAS TO BEAT, not by what we happen to
+    // own. Match the visible threat with a margin, and keep the fraction only
+    // as a cap so a huge threat cannot swallow the whole army.
     set ai_holdCV = 0.0
     if wm_threat[pid] > 0.0 then
-        set ai_holdCV = AI_C01(wm_threat[pid] / 400.0) * 0.55 * wm_army[pid]
+        set ai_holdCV = AI_HOLD_MATCH * wm_threat[pid]
+        if ai_holdCV > AI_HOLD_CAP * wm_army[pid] then
+            set ai_holdCV = AI_HOLD_CAP * wm_army[pid]
+        endif
     endif
     call GroupEnumUnitsOfPlayer(g, ai_p[pid], Filter(function AI_OwnUnitFilter))
     call ForGroup(g, function AI_SendEnum)
@@ -4401,12 +4469,42 @@ function AI_MissionAbort takes integer pid, integer reason returns nothing
     endif
 endfunction
 
+// PLAYTEST 7. How much of the army has to be present before it moves out.
+// An early barbarian commits on less: risk tolerance up is exactly this.
+function AI_MusterNeed takes integer pid returns real
+    if AI_EarlyBarb(pid) then
+        return AI_MUSTER_FRAC_EARLY
+    endif
+    return AI_MUSTER_FRAC
+endfunction
+
+// PLAYTEST 7. What share of our army has actually reached the muster point.
+// Measured, not assumed: the owner's report was that half the army never
+// leaves, and the only way to know a muster worked is to count what arrived.
+function AI_MusterFrac takes integer pid returns real
+    local group g
+    if wm_army[pid] <= 0.0 then
+        return 1.0                          // nothing to gather: never block
+    endif
+    set ai_curP = ai_p[pid]
+    set ai_curPid = pid
+    set g = CreateGroup()
+    call GroupEnumUnitsInRange(g, ai_msRX[pid], ai_msRY[pid], AI_MUSTER_R, Filter(function AI_OwnUnitFilter))
+    call AI_ResetAcc()
+    call ForGroup(g, function AI_SumOwnArmy)
+    call DestroyGroup(g)
+    set g = null
+    set wm_massed[pid] = ai_accCV
+    return ai_accCV / wm_army[pid]
+endfunction
+
 // AUDIT 4. Idempotent: a mission already running on this target is NOT
 // restarted. AI_Execute calls this every tick it holds an objective, which
 // before the fix re-stamped the phase deadline every second -- so the march
 // deadline could never expire either, and the one backstop that would have
 // broken the loop was itself disarmed by the loop.
 function AI_MissionStart takes integer pid, integer t returns nothing
+    local real d
     if ai_msState[pid] != AI_MS_NONE and ai_msTarget[pid] == t then
         set ai_msRestarts = ai_msRestarts + 1
         return
@@ -4419,6 +4517,22 @@ function AI_MissionStart takes integer pid, integer t returns nothing
     set ai_msTarget[pid] = t
     set ai_msPhaseEnd[pid] = ai_now + AI_MS_STAGE_T
     set ai_msNextOrder[pid] = 0.0
+    // PLAYTEST 7. The muster point: on our own ground, a short way out of home
+    // ON THE LINE TO THE OBJECTIVE, so gathering is already the first step of
+    // the march rather than a detour backwards. If the objective is closer
+    // than the offset, muster where it is -- there is nothing to gather for.
+    set ai_msRX[pid] = ai_homeX[pid]
+    set ai_msRY[pid] = ai_homeY[pid]
+    set d = AI_Dist(ai_homeX[pid], ai_homeY[pid], ai_ptX[t], ai_ptY[t])
+    if d > 1.0 then
+        if d < AI_MUSTER_OFF then
+            set ai_msRX[pid] = ai_ptX[t]
+            set ai_msRY[pid] = ai_ptY[t]
+        else
+            set ai_msRX[pid] = ai_homeX[pid] + (ai_ptX[t] - ai_homeX[pid])/d*AI_MUSTER_OFF
+            set ai_msRY[pid] = ai_homeY[pid] + (ai_ptY[t] - ai_homeY[pid])/d*AI_MUSTER_OFF
+        endif
+    endif
 endfunction
 
 // True when a mission consumed this tick, so the caller must NOT re-score.
@@ -4446,24 +4560,50 @@ function AI_MissionTick takes integer pid returns boolean
         set ai_msState[pid] = AI_MS_NONE    // taken; the micro tick narrates it
         return false
     endif
-    // 3. DEADLINE. A phase that cannot finish RELEASES rather than waiting.
+    // 3. MUSTER COMPLETE. PLAYTEST 7. The army gathers before it commits, and
+    //    leaves as soon as enough of it has arrived -- not when a clock says
+    //    so. The deadline below is the escape hatch, not the mechanism.
+    if ai_msState[pid] == AI_MS_STAGE and AI_MusterFrac(pid) >= AI_MusterNeed(pid) then
+        set ai_msState[pid] = AI_MS_MARCH
+        set ai_msPhaseEnd[pid] = ai_now + AI_MS_MARCH_T
+        set ai_msNextOrder[pid] = 0.0       // re-order immediately, at the target
+        call AI_Say(pid, "formed up - moving out")
+    endif
+    // 4. DEADLINE. A phase that cannot finish RELEASES rather than waiting.
     if ai_now >= ai_msPhaseEnd[pid] then
         if ai_msState[pid] == AI_MS_STAGE then
+            // the muster did not fill in time. Go anyway with what came: an
+            // unbounded hold is a new way to stand still, which is the whole
+            // reason round 7 refused to stage in the first place.
             set ai_msState[pid] = AI_MS_MARCH
             set ai_msPhaseEnd[pid] = ai_now + AI_MS_MARCH_T
+            set ai_msNextOrder[pid] = 0.0
+            call AI_Say(pid, "not waiting any longer - moving out with what I have")
         else
             call AI_MissionAbort(pid, 4)
             set ai_ifStuck[pid] = true
             return false
         endif
     endif
-    // 4. RUNNING. One order per refresh, not one per tick -- this is where
+    // 5. RUNNING. One order per refresh, not one per tick -- this is where
     //    the order economy improves rather than degrades.
     if ai_now >= ai_msNextOrder[pid] then
         set ai_msNextOrder[pid] = ai_now + AI_MS_REFRESH
         set ai_target[pid] = t
-        call AI_MoveOnTarget(pid, t)
-        call AI_Raid(pid)
+        if ai_msState[pid] == AI_MS_STAGE then
+            // PLAYTEST 7. The muster: everything walks to ONE place on our own
+            // ground, between home and the objective. Round 7 deliberately
+            // marched while gathering, on the grounds that a staging hold is a
+            // new way to stand still -- sound at the time, but the evidence
+            // says the army never converged at all, so there was no gathering
+            // to march during. A bounded muster is the version of that
+            // argument that survives: it cannot stand still, because the phase
+            // deadline above always ends it.
+            call AI_SendArmy(pid, ai_msRX[pid], ai_msRY[pid], AI_ORD_MOVE, null)
+        else
+            call AI_MoveOnTarget(pid, t)
+            call AI_Raid(pid)
+        endif
     endif
     return true
 endfunction
