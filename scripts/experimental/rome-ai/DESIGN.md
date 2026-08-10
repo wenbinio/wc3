@@ -2228,3 +2228,182 @@ install or `CustomMapData`); if absent, `-ailog` and capture chat. Either output
 feeds the same parser.
 
 Playable **19,036,091**, probe **19,048,128**. Trace **348 assertions, 0 FAILs**.
+
+---
+
+## §21 The external audit, verified — and the first telemetry-driven round
+
+An external model audited the branch at `0a88c1d` and reported seven defects.
+This repo's doctrine is that another agent's report is not a fact, so every
+one was checked against the source before anything was changed. The verdicts,
+with the evidence, are below. Then the telemetry shipped in `8d0e5ee` landed
+in the owner's hands and **confirmed defect 4 from runtime data**, which
+reordered the whole queue.
+
+### 21.1 Verdicts
+
+| # | Claim | Verdict | Evidence |
+|---|---|---|---|
+| 1 | S3 threat field is inert — displacement is always zero | **CONFIRMED** | `for-ai.j` `AI_TrackArmies`: the only writes to `ai_clDX/ai_clDY` are `= 0.0` in the new-cluster branch. The merge branch never writes them, and the cluster set is rebuilt from index 0 every call, so no value survives between calls. `AI_ThreatOn` therefore always sees `dl = 0`: the heading override cannot fire and `dfut` collapses to `dcur`. The comment above the write promises "displacement measured against the nearest OLD cluster centre" — that code was never written. `trace.py`'s `threat()` helper injects `dx, dy` straight into `env['ai_clDX']`, so the tests exercised a state production can never reach. **The fourth instance of the instrument-failure family.** |
+| 2 | A remote threat produces no remote defence | **CONFIRMED** | `AI_ThreatField` computes `wm_townIdx` (which of our points is most threatened). Its only reader is `AI_SetFlags`, which uses it to raise a boolean. `AI_Execute`'s `GOAL_DEFEND` branch sends the army to `wm_threatX/Y`, which `AI_ScanWorld` derives from a `GroupEnumUnitsInRange` centred on `ai_homeX/Y` with `AI_HOME_R`. So a threat against a distant holding raises the flag and then sends the army home. |
+| 3 | Registries go stale | **CONFIRMED** | The map's own `Trig_Open_*`/`Trig_Close_*` call `ReplaceUnitBJ` at eight sites in `war3map.j`, which removes the unit. `AI_GateEnum` caches handles once at init. `AI_GateState` returned `AI_GS_GONE` for a dead or removed handle — so a gate the human had just **closed** read to us as a breach, inverting Guard A in the direction that walks an army into a shut gate. Points are *not* replaced (`SetUnitOwner` preserves the handle, and the map never calls `RemoveUnit`), so the claim is specific to gates. |
+| 4 | `ai_ifStuck` has no reader; abort does not clean up | **CONFIRMED, then confirmed again by the live log** | `ai_ifStuck` had exactly one writer (`AI_MissionTick`, the march-deadline branch) and one reset, and no reader anywhere. `AI_MissionAbort` cleared `ai_msState` only. See §21.3. |
+| 5 | Naval is not a ferry | **CONFIRMED in substance** | `AI_FindShip` returns the first ship the enum yields, not the nearest to the army or the crossing. `AI_CountLoaded` counts **all** of our loaded units map-wide, so the sail gate can fire while nothing is aboard the chosen ship, and the "cargo ashore" test is equally global. There is no capacity model and no second trip: one boat, one crossing, and anything left behind is left behind. |
+| 6 | The fog contract is inaccurate | **CONFIRMED — and the owner should be told plainly** | `ai_ptOwner[]` is written by `AI_RefreshPointMemory` under the `IsUnitVisible` guard and **never read**. Every consumer — `AI_TargetScore`, `AI_CapitalTarget`, `AI_RaidTarget`, `AI_MissionTick`, the world scan — calls `GetOwningPlayer(ai_pt[i])` live, which works through fog. So: **observed enemy STRENGTH is fog-honest, territorial OWNERSHIP is not.** The map publishes per-faction control-point *counts* to everyone on the `udg_CPs8` multiboard, so the aggregate is public; per-point ownership is not, and we read it anyway. This is not resource cheating, and `AI_HANDICAP` is still 1.0 — but "fog respected" was too strong a claim and the S3 header comment ("Fog-honest by construction") overstates what holds. |
+| 7 | Order acknowledgement is cached intent | **CONFIRMED** | `AI_TryOrder` writes the intended order into the hashtable **before** issuing it, and discards the boolean returned by `IssuePointOrder`/`IssueTargetOrder`. A refused order is remembered as issued, and `AI_NeedsOrder` then suppresses retries for the whole memory window. |
+
+Nothing was refuted. Two corrections were sent back to the auditor: its note
+that no telemetry was committed predates `8d0e5ee`; and its observation that
+`trace.py` was not invoked by `npm test` is correct and is now fixed
+(`test/rome-ai-trace.test.js`). Adding Fall of Rome to `npm run preflight` is
+**not** possible — preflight operates on committed map source directories and
+this map is third-party, which gotcha 9 forbids committing.
+
+### 21.2 Fixed this round: registry identity (defect 3)
+
+A gate never moves, so **position plus orientation is the identity and the
+handle is only a cache**. `AI_GateValid` tests the cache (`GetUnitTypeId == 0`
+is the engine's own removed-unit signal), `AI_GateRefresh` re-resolves by
+position when it has gone stale, and every reader refreshes first. Finding
+nothing at the position means the gate really was destroyed: the entry is
+nulled and `GONE` becomes honest again. A latched "stuck" verdict is dropped
+along with the handle it was latched on.
+
+`trace.py`'s new `gate_identity()` interprets the **real** `AI_GateState`
+against a modelled unit world rather than the stub the routing sections use.
+Its negative control is synthesised from the shipped body with the
+`AI_GateRefresh` line deleted, and it fires; it also fails loudly if that line
+ever stops existing, so it cannot go inert.
+
+### 21.3 The telemetry paid for itself in one game (defect 4)
+
+The owner played the `8d0e5ee` build and the file channel worked. These
+consecutive lines were in the first screenshot:
+
+```
+FORAI|1|161|121|mis|9|1|end|1|108
+FORAI|1|162|121|mis|9|1|start|0|108
+FORAI|1|163|122|mis|2|1|end|1|195
+FORAI|1|164|122|mis|2|1|start|0|195
+```
+
+A mission ends and restarts on the **same target in the same second**, for
+two factions, repeatedly. The auditor predicted this from the source; the log
+proved it. **This is the first defect in eight rounds diagnosed from data
+rather than from a human describing what a game looked like.**
+
+Two independent causes:
+
+1. `AI_MissionAbort` cleared `ai_msState` and nothing else, so the next tick
+   re-derived the identical answer from an unchanged world. It now tears down
+   target, claim, progress and commit clock, and **bars the target** for a
+   hold-off graded by how the mission ended (30 s for an interruption, 120 s
+   for a failed march). Clearing `ai_target` is also what lets `AI_NavIdle`
+   end a crossing begun for the dead mission.
+2. `AI_Execute` calls `AI_MissionStart` every tick it holds an objective, and
+   `AI_MissionStart` was unconditional — so it restarted what it had just
+   ended **and re-stamped the phase deadline**, disarming the one backstop
+   that would have broken the loop. It is now idempotent.
+
+The hold-off is a **discount in `AI_TargetScore`, never a veto**. A veto would
+be a fifth way to make an action impossible, and every one of those we have
+shipped became a state the AI could not leave.
+
+`ai_ifStuck` finally has a reader, and a narrow one: a march that ran out its
+deadline discounts SIEGE and EXPAND for exactly one decision, then clears.
+
+`parse-events.py` gained `detect_churn()`, and its self-test drives the
+**owner's own logged lines** — it flags 9/108 and 2/195, does not flag
+faction 9's correct end-108-start-110, and does not flag a restart 290 s later.
+
+### 21.4 The army never concentrated (playtest 7)
+
+> "Ostrogoths push with half their army at base; practically true of all
+> factions."
+
+Not a tuning miss. `AI_SendArmy` sized the home garrison as a **fraction of
+our own army** — `0.55 * wm_army`, ramping in on any visible threat at all —
+so the bigger the army the more of it stayed home, and `wm_threat > 0` is
+close to permanent on this map. "Half their army at base" was that formula,
+literally. A garrison is now sized by **what it has to beat**: match the
+visible threat with a margin, capped at 40 %. Doubling our own army no longer
+changes it at all.
+
+The second half is the muster. **Round 7's deviation is revisited here.** It
+refused to stage on the grounds that a staging hold is a new way to stand
+still — sound about an *unbounded* hold, but it left `AI_MS_STAGE` a no-op
+that marched, so nothing ever gathered and there was no gathering to march
+during. That is why four factions were reporting a scattered centroid every
+tick. The version of the argument that survives the evidence is a **bounded
+muster**: gather at a rally point on our own ground between home and the
+objective, release when enough has *arrived* (measured by a real enum, not
+assumed), and let the existing phase deadline guarantee it leaves anyway.
+
+The `regrouping` line itself was also wrong. `AI_ValidateField` is a per-tick
+correction, not a state — and `AI_Say` only suppresses an *immediate* repeat,
+so alternating with any other line let it through again. It narrated a
+permanent condition as an event, four factions at a time. It now fires on the
+**edge**. So: **regrouping was never a state and therefore never a trap** —
+the trap-shaped thing was the army split that made the centroid invalid, and
+that is what the muster and the garrison fix address.
+
+### 21.5 The opening belongs to the barbarians (playtest 7)
+
+> "Early Barbarians should be extremely aggressive."
+
+`AI_UpdatePosture` tested `wm_army < 260 + 240*clock` **before anything else**
+and sent the faction to `POSTURE_CONSOLIDATE`. Early game a barbarian army is
+always under that ramp, so the factions whose entire premise is arriving
+before Rome is ready spent the opening massing. Hence Rome 25/34/24 against
+barbarians on 2–4.
+
+There is now an opening window (`AI_EARLY_T`, 420 s): EXPAND posture, commit
+threshold down (`AI_EARLY_COMMIT`), and it moves out on 45 % of its army
+instead of 70 %. It is **a posture with a clock** and expires on its own, so
+it cannot become another state the AI can never leave. The negative control
+is the same faction with the same army after the window, which consolidates.
+
+### 21.6 Voice (playtest 7)
+
+Four voices — horde, tribes, Rome, Persia — on the high-traffic goal and
+posture announcements, plus a humanised rewrite of the twenty situational
+lines. Presentation only: no decision changes and no information is added.
+Both hard constraints are **asserted rather than trusted** — no voice helper
+is reachable from `AI_Tel` and no `AI_Tel` site interpolates a readable name
+(11 sites checked), and `AI_Say` still routes through `AI_BroadcastAllies`
+gated on `ai_talk`, so `-aispy` and the scoping are unchanged.
+
+Two harness findings fell out of the pass and are worth more than the prose:
+
+* A round-3 source guard over a real invariant was keyed on the chat text
+  `"moving on ..."`, so renaming a line failed it **for a cosmetic reason**.
+  Source guards must key on structure, never on player-facing text — that
+  text is meant to change. Rewritten with the bounded `(?!endif)` form and
+  negative-controlled both ways.
+* `jass_expr_to_py` rewrites `and`/`or`/`not` textually without respecting
+  string boundaries, so a returned **string** containing one of those words
+  comes back with altered spacing. Harmless for every numeric and boolean
+  path, but no assertion may compare a voiced line for equality. Recorded in
+  `voice()`'s docstring.
+
+### 21.7 Still open, in order
+
+1. **Defect 1** — S3 displacement is dead code. The fix must include an
+   assertion that fails **if displacement is always zero over a run**, so the
+   dead-code state is itself detectable rather than merely fixed.
+2. **Defect 2** — remote threat must produce remote defence (`wm_townIdx` is
+   already computed and already correct; nothing consumes it).
+3. **Defect 5** — the ferry: nearest ship, per-ship load accounting, capacity,
+   and a second trip.
+4. **Defect 7** — order acknowledgement: record intent only on a `true` return.
+5. **Defect 6** — decide deliberately whether to *fix* the ownership read
+   (route it through `ai_ptOwner`, accepting a stale map) or to *restate* the
+   contract. Either way the claim in the S3 header must stop overstating.
+
+Deferred behind all of it, unchanged: the cheating dial (§12.3, two separable
+knobs), theatres, counter relationships, control points as explicit income,
+and the temporary Roman–barbarian alliance.
+
+Playable **19,044,140**. Trace **436 assertions, 0 FAILs**; `npm test` 620
+pass; preflight 7 maps 0 FAIL; validate-map 191/192 with 152 warnings, which
+is parity with the unmodified map.
