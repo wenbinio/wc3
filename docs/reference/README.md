@@ -106,3 +106,30 @@ the surveys are snapshots; the structural claims and §8 should age well.
 The one open premise is S9 — whether the engine captain works on a
 workerless, hall-less map — which is a 30-minute in-game experiment.
 
+
+## warsmash-eval-2026-08.md (2026-08-10)
+
+**Question answered**: can WarsmashModEngine be driven headlessly as an
+**outcome** harness for Fall of Rome — ticked programmatically so an AI's
+territory-over-time can be measured without a human? **Answer: not blocked by
+code, blocked by data.** The engine's `:core` builds headlessly here (system
+Gradle 8 + JDK 21; the bundled `./gradlew` 7.3.3 cannot), the simulation
+package has zero `Gdx.*` calls and a data-only `CSimulation` constructor, it
+parses this map's w3i **v31** (so the drafted v32/v33 fix is NOT on this path),
+and — the strong result — its JASS front end **parses and fully resolves** the
+map's 553 KB `war3map.j` AND the rome-ai build in ~100 ms with zero unresolved
+functions, then executes `main()`. But `CSimulation` is constructed in exactly
+one place inside the 3,472-line renderer (no headless entry point exists), and
+object data needs **69 Blizzard SLK/TXT tables** the project ships none of; no
+game data was downloaded, so no run and **no territory data** was produced.
+Also: 71 of the 260 natives this map needs are unimplemented and **fail
+silently** (nulled returns) — 45 cosmetic, 14 gameplay-relevant, incl.
+`IssuePointOrder` and `IsUnitVisible`. §5 is the effort estimate (4.5–6
+engineer-days *after* a user-supplied few-MB headless data bundle, plus an
+unbounded validation bill), §6 the fidelity warnings, and **§8 the spin-off
+worth more than the harness**: Warsmash's `:jassparser` is standalone and
+game-data-free, so it could give `lib/sim` JASS execution — the layer rome-ai
+has never had. Reproduction kit: `scripts/experimental/warsmash-eval/`.
+**Staleness**: engine facts pinned to commit `f9e0aee` (2025-12-08); re-run
+`native-coverage.py` rather than citing its numbers. The data requirement and
+the missing headless entry point are structural and age slowly.
