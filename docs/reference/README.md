@@ -41,6 +41,16 @@ question it answers, its date, and how it goes stale.
 - **ai-model-workorder.md** (2026-08) — reusable work-order template for
   commissioning MDL models from an external code LLM (gotchas 14+19 baked
   in). Update the skeleton if the sanity gate ever tightens.
+- **fall-of-rome-voices.md** (2026-08-10) — what should each of the twelve
+  Fall of Rome factions sound like in the rome-ai chat layer, and what
+  strings does an implementer need? Decomposed from the map itself (quest
+  briefs, heroes, measured holdings, alliance researches); twelve character
+  briefs, 600 lines in three tiers, a PRNG-free selection rule and a
+  cross-faction echo suppressor. Also records three mechanics the map
+  advertises and does not implement (70-CP victory, the 10-minute barbarian
+  free-for-all, camp reinforcement spawns). Spec only — nothing wired;
+  goes stale if the AI adds or renames an AI_Say site, so re-check §5.2
+  against the call sites before implementing.
 - **translation-candidates-2026-08.md** (2026-08-08) — which non-English
   maps are worth a full EN translation pass (KR/CN + RU/EU/JP/VN sweep,
   concept-forward non-RPG criterion)? Merged top-5 + decomposition
