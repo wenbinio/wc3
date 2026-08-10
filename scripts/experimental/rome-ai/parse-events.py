@@ -86,6 +86,35 @@ def integrity(seqs):
     return problems
 
 
+CHURN_WINDOW = 5        # seconds; the logged defect restarted within 0
+
+
+def detect_churn(events, window=CHURN_WINDOW):
+    """Missions that ended and restarted on the SAME target inside `window`.
+
+    Returns {(player, target): [(end_time, delay), ...]}. A mission ending and
+    immediately restarting on the target it just failed on means the abort did
+    not tear down the state the decision was re-derived from -- audit defect 4,
+    which the owner's first telemetry run recorded within two minutes.
+    """
+    pending, hits = {}, defaultdict(list)
+    for e in events:
+        if e['ev'] != 'mis' or len(e['f']) < 5:
+            continue
+        try:
+            p, phase, tgt = int(e['f'][0]), e['f'][2], e['f'][4]
+        except (ValueError, IndexError):
+            continue
+        if phase == 'end':
+            pending[(p, tgt)] = e['t']
+        elif phase == 'start':
+            # a start event carries the target in the same field position
+            t0 = pending.pop((p, tgt), None)
+            if t0 is not None and e['t'] - t0 <= window:
+                hits[(p, tgt)].append((t0, e['t'] - t0))
+    return dict(hits)
+
+
 def report(events, csv_path=None):
     ai_mask = None
     seed = None
@@ -191,6 +220,25 @@ def report(events, csv_path=None):
                 print('      ** %d attack(s) ended "going nowhere" -- stall detector fired'
                       % ends[p][4])
 
+    # ---- churn: the defect signature the FIRST live log carried ------------
+    # A mission that ends and restarts on the SAME target within a few seconds
+    # is not a decision, it is an oscillation. The owner's very first run
+    # showed faction 9 doing it on target 108 and faction 2 on target 195,
+    # once per second. The parser flags it by itself now, so no one has to
+    # notice it by eye in a screenshot again.
+    churn = detect_churn(events)
+    print('\n-- MISSION CHURN: end and restart on the same target ' + '-' * 19)
+    if not churn:
+        print('   none detected (window %ds)' % CHURN_WINDOW)
+    else:
+        for (p, tgt), hits in sorted(churn.items(), key=lambda kv: -len(kv[1])):
+            worst = min(dt for _, dt in hits)
+            print('   ** %-13s target %-4s restarted %d time(s), fastest %ds after the end'
+                  % (FACTION.get(p, p), tgt, len(hits), worst))
+        print('   ** THIS IS A DEFECT SIGNATURE, not a statistic: aborting is supposed')
+        print('      to tear down the mission context so the same answer cannot be')
+        print('      re-derived. See audit defect 4 and trace.py mission_churn().')
+
     for label, ev in (('GATES toggled', 'gate'), ('EMBARK', 'emb'),
                       ('DISEMBARK', 'dis'), ('HERO withdrawn', 'hero')):
         n = sum(1 for e in events if e['ev'] == ev)
@@ -239,7 +287,45 @@ def selftest():
     print('   %s duplicate extraction is detected: %s'
           % ('PASS' if any('duplicate' in x for x in p3) else 'FAIL',
              '; '.join(p3) if p3 else 'NOT DETECTED'))
-    ok = bool(p2) and any('duplicate' in x for x in p3)
+    # The churn detector, driven by the OWNER'S OWN LOGGED LINES, transcribed
+    # verbatim from the first live run. These are the lines that confirmed
+    # audit defect 4 -- so the detector is proven against the real artifact it
+    # was written for, not against a fixture invented to make it pass.
+    print('\n-- churn detector, against the real logged defect ' + '-' * 23)
+    LIVE = '\n'.join([
+        'FORAI|1|161|121|mis|9|1|end|1|108|-1080707829',
+        'FORAI|1|162|121|mis|9|1|start|0|108|759280485',
+        'FORAI|1|163|122|mis|2|1|end|1|195|-312827997',
+        'FORAI|1|164|122|mis|2|1|start|0|195|724147556',
+        'FORAI|1|167|125|mis|8|1|start|0|81|1215934151',
+        'FORAI|1|168|125|mis|9|1|end|1|108|-1696562741',
+        'FORAI|1|169|125|obj|9|1|1|10|2|8|404|1250|12139|180|2|1|-1503135437',
+        'FORAI|1|170|125|mis|9|1|start|0|110|494665975',
+        'FORAI|1|171|126|mis|2|1|end|1|195|291678002',
+        'FORAI|1|172|126|mis|2|1|start|0|195|-1725742768',
+    ])
+    live_ev, _, _ = parse(extract(LIVE))
+    churn = detect_churn(live_ev)
+    got9 = (9, '108') in churn
+    got2 = (2, '195') in churn
+    print('   %s faction 9 restarting on target 108 is flagged' % ('PASS' if got9 else 'FAIL'))
+    print('   %s faction 2 restarting on target 195 is flagged (%d time(s))'
+          % ('PASS' if got2 else 'FAIL', len(churn.get((2, '195'), []))))
+    # negative control: faction 9's OTHER end at t=125 is followed by a start
+    # on a DIFFERENT target (110). That is correct behaviour and must NOT flag.
+    clean = (9, '110') not in churn
+    print('   %s NEGATIVE CONTROL: ending on 108 and starting on 110 is correct '
+          'behaviour and is NOT flagged' % ('PASS' if clean else 'FAIL'))
+    # and a well-separated restart is not churn either
+    FAR = '\n'.join(['FORAI|1|1|10|mis|3|1|end|4|7|0',
+                     'FORAI|1|2|300|mis|3|1|start|0|7|0'])
+    far_ev, _, _ = parse(extract(FAR))
+    far_ok = not detect_churn(far_ev)
+    print('   %s NEGATIVE CONTROL: a restart 290s later is not churn'
+          % ('PASS' if far_ok else 'FAIL'))
+
+    ok = (bool(p2) and any('duplicate' in x for x in p3)
+          and got9 and got2 and clean and far_ok)
     print('\n%s: self-test' % ('PASS' if ok else 'FAIL'))
     return 0 if ok else 1
 

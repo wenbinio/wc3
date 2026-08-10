@@ -287,6 +287,10 @@ def make_env(sc):
         'ai_msState': d(sc.get('msState', 0)), 'ai_msTarget': d(sc.get('msTarget', -1)),
         'ai_msPhaseEnd': d(sc.get('msPhaseEnd', 1e9)), 'ai_msNextOrder': d(1e9),
         'ai_ifThreat': d(False), 'ai_ifRetreat': d(False), 'ai_ifStuck': d(False),
+        # per-player-per-point, indexed pid*AI_MAX_POINTS+t, so a plain dict
+        # keyed only on pid is the wrong shape -- default to "not held"
+        'ai_msHold': __import__('collections').defaultdict(float),
+        'ai_msRestarts': 0,
         'ai_wallSince': d(sc.get('wallSince', -9999.0)),
         'ai_spy': {i: False for i in range(CONSTS['AI_MAX_PLAYERS'])},
         'ai_accSiege': 0,
@@ -310,6 +314,7 @@ def make_env(sc):
         'ai_gateReacq': 0, 'ai_gateFindOr': -1, 'ai_gateFindD': 0.0,
         'ai_gateFindX': 0.0, 'ai_gateFindY': 0.0, 'ai_gateFound': None,
         'ai_progD': d(sc.get('progD', 999999.0)), 'ai_progAt': d(sc.get('progAt', 0.0)),
+        'ai_commitAt': d(sc.get('commitAt', 0.0)),
         'ai_talk': d(False), 'ai_sayAt': d(0.0), 'ai_sayLast': d(''),
         'ai_pt': {}, 'ai_ptKind': {}, 'ai_ptX': {}, 'ai_ptY': {},
         'ai_ptOwner': {}, 'ai_ptSeen': {}, 'ai_ptDef': {},
@@ -1616,6 +1621,198 @@ def threatfield():
 
 
 # ------------------------------- STAGE 3 / S1: attacks as procedures
+
+def mission_churn():
+    """EXTERNAL AUDIT, defect 4 -- CONFIRMED BY RUNTIME DATA, not by reading.
+
+    The telemetry shipped in 8d0e5ee caught this in the owner's first game:
+
+        FORAI|1|161|121|mis|9|1|end|1|108
+        FORAI|1|162|121|mis|9|1|start|0|108
+        FORAI|1|163|122|mis|2|1|end|1|195
+        FORAI|1|164|122|mis|2|1|start|0|195
+
+    A mission ends and restarts on the SAME target in the SAME second, for
+    two factions, repeatedly. The auditor predicted it from the source; the
+    log proved it.
+
+    Two independent causes, and this section pins both, each against its own
+    negative control built from the shipped source:
+
+      1. AI_MissionAbort cleared ai_msState and nothing else -- not the
+         target, claim, progress record or commit clock -- so the next tick
+         re-derived the identical answer from an unchanged world.
+      2. AI_Execute calls AI_MissionStart every tick it holds an objective,
+         and AI_MissionStart was unconditional, so it could restart what it
+         had just ended -- and re-stamp the phase deadline while doing it,
+         disarming the one backstop that would have broken the loop.
+    """
+    print('\n' + '=' * 78)
+    print('EXTERNAL AUDIT 4 -- a mission that ends does not restart on the same target')
+    print('=' * 78)
+    fails = 0
+    MP = CONSTS['AI_MAX_POINTS']
+    NONE, STAGE = CONSTS['AI_MS_NONE'], CONSTS['AI_MS_STAGE']
+
+    def scen(funcs, **kw):
+        """One faction, one enemy point (index 0), a mission running on it."""
+        sc = dict(role='barb', t=100.0,
+                  points=[dict(kind=CONSTS['AI_PK_CITY'], x=1000.0, y=0.0, owner=5)],
+                  msState=STAGE, msTarget=0)
+        sc.update(kw)
+        env = make_env(sc)
+        env['ai_now'] = sc['t']
+        env['ai_claim'][0] = 0                       # we hold the claim
+        env['ai_target'][0] = 0
+        nat = make_natives(env, 0.0)
+        nat['AI_Say'] = lambda pid, s: None
+        nat['AI_Tel'] = lambda ev, body: env.setdefault('_tel', []).append((ev, body))
+        nat['AI_Num'] = lambda v: str(v)
+        nat['AI_TelAI'] = lambda pid: '1'
+        return env, Interp(funcs, CONSTS, env, nat)
+
+    # ---------------- cause 1: the abort leaves the world unchanged --------
+    env, it = scen(FUNCS)
+    it.run('AI_MissionAbort', [0, 1])
+    checks = [
+        ('the mission target', env['ai_msTarget'][0] == -1),
+        ('the objective', env['ai_target'][0] == -1),
+        ('our claim on it', env['ai_claim'][0] != 0),
+        ('the progress record', env['ai_progD'][0] >= 999999.0),
+    ]
+    for label, ok in checks:
+        fails += 0 if ok else 1
+        print('  %s an abort clears %s' % ('PASS' if ok else 'FAIL', label))
+
+    ok = env['ai_msHold'][0 * MP + 0] > env['ai_now']
+    fails += 0 if ok else 1
+    print('  %s ... and BARS the target it failed on (held until %.0f, now %.0f)'
+          % ('PASS' if ok else 'FAIL', env['ai_msHold'][0], env['ai_now']))
+
+    # a march-deadline failure is a failure OF THE TARGET and bars it longer
+    env4, it4 = scen(FUNCS)
+    it4.run('AI_MissionAbort', [0, 4])
+    ok = (env4['ai_msHold'][0] - env4['ai_now']) > (env['ai_msHold'][0] - env['ai_now'])
+    fails += 0 if ok else 1
+    print('  %s a failed MARCH bars the target longer than an interruption does '
+          '(%.0fs vs %.0fs)' % ('PASS' if ok else 'FAIL',
+                                env4['ai_msHold'][0] - env4['ai_now'],
+                                env['ai_msHold'][0] - env['ai_now']))
+
+    # negative control for cause 1: the pre-fix abort, synthesised from the
+    # shipped body by deleting every line that clears context
+    prefix = dict(FUNCS)
+    params, body = FUNCS['AI_MissionAbort']
+    keep = [ln for ln in body
+            if not re.search(r'set (ai_msTarget|ai_target|ai_progD|ai_progAt|'
+                             r'ai_commitAt|ai_msHold|ai_claim)\[', ln)]
+    if len(keep) == len(body):
+        fails += 1
+        print('  FAIL negative control is INERT: the shipped AI_MissionAbort clears '
+              'no context, so nothing was removed to build the pre-fix body')
+    prefix['AI_MissionAbort'] = (params, keep)
+    envN, itN = scen(prefix)
+    itN.run('AI_MissionAbort', [0, 1])
+    ok = (envN['ai_msTarget'][0] == 0 and envN['ai_target'][0] == 0
+          and envN['ai_msHold'][0] == 0.0)
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL: the pre-fix abort leaves target %s and claim intact '
+          'with no hold -- the world the next tick re-derived from'
+          % ('PASS' if ok else 'FAIL', envN['ai_msTarget'][0]))
+
+    # ---------------- cause 2: the unconditional restart -------------------
+    env, it = scen(FUNCS)
+    before = list(env.get('_tel', []))
+    it.run('AI_MissionStart', [0, 0])
+    started = [e for e in env.get('_tel', []) if e[0] == 'mis' and '|start|' in e[1]]
+    ok = not started and env['ai_msRestarts'] == 1
+    fails += 0 if ok else 1
+    print('  %s a mission already running on this target is NOT restarted, and the '
+          'suppression is counted (%s)' % ('PASS' if ok else 'FAIL', env['ai_msRestarts']))
+
+    # the exact live-log sequence: end, then the chooser tries the same target
+    env, it = scen(FUNCS)
+    it.run('AI_MissionAbort', [0, 1])
+    it.run('AI_MissionStart', [0, 0])
+    started = [e for e in env.get('_tel', []) if e[0] == 'mis' and '|start|' in e[1]]
+    ok = not started and env['ai_msState'][0] == NONE
+    fails += 0 if ok else 1
+    print('  %s THE LOGGED LOOP: end then start on the same target in the same '
+          'second issues no new mission' % ('PASS' if ok else 'FAIL'))
+
+    # negative control for cause 2
+    prefix2 = dict(FUNCS)
+    params, body = FUNCS['AI_MissionStart']
+    keep2, drop = [], False
+    for ln in body:
+        if 'ai_msRestarts' in ln or 'AI_MissionHeld' in ln:
+            drop = True                       # skip the guard and its body
+        if drop:
+            if ln.strip() == 'endif':
+                drop = False
+            continue
+        keep2.append(ln)
+    if len(keep2) == len(body):
+        fails += 1
+        print('  FAIL negative control is INERT: the shipped AI_MissionStart has no '
+              'restart guard, so nothing was removed to build the pre-fix body')
+    prefix2['AI_MissionStart'] = (params, keep2)
+    envN, itN = scen(prefix2)
+    itN.run('AI_MissionStart', [0, 0])
+    startedN = [e for e in envN.get('_tel', []) if e[0] == 'mis' and '|start|' in e[1]]
+    ok = bool(startedN)
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL: without the guard the same target restarts '
+          'immediately -- the logged defect, reproduced' % ('PASS' if ok else 'FAIL'))
+
+    # ---------------- the hold must be a discount, never a veto ------------
+    sc = dict(role='barb', t=100.0,
+              points=[dict(kind=CONSTS['AI_PK_CITY'], x=1000.0, y=0.0, owner=5)])
+    env = make_env(sc)
+    env['ai_now'] = 100.0
+    it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+    free = it.run('AI_TargetScore', [0, 0])
+    env['ai_msHold'][0] = 200.0
+    held = it.run('AI_TargetScore', [0, 0])
+    ok = 0.0 < held < free
+    fails += 0 if ok else 1
+    print('  %s a held target is DISCOUNTED (%.4f vs %.4f) and never zeroed -- a veto '
+          'would be a fifth way to make an action impossible'
+          % ('PASS' if ok else 'FAIL', held, free))
+
+    ok = it.run('AI_BestTarget', [0]) == 0
+    fails += 0 if ok else 1
+    print('  %s ... so when it is the ONLY target it is still selected'
+          % ('PASS' if ok else 'FAIL'))
+
+    # ---------------- ai_ifStuck now has a reader --------------------------
+    src = '\n'.join(FUNCS['AI_SelectGoal'][1])
+    ok = 'ai_ifStuck' in src
+    fails += 0 if ok else 1
+    print('  %s ai_ifStuck is READ by the goal layer -- it had a writer and no reader'
+          % ('PASS' if ok else 'FAIL'))
+
+    def goal_with_stuck(stuck):
+        sc = dict(role='barb', t=500.0, army=600.0, goal=CONSTS['GOAL_SIEGE'],
+                  goalSince=0.0, capIdx=0, capReady=1.0,
+                  points=[dict(kind=CONSTS['AI_PK_CAPITAL'], x=1000.0, y=0.0, owner=5)])
+        env = make_env(sc)
+        env['ai_now'] = 500.0
+        env['ai_ifStuck'][0] = stuck
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        seed_capital(env, it, sc)
+        return it.run('AI_ScoreSiege', [0]), it.run('AI_SelectGoal', [0]), env
+
+    _, _, envS = goal_with_stuck(True)
+    ok = envS['ai_ifStuck'][0] is False
+    fails += 0 if ok else 1
+    print('  %s ... and it is CLEARED once read, so one failed march biases exactly '
+          'one decision' % ('PASS' if ok else 'FAIL'))
+
+    print('%s: the abort/restart loop the live telemetry recorded cannot recur'
+          % ('PASS' if not fails else 'FAIL'))
+    return 1 if fails else 0
+
 
 def missions():
     """S1. Every working AI in the corpus stages, issues one order and sleeps
@@ -2988,6 +3185,7 @@ def main():
     rc |= formation()
     rc |= threatfield()
     rc |= missions()
+    rc |= mission_churn()
     rc |= centroid()
     rc |= impossible()
     rc |= romanlock()

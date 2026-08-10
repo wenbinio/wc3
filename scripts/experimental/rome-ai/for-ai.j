@@ -215,6 +215,13 @@
     constant integer AI_MS_MARCH     = 2
     constant real    AI_MS_STAGE_T   = 20.0   // FormGroup deadline: release anyway
     constant real    AI_MS_MARCH_T   = 150.0  // an attack that takes longer has failed
+    // AUDIT 4, confirmed by the live log: a mission that ends must not be
+    // restartable on the same target in the same second. How long an aborted
+    // target is barred, by how the mission ended.
+    constant real    AI_MS_HOLD_SOFT = 30.0   // interrupted (home threat, lost fight)
+    constant real    AI_MS_HOLD_HARD = 120.0  // the march itself failed: deadline/stall
+    constant real    AI_MS_HOLD_PENALTY = 0.10 // discount, never a veto
+    constant real    AI_STUCK_BIAS   = 0.30   // one decision's worth, then cleared
     constant real    AI_MS_REFRESH   = 8.0    // re-issue interval while running
     constant real    AI_MS_THREAT    = 1.10   // threat vs garrison that interrupts
     constant real    AI_RETREAT_RATIO = 1.15   // the round-2 retreat bar, as a FLAG
@@ -222,6 +229,10 @@
     integer array    ai_msTarget
     real    array    ai_msPhaseEnd
     real    array    ai_msNextOrder
+    // AUDIT 4: per-player-per-point hold-off, indexed pid*AI_MAX_POINTS + t.
+    // A target a mission just failed on is barred until this game time.
+    real    array    ai_msHold
+    integer          ai_msRestarts   = 0     // suppressed same-target restarts
     // Interrupt flags: SET by other subsystems, never scored against anything.
     // S3's threat field is designed to drive exactly these.
     boolean array    ai_ifThreat
@@ -2600,6 +2611,16 @@ endfunction
 //  Target selection
 //===========================================================================
 
+// AUDIT 4. Is this target barred because a mission just failed on it? Declared
+// here rather than beside the mission code because the SCORER is its first
+// consumer and JASS is single-pass.
+function AI_MissionHeld takes integer pid, integer t returns boolean
+    if t < 0 or t >= ai_pointCount then
+        return false
+    endif
+    return ai_now < ai_msHold[pid*AI_MAX_POINTS + t]
+endfunction
+
 function AI_TargetScore takes integer pid, integer i returns real
     local integer k = pid*AI_MAX_POINTS + i
     local real v
@@ -2660,6 +2681,16 @@ function AI_TargetScore takes integer pid, integer i returns real
         if IsPlayerAlly(ai_p[ai_claim[i]], ai_p[pid]) then
             set sw = sw * AI_CLAIM_PENALTY
         endif
+    endif
+    // AUDIT 4. A target a mission just failed on is DISCOUNTED, on the same
+    // reasoning as the claim ledger above: a discount and not a veto. A veto
+    // would be a fifth way to make an action impossible, and every one of
+    // those we have shipped became a state the AI could not leave. Held
+    // targets stay selectable when nothing else exists -- they just lose to
+    // anything real, which is all that is needed to break the abort/restart
+    // loop the live log recorded.
+    if AI_MissionHeld(pid, i) then
+        set sw = sw * AI_MS_HOLD_PENALTY
     endif
     set u = null
     return v * prox * weak * stale * sw * (1.0 + AI_Noise(AI_NoiseAmp(pid)*0.5))
@@ -3113,6 +3144,21 @@ function AI_SelectGoal takes integer pid returns integer
     set sSie = sSie + AI_Noise(amp)
     set sTec = sTec + AI_Noise(amp)
     set sRet = sRet + AI_Noise(amp)
+
+    // AUDIT 4, second half. ai_ifStuck was SET by the march-deadline abort and
+    // never read by anything -- a flag with a writer and no reader, which is
+    // to say a diagnosis with no treatment. It now has one consequence, and a
+    // narrow one: a march that ran out its deadline is evidence that the
+    // APPROACH is not working, so the goal that ordered it is discounted for
+    // one selection. It is not a veto and it does not persist: the flag is
+    // cleared as soon as it has been read, so a single failed march biases
+    // exactly one decision. Anything stronger would be a sixth way to make a
+    // goal unreachable.
+    if ai_ifStuck[pid] then
+        set sSie = sSie - AI_STUCK_BIAS
+        set sExp = sExp - AI_STUCK_BIAS
+        set ai_ifStuck[pid] = false
+    endif
 
     // incumbency bonus stops a fast tick from vibrating between near-equal goals
     if ai_goal[pid] == GOAL_CONSOLIDATE then
@@ -4294,10 +4340,55 @@ function AI_SetFlags takes integer pid returns nothing
     set ai_ifRetreat[pid] = (wm_fieldCV[pid] > 1.0) and (wm_fieldEnemyCV[pid] > AI_RETREAT_RATIO * wm_fieldCV[pid])
 endfunction
 
+// AUDIT 4, CONFIRMED BY THE LIVE LOG. The telemetry caught this within
+// minutes of shipping:
+//
+//   mis|9|1|end|1|108      t=121
+//   mis|9|1|start|0|108    t=121
+//
+// A mission ends and restarts on the SAME target in the SAME second, over
+// and over. Two causes, both fixed here.
+//
+// First, aborting cleared ai_msState and NOTHING else -- not ai_target, not
+// the claim, not the progress record, not the naval state. So the next tick
+// found the world exactly as the failed mission had left it and re-derived
+// the identical answer. A mission that ends now tears its own context down,
+// and the target is BARRED for a hold-off whose length depends on how the
+// mission ended: an interruption is a "not now", a failed march is a "not
+// this, for a while".
+//
+// Second -- and this is what made it fire every tick rather than
+// occasionally -- AI_Execute called AI_MissionStart unconditionally, so
+// even without any state to clear the chooser could restart what it had
+// just ended. AI_MissionStart is now idempotent (below).
 function AI_MissionAbort takes integer pid, integer reason returns nothing
+    local integer t = ai_msTarget[pid]
+    local real hold = AI_MS_HOLD_SOFT
     if ai_msState[pid] != AI_MS_NONE then
         set ai_msState[pid] = AI_MS_NONE
         call AI_Tel("mis", AI_Num(pid) + "|" + AI_TelAI(pid) + "|end|" + AI_Num(reason) + "|" + AI_Num(ai_msTarget[pid]))
+        // reason 4 is the march deadline and reason 5 the stall: those are
+        // failures OF THIS TARGET, not of the moment, so they bar it longer.
+        if reason >= 4 then
+            set hold = AI_MS_HOLD_HARD
+        endif
+        if t >= 0 and t < ai_pointCount then
+            set ai_msHold[pid*AI_MAX_POINTS + t] = ai_now + hold
+            // release the claim: holding a claim on a target we just gave up
+            // blocks an ALLY from trying it while we no longer are
+            if ai_claim[t] == pid then
+                set ai_claim[t] = -1
+            endif
+        endif
+        // the rest of the mission context, which round 6 left standing
+        set ai_msTarget[pid] = -1
+        set ai_target[pid]   = -1
+        set ai_progD[pid]    = 999999.0
+        set ai_progAt[pid]   = ai_now
+        // clearing ai_target is also what lets AI_NavIdle end a crossing that
+        // was begun for this mission -- it stands the naval layer down on the
+        // next tick instead of leaving a loaded boat with no destination.
+        set ai_commitAt[pid] = -9999.0      // and the aggression floor is armed
         if reason == 1 then
             call AI_Say(pid, "breaking off - home is under real threat")
         elseif reason == 2 then
@@ -4310,7 +4401,19 @@ function AI_MissionAbort takes integer pid, integer reason returns nothing
     endif
 endfunction
 
+// AUDIT 4. Idempotent: a mission already running on this target is NOT
+// restarted. AI_Execute calls this every tick it holds an objective, which
+// before the fix re-stamped the phase deadline every second -- so the march
+// deadline could never expire either, and the one backstop that would have
+// broken the loop was itself disarmed by the loop.
 function AI_MissionStart takes integer pid, integer t returns nothing
+    if ai_msState[pid] != AI_MS_NONE and ai_msTarget[pid] == t then
+        set ai_msRestarts = ai_msRestarts + 1
+        return
+    endif
+    if AI_MissionHeld(pid, t) then
+        return                          // barred: a mission just failed here
+    endif
     call AI_Tel("mis", AI_Num(pid) + "|" + AI_TelAI(pid) + "|start|0|" + AI_Num(t))
     set ai_msState[pid] = AI_MS_STAGE
     set ai_msTarget[pid] = t
