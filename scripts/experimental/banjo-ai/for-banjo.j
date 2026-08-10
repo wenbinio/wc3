@@ -76,6 +76,7 @@
 
     timer            BAI_timer              = null
     integer          BAI_subTick            = 0
+    integer          BAI_rescan             = 0
     integer          BAI_seed               = 1
     boolean          BAI_enabled            = false
 
@@ -760,20 +761,7 @@ endfunction
 // sub-tick matching its id modulo BAI_SLOT_STAGGER, so the twelve slots never
 // decide in the same frame.
 //----------------------------------------------------------------------------
-function BAI_Tick takes nothing returns nothing
-    local integer i = 0
-    if not BAI_enabled then
-        return
-    endif
-    set BAI_subTick = ModuloInteger(BAI_subTick + 1, BAI_SLOT_STAGGER)
-    loop
-        exitwhen i >= MAX_PLAYERS
-        if BAI_on[i] and ModuloInteger(i, BAI_SLOT_STAGGER) == BAI_subTick then
-            call BAI_Act(i)
-        endif
-        set i = i + 1
-    endloop
-endfunction
+
 
 //----------------------------------------------------------------------------
 // Slot takeover. A slot is a candidate when nobody is playing it (empty or
@@ -791,6 +779,44 @@ function BAI_EnsureAthlete takes integer pid returns nothing
     call SetUnitColor(u, GetPlayerColor(Player(pid)))
     call Pick___addAbilities(u)
     set u = null
+endfunction
+
+function BAI_Tick takes nothing returns nothing
+    local integer i = 0
+    if not BAI_enabled then
+        return
+    endif
+    // The field is chosen after the game starts and MOVES the goal rects, and
+    // a field can be re-picked between matches -- so geometry is re-read every
+    // tick (five rect reads) rather than latched at boot. Latching it was a
+    // real bug: the AI would have attacked coordinates from whichever field
+    // happened to be loaded first.
+    call BAI_RefreshGeometry()
+    set BAI_subTick = ModuloInteger(BAI_subTick + 1, BAI_SLOT_STAGGER)
+    // Slots that pick late, or that a human leaves mid-match, are adopted on
+    // the sub-tick that comes back round to them.
+    if BAI_subTick == 0 then
+        set BAI_rescan = BAI_rescan + 1
+        if BAI_rescan >= 16 then
+            set BAI_rescan = 0
+            set i = 0
+            loop
+                exitwhen i >= MAX_PLAYERS
+                if BAI_on[i] then
+                    call BAI_EnsureAthlete(i)
+                endif
+                set i = i + 1
+            endloop
+            set i = 0
+        endif
+    endif
+    loop
+        exitwhen i >= MAX_PLAYERS
+        if BAI_on[i] and ModuloInteger(i, BAI_SLOT_STAGGER) == BAI_subTick then
+            call BAI_Act(i)
+        endif
+        set i = i + 1
+    endloop
 endfunction
 
 function BAI_EnablePlayer takes integer pid returns nothing
