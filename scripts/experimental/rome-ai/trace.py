@@ -262,6 +262,7 @@ def make_env(sc):
         'ai_exCount': __import__('collections').defaultdict(int),
         'ai_exCV': __import__('collections').defaultdict(float),
         'ai_marchDX': 0.0, 'ai_marchDY': 0.0, 'ai_congN': 0, '_ht': {},
+        'ai_sortieGate': d(-1), 'ai_sortieAt': d(0.0),
         'ai_msRX': d(0.0), 'ai_msRY': d(0.0),
         'wm_fieldCV': d(sc.get('fieldCV', 0.0)),
         'wm_fieldX': d(sc.get('fieldX', 0.0)), 'wm_fieldY': d(sc.get('fieldY', 0.0)),
@@ -2598,6 +2599,176 @@ def congestion():
     return 1 if fails else 0
 
 
+def gate_discipline():
+    """PLAYTEST 10 -- "Romans open gates for Barbarians", and "Persia should
+    auto-open its own gate unless being attacked by Rome".
+
+    One rule answers both: a faction opens its own gate ONLY on demand, and
+    NEVER while that gate faces a live threat. Persia is unthreatened and
+    should not be jammed behind its own wall; Rome is under attack and must
+    not open. "Default open" would satisfy Persia and destroy Rome.
+
+    Round 3 wrote the opposite in AI_ManageGates -- "an OWN gate on our
+    crossing opens UNCONDITIONALLY" -- reasoning that an army which cannot
+    leave while an enemy is visible never leaves. Right about VISIBILITY,
+    wrong about CONTEST: round 2's error was refusing to open for any visible
+    enemy anywhere, and the correction over-swung into opening the door for an
+    army standing in it.
+
+    Mechanism, established from the source: possibility A at TWO sites --
+    AI_ManageGates' approach-open and AI_ForceOpenNear's stall backstop, the
+    latter worse because an army stalled BECAUSE enemies are at the gate would
+    force that very gate open for them. Possibility C was half true: a close
+    path existed but EXEMPTED the approach gate and required zero friendly
+    units present, so the gate an army left through stayed open behind it."""
+    print('\n' + '=' * 78)
+    print('PLAYTEST 10 -- a gate opens on demand and never into a live threat')
+    print('=' * 78)
+    fails = 0
+    OPEN, CLOSED = CONSTS['AI_GS_OPEN'], CONSTS['AI_GS_CLOSED']
+
+    def world(enemy_cv, threat=0.0, gate_at=(0.0, 0.0), state=CLOSED, funcs=None):
+        sc = dict(role='rome', threat=threat, army=800.0,
+                  gates=[dict(x=gate_at[0], y=gate_at[1], orient=0, state=state, owner=0)])
+        env = make_env(sc)
+        env['ai_now'] = 500.0
+        env['ai_homeX'] = {0: 0.0}
+        env['ai_homeY'] = {0: 0.0}
+        env['_gateState'][0] = state
+        env['ai_apGate'] = {0: 0}
+        nat = make_natives(env, 0.0)
+        nat['AI_Say'] = lambda pid, s: None
+        nat['AI_Tel'] = lambda ev, b: None
+        nat['AI_Num'] = str
+        nat['AI_TelAI'] = lambda pid: '1'
+        # AI_GateScan is the engine-facing enum; the SCENARIO supplies what it
+        # would have found, so the decision logic stays the code under test
+        def scan(pid, i):
+            env['ai_accCV'] = enemy_cv
+            env['ai_accW'] = 100.0
+            env['ai_accN'] = 1
+        nat['AI_GateScan'] = scan
+        toggles = []
+        nat['AI_SetGate'] = lambda i, t: toggles.append((i, t))
+        nat['AI_GateOpenType'] = lambda o: 'OPEN'
+        nat['AI_GateShutType'] = lambda o: 'SHUT'
+        return env, Interp(funcs or FUNCS, CONSTS, env, nat), toggles
+
+    # ---- Persia: unthreatened, and must not be jammed behind its own wall --
+    env, it, tog = world(enemy_cv=0.0, threat=0.0)
+    ok = it.run('AI_GateSafeToOpen', [0, 0]) is True
+    fails += 0 if ok else 1
+    print('  %s an UNTHREATENED own gate may be opened -- Persia is not jammed behind '
+          'its own wall' % ('PASS' if ok else 'FAIL'))
+
+    env, it, tog = world(enemy_cv=0.0, threat=0.0)
+    it.run('AI_ManageGates', [0])
+    ok = tog and tog[0][1] == 'OPEN'
+    fails += 0 if ok else 1
+    print('  %s ... and a dispatch that needs it actually opens it (on demand)'
+          % ('PASS' if ok else 'FAIL'))
+
+    ok = env['ai_sortieGate'][0] == 0
+    fails += 0 if ok else 1
+    print('  %s ... and the open is RECORDED as a sortie, so a close is owed'
+          % ('PASS' if ok else 'FAIL'))
+
+    # ---- Rome: enemies in the doorway. THE REPORTED BUG --------------------
+    env, it, tog = world(enemy_cv=500.0, threat=0.0)
+    ok = it.run('AI_GateSafeToOpen', [0, 0]) is False
+    fails += 0 if ok else 1
+    print('  %s an enemy IN THE DOORWAY refuses the open' % ('PASS' if ok else 'FAIL'))
+
+    env, it, tog = world(enemy_cv=500.0, threat=0.0)
+    it.run('AI_ManageGates', [0])
+    opened = [t for t in tog if t[1] == 'OPEN']
+    ok = not opened
+    fails += 0 if ok else 1
+    print('  %s THE REPORTED BUG: a dispatch does NOT open a contested gate '
+          '(%d open toggles)' % ('PASS' if ok else 'FAIL', len(opened)))
+
+    # our own city under attack, even if this gate's doorway is momentarily clear
+    env, it, tog = world(enemy_cv=0.0, threat=400.0)
+    ok = it.run('AI_GateSafeToOpen', [0, 0]) is False
+    fails += 0 if ok else 1
+    print('  %s a gate at a city under attack refuses to open even with a clear '
+          'doorway' % ('PASS' if ok else 'FAIL'))
+
+    # a gate far from our threatened city is still openable: the rule is local
+    env, it, tog = world(enemy_cv=0.0, threat=400.0, gate_at=(20000.0, 0.0))
+    ok = it.run('AI_GateSafeToOpen', [0, 0]) is True
+    fails += 0 if ok else 1
+    print('  %s ... but a gate far from that city is unaffected -- the rule is local, '
+          'not a global freeze' % ('PASS' if ok else 'FAIL'))
+
+    # ---- the stall backstop obeys the same rule ---------------------------
+    env, it, tog = world(enemy_cv=500.0, threat=0.0)
+    forced = it.run('AI_ForceOpenNear', [0, 0.0, 0.0])
+    ok = forced is False and not [t for t in tog if t[1] == 'OPEN']
+    fails += 0 if ok else 1
+    print('  %s the STALL BACKSTOP will not force a contested gate open -- an army '
+          'stalled BECAUSE enemies are at the gate was forcing it open for them'
+          % ('PASS' if ok else 'FAIL'))
+
+    env, it, tog = world(enemy_cv=0.0, threat=0.0)
+    ok = it.run('AI_ForceOpenNear', [0, 0.0, 0.0]) is True
+    fails += 0 if ok else 1
+    print('  %s ... and still rescues a genuinely stalled army at a quiet gate'
+          % ('PASS' if ok else 'FAIL'))
+
+    # ---- closing: the gate an army left through does not stay open ---------
+    env, it, tog = world(enemy_cv=500.0, threat=0.0, state=OPEN)
+    it.run('AI_ManageGates', [0])
+    ok = [t for t in tog if t[1] == 'SHUT']
+    fails += 0 if ok else 1
+    print('  %s a contested OPEN gate shuts -- and the APPROACH gate is no longer '
+          'exempt from closing' % ('PASS' if ok else 'FAIL'))
+
+    env, it, tog = world(enemy_cv=0.0, threat=0.0, state=OPEN)
+    env['ai_sortieGate'] = {0: 0}
+    it.run('AI_CloseSortie', [0])
+    ok = [t for t in tog if t[1] == 'SHUT'] and env['ai_sortieGate'][0] == -1
+    fails += 0 if ok else 1
+    print('  %s a sortie gate is shut once the sortie is over, and the debt cleared'
+          % ('PASS' if ok else 'FAIL'))
+
+    src = '\n'.join(FUNCS['AI_MissionAbort'][1])
+    ok = 'AI_CloseSortie' in src
+    fails += 0 if ok else 1
+    print('  %s an ABORTED mission also closes the door it opened -- that is the path '
+          'that used to leak them' % ('PASS' if ok else 'FAIL'))
+
+    # ---- NEGATIVE CONTROL: remove the threat check ------------------------
+    prefix = dict(FUNCS)
+    params, _ = FUNCS['AI_GateSafeToOpen']
+    prefix['AI_GateSafeToOpen'] = (params, ['    return true'])
+    env, it, tog = world(enemy_cv=500.0, threat=400.0, funcs=prefix)
+    it.run('AI_ManageGates', [0])
+    opened = [t for t in tog if t[1] == 'OPEN']
+    ok = bool(opened)
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL: without the threat check the same call opens the '
+          'gate with 500 enemy CV in it -- the reported bug, reproduced'
+          % ('PASS' if ok else 'FAIL'))
+
+    env, it, tog = world(enemy_cv=500.0, threat=400.0, funcs=prefix)
+    ok = it.run('AI_ForceOpenNear', [0, 0.0, 0.0]) is True
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL: and the stall backstop does too, which is the worse '
+          'of the two sites' % ('PASS' if ok else 'FAIL'))
+
+    # ---- the dead band: a gate cannot flap --------------------------------
+    ok = CONSTS['AI_GATE_T_CLOSE'] > CONSTS['AI_GATE_T_OPEN']
+    fails += 0 if ok else 1
+    print('  %s the bars form a dead band (open <= %.0f, shut >= %.0f) so a gate '
+          'cannot flap between them' % ('PASS' if ok else 'FAIL',
+                                        CONSTS['AI_GATE_T_OPEN'], CONSTS['AI_GATE_T_CLOSE']))
+
+    print('%s: no faction opens a door for the army standing at it'
+          % ('PASS' if not fails else 'FAIL'))
+    return 1 if fails else 0
+
+
 def mission_churn():
     """EXTERNAL AUDIT, defect 4 -- CONFIRMED BY RUNTIME DATA, not by reading.
 
@@ -4188,6 +4359,7 @@ def main():
     rc |= perimeter()
     rc |= partition()
     rc |= congestion()
+    rc |= gate_discipline()
     rc |= centroid()
     rc |= impossible()
     rc |= romanlock()

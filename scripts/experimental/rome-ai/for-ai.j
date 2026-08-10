@@ -255,6 +255,8 @@
     real    array    ai_exCV
     integer          ai_dispPid      = 0
     integer          ai_congN        = 0
+    integer array    ai_sortieGate           // gate opened to let THIS army out
+    real    array    ai_sortieAt             // when we opened it
     real             ai_marchDX      = 0.0   // unit vector along the march line
     real             ai_marchDY      = 0.0
     real    array    ai_msRX                 // PLAYTEST 7: the muster point
@@ -459,6 +461,13 @@
     constant real    AI_SIEGE_R       = 2000.0 // hit the gate itself inside this
     constant real    AI_GATE_GUARD    = 1200.0 // enemy proximity for gate control
     constant real    AI_GATE_CD       = 20.0   // the map cooldown on A00Z etc.
+    // PLAYTEST 10 -- "Romans open gates for Barbarians". A gate opens ON DEMAND
+    // and never while its own city is threatened. Two bars, so a gate cannot
+    // flap between them: it SHUTS at or above T_CLOSE and may only be OPENED
+    // at or below T_OPEN. Between the two it keeps whatever state it has.
+    constant real    AI_GATE_T_OPEN   = 1.0    // enemy CV at/below which opening is allowed
+    constant real    AI_GATE_T_CLOSE  = 60.0   // enemy CV at/above which it shuts
+    constant real    AI_SORTIE_T      = 90.0   // a gate opened for a sortie shuts by then
 
     // ---- ROUND 3: the corridor test and the stall backstop -------------
     // Round 2 only ever asked "is a gate near the OBJECTIVE?", so the gate an
@@ -4002,31 +4011,96 @@ function AI_SetGate takes integer i, integer newType returns nothing
     set u = null
 endfunction
 
-// Open the crossing we intend to use; shut one the enemy is standing in.
+// PLAYTEST 10 -- "Romans open gates for Barbarians", and "Persia should auto-
+// open its own gate unless being attacked by Rome". One rule answers both:
 //
-// ROUND 3: an OWN gate on our crossing opens UNCONDITIONALLY. Round 2 wrapped
-// this in an enemy-proximity check, which is the wrong place for it -- an army
-// that cannot leave its own city because an enemy is visible is an army that
-// never leaves. The enemy check belongs only to the decision to shut a gate
-// again, which is where it now lives.
+//   A faction opens its own gate ONLY when it has a specific, current need to
+//   move through it, and NEVER while that gate faces a live threat. The
+//   default for a threatened gate is CLOSED.
+//
+// Round 3 wrote the opposite in this very spot -- "an OWN gate on our crossing
+// opens UNCONDITIONALLY" -- reasoning that an army which cannot leave while an
+// enemy is visible never leaves. That reasoning was right about VISIBILITY and
+// wrong about CONTEST: round 2's mistake was refusing to open for any visible
+// enemy anywhere, and the correction over-swung into opening the door for an
+// army standing in it. A closed gate is Rome's single biggest structural
+// advantage on this map and we were handing it away.
+//
+// Two bars give a dead band so a gate cannot flap: it shuts at or above
+// T_CLOSE, and may only be opened at or below T_OPEN.
+
+// Enemy CV standing at this gate right now. Fog-honest: AI_GateScanEnum counts
+// only what IsUnitVisible confirms.
+function AI_GateEnemyCV takes integer pid, integer i returns real
+    call AI_GateScan(pid, i)
+    return ai_accCV
+endfunction
+
+// May we open this gate? Only when it is not contested AND -- for a gate at
+// our own city -- our city is not under threat. Persia, unthreatened and far
+// from the fighting, passes both. Rome with barbarians at the wall fails.
+function AI_GateSafeToOpen takes integer pid, integer i returns boolean
+    if AI_GateEnemyCV(pid, i) > AI_GATE_T_OPEN then
+        return false                    // an enemy is IN the doorway
+    endif
+    if AI_Dist(ai_gateX[i], ai_gateY[i], ai_homeX[pid], ai_homeY[pid]) < AI_HOME_R then
+        if wm_threat[pid] > AI_GATE_T_OPEN then
+            return false                // our own city is under attack
+        endif
+    endif
+    return true
+endfunction
+
+// PLAYTEST 10. A gate opened for a sortie must be SHUT again -- one legitimate
+// sortie leaving a city permanently open is how a single correct decision
+// becomes a standing hole in the wall.
+function AI_CloseSortie takes integer pid returns nothing
+    local integer g = ai_sortieGate[pid]
+    if g < 0 or g >= ai_gateCount then
+        return
+    endif
+    if ai_now < ai_gateCd[g] then
+        return                           // map cooldown; try again next tick
+    endif
+    if AI_GateState(g) == AI_GS_OPEN and AI_GateIsOurs(pid, g) then
+        call AI_SetGate(g, AI_GateShutType(ai_gateOr[g]))
+    endif
+    set ai_sortieGate[pid] = -1
+endfunction
+
 function AI_ManageGates takes integer pid returns nothing
     local integer i = 0
     local integer st
     local integer ap = ai_apGate[pid]
     if ap >= 0 and ap < ai_gateCount and ai_now >= ai_gateCd[ap] then
         if AI_GateIsOurs(pid, ap) and AI_GateState(ap) == AI_GS_CLOSED then
-            call AI_SetGate(ap, AI_GateOpenType(ai_gateOr[ap]))
-            return                         // one toggle per tick
+            // PLAYTEST 10: ON DEMAND, and never into a contested doorway.
+            if AI_GateSafeToOpen(pid, ap) then
+                call AI_SetGate(ap, AI_GateOpenType(ai_gateOr[ap]))
+                set ai_sortieGate[pid] = ap        // and we owe it a close
+                set ai_sortieAt[pid] = ai_now
+                return                     // one toggle per tick
+            endif
         endif
     endif
     loop
         exitwhen i >= ai_gateCount
         if ai_gate[i] != null and GetOwningPlayer(ai_gate[i]) == ai_p[pid] and ai_now >= ai_gateCd[i] then
             set st = AI_GateState(i)
-            if st == AI_GS_OPEN and i != ap then
+            if st == AI_GS_OPEN then
                 call AI_GateScan(pid, i)
-                if ai_accCV > 0.0 and ai_accN == 0 then
+                // PLAYTEST 10. Two changes. The approach gate is no longer
+                // EXEMPT -- exempting it is exactly how the gate an army left
+                // through stayed open while the enemy poured in behind it --
+                // and the bar is no longer "no friendly units present". A gate
+                // we are losing the fight at shuts even with our own troops
+                // there: a few soldiers outside the wall is a far better trade
+                // than the wall being open.
+                if ai_accCV >= AI_GATE_T_CLOSE or (ai_accCV > 0.0 and ai_accN == 0) or (ai_accCV > 0.0 and ai_accW < ai_accCV) then
                     call AI_SetGate(i, AI_GateShutType(ai_gateOr[i]))
+                    if ai_sortieGate[pid] == i then
+                        set ai_sortieGate[pid] = -1
+                    endif
                     return
                 endif
             endif
@@ -4051,7 +4125,11 @@ function AI_ForceOpenNear takes integer pid, real x, real y returns boolean
     loop
         exitwhen i >= ai_gateCount
         if ai_gate[i] != null and AI_GateIsOurs(pid, i) and ai_now >= ai_gateCd[i] then
-            if AI_GateState(i) == AI_GS_CLOSED then
+            // PLAYTEST 10: the stall backstop was the SECOND unconditional
+            // open, and the worse of the two -- an army stalled BECAUSE
+            // enemies are at the gate would force that very gate open for
+            // them. It obeys the same rule as every other open.
+            if AI_GateState(i) == AI_GS_CLOSED and AI_GateSafeToOpen(pid, i) then
                 set d = AI_Dist(ai_gateX[i], ai_gateY[i], x, y)
                 if d < bd then
                     set bd = d
@@ -4065,6 +4143,8 @@ function AI_ForceOpenNear takes integer pid, real x, real y returns boolean
         return false
     endif
     call AI_SetGate(best, AI_GateOpenType(ai_gateOr[best]))
+    set ai_sortieGate[pid] = best
+    set ai_sortieAt[pid] = ai_now
     return true
 endfunction
 
@@ -4210,6 +4290,7 @@ function AI_NavIdle takes integer pid returns nothing
         call AI_Say(pid, "crossing is off. bring the boat back")
     endif
     set ai_navState[pid] = AI_NAV_NONE
+    set ai_sortieGate[pid] = -1
     set ai_navShip[pid] = null
     set ship = null
 endfunction
@@ -4861,6 +4942,9 @@ function AI_MissionAbort takes integer pid, integer reason returns nothing
         // was begun for this mission -- it stands the naval layer down on the
         // next tick instead of leaving a loaded boat with no destination.
         set ai_commitAt[pid] = -9999.0      // and the aggression floor is armed
+        // PLAYTEST 10: the sortie is over, so the door we opened for it is
+        // owed a close. The abort path is the one that used to leak them.
+        call AI_CloseSortie(pid)
         if reason == 1 then
             call AI_Say(pid, "leave it. home needs us")
         elseif reason == 2 then
@@ -5256,6 +5340,16 @@ function AI_Think takes nothing returns nothing
                 // always be ended by something other than the goal that
                 // started it.
                 call AI_NavIdle(pid)
+                // PLAYTEST 10: a sortie gate shuts once the army is clear of
+                // it, or when the lease expires -- whichever comes first. An
+                // open gate with nobody using it is a hole in the wall.
+                if ai_sortieGate[pid] >= 0 then
+                    if (ai_now - ai_sortieAt[pid]) >= AI_SORTIE_T then
+                        call AI_CloseSortie(pid)
+                    elseif AI_Dist(wm_fieldX[pid], wm_fieldY[pid], ai_gateX[ai_sortieGate[pid]], ai_gateY[ai_sortieGate[pid]]) > AI_GATE_GUARD then
+                        call AI_CloseSortie(pid)
+                    endif
+                endif
                 call AI_TelCheckExit(pid)
             endif
         endif
