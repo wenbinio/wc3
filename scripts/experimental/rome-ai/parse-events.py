@@ -172,13 +172,36 @@ def report(events, csv_path=None):
         if e['ev'] == 'exit':
             p = int(e['f'][0])
             first_exit.setdefault(p, (e['t'], int(e['f'][2])))
+    # PLAYTEST 9: commitment fraction, from the dispatch census on the exit
+    # event. The owner's "not with their entire army" is this number.
+    commit = {}
+    for e in events:
+        if e['ev'] == 'exit' and len(e['f']) >= 10:
+            try:
+                p = int(e['f'][0])
+                sent_n, sent_v = int(e['f'][4]), int(e['f'][5])
+                held_n, held_v = int(e['f'][6]), int(e['f'][7])
+                win_n, win_v = int(e['f'][8]), int(e['f'][9])
+            except (ValueError, IndexError):
+                continue
+            commit.setdefault(p, (sent_n, sent_v, held_n, held_v, win_n, win_v))
     never = []
     for p in sorted(FACTION):
         if ai_mask is not None and not is_ai.get(p):
             continue
         if p in first_exit:
             t, cv = first_exit[p]
-            print('   %-13s left home at %4ds with army value %d' % (FACTION[p], t, cv))
+            extra = ''
+            if p in commit:
+                sn, sv, hn, hv, wn, wv = commit[p]
+                tot = sv + hv + wv
+                if tot > 0:
+                    extra = ('  -- committed %d%% (%d units); garrisoned %d, '
+                             'unreached %d' % (round(100.0 * sv / tot), sn, hn, wn))
+                    if wn:
+                        extra += '  ** UNREACHED > 0: the order slice did not reach them'
+            print('   %-13s left home at %4ds with army value %d%s'
+                  % (FACTION[p], t, cv, extra))
         else:
             never.append(FACTION[p])
     if never:
@@ -291,6 +314,29 @@ def selftest():
     # verbatim from the first live run. These are the lines that confirmed
     # audit defect 4 -- so the detector is proven against the real artifact it
     # was written for, not against a fixture invented to make it pass.
+    # PLAYTEST 9: the commitment fraction, the direct measurement of "not with
+    # their entire army". Negative-controlled: an exit event WITHOUT the census
+    # fields must not fabricate a percentage.
+    print('\n-- commitment fraction (playtest 9) ' + '-' * 37)
+    RICH = 'FORAI|1|1|60|exit|1|1|4200|3000|24|2400|6|600|40|4000|0'
+    POOR = 'FORAI|1|1|60|exit|1|1|4200|3000|0'
+    rich_ev, _, _ = parse(extract('FORAI|1|0|0|run|12345|4095|0\n' + RICH))
+    import io, contextlib
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        report(rich_ev)
+    txt = buf.getvalue()
+    ok_rich = 'committed 34%' in txt and 'UNREACHED > 0' in txt
+    print('   %s a census-bearing exit reports the commitment fraction and flags '
+          'unreached units' % ('PASS' if ok_rich else 'FAIL'))
+    poor_ev, _, _ = parse(extract('FORAI|1|0|0|run|12345|4095|0\n' + POOR))
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        report(poor_ev)
+    ok_poor = 'committed' not in buf.getvalue()
+    print('   %s NEGATIVE CONTROL: an exit without the census fields reports NO '
+          'percentage rather than inventing one' % ('PASS' if ok_poor else 'FAIL'))
+
     print('\n-- churn detector, against the real logged defect ' + '-' * 23)
     LIVE = '\n'.join([
         'FORAI|1|161|121|mis|9|1|end|1|108|-1080707829',
@@ -325,7 +371,7 @@ def selftest():
           % ('PASS' if far_ok else 'FAIL'))
 
     ok = (bool(p2) and any('duplicate' in x for x in p3)
-          and got9 and got2 and clean and far_ok)
+          and got9 and got2 and clean and far_ok and ok_rich and ok_poor)
     print('\n%s: self-test' % ('PASS' if ok else 'FAIL'))
     return 0 if ok else 1
 

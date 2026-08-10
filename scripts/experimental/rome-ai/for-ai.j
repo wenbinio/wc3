@@ -247,6 +247,15 @@
     // A target a mission just failed on is barred until this game time.
     real    array    ai_msHold
     integer          ai_msRestarts   = 0     // suppressed same-target restarts
+    // PLAYTEST 9: rotating dispatch window + the partition census
+    integer array    ai_dispCursor           // where this player's slice starts
+    integer array    ai_dispN                // eligible units seen last dispatch
+    integer          ai_dispSeen     = 0     // eligible units seen THIS dispatch
+    integer array    ai_exCount              // census by exclusion reason
+    real    array    ai_exCV
+    integer          ai_dispPid      = 0
+    real             ai_marchDX      = 0.0   // unit vector along the march line
+    real             ai_marchDY      = 0.0
     real    array    ai_msRX                 // PLAYTEST 7: the muster point
     real    array    ai_msRY
     // Interrupt flags: SET by other subsystems, never scored against anything.
@@ -396,6 +405,17 @@
     constant real    AI_ORDER_TOL     = 350.0  // same destination if within
     constant real    AI_ORDER_REFRESH = 20.0   // safety re-issue interval
     constant integer AI_ORDER_SLICE   = 24     // orders per player per think
+    // PLAYTEST 9: the slice is a COST control, not a selection. Without a
+    // rotating window it always serves the same prefix of the enumeration,
+    // and the tail of a big army is never ordered at all.
+    constant integer AI_EX_NONE       = 0      // dispatched
+    constant integer AI_EX_HELD       = 1      // garrison hold: a decision
+    constant integer AI_EX_DEAD       = 2      // structure, corpse
+    constant integer AI_EX_HERO       = 3      // withdrawn hero
+    constant integer AI_EX_BOAT       = 4      // the naval layer commands it
+    constant integer AI_EX_RAM        = 5      // ram holding behind the line
+    constant integer AI_EX_ARRIVED    = 6      // already standing there
+    constant integer AI_EX_WINDOW     = 7      // outside this tick's slice
     constant integer AI_MICRO_SLICE   = 12     // orders per player per micro
 
     // ---- defence damping, playtest fault (2) --------------------------
@@ -748,6 +768,7 @@
                                                 // real, so deriving it would make the
                                                 // two disagree about the formation.
     constant real    AI_LANE_W        = 260.0   // lateral spacing between lanes
+    constant real    AI_RANK_W        = 220.0   // PLAYTEST 9: depth spacing between ranks
     integer          ai_ramType     = 0
     boolean          ai_ramWork     = false
     real             ai_ramX        = 0.0
@@ -2724,7 +2745,10 @@ function AI_TelCheckExit takes integer pid returns nothing
     local boolean out = AI_Dist(wm_fieldX[pid], wm_fieldY[pid], ai_homeX[pid], ai_homeY[pid]) > AI_HOME_R
     if out and not tel_out[pid] then
         set tel_out[pid] = true
-        call AI_Tel("exit", AI_Num(pid) + "|" + AI_TelAI(pid) + "|" + AI_Num(R2I(wm_army[pid])) + "|" + AI_Num(R2I(AI_Dist(wm_fieldX[pid], wm_fieldY[pid], ai_homeX[pid], ai_homeY[pid]))))
+        // PLAYTEST 9: what was COMMITTED and what was LEFT BEHIND, from the
+        // dispatch census. "Not with their entire army" is now a number the
+        // parser prints rather than something a person reads off a screenshot.
+        call AI_Tel("exit", AI_Num(pid) + "|" + AI_TelAI(pid) + "|" + AI_Num(R2I(wm_army[pid])) + "|" + AI_Num(R2I(AI_Dist(wm_fieldX[pid], wm_fieldY[pid], ai_homeX[pid], ai_homeY[pid]))) + "|" + AI_Num(ai_exCount[pid*8 + AI_EX_NONE]) + "|" + AI_Num(R2I(ai_exCV[pid*8 + AI_EX_NONE])) + "|" + AI_Num(ai_exCount[pid*8 + AI_EX_HELD]) + "|" + AI_Num(R2I(ai_exCV[pid*8 + AI_EX_HELD])) + "|" + AI_Num(ai_exCount[pid*8 + AI_EX_WINDOW]) + "|" + AI_Num(R2I(ai_exCV[pid*8 + AI_EX_WINDOW])))
     elseif (not out) and tel_out[pid] then
         set tel_out[pid] = false
         call AI_Tel("home", AI_Num(pid) + "|" + AI_TelAI(pid) + "|" + AI_Num(R2I(wm_army[pid])))
@@ -3449,22 +3473,91 @@ function AI_HalfSpan takes real x, real y, real sx, real sy returns real
     return span
 endfunction
 
+// PLAYTEST 9. A FORMATION SLOT, not a lane.
+//
+// The owner: "they block themselves" -- fifteen units jammed on a trail
+// between a cliff and water -- and a hundred allied units packed solid around
+// one city. AI_LaneOf gave five lateral offsets, so seventy units were ordered
+// to five points, fourteen deep on each. brief-05 sec 3 (Pottinger) is
+// explicit: every unit needs its OWN destination, and the slots are filled
+// inside-out so the formation grows around the objective rather than queueing
+// into it.
+//
+// slot -> (lane, rank), both signed and both dealt inside-out:
+//   lane = alternating 0, +1, -1, +2, -2 ... across the march line
+//   rank = slot / lanes, stepping BACK along the march line
+// so no two slots share a point, and the nearest slots are used first.
+// NOTE ON DIVISION. JASS integer division truncates; trace.py evaluates this
+// source as Python, where "/" does not. That mismatch has already cost this
+// project one bug (AI_LANE_MID). Every division here is written as
+// R2I(I2R(a)/I2R(b)), which truncates identically under both -- so the
+// harness measures the same formation the game builds.
+function AI_SlotLane takes integer slot, integer lanes returns real
+    local integer k = slot - R2I(I2R(slot)/I2R(lanes)) * lanes    // slot mod lanes
+    local integer h = R2I(I2R(k + 1)/2.0)
+    if k - R2I(I2R(k)/2.0) * 2 == 1 then
+        return I2R(h)
+    endif
+    return -I2R(h)
+endfunction
+
+function AI_SlotRank takes integer slot, integer lanes returns real
+    return I2R(R2I(I2R(slot)/I2R(lanes)))
+endfunction
+
 // How many lanes physically fit across the march line at (x,y).
 function AI_LanesAt takes real x, real y returns integer
     local real width = AI_HalfSpan(x, y, ai_laneNX, ai_laneNY) + AI_HalfSpan(x, y, -ai_laneNX, -ai_laneNY)
     return R2I(width / AI_LANE_W)
 endfunction
 
+// PLAYTEST 9. THE CENSUS. Every mobile unit a faction owns is accounted for as
+// exactly one of: dispatched, deliberately garrisoned, or excluded WITH A
+// REASON. There is no silent fourth category -- "the berserkers just stand
+// there" was a silent fourth category, and it took a playtest to see it.
+function AI_Census takes integer reason, unit u returns nothing
+    set ai_exCount[ai_dispPid*8 + reason] = ai_exCount[ai_dispPid*8 + reason] + 1
+    set ai_exCV[ai_dispPid*8 + reason] = ai_exCV[ai_dispPid*8 + reason] + AI_CV(u)
+endfunction
+
+// PLAYTEST 9. The order slice is a COST control and was acting as a SELECTION.
+// AI_ORDER_SLICE is 24; the Franks field 70 units in their camp and their 12
+// berserkers occupy enumeration slots 24-35 -- every one of them past the
+// cut-off, every tick, forever. An idle unit always re-requests an order, so
+// the prefix kept consuming the budget and the tail was never reached. That is
+// head-of-line starvation, and it reads exactly as "not with their entire army,
+// and they never move berserkers".
+//
+// The window ROTATES: same number of orders per dispatch, different units. Any
+// unit is reached within ceil(n / slice) dispatches.
+function AI_InWindow takes integer idx returns boolean
+    local integer n = ai_dispN[ai_dispPid]
+    local integer rel
+    if n <= AI_ORDER_SLICE then
+        return true                      // everyone fits: nothing to rotate
+    endif
+    set rel = idx - ai_dispCursor[ai_dispPid]
+    if rel < 0 then
+        set rel = rel + n
+    endif
+    return rel < AI_ORDER_SLICE
+endfunction
+
 function AI_SendEnum takes nothing returns nothing
     local unit u = GetEnumUnit()
+    local integer slot
     if AI_IsStructure(u) or GetUnitState(u, UNIT_STATE_LIFE) <= 0.405 then
         set u = null
-        return
+        return                            // not a mobile combat unit at all
     endif
+    // from here on the unit IS part of the army and must land in a bucket
+    set slot = ai_dispSeen
+    set ai_dispSeen = ai_dispSeen + 1
     // ROUND 3: a withdrawn hero stays withdrawn. Without this the think tick
     // would order it back to the front every time the micro tick pulled it
     // out, and the two layers would fight over an irreplaceable unit.
     if ai_heroOut[ai_curPid] and IsUnitType(u, UNIT_TYPE_HERO) then
+        call AI_Census(AI_EX_HERO, u)
         set u = null
         return
     endif
@@ -3473,6 +3566,7 @@ function AI_SendEnum takes nothing returns nothing
     // everything at once"
     if ai_holdCV > 0.0 and AI_Dist(GetUnitX(u), GetUnitY(u), ai_homeX[ai_curPid], ai_homeY[ai_curPid]) < AI_HOME_R then
         set ai_holdCV = ai_holdCV - AI_CV(u)
+        call AI_Census(AI_EX_HELD, u)
         set u = null
         return
     endif
@@ -3483,6 +3577,7 @@ function AI_SendEnum takes nothing returns nothing
     // fired on nine boats it never even built. Boats are commanded by the
     // naval layer and by nothing else.
     if AI_IsTransport(u) then
+        call AI_Census(AI_EX_BOAT, u)
         set u = null
         return
     endif
@@ -3510,10 +3605,12 @@ function AI_SendEnum takes nothing returns nothing
     // that IS home -- and general arrival uses a real arrival tolerance.
     if ai_ordKind == AI_ORD_MOVE then
         if AI_Dist(ai_orderX, ai_orderY, ai_homeX[ai_curPid], ai_homeY[ai_curPid]) < AI_ARRIVE_R and AI_Dist(GetUnitX(u), GetUnitY(u), ai_homeX[ai_curPid], ai_homeY[ai_curPid]) < AI_HOME_R then
+            call AI_Census(AI_EX_ARRIVED, u)
             set u = null
             return                          // ordered home, and already home
         endif
         if AI_Dist(GetUnitX(u), GetUnitY(u), ai_orderX, ai_orderY) < AI_ARRIVE_R then
+            call AI_Census(AI_EX_ARRIVED, u)
             set u = null
             return                          // already standing on the destination
         endif
@@ -3522,9 +3619,18 @@ function AI_SendEnum takes nothing returns nothing
     // line. It is the map own declared wall-breaker and nothing else.
     if GetUnitTypeId(u) == ai_ramType and not ai_ramWork then
         call AI_TryOrder(u, AI_ORD_MOVE, ai_ramX, ai_ramY, null)
+        call AI_Census(AI_EX_RAM, u)
         set u = null
         return
     endif
+    // PLAYTEST 9: the rotating slice. Checked AFTER every semantic exclusion,
+    // so the window governs only units that would otherwise be dispatched.
+    if not AI_InWindow(slot) then
+        call AI_Census(AI_EX_WINDOW, u)
+        set u = null
+        return
+    endif
+    call AI_Census(AI_EX_NONE, u)
     if ai_ordKind == AI_ORD_ATTACKU then
         // focus fire converges: no lane offset on a specific target
         if AI_Dist(GetUnitX(u), GetUnitY(u), ai_orderX, ai_orderY) < AI_SIEGE_R then
@@ -3534,7 +3640,9 @@ function AI_SendEnum takes nothing returns nothing
         endif
     else
         // ROUND 3, queue item 10: march in lanes, not in one column
-        call AI_TryOrder(u, ai_ordKind, ai_orderX + ai_laneNX*AI_LANE_W*AI_LaneOf(u), ai_orderY + ai_laneNY*AI_LANE_W*AI_LaneOf(u), null)
+        // PLAYTEST 9: a distinct point per unit -- lane ACROSS the march line,
+        // rank BACK along it. AI_LaneOf gave five offsets for seventy units.
+        call AI_TryOrder(u, ai_ordKind, ai_orderX + ai_laneNX*AI_LANE_W*AI_SlotLane(slot, ai_laneN) - ai_marchDX*AI_RANK_W*AI_SlotRank(slot, ai_laneN), ai_orderY + ai_laneNY*AI_LANE_W*AI_SlotLane(slot, ai_laneN) - ai_marchDY*AI_RANK_W*AI_SlotRank(slot, ai_laneN), null)
     endif
     set u = null
 endfunction
@@ -3552,9 +3660,13 @@ function AI_SendArmy takes integer pid, real x, real y, integer kind, unit tgt r
     if d > 1.0 then
         set ai_laneNX = -dy/d
         set ai_laneNY = dx/d
+        set ai_marchDX = dx/d
+        set ai_marchDY = dy/d
     else
         set ai_laneNX = 0.0
         set ai_laneNY = 0.0
+        set ai_marchDX = 0.0
+        set ai_marchDY = 0.0
     endif
     // ROUND 4, finding 3: size the formation to the ground it has to cross.
     // Sample the TIGHTEST point on the route -- a third of the way, two
@@ -3614,11 +3726,31 @@ function AI_SendArmy takes integer pid, real x, real y, integer kind, unit tgt r
             set ai_holdCV = AI_HOLD_CAP * wm_army[pid]
         endif
     endif
+    // PLAYTEST 9: open the census and the rotating window for this dispatch
+    set ai_dispPid = pid
+    set ai_dispSeen = 0
+    set k = 0
+    loop
+        exitwhen k >= 8
+        set ai_exCount[pid*8 + k] = 0
+        set ai_exCV[pid*8 + k] = 0.0
+        set k = k + 1
+    endloop
     call GroupEnumUnitsOfPlayer(g, ai_p[pid], Filter(function AI_OwnUnitFilter))
     call ForGroup(g, function AI_SendEnum)
     call DestroyGroup(g)
     set g = null
     set ai_orderTarget = null
+    // advance the slice so the next dispatch serves the NEXT units, not the
+    // same prefix. This changes which units are ordered, never how many.
+    set ai_dispN[pid] = ai_dispSeen
+    if ai_dispSeen > 0 then
+        set ai_dispCursor[pid] = ai_dispCursor[pid] + AI_ORDER_SLICE
+        loop
+            exitwhen ai_dispCursor[pid] < ai_dispSeen
+            set ai_dispCursor[pid] = ai_dispCursor[pid] - ai_dispSeen
+        endloop
+    endif
 endfunction
 
 // Only units near the threat answer it, and only up to a CV budget.

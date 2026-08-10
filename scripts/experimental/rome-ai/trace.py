@@ -258,6 +258,10 @@ def make_env(sc):
         'wm_garrison': d(sc.get('garrison', 0.0)),
         'wm_threat': d(sc.get('threat', 0.0)),
         'wm_threatX': d(0.0), 'wm_threatY': d(0.0), 'wm_massed': d(0.0), 'ai_scattered': d(False),
+        'ai_dispCursor': d(0), 'ai_dispN': d(0), 'ai_dispSeen': 0, 'ai_dispPid': 0,
+        'ai_exCount': __import__('collections').defaultdict(int),
+        'ai_exCV': __import__('collections').defaultdict(float),
+        'ai_marchDX': 0.0, 'ai_marchDY': 0.0,
         'ai_msRX': d(0.0), 'ai_msRY': d(0.0),
         'wm_fieldCV': d(sc.get('fieldCV', 0.0)),
         'wm_fieldX': d(sc.get('fieldX', 0.0)), 'wm_fieldY': d(sc.get('fieldY', 0.0)),
@@ -2246,6 +2250,191 @@ def perimeter():
     return 1 if fails else 0
 
 
+def partition():
+    """PLAYTEST 9. "Not with their entire army, and they seem not to move
+    berserkers." A quantity symptom and a TYPE symptom, and the type symptom
+    named the filter -- but the filter was not a type test at all.
+
+    FROM THE MAP: "Barbarian Berserker" is six rawcodes, one per barbarian
+    faction, all cloned from hfoo -- h006 h00Z h013 h014 h016 h021 -- and 24
+    are preplaced per faction. All six ARE in AI_BaseCost (heavy melee, 100g),
+    so they were valued correctly and were never type-excluded.
+
+    THE ACTUAL CAUSE: the Franks field 70 units in their camp, in creation
+    order h002, o002 x2, hero, h011 x2, o002 x2, n001 x3, n003, h01I x12, THEN
+    h013 x12. AI_ORDER_SLICE is 24. The berserkers occupy enumeration slots
+    24-35 -- every single one past the cut-off. And AI_NeedsOrder returns true
+    for any idle unit, so the prefix re-consumed the budget every tick and the
+    tail was never reached. Head-of-line starvation: a fixed budget over a
+    stable enumeration always serves the same prefix.
+
+    THE GENERAL FORM, which is what makes this catchable for unit types nobody
+    has looked at: every mobile unit is dispatched, deliberately garrisoned, or
+    excluded WITH A REASON. There is no silent fourth category."""
+    print('\n' + '=' * 78)
+    print('PLAYTEST 9 -- every unit is dispatched, garrisoned, or excluded with a reason')
+    print('=' * 78)
+    import math
+    fails = 0
+    HOME = (0.0, 0.0)
+    EX = {n: CONSTS['AI_EX_' + n] for n in
+          ('NONE', 'HELD', 'DEAD', 'HERO', 'BOAT', 'RAM', 'ARRIVED', 'WINDOW')}
+
+    def army(n):
+        """n mobile units spread inside a camp, as the map places them."""
+        out = []
+        for i in range(n):
+            a = 2.0 * math.pi * i / n
+            out.append((HOME[0] + 760.0 * math.cos(a), HOME[1] + 760.0 * math.sin(a), 100.0))
+        return out
+
+    def dispatch(funcs, units, dest, env=None, threat=0.0):
+        sc = dict(role='barb', army=100.0 * len(units), threat=threat,
+                  fieldX=HOME[0], fieldY=HOME[1])
+        if env is None:
+            env = make_env(sc)
+            env['ai_homeX'] = {0: HOME[0]}
+            env['ai_homeY'] = {0: HOME[1]}
+        issued = []
+        nat = make_natives(env, 0.0)
+        seq, st = list(units), {}
+        def enum_driver(g, fn):
+            for u in seq:
+                st['cur'] = u
+                fn()
+        nat['GetEnumUnit'] = lambda: st.get('cur')
+        nat['GetUnitX'] = lambda u: u[0]
+        nat['GetUnitY'] = lambda u: u[1]
+        nat['GetUnitState'] = lambda u, s: 1000.0
+        # distinct from the ram type, or every unit reads as a ram with no
+        # wall to break and the whole census lands in one bucket
+        nat['GetUnitTypeId'] = lambda u: 1
+        nat['GetUnitLevel'] = lambda u: 1
+        nat['IsUnitType'] = lambda u, t: False
+        nat['IsUnitLoaded'] = lambda u: False
+        nat['AI_IsStructure'] = lambda u: False
+        nat['AI_IsTransport'] = lambda u: False
+        nat['AI_CV'] = lambda u: u[2]
+        nat['AI_UnitFor'] = lambda pid, k: 999
+        nat['AI_LanesAt'] = lambda x, y: CONSTS['AI_LANES']
+        nat['AI_SetLanes'] = lambda n: None
+        nat['CreateGroup'] = lambda: 'g'
+        nat['DestroyGroup'] = lambda g: None
+        nat['GroupEnumUnitsOfPlayer'] = lambda g, p, f: None
+        nat['ForGroup'] = enum_driver
+        nat['Filter'] = lambda f: f
+        nat['AI_TryOrder'] = lambda u, k, x, y, t: issued.append((u, k, round(x, 3), round(y, 3)))
+        Interp(funcs, CONSTS, env, nat).run(
+            'AI_SendArmy', [0, dest[0], dest[1], CONSTS['AI_ORD_ATTACKP'], None])
+        return issued, env
+
+    N = 70                     # the Franks' actual camp population
+    DEST = (9000.0, 0.0)
+    units = army(N)
+
+    # ---- the partition is TOTAL -------------------------------------------
+    got, env = dispatch(FUNCS, units, DEST)
+    census = {k: env['ai_exCount'][0 * 8 + v] for k, v in EX.items()}
+    total = sum(census.values())
+    ok = total == N
+    fails += 0 if ok else 1
+    print('  %s the census is TOTAL: %d units enumerated, %d accounted for'
+          % ('PASS' if ok else 'FAIL', N, total))
+    print('       %s' % ', '.join('%s=%d' % (k, v) for k, v in census.items() if v))
+
+    ok = census['NONE'] == len(got)
+    fails += 0 if ok else 1
+    print('  %s every unit counted as dispatched actually received an order (%d = %d)'
+          % ('PASS' if ok else 'FAIL', census['NONE'], len(got)))
+
+    # The hard cap lives in AI_TryOrder (stubbed here, and pinned by the order
+    # economy section). What this asserts is the WINDOW: once primed, a
+    # dispatch offers at most one slice of units, so rotation cannot become a
+    # way of issuing MORE orders.
+    got2, env = dispatch(FUNCS, units, DEST, env=env)
+    offered = env['ai_exCount'][EX['NONE']]
+    ok = offered <= CONSTS['AI_ORDER_SLICE']
+    fails += 0 if ok else 1
+    print('  %s the order economy is untouched: a primed dispatch offers %d units, '
+          'slice %d' % ('PASS' if ok else 'FAIL', offered, CONSTS['AI_ORDER_SLICE']))
+
+    # ---- rotation: everyone is reached ------------------------------------
+    seen, env2 = set(), None
+    sc = dict(role='barb', army=100.0 * N, fieldX=HOME[0], fieldY=HOME[1])
+    env2 = make_env(sc)
+    env2['ai_homeX'] = {0: HOME[0]}
+    env2['ai_homeY'] = {0: HOME[1]}
+    rounds = -(-N // CONSTS['AI_ORDER_SLICE'])          # ceil
+    for _ in range(rounds):
+        got, env2 = dispatch(FUNCS, units, DEST, env=env2)
+        for o in got:
+            seen.add(units.index(o[0]))
+    ok = len(seen) == N
+    fails += 0 if ok else 1
+    print('  %s ROTATION: every one of %d units is ordered within %d dispatches '
+          '(reached %d)' % ('PASS' if ok else 'FAIL', N, rounds, len(seen)))
+
+    # the berserker block specifically: slots 24-35, past the first cut-off
+    bers = set(range(24, 36))
+    ok = bers <= seen
+    fails += 0 if ok else 1
+    print('  %s ... including enumeration slots 24-35, which is exactly where the '
+          'Franks berserkers sit' % ('PASS' if ok else 'FAIL'))
+
+    # NEGATIVE CONTROL: pin the window open (no rotation) and the tail starves
+    prefix = dict(FUNCS)
+    params, body = FUNCS['AI_InWindow']
+    prefix['AI_InWindow'] = (params, ['    return idx < AI_ORDER_SLICE'])
+    seen_nc, env3 = set(), make_env(sc)
+    env3['ai_homeX'] = {0: HOME[0]}
+    env3['ai_homeY'] = {0: HOME[1]}
+    for _ in range(rounds):
+        got, env3 = dispatch(prefix, units, DEST, env=env3)
+        for o in got:
+            seen_nc.add(units.index(o[0]))
+    ok = not (bers & seen_nc) and len(seen_nc) == CONSTS['AI_ORDER_SLICE']
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL: without rotation only the first %d are EVER ordered '
+          'and no berserker is among them -- the reported bug, reproduced'
+          % ('PASS' if ok else 'FAIL', len(seen_nc)))
+
+    # ---- no two units share a destination ---------------------------------
+    got, env = dispatch(FUNCS, units, DEST)
+    dests = [(o[2], o[3]) for o in got]
+    ok = len(set(dests)) == len(dests)
+    fails += 0 if ok else 1
+    print('  %s DISTINCT DESTINATIONS: %d orders produced %d distinct points'
+          % ('PASS' if ok else 'FAIL', len(dests), len(set(dests))))
+
+    # NEGATIVE CONTROL: the old five-lane offset, on the same dispatch
+    lanes = CONSTS['AI_LANES']
+    old_dests = [(round(0.0 * i, 3), round(CONSTS['AI_LANE_W'] * ((i % lanes) - CONSTS['AI_LANE_MID']), 3))
+                 for i in range(len(got))]
+    ok = len(set(old_dests)) <= lanes < len(dests)
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL: the old lane-only offset gave %d distinct points for '
+          'the same %d units' % ('PASS' if ok else 'FAIL', len(set(old_dests)), len(got)))
+
+    # slots are dealt inside-out: the first unit takes the centre
+    first = dests[0]
+    ok = abs(first[1] - DEST[1]) < 1e-6 and abs(first[0] - DEST[0]) < 1e-6
+    fails += 0 if ok else 1
+    print('  %s slots are dealt inside-out: the first unit takes the objective itself'
+          % ('PASS' if ok else 'FAIL'))
+
+    # ---- a garrison is a DECISION and is still counted ---------------------
+    got, env = dispatch(FUNCS, units, DEST, threat=100000.0)
+    census = {k: env['ai_exCount'][v] for k, v in EX.items()}
+    ok = census['HELD'] > 0 and sum(census.values()) == N
+    fails += 0 if ok else 1
+    print('  %s under threat %d units are HELD and the census is still total'
+          % ('PASS' if ok else 'FAIL', census['HELD']))
+
+    print('%s: no unit can go missing without a recorded reason'
+          % ('PASS' if not fails else 'FAIL'))
+    return 1 if fails else 0
+
+
 def mission_churn():
     """EXTERNAL AUDIT, defect 4 -- CONFIRMED BY RUNTIME DATA, not by reading.
 
@@ -3538,10 +3727,15 @@ ROUND3_GUARDS = [
      r'set ai_ramWork = false', True),
     ('the march-line normal is computed ONCE per dispatch, from the army line',
      r'function AI_SendArmy\b.*?set ai_laneNX = -dy/d\s*\n\s*set ai_laneNY = dx/d', True),
-    ('lanes are applied to the march, not to focus fire',
-     r'call AI_TryOrder\(u, ai_ordKind, ai_orderX \+ ai_laneNX\*AI_LANE_W\*AI_LaneOf\(u\)', True),
-    ('a lane is keyed off the unit handle so it is stable across ticks',
-     r'function AI_LaneOf\b.*?ModuloInteger\(GetHandleId\(u\), ai_laneN\) - ai_laneMid', True),
+    # PLAYTEST 9. Lanes still apply to the march and never to focus fire, but a
+    # lane alone gave five destinations for seventy units. The dispersal is now
+    # a formation SLOT -- lane across the march line, rank back along it.
+    ('dispersal is applied to the march, not to focus fire',
+     r'call AI_TryOrder\(u, ai_ordKind, ai_orderX \+ ai_laneNX\*AI_LANE_W\*AI_SlotLane\(slot, ai_laneN\)', True),
+    ('the march destination carries a RANK as well as a lane (playtest 9)',
+     r'AI_RANK_W\*AI_SlotRank\(slot, ai_laneN\)', True),
+    ('focus fire still converges on the target with no offset at all',
+     r'call AI_TryOrder\(u, AI_ORD_ATTACKU, ai_orderX, ai_orderY, ai_orderTarget\)', True),
     # --- round 4: findings 3 and 7 ---------------------------------------
     ('a free crossing earns a wider search than one we must break',
      r'function AI_GateCorridor\b.*?AI_GATE_CORRIDOR_FREE', True),
@@ -3829,6 +4023,7 @@ def main():
     rc |= early_barbarians()
     rc |= voice()
     rc |= perimeter()
+    rc |= partition()
     rc |= centroid()
     rc |= impossible()
     rc |= romanlock()
