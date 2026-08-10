@@ -307,6 +307,8 @@ def make_env(sc):
         'ai_gateCount': len(sc.get('gates', [])),
         'ai_gate': {}, 'ai_gateX': {}, 'ai_gateY': {}, 'ai_gateOr': {}, 'ai_gateCd': {},
         'ai_gateStuck': {},
+        'ai_gateReacq': 0, 'ai_gateFindOr': -1, 'ai_gateFindD': 0.0,
+        'ai_gateFindX': 0.0, 'ai_gateFindY': 0.0, 'ai_gateFound': None,
         'ai_progD': d(sc.get('progD', 999999.0)), 'ai_progAt': d(sc.get('progAt', 0.0)),
         'ai_talk': d(False), 'ai_sayAt': d(0.0), 'ai_sayLast': d(''),
         'ai_pt': {}, 'ai_ptKind': {}, 'ai_ptX': {}, 'ai_ptY': {},
@@ -706,6 +708,162 @@ def routing():
 
 
 # ------------------------------------------- round 3: guard A + the backstop
+
+def gate_identity():
+    """EXTERNAL AUDIT, defect 3 -- registry identity.
+
+    The gate registry is enumerated once at init and caches unit HANDLES. The
+    map's own Trig_Open_*/Trig_Close_* actions call ReplaceUnitBJ, which
+    REMOVES the old unit -- so any gate toggled by the human (or by the map on
+    anyone's behalf) leaves our handle dangling. A dangling handle read through
+    the old AI_GateState reported AI_GS_GONE: "a hole in the wall". A gate the
+    human had just CLOSED therefore read to us as a breach, which is Guard A
+    inverted in the worst direction.
+
+    Unlike the routing sections above, this one does NOT stub AI_GateState --
+    the real body is interpreted against a modelled unit world, because the
+    body is the thing under test.
+
+    The assertion is negative-controlled by construction: the same scenario is
+    replayed against a synthesised PRE-FIX AI_GateState (the shipped body with
+    its `call AI_GateRefresh(i)` line removed) and that variant MUST report
+    GONE. If it did not, the test could not have failed before the fix.
+    """
+    print('\n' + '=' * 78)
+    print('EXTERNAL AUDIT 3 -- the gate registry survives the map replacing a gate')
+    print('=' * 78)
+    OPEN, CLOSED, GONE = CONSTS['AI_GS_OPEN'], CONSTS['AI_GS_CLOSED'], CONSTS['AI_GS_GONE']
+    fails = 0
+
+    # Gate type ids are READ OUT of the shipped AI_GateState body rather than
+    # retyped here, so renaming a gate type cannot leave this test asserting
+    # against ids the module no longer knows. The interpreter keeps rawcode
+    # literals as strings, so that is how the modelled world reports them.
+    body_src = '\n'.join(FUNCS['AI_GateState'][1])
+    closed_line = [ln for ln in FUNCS['AI_GateState'][1] if 'AI_GS_CLOSED' in ln and "'" in ln]
+    open_line = [ln for ln in FUNCS['AI_GateState'][1] if 'AI_GS_OPEN' in ln and "'" in ln]
+    if not closed_line or not open_line:
+        # the ids live one line above the assignment in the shipped shape
+        idx_c = next(i for i, ln in enumerate(FUNCS['AI_GateState'][1]) if 'AI_GS_CLOSED' in ln)
+        idx_o = next(i for i, ln in enumerate(FUNCS['AI_GateState'][1]) if 'AI_GS_OPEN' in ln)
+        closed_line = [FUNCS['AI_GateState'][1][idx_c - 1]]
+        open_line = [FUNCS['AI_GateState'][1][idx_o - 1]]
+    CLOSED_T = re.findall(r"'(\w{4})'", closed_line[0])[0]
+    OPEN_T = re.findall(r"'(\w{4})'", open_line[0])[0]
+    if not CLOSED_T or not OPEN_T or CLOSED_T == OPEN_T:
+        fails += 1
+        print('  FAIL could not read the gate type ids out of AI_GateState')
+
+    def world(funcs, replaced):
+        """One registry entry at (500, 500), orientation 0.
+
+        replaced=False: the cached handle is live and closed.
+        replaced=True : the map replaced it. Handle 'H' is REMOVED (type id 0,
+                        the engine's own signal) and a NEW closed gate 'H2'
+                        stands at the same spot.
+        """
+        sc = dict(role='barb', gates=[dict(x=500.0, y=500.0, orient=0, state=CLOSED)])
+        env = make_env(sc)
+        nat = make_natives(env, 0.0)
+        del nat['AI_GateState']                      # interpret the REAL body
+        H, H2 = 1000, 2000
+        types = {H: 0 if replaced else CLOSED_T, H2: CLOSED_T}
+        pos = {H: (500.0, 500.0), H2: (500.0, 500.0)}
+        env['ai_gate'][0] = H
+        present = [H2] if replaced else [H]
+        state = {}
+        def enum_driver(g, fn):
+            for u in present:
+                state['cur'] = u
+                fn()
+        nat['GetEnumUnit'] = lambda: state.get('cur')
+        nat['GetUnitTypeId'] = lambda u: types.get(u, 0)
+        nat['GetUnitX'] = lambda u: pos[u][0]
+        nat['GetUnitY'] = lambda u: pos[u][1]
+        # a live gate unit; a REMOVED one reads 0 life as well as 0 type
+        nat['GetUnitState'] = lambda u, st: 0.0 if types.get(u, 0) == 0 else 1000.0
+        nat['CreateGroup'] = lambda: 'g'
+        nat['DestroyGroup'] = lambda g: None
+        nat['GroupEnumUnitsInRange'] = lambda g, x, y, r, f: None
+        nat['ForGroup'] = enum_driver
+        nat['Filter'] = lambda f: f
+        it = Interp(funcs, CONSTS, env, nat)
+        return it.run('AI_GateState', [0]), env
+
+    # --- negative control: the pre-fix body, synthesised from the shipped one
+    prefix_funcs = dict(FUNCS)
+    params, body = FUNCS['AI_GateState']
+    stripped = [ln for ln in body if 'AI_GateRefresh' not in ln]
+    if len(stripped) == len(body):
+        fails += 1
+        print('  FAIL negative control is INERT: the shipped AI_GateState does not '
+              'call AI_GateRefresh, so nothing was removed to build the pre-fix body')
+    prefix_funcs['AI_GateState'] = (params, stripped)
+
+    nc, _ = world(prefix_funcs, replaced=True)
+    ok = (nc == GONE)
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL: without the refresh, a gate the map replaced reads '
+          'as %s (GONE=%d) -- the bug the audit reported, reproduced'
+          % ('PASS' if ok else 'FAIL', nc, GONE))
+
+    # --- the fix
+    st, env = world(FUNCS, replaced=True)
+    ok = (st == CLOSED)
+    fails += 0 if ok else 1
+    print('  %s a gate the MAP replaced is re-acquired by position and reads CLOSED, '
+          'not a breach (got %s)' % ('PASS' if ok else 'FAIL', st))
+
+    ok = (env['ai_gate'][0] == 2000)
+    fails += 0 if ok else 1
+    print('  %s ... and the registry now caches the NEW handle, so the enum does not '
+          'repeat on every read' % ('PASS' if ok else 'FAIL'))
+
+    ok = (env['ai_gateReacq'] == 1)
+    fails += 0 if ok else 1
+    print('  %s ... and the reacquisition is COUNTED, so a run can show whether this '
+          'path ever executes (count=%s)' % ('PASS' if ok else 'FAIL', env['ai_gateReacq']))
+
+    # a live handle must not pay for the enum at all
+    st, env = world(FUNCS, replaced=False)
+    ok = (st == CLOSED and env['ai_gateReacq'] == 0)
+    fails += 0 if ok else 1
+    print('  %s an untouched gate is NOT re-enumerated -- refresh is lazy, not per-read'
+          % ('PASS' if ok else 'FAIL'))
+
+    # a genuinely destroyed gate: removed handle, nothing at the position
+    sc = dict(role='barb', gates=[dict(x=500.0, y=500.0, orient=0, state=CLOSED)])
+    env = make_env(sc)
+    nat = make_natives(env, 0.0)
+    del nat['AI_GateState']
+    env['ai_gate'][0] = 1000
+    nat['GetEnumUnit'] = lambda: None
+    nat['GetUnitTypeId'] = lambda u: 0
+    nat['GetUnitX'] = lambda u: 0.0
+    nat['GetUnitY'] = lambda u: 0.0
+    nat['GetUnitState'] = lambda u, st: 0.0
+    nat['CreateGroup'] = lambda: 'g'
+    nat['DestroyGroup'] = lambda g: None
+    nat['GroupEnumUnitsInRange'] = lambda g, x, y, r, f: None
+    nat['ForGroup'] = lambda g, fn: None
+    nat['Filter'] = lambda f: f
+    st = Interp(FUNCS, CONSTS, env, nat).run('AI_GateState', [0])
+    ok = (st == GONE and env['ai_gate'][0] is None)
+    fails += 0 if ok else 1
+    print('  %s a gate that really WAS destroyed still reports GONE, and the entry is '
+          'nulled rather than left dangling' % ('PASS' if ok else 'FAIL'))
+
+    # a latched stuck verdict belonged to the old handle
+    st, env = world(FUNCS, replaced=True)
+    ok = (env['ai_gateStuck'][0] is False)
+    fails += 0 if ok else 1
+    print('  %s a latched "stuck" verdict does not outlive the handle it was latched on'
+          % ('PASS' if ok else 'FAIL'))
+
+    print('%s: registry identity is positional, not a cached handle'
+          % ('PASS' if not fails else 'FAIL'))
+    return 1 if fails else 0
+
 
 def gates_round3():
     """Round 3 rewrote candidate selection, so the round-2 behaviours that the
@@ -2823,6 +2981,7 @@ def main():
     rc |= orders()
     rc |= value_ordering()
     rc |= routing()
+    rc |= gate_identity()
     rc |= gates_round3()
     rc |= strategy()
     rc |= tribes()

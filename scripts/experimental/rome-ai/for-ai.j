@@ -444,6 +444,10 @@
     constant integer AI_GS_CLOSED     = 0
     constant integer AI_GS_OPEN       = 1
     constant integer AI_GS_GONE       = 2
+    // how far from its recorded position a gate may be re-acquired. Replacement
+    // preserves the position exactly, so this only has to survive rounding --
+    // it must stay well under the spacing between neighbouring gates.
+    constant real    AI_GATE_REACQ_R  = 96.0
 
     // ---- per-player configuration ------------------------------------
     boolean array    ai_on
@@ -521,6 +525,13 @@
     integer array    ai_gateOr        // 0 horizontal 1 diag1 2 diag2 3 vertical
     real    array    ai_gateCd        // next game time this gate may be toggled
     boolean array    ai_gateStuck     // a toggle we issued did not take effect
+    integer          ai_gateReacq    = 0   // reacquisitions performed (audit 3)
+    // scratch for re-acquiring a gate whose handle the MAP replaced
+    integer          ai_gateFindOr   = -1
+    real             ai_gateFindX    = 0.0
+    real             ai_gateFindY    = 0.0
+    real             ai_gateFindD    = 0.0
+    unit             ai_gateFound    = null
 
     // ---- deterministic PRNG (Park-Miller via Schrage) -----------------
     integer          ai_seed         = AI_SEED_DEFAULT
@@ -1700,12 +1711,85 @@ function AI_GateEnum takes nothing returns nothing
     set u = null
 endfunction
 
+// ---- registry identity (external audit, defect 3) ------------------------
+//
+// The registry is enumerated ONCE at init and stores unit handles. But the
+// gates are not ours alone: the map's own Trig_Open_*/Trig_Close_* actions
+// call ReplaceUnitBJ on GetSpellAbilityUnit() whenever ANY player -- human
+// or AI -- uses the gate ability. Replacement REMOVES the old unit, so our
+// stored handle dangles, and a dangling handle read through AI_GateState
+// reported AI_GS_GONE, i.e. "a hole in the wall". The human closing a gate
+// therefore made us believe it had been destroyed: Guard A inverted, and in
+// the direction that walks an army into a shut gate.
+//
+// A gate never MOVES, so position plus orientation is a stable identity and
+// the handle is only a cache. GetUnitTypeId returns 0 for a removed unit --
+// the standard test -- and that is the trigger to re-resolve by position.
+
+function AI_GateValid takes integer i returns boolean
+    if ai_gate[i] == null then
+        return false
+    endif
+    // removed unit: type id reads 0
+    if GetUnitTypeId(ai_gate[i]) == 0 then
+        return false
+    endif
+    return AI_GateOrient(GetUnitTypeId(ai_gate[i])) == ai_gateOr[i]
+endfunction
+
+function AI_GateFindEnum takes nothing returns nothing
+    local unit u = GetEnumUnit()
+    local real d
+    if AI_GateOrient(GetUnitTypeId(u)) == ai_gateFindOr then
+        set d = AI_Dist(GetUnitX(u), GetUnitY(u), ai_gateFindX, ai_gateFindY)
+        if d < ai_gateFindD then
+            set ai_gateFindD = d
+            set ai_gateFound = u
+        endif
+    endif
+    set u = null
+endfunction
+
+// Re-resolve entry i from its recorded position. Only ever runs when the
+// cached handle has gone stale, so the enum is rare rather than per-read.
+// Finding nothing means the gate really was destroyed and removed: the
+// entry is nulled and AI_GateState then honestly reports GONE.
+function AI_GateRefresh takes integer i returns nothing
+    local group g
+    if i < 0 or i >= ai_gateCount then
+        return
+    endif
+    if AI_GateValid(i) then
+        return
+    endif
+    set ai_gateFindOr = ai_gateOr[i]
+    set ai_gateFindX  = ai_gateX[i]
+    set ai_gateFindY  = ai_gateY[i]
+    set ai_gateFindD  = AI_GATE_REACQ_R
+    set ai_gateFound  = null
+    set g = CreateGroup()
+    call GroupEnumUnitsInRange(g, ai_gateX[i], ai_gateY[i], AI_GATE_REACQ_R, null)
+    call ForGroup(g, function AI_GateFindEnum)
+    call DestroyGroup(g)
+    set g = null
+    set ai_gate[i] = ai_gateFound
+    if ai_gateFound != null then
+        // identity restored: a latched "stuck" verdict belonged to the OLD
+        // handle and must not outlive it
+        set ai_gateStuck[i] = false
+        set ai_gateReacq = ai_gateReacq + 1
+    endif
+    set ai_gateFound = null
+endfunction
+
 // A closed gate blocks (it is the only variant with a pathing texture); an
 // open one, and a dead one, are a hole in the wall.
 function AI_GateState takes integer i returns integer
-    local unit u = ai_gate[i]
+    local unit u
     local integer t
     local integer r = AI_GS_GONE
+    call AI_GateRefresh(i)
+    set u = ai_gate[i]
     if u != null and GetUnitState(u, UNIT_STATE_LIFE) > 0.405 then
         set t = GetUnitTypeId(u)
         if t == 'h01N' or t == 'h01Q' or t == 'h01T' or t == 'h01W' then
@@ -1719,9 +1803,11 @@ function AI_GateState takes integer i returns integer
 endfunction
 
 function AI_GateLifeFrac takes integer i returns real
-    local unit u = ai_gate[i]
+    local unit u
     local real mx
     local real r = 1.0
+    call AI_GateRefresh(i)
+    set u = ai_gate[i]
     if u != null then
         set mx = GetUnitState(u, UNIT_STATE_MAX_LIFE)
         if mx > 0.0 then
@@ -3359,9 +3445,13 @@ function AI_GateScan takes integer pid, integer i returns nothing
 endfunction
 
 function AI_SetGate takes integer i, integer newType returns nothing
-    local unit u = ai_gate[i]
+    local unit u
     local integer before
     local boolean opening
+    // audit 3: re-resolve identity BEFORE reading the handle, or we replace a
+    // unit the map already removed and cache whatever that returns
+    call AI_GateRefresh(i)
+    set u = ai_gate[i]
     if u == null then
         return
     endif
