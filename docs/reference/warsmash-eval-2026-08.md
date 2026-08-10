@@ -16,6 +16,31 @@ none by a checker that passed. The wanted deliverable is one number a machine
 can produce: **territory over time** — control-point ownership per faction,
 sampled per simulated minute.
 
+## Reconciliation with brief 8 (added 2026-08-10, after external research)
+
+`docs/reference/ai-research-2026-08/brief-08-headless-evaluation.md` audited
+the same engine at the same commit and reported that Warsmash contains **no
+native AI subsystem**: no `StartMeleeAI`, `StartCampaignAI`, `CommandAI`,
+`CommandsWaiting`, `CreateCaptains`, `CaptainAttack` or `AttackMoveXY`, and a
+simulation `ai` package holding only a difficulty enum.
+
+That does not contradict this document; the two measure different layers, and
+the distinction decides what the harness could ever be used for:
+
+- **Map-script JASS runs.** This probe executed `war3map.j` and the rome-ai
+  build through Warsmash's own front end. `for-ai.j` lives in the map script,
+  so the module we actually develop is inside what Warsmash can host.
+- **The engine AI VM does not exist there.** The `.ai` side — the S9 captain
+  path — has no implementation to run against. A Warsmash harness could
+  therefore never evaluate the engine-captain architecture, only our
+  hand-rolled one.
+
+Two further constraints from that brief apply to any work here: Warsmash's
+README supports assets through 1.32 and excludes 1.33+, while this map targets
+Reforged 2.0; and `SimulationRenderController` is not an optional no-op — it
+answers terrain and building-pathing queries, so a headless implementation has
+to preserve gameplay responsibilities rather than merely suppress drawing.
+
 ## Verdict
 
 **Not blocked by code. Blocked by data, and by an unpaid fidelity bill.**
