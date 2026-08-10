@@ -158,6 +158,8 @@ globals
 
     boolean       goalEnabled = false
     boolean       gameEnded   = false
+    boolean       playing     = false
+    boolean       pShotCharging = false
     rect          gg_rct_Goal_1 = null
     rect          gg_rct_Goal_2 = null
     rect          gg_rct_Start_1 = null
@@ -350,8 +352,15 @@ def source_guards(src):
     # Order economy: orders may only be issued from the choke point.
     issue_lines = [l.strip() for l in src.splitlines()
                    if re.search(r'IssuePointOrder\s*\(', l)]
-    ok(len(issue_lines) == 1, 'IssuePointOrder appears once, inside BAI_TryOrder',
-       '%d site(s)' % len(issue_lines))
+    moves = [l for l in issue_lines if '"move"' in l]
+    casts = [l for l in issue_lines if 'BAI_ORD_' in l]
+    ok(len(moves) == 1, 'the only movement order is the one in BAI_TryOrder',
+       '%d move site(s)' % len(moves))
+    ok(len(moves) + len(casts) == len(issue_lines),
+       'every other point order is a named ability cast',
+       '%d cast(s): %s' % (len(casts),
+                           ', '.join(sorted(set(re.findall(r'BAI_ORD_[A-Z_]+',
+                                                           ' '.join(casts)))))))
     ok('BAI_REORDER_DIST' in src and
        re.search(r'BAI_Dist\(x, y, BAI_lastOrdX\[pid\], BAI_lastOrdY\[pid\]\) < BAI_REORDER_DIST', src)
        is not None,

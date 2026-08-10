@@ -55,12 +55,25 @@
     constant real    BAI_SUPPORT_SPREAD    = 700.0    // support offset off the ball
     constant real    BAI_SLAM_RANGE        = 300.0    // slam the carrier inside this
     constant real    BAI_LANE_HALFWIDTH    = 110.0    // shot-lane clearance
-    constant integer BAI_ATHLETE_CLASS     = 'h00P'   // Karma Green Inn (kick+sprint+slam)
+    constant real    BAI_POWERSHOT_RANGE   = 3200.0   // powershot is near-frictionless
+    constant real    BAI_MARK_DEPTH        = 190.0    // how far goal-side of a marked man
+    constant real    BAI_PASS_LEAD         = 170.0    // pass into space, not at the feet
 
 // ---- ability order strings, from the object data's Ncl6 base-order field ----
     constant string  BAI_ORD_POWERSHOT     = "parasite"
     constant string  BAI_ORD_SLAM          = "sacrifice"
+    constant string  BAI_ORD_CURVE_CCW     = "carrionscarabs"
+    constant string  BAI_ORD_CURVE_CW      = "cannibalize"
     constant string  BAI_ORD_SPRINT        = "immolation"
+
+// ---- ability rawcodes the map does not expose as globals --------------------
+    constant integer BAI_POWERSHOT_ABIL    = 'A003'
+    constant integer BAI_CURVE_CCW_ABIL    = 'A00Q'
+    constant integer BAI_CURVE_CW_ABIL     = 'A00R'
+
+// ---- the athlete roster: one class per slot instead of twelve of the same ---
+    integer array    BAI_roster
+    integer          BAI_rosterN            = 0
 
 // ---- state ----
     boolean array    BAI_on                 // AI drives this slot
@@ -74,10 +87,12 @@
     real    array    BAI_aimNoise           // difficulty: aim error in units
     boolean array    BAI_useAbilities
     boolean array    BAI_registered         // registered into the map's player list
+    boolean array    BAI_claimed            // opponent already marked this think
 
     timer            BAI_timer              = null
     integer          BAI_subTick            = 0
     integer          BAI_rescan             = 0
+    integer          BAI_rosterOffset       = 0
     integer          BAI_seed               = 1
     boolean          BAI_enabled            = false
 
@@ -459,6 +474,80 @@ function BAI_NearestEnemyDist takes integer team, real x, real y returns real
 endfunction
 
 //----------------------------------------------------------------------------
+// The roster. The first build hard-coded one class, so every bot was a Karma
+// Green Inn and the pitch was a row of identical treants. These are the
+// playable classes (utyp "ancient,giant") with kits worth playing: powershot,
+// curveshot, slam, and plain runners.
+//----------------------------------------------------------------------------
+function BAI_InitRoster takes nothing returns nothing
+    set BAI_roster[0] = 'h00F'   // Akari Ska as Ion Ink -- sprint + POWERSHOT
+    set BAI_roster[1] = 'h012'   // Dark Dawn Oar        -- sprint + CURVESHOT both ways
+    set BAI_roster[2] = 'h00P'   // Karma Green Inn      -- sprint + SLAM
+    set BAI_roster[3] = 'h003'   // Karmic Livid Lion
+    set BAI_roster[4] = 'h005'   // Nisei Linesman
+    set BAI_roster[5] = 'h00Y'   // Szura Coh
+    set BAI_roster[6] = 'h029'   // Manful Loaf
+    set BAI_roster[7] = 'h02C'   // Marzipan USA Bro
+    set BAI_rosterN = 8
+endfunction
+
+// Spread the roster across slots so team-mates differ, with a per-game offset
+// so it is not the same eleven every match.
+function BAI_ClassFor takes integer pid returns integer
+    if BAI_rosterN == 0 then
+        call BAI_InitRoster()
+    endif
+    return BAI_roster[ModuloInteger(pid + BAI_rosterOffset, BAI_rosterN)]
+endfunction
+
+function BAI_HasAbil takes unit u, integer id returns boolean
+    return GetUnitAbilityLevel(u, id) > 0
+endfunction
+
+//----------------------------------------------------------------------------
+// Which side of the line to the target the nearest blocker stands on. Sign of
+// the 2-D cross product: positive means the blocker is to the left, so a shot
+// has to bend the other way to get round him.
+//----------------------------------------------------------------------------
+function BAI_BlockerSide takes integer team, real x0, real y0, real x1, real y1 returns integer
+    local integer i    = 0
+    local real    dx   = x1 - x0
+    local real    dy   = y1 - y0
+    local real    len  = SquareRoot(dx * dx + dy * dy)
+    local real    best = 999999.0
+    local integer side = 0
+    local real    t
+    local real    cross
+    local unit    u
+    if len < 1.0 then
+        return 0
+    endif
+    set dx = dx / len
+    set dy = dy / len
+    loop
+        exitwhen i >= MAX_PLAYERS
+        if GetPlayerTeam(Player(i)) != team then
+            set u = BAI_UnitOf(i)
+            if BAI_Alive(u) then
+                set t = (GetUnitX(u) - x0) * dx + (GetUnitY(u) - y0) * dy
+                if t > 0.0 and t < len and t < best then
+                    set cross = dx * (GetUnitY(u) - y0) - dy * (GetUnitX(u) - x0)
+                    set best = t
+                    if cross > 0.0 then
+                        set side = 1
+                    else
+                        set side = -1
+                    endif
+                endif
+            endif
+        endif
+        set i = i + 1
+    endloop
+    set u = null
+    return side
+endfunction
+
+//----------------------------------------------------------------------------
 // Shot lane. A shot is worth taking only if no opponent sits close to the
 // straight line from the ball to the aim point. This is a corridor test, not a
 // physics trace -- it does not model the ball bouncing over a defender.
@@ -620,6 +709,156 @@ function BAI_TrySlam takes integer pid, unit u, unit carrier returns boolean
 endfunction
 
 //----------------------------------------------------------------------------
+// TRICKSHOTS.
+//
+// Powershot (A003, order "parasite", 6 s cooldown, 0.5 s charge): the map
+// kicks at POWERSHOT_SPEED with z 0 and then sets the ball's friction globals
+// to 0.02 with no bounce loss, so the shot is flat and effectively unstoppable
+// by distance -- it scores from places a normal kick cannot reach. The charge
+// locks the caster's turn speed, so it is only worth starting when nobody is
+// close enough to take the ball off him.
+//
+// Curveshot (A00Q counter-clockwise / A00R clockwise, 1 s cooldown): the ball
+// bends, so it is the answer to a BLOCKED lane rather than an open one. The
+// bend is chosen away from the side the blocker stands on.
+//----------------------------------------------------------------------------
+function BAI_TryPowershot takes integer pid, unit u, real gx, real gy returns boolean
+    if not BAI_useAbilities[pid] or not BAI_HasAbil(u, BAI_POWERSHOT_ABIL) then
+        return false
+    endif
+    if pShotCharging then
+        return false
+    endif
+    if BAI_NearestEnemyDist(GetPlayerTeam(Player(pid)), GetUnitX(u), GetUnitY(u)) < BAI_PRESSURE_RANGE then
+        return false      // no time to charge
+    endif
+    if BAI_Dist(GetUnitX(u), GetUnitY(u), gx, gy) > BAI_POWERSHOT_RANGE then
+        return false
+    endif
+    if not BAI_LaneClear(GetPlayerTeam(Player(pid)), GetUnitX(u), GetUnitY(u), gx, gy) then
+        return false
+    endif
+    call IssuePointOrder(u, BAI_ORD_POWERSHOT, gx, gy)
+    call BAI_ForgetOrder(pid)
+    return true
+endfunction
+
+function BAI_TryCurve takes integer pid, unit u, real gx, real gy returns boolean
+    local integer team = GetPlayerTeam(Player(pid))
+    local integer side
+    if not BAI_useAbilities[pid] then
+        return false
+    endif
+    set side = BAI_BlockerSide(team, GetUnitX(u), GetUnitY(u), gx, gy)
+    if side == 0 then
+        return false      // nothing in the way; a plain kick is better
+    endif
+    // Bend away from the blocker: he is on the left -> curve clockwise.
+    if side > 0 and BAI_HasAbil(u, BAI_CURVE_CW_ABIL) then
+        call IssuePointOrder(u, BAI_ORD_CURVE_CW, gx, gy)
+        call BAI_ForgetOrder(pid)
+        return true
+    endif
+    if side < 0 and BAI_HasAbil(u, BAI_CURVE_CCW_ABIL) then
+        call IssuePointOrder(u, BAI_ORD_CURVE_CCW, gx, gy)
+        call BAI_ForgetOrder(pid)
+        return true
+    endif
+    return false
+endfunction
+
+//----------------------------------------------------------------------------
+// MARKING. The first build sent every defender to the midpoint between the
+// ball and its own goal, so they bunched into one clump and covered nothing.
+// Each defender now takes a DIFFERENT opponent -- ranked by how close that
+// opponent is to the goal being defended, most dangerous first -- and stands
+// goal-side of him. Sets BAI_ipx/BAI_ipy.
+//----------------------------------------------------------------------------
+function BAI_MarkSpot takes integer pid, integer team, integer rank returns nothing
+    local integer i     = 0
+    local integer seen  = 0
+    local integer bestI = -1
+    local real    bestD = 999999.0
+    local real    d
+    local real    ownx  = BAI_OwnGoalX(team)
+    local real    owny  = BAI_OwnGoalY(team)
+    local unit    o
+    local real    dx
+    local real    dy
+    local real    len
+
+    // Walk the opponents rank+1 times, each pass taking the nearest one not
+    // already claimed by a lower-ranked defender.
+    loop
+        exitwhen seen > rank
+        set bestI = -1
+        set bestD = 999999.0
+        set i = 0
+        loop
+            exitwhen i >= MAX_PLAYERS
+            if GetPlayerTeam(Player(i)) != team and not BAI_claimed[i] then
+                set o = BAI_UnitOf(i)
+                if BAI_Alive(o) then
+                    set d = BAI_Dist(GetUnitX(o), GetUnitY(o), ownx, owny)
+                    if d < bestD then
+                        set bestD = d
+                        set bestI = i
+                    endif
+                endif
+            endif
+            set i = i + 1
+        endloop
+        exitwhen bestI < 0
+        set BAI_claimed[bestI] = true
+        set seen = seen + 1
+    endloop
+    set o = null
+
+    if bestI < 0 then
+        // Nobody left to mark: hold the space in front of our goal.
+        set BAI_ipx = ownx + (BAI_pbx - ownx) * 0.35
+        set BAI_ipy = owny + (BAI_pby - owny) * 0.35
+        return
+    endif
+
+    set o = BAI_UnitOf(bestI)
+    set dx = ownx - GetUnitX(o)
+    set dy = owny - GetUnitY(o)
+    set len = SquareRoot(dx * dx + dy * dy)
+    if len < 1.0 then
+        set len = 1.0
+    endif
+    set BAI_ipx = GetUnitX(o) + dx / len * BAI_MARK_DEPTH
+    set BAI_ipy = GetUnitY(o) + dy / len * BAI_MARK_DEPTH
+    set o = null
+endfunction
+
+// How many team-mates of this slot are closer to the ball than it is -- the
+// defender's rank, which is also which opponent it picks up.
+function BAI_DefenceRank takes integer pid, integer team returns integer
+    local integer i    = 0
+    local integer rank = 0
+    local unit    me   = BAI_UnitOf(pid)
+    local real    myd  = BAI_Dist(GetUnitX(me), GetUnitY(me), BAI_pbx, BAI_pby)
+    local unit    o
+    loop
+        exitwhen i >= MAX_PLAYERS
+        if i != pid and GetPlayerTeam(Player(i)) == team then
+            set o = BAI_UnitOf(i)
+            if BAI_Alive(o) then
+                if BAI_Dist(GetUnitX(o), GetUnitY(o), BAI_pbx, BAI_pby) < myd then
+                    set rank = rank + 1
+                endif
+            endif
+        endif
+        set i = i + 1
+    endloop
+    set me = null
+    set o = null
+    return rank
+endfunction
+
+//----------------------------------------------------------------------------
 // THE DECISION. Four cases, in priority order:
 //   1. I carry the ball   -> shoot, else pass, else drive at the goal
 //   2. A team-mate carries -> take a support position off the ball
@@ -642,21 +881,19 @@ function BAI_Act takes integer pid returns nothing
     local real    ownx
     local real    owny
     local real    d
+    local real    lead
 
     if not BAI_Alive(u) then
         set u = null
         return
     endif
-    if gameEnded or not goalEnabled then
+    if gameEnded then
         set u = null
         return
     endif
 
     set ux   = GetUnitX(u)
     set uy   = GetUnitY(u)
-    set car  = BAI_BallCarrier()
-    set role = BAI_AssignRole(pid, team, u)
-    set BAI_role[pid] = role
     set gx   = BAI_TargetGoalX(team)
     set gy   = BAI_TargetGoalY(team)
     set ownx = BAI_OwnGoalX(team)
@@ -666,26 +903,65 @@ function BAI_Act takes integer pid returns nothing
     set bx = BAI_pbx
     set by = BAI_pby
 
+    //--- 0. the whistle has not gone -----------------------------------------
+    // The map counts 3-2-1 into "Play!" and only then sets `playing`. Kicking
+    // off early is what the first build did; now the bots take their shape and
+    // wait, like the humans do.
+    if not playing or not goalEnabled then
+        set role = BAI_AssignRole(pid, team, u)
+        if role == 0 then
+            call BAI_TryOrder(pid, u, 1, ownx + (bx - ownx) * 0.10, owny)
+        else
+            call BAI_TryOrder(pid, u, 1, (ux + ownx) / 2.0, uy)
+        endif
+        set u = null
+        return
+    endif
+
+    set car  = BAI_BallCarrier()
+    set role = BAI_AssignRole(pid, team, u)
+    set BAI_role[pid] = role
+
     //--- 1. I have the ball ---------------------------------------------------
     if car == u then
         set d = BAI_Dist(ux, uy, gx, gy)
         // Aim off-centre so the shot does not always run at the keeper.
         set aimY = gy + BAI_Noise(BAI_goalHalf * 0.6)
+
         if d < BAI_SHOOT_RANGE and BAI_LaneClear(team, ux, uy, gx, aimY) then
             call BAI_Kick(pid, u, gx, aimY)
             set u = null
             set car = null
             return
         endif
-        set mate = BAI_BestPass(pid, team, ux, uy)
-        if mate >= 0 and (BAI_NearestEnemyDist(team, ux, uy) < BAI_PRESSURE_RANGE or d > BAI_SHOOT_RANGE) then
-            call BAI_Kick(pid, u, GetUnitX(BAI_UnitOf(mate)), GetUnitY(BAI_UnitOf(mate)))
+        // Blocked but shootable: bend it round him.
+        if d < BAI_SHOOT_RANGE and BAI_TryCurve(pid, u, gx, aimY) then
             set u = null
             set car = null
             return
         endif
-        // Carrying is slowed by the map's own ball-slow debuff, so a carrier
-        // that cannot shoot or pass drives at the goal and re-evaluates.
+        // Too far to kick, but a powershot is flat and near-frictionless.
+        if BAI_TryPowershot(pid, u, gx, aimY) then
+            set u = null
+            set car = null
+            return
+        endif
+
+        // Passing is the default, not the fallback: carrying is slowed by the
+        // map's own ball-slow debuff and a kick travels 3.2x a dribble.
+        set mate = BAI_BestPass(pid, team, ux, uy)
+        if mate >= 0 then
+            // Into space ahead of him, toward the goal, not at his feet.
+            set lead = BAI_Dist(GetUnitX(BAI_UnitOf(mate)), GetUnitY(BAI_UnitOf(mate)), gx, gy)
+            if lead < 1.0 then
+                set lead = 1.0
+            endif
+            call BAI_Kick(pid, u, GetUnitX(BAI_UnitOf(mate)) + (gx - GetUnitX(BAI_UnitOf(mate))) / lead * BAI_PASS_LEAD, GetUnitY(BAI_UnitOf(mate)) + (gy - GetUnitY(BAI_UnitOf(mate))) / lead * BAI_PASS_LEAD)
+            set u = null
+            set car = null
+            return
+        endif
+
         call BAI_TrySprint(pid, u)
         call BAI_TryOrder(pid, u, 1, gx, gy)
         set u = null
@@ -706,7 +982,7 @@ function BAI_Act takes integer pid returns nothing
         return
     endif
 
-    //--- 3. an opponent has it -----------------------------------------------
+    //--- 3. an opponent has it -- DEFEND -------------------------------------
     if car != null then
         if BAI_TrySlam(pid, u, car) then
             set u = null
@@ -714,16 +990,20 @@ function BAI_Act takes integer pid returns nothing
             return
         endif
         if role == 0 then
-            // Keeper: stand on the segment from the ball to the middle of the
-            // goal, a fixed depth off the line.
             set d = BAI_Dist(bx, by, ownx, owny)
             if d < 1.0 then
                 set d = 1.0
             endif
             call BAI_TryOrder(pid, u, 1, ownx + (bx - ownx) / d * BAI_KEEPER_DEPTH, owny + (by - owny) / d * BAI_KEEPER_DEPTH)
-        else
+        elseif role == 2 then
+            // Nearest man closes the carrier down.
             call BAI_TrySprint(pid, u)
             call BAI_TryOrder(pid, u, 1, GetUnitX(car), GetUnitY(car))
+        else
+            // Everyone else picks up a DIFFERENT opponent and stands goal-side
+            // of him, instead of piling onto the ball.
+            call BAI_MarkSpot(pid, team, BAI_DefenceRank(pid, team) - 1)
+            call BAI_TryOrder(pid, u, 1, BAI_ipx, BAI_ipy)
         endif
         set u = null
         set car = null
@@ -737,8 +1017,6 @@ function BAI_Act takes integer pid returns nothing
         if d < 1.0 then
             set d = 1.0
         endif
-        // The keeper leaves his line only for a ball he can actually reach
-        // inside his own area.
         if BAI_ipTicks >= 0 and BAI_Dist(BAI_ipx, BAI_ipy, ownx, owny) < 900.0 then
             call BAI_TryOrder(pid, u, 1, BAI_ipx, BAI_ipy)
         else
@@ -748,9 +1026,13 @@ function BAI_Act takes integer pid returns nothing
         call BAI_TrySprint(pid, u)
         call BAI_TryOrder(pid, u, 1, BAI_ipx, BAI_ipy)
     else
-        // Defender shapes up between the ball and his own goal rather than
-        // joining a chase he cannot win.
-        call BAI_TryOrder(pid, u, 1, (bx + ownx) / 2.0, (by + owny) / 2.0)
+        // Second man goes for it too; the rest hold their marks.
+        if BAI_DefenceRank(pid, team) <= 1 then
+            call BAI_TryOrder(pid, u, 1, BAI_ipx, BAI_ipy)
+        else
+            call BAI_MarkSpot(pid, team, BAI_DefenceRank(pid, team) - 2)
+            call BAI_TryOrder(pid, u, 1, BAI_ipx, BAI_ipy)
+        endif
     endif
 
     set u = null
@@ -835,7 +1117,7 @@ function BAI_EnsureAthlete takes integer pid returns nothing
     // h00P is classified "ancient,giant" = UNIT_TYPE_OBJECT + UNIT_TYPE_PLAYER,
     // so CreateUnit alone gets it auto-indexed into the map's Object system
     // (s__Object_AutoCreate___creator) and recognised by the ball catch filter.
-    set u = CreateUnit(Player(pid), BAI_ATHLETE_CLASS, BAI_StartXOf(pid, team), BAI_StartYOf(pid, team), Players___playerFacing[pid])
+    set u = CreateUnit(Player(pid), BAI_ClassFor(pid), BAI_StartXOf(pid, team), BAI_StartYOf(pid, team), Players___playerFacing[pid])
     set Players___playerUnit[pid] = u
     call SetUnitColor(u, GetPlayerColor(Player(pid)))
     call Pick___addAbilities(u)
@@ -856,6 +1138,13 @@ function BAI_Tick takes nothing returns nothing
     // a field can be re-picked between matches -- so geometry is re-read every
     // tick (five rect reads) rather than latched at boot.
     call BAI_RefreshGeometry()
+    // Marking claims are per pass, so they are cleared before each one.
+    loop
+        exitwhen i >= MAX_PLAYERS
+        set BAI_claimed[i] = false
+        set i = i + 1
+    endloop
+    set i = 0
     set BAI_subTick = ModuloInteger(BAI_subTick + 1, BAI_SLOT_STAGGER)
     // Slots that lose their athlete mid-match are given a new one on a rescan.
     if BAI_subTick == 0 then
@@ -937,6 +1226,8 @@ function BAI_Start takes nothing returns nothing
         set i = i + 1
     endloop
 
+    call BAI_InitRoster()
+    set BAI_rosterOffset = ModuloInteger(BAI_Rand(), BAI_rosterN)
     call ArrangeStartPositions()
     call BAI_RefreshGeometry()
 

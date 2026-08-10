@@ -39,6 +39,8 @@ REQUIRED = [
     r'(?<![A-Za-z0-9_])real array Players___playerFacing\b',
     r'(?<![A-Za-z0-9_])boolean goalEnabled\b',
     r'(?<![A-Za-z0-9_])boolean gameEnded\b',
+    r'(?<![A-Za-z0-9_])boolean playing\b',
+    r'(?<![A-Za-z0-9_])boolean pShotCharging\b',
     r'(?<![A-Za-z0-9_])rect gg_rct_Goal_1\b',
     r'(?<![A-Za-z0-9_])rect gg_rct_Goal_2\b',
     r'(?<![A-Za-z0-9_])rect gg_rct_Start_1\b',
