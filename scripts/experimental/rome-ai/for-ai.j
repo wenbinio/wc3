@@ -180,6 +180,54 @@
     // objective unconditionally -- if nothing scores, the thresholds are
     // wrong, and in the meantime the army should still be moving at
     // something.
+    // ===================================================================
+    //  S1 -- ATTACKS AS PROCEDURES WITH INTERRUPT FLAGS (stage 3)
+    //
+    //  Every working AI in the corpus does: stage -> issue ONE order -> sleep
+    //  until a terminal state, with break/threat/flee as FLAGS set by other
+    //  subsystems, never as competing scores. Our +0.12 incumbency and 9 s
+    //  dwell are hysteresis patched over what is really a control-flow
+    //  problem, and round 4's own verdict -- "wrong over time, not at any
+    //  tick" -- is the exact symptom of scoring a decision that should have
+    //  been a procedure.
+    //
+    //  So an ATTACK (EXPAND or SIEGE) is now a MISSION: chosen once, then run
+    //  to a terminal state without re-scoring. Everything else -- defend,
+    //  retreat, consolidate, tech -- keeps its per-tick scoring, which is
+    //  what preserves Guard B: DEFEND and RETREAT still WIN by score, and the
+    //  flags only make an abort immediate instead of waiting out the dwell.
+    //
+    //  DELIBERATE DEVIATION, and it is a real one. The corpus stages by
+    //  HOLDING the army until the group is full. We do not: six rounds of
+    //  playtests on this map have produced one dominant failure -- armies
+    //  standing still -- and a staging hold is a new way to stand still. The
+    //  phase exists and carries FormGroup's deadline; it just marches while
+    //  it gathers.
+    //
+    //  The DEADLINE is the piece worth the most. A possibility gate has to
+    //  know in advance what makes a goal impossible, and we have now shipped
+    //  three of them and found a fourth unanticipated impossible state each
+    //  time. A deadline does not predict; it notices nothing happened. It
+    //  backs all three gates.
+    // ===================================================================
+    constant integer AI_MS_NONE      = 0
+    constant integer AI_MS_STAGE     = 1
+    constant integer AI_MS_MARCH     = 2
+    constant real    AI_MS_STAGE_T   = 20.0   // FormGroup deadline: release anyway
+    constant real    AI_MS_MARCH_T   = 150.0  // an attack that takes longer has failed
+    constant real    AI_MS_REFRESH   = 8.0    // re-issue interval while running
+    constant real    AI_MS_THREAT    = 1.10   // threat vs garrison that interrupts
+    constant real    AI_RETREAT_RATIO = 1.15   // the round-2 retreat bar, as a FLAG
+    integer array    ai_msState
+    integer array    ai_msTarget
+    real    array    ai_msPhaseEnd
+    real    array    ai_msNextOrder
+    // Interrupt flags: SET by other subsystems, never scored against anything.
+    // S3's threat field is designed to drive exactly these.
+    boolean array    ai_ifThreat
+    boolean array    ai_ifRetreat
+    boolean array    ai_ifStuck
+
     constant real    AI_IDLE_T        = 25.0
     // The cheapest thing the Forge can research. Below this, TECH is not a
     // cheap goal, it is an impossible one. ROUND 6.
@@ -3735,6 +3783,81 @@ function AI_IsIdle takes integer pid returns boolean
     return (ai_now - ai_commitAt[pid]) >= AI_IDLE_T
 endfunction
 
+//---------------------------------------------------------------------------
+//  S1 -- the mission layer. See the globals block for why this exists.
+//---------------------------------------------------------------------------
+
+// Interrupt flags are SET here, from the world model, and consumed by the
+// mission. They are not scores and they never compete with one another --
+// any one of them ends the mission and hands control back to the chooser,
+// which then picks DEFEND or RETREAT on its own merits. That is what keeps
+// Guard B intact through the rewrite.
+function AI_SetFlags takes integer pid returns nothing
+    set ai_ifThreat[pid] = (wm_threat[pid] > 0.0) and (wm_asset[pid] > 0.0) and (wm_threat[pid] > AI_MS_THREAT * wm_garrison[pid])
+    set ai_ifRetreat[pid] = (wm_fieldCV[pid] > 1.0) and (wm_fieldEnemyCV[pid] > AI_RETREAT_RATIO * wm_fieldCV[pid])
+endfunction
+
+function AI_MissionAbort takes integer pid, string why returns nothing
+    if ai_msState[pid] != AI_MS_NONE then
+        set ai_msState[pid] = AI_MS_NONE
+        call AI_Say(pid, "breaking off - " + why)
+    endif
+endfunction
+
+function AI_MissionStart takes integer pid, integer t returns nothing
+    set ai_msState[pid] = AI_MS_STAGE
+    set ai_msTarget[pid] = t
+    set ai_msPhaseEnd[pid] = ai_now + AI_MS_STAGE_T
+    set ai_msNextOrder[pid] = 0.0
+endfunction
+
+// True when a mission consumed this tick, so the caller must NOT re-score.
+// That single fact is most of S1: a running attack is not re-decided.
+function AI_MissionTick takes integer pid returns boolean
+    local integer t = ai_msTarget[pid]
+    if ai_msState[pid] == AI_MS_NONE then
+        return false
+    endif
+    // 1. INTERRUPTS. Flags, checked; never weighed.
+    if ai_ifThreat[pid] then
+        call AI_MissionAbort(pid, "home is under real threat")
+        return false
+    endif
+    if ai_ifRetreat[pid] then
+        call AI_MissionAbort(pid, "this fight is lost")
+        return false
+    endif
+    // 2. terminal: the objective is gone, or it is ours
+    if t < 0 or t >= ai_pointCount or ai_pt[t] == null then
+        call AI_MissionAbort(pid, "the objective is gone")
+        return false
+    endif
+    if GetOwningPlayer(ai_pt[t]) == ai_p[pid] or IsPlayerAlly(GetOwningPlayer(ai_pt[t]), ai_p[pid]) then
+        set ai_msState[pid] = AI_MS_NONE    // taken; the micro tick narrates it
+        return false
+    endif
+    // 3. DEADLINE. A phase that cannot finish RELEASES rather than waiting.
+    if ai_now >= ai_msPhaseEnd[pid] then
+        if ai_msState[pid] == AI_MS_STAGE then
+            set ai_msState[pid] = AI_MS_MARCH
+            set ai_msPhaseEnd[pid] = ai_now + AI_MS_MARCH_T
+        else
+            call AI_MissionAbort(pid, "this attack is going nowhere")
+            set ai_ifStuck[pid] = true
+            return false
+        endif
+    endif
+    // 4. RUNNING. One order per refresh, not one per tick -- this is where
+    //    the order economy improves rather than degrades.
+    if ai_now >= ai_msNextOrder[pid] then
+        set ai_msNextOrder[pid] = ai_now + AI_MS_REFRESH
+        set ai_target[pid] = t
+        call AI_MoveOnTarget(pid, t)
+        call AI_Raid(pid)
+    endif
+    return true
+endfunction
+
 // ---- goal dispatch ------------------------------------------------------
 
 function AI_Execute takes integer pid returns nothing
@@ -3790,6 +3913,7 @@ function AI_Execute takes integer pid returns nothing
             endif
             call AI_Claim(pid, t)
             set ai_target[pid] = t
+            call AI_MissionStart(pid, t)   // S1: from here it is a procedure
             call AI_MoveOnTarget(pid, t)
             call AI_Raid(pid)              // horses keep working during a push
         endif
@@ -3805,6 +3929,7 @@ function AI_Execute takes integer pid returns nothing
             endif
             call AI_Claim(pid, t)
             set ai_target[pid] = t
+            call AI_MissionStart(pid, t)   // S1
             call AI_MoveOnTarget(pid, t)
             call AI_Raid(pid)
         endif
@@ -3921,15 +4046,20 @@ function AI_Think takes nothing returns nothing
             if ai_now >= ai_nextThink[pid] then
                 set ai_nextThink[pid] = ai_now + AI_ThinkPeriod(pid)
                 call AI_ScanWorld(pid)
-                call AI_UpdatePosture(pid)
-                set newGoal = AI_SelectGoal(pid)
-                if newGoal != ai_goal[pid] then
-                    set ai_goal[pid] = newGoal
-                    set ai_goalSince[pid] = ai_now
-                    // posture change: a STATE CHANGE, so it is narrated
-                    call AI_Say(pid, AI_GoalName(newGoal))
+                call AI_SetFlags(pid)
+                // S1: a RUNNING attack is not re-scored. Only when no mission
+                // holds the tick does the goal layer choose again.
+                if not AI_MissionTick(pid) then
+                    call AI_UpdatePosture(pid)
+                    set newGoal = AI_SelectGoal(pid)
+                    if newGoal != ai_goal[pid] then
+                        set ai_goal[pid] = newGoal
+                        set ai_goalSince[pid] = ai_now
+                        // posture change: a STATE CHANGE, so it is narrated
+                        call AI_Say(pid, AI_GoalName(newGoal))
+                    endif
+                    call AI_Execute(pid)
                 endif
-                call AI_Execute(pid)
                 // ROUND 5: runs whatever the goal is, so a crossing can
                 // always be ended by something other than the goal that
                 // started it.
@@ -4001,6 +4131,11 @@ function AI_EnablePlayer takes integer pid, integer difficulty returns nothing
     set ai_scanCursor[pid] = 0
     set ai_wallSince[pid]= -9999.0
     set ai_commitAt[pid] = 0.0
+    set ai_msState[pid]  = AI_MS_NONE
+    set ai_msTarget[pid] = -1
+    set ai_ifThreat[pid] = false
+    set ai_ifRetreat[pid]= false
+    set ai_ifStuck[pid]  = false
     set ai_progD[pid]    = 999999.0
     set ai_progAt[pid]   = 0.0
     set ai_navState[pid] = AI_NAV_NONE

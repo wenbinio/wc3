@@ -276,6 +276,9 @@ def make_env(sc):
         'wm_canReplaceHero': d(sc.get('canReplaceHero', False)),
         'wm_proxScale': d(sc.get('proxScale', CONSTS['AI_PROX_MIN'])),
         'wm_hasSiege': d(sc.get('hasSiege', True)),
+        'ai_msState': d(sc.get('msState', 0)), 'ai_msTarget': d(sc.get('msTarget', -1)),
+        'ai_msPhaseEnd': d(sc.get('msPhaseEnd', 1e9)), 'ai_msNextOrder': d(1e9),
+        'ai_ifThreat': d(False), 'ai_ifRetreat': d(False), 'ai_ifStuck': d(False),
         'ai_wallSince': d(sc.get('wallSince', -9999.0)),
         'ai_spy': {i: False for i in range(CONSTS['AI_MAX_PLAYERS'])},
         'ai_accSiege': 0,
@@ -1339,6 +1342,103 @@ def consort():
     return 1 if fails else 0
 
 
+# ------------------------------- STAGE 3 / S1: attacks as procedures
+
+def missions():
+    """S1. Every working AI in the corpus stages, issues one order and sleeps
+    until a terminal state, with break/threat/flee as FLAGS set by other
+    subsystems rather than competing scores. Round 4's verdict -- "wrong over
+    time, not at any tick" -- is the symptom of scoring a decision that should
+    have been a procedure.
+
+    What must be true after the rewrite: a running attack is NOT re-scored; a
+    flag ends it immediately; a phase that cannot finish RELEASES on a
+    deadline rather than waiting; and the goal layer still owns the choice, so
+    Guard B survives."""
+    print('\n' + '=' * 78)
+    print('STAGE 3 / S1 -- attacks as procedures with interrupt flags')
+    print('=' * 78)
+    fails = 0
+    RUN = CONSTS['AI_MS_MARCH']
+
+    def tick(**kw):
+        sc = dict(role='barb', t=kw.pop('t', 500.0), army=600.0,
+                  msState=kw.pop('msState', RUN), msTarget=0,
+                  msPhaseEnd=kw.pop('msPhaseEnd', 1e9),
+                  points=[{'kind': CP, 'x': 5000.0, 'y': 0.0, 'owner': 1}])
+        sc.update(kw)
+        env = make_env(sc)
+        nat = make_natives(env, 0.0)
+        nat['AI_MoveOnTarget'] = lambda p, t: None
+        nat['AI_Raid'] = lambda p: None
+        nat['AI_Say'] = lambda p, m: None
+        it = Interp(FUNCS, CONSTS, env, nat)
+        env['ai_ifThreat'][0] = kw.get('threat_flag', False)
+        env['ai_ifRetreat'][0] = kw.get('retreat_flag', False)
+        held = it.run('AI_MissionTick', [0])
+        return bool(held), env['ai_msState'][0], bool(env['ai_ifStuck'][0])
+
+    held, st, _ = tick()
+    ok = held and st == RUN
+    fails += 0 if ok else 1
+    print('  %s a running mission HOLDS the tick, so the goal layer does not re-score' % ('PASS' if ok else 'FAIL'))
+
+    held, st, _ = tick(threat_flag=True)
+    ok = (not held) and st == CONSTS['AI_MS_NONE']
+    fails += 0 if ok else 1
+    print('  %s the THREAT flag ends the mission at once and returns control' % ('PASS' if ok else 'FAIL'))
+
+    held, st, _ = tick(retreat_flag=True)
+    ok = (not held) and st == CONSTS['AI_MS_NONE']
+    fails += 0 if ok else 1
+    print('  %s the RETREAT flag does the same' % ('PASS' if ok else 'FAIL'))
+
+    # FormGroup semantics: staging RELEASES on its deadline
+    held, st, _ = tick(msState=CONSTS['AI_MS_STAGE'], msPhaseEnd=100.0, t=500.0)
+    ok = held and st == RUN
+    fails += 0 if ok else 1
+    print('  %s a staging phase past its deadline RELEASES into the march (FormGroup semantics)' % ('PASS' if ok else 'FAIL'))
+
+    # a march past its deadline fails, and says so by setting the stuck flag
+    held, st, stuck = tick(msState=RUN, msPhaseEnd=100.0, t=500.0)
+    ok = (not held) and st == CONSTS['AI_MS_NONE'] and stuck
+    fails += 0 if ok else 1
+    print('  %s a march past its deadline ABORTS and raises the stuck flag' % ('PASS' if ok else 'FAIL'))
+
+    # NEGATIVE CONTROL: with no flag and no deadline the mission must persist,
+    # otherwise the four assertions above pass because everything aborts.
+    held2, st2, _ = tick(msPhaseEnd=1e9)
+    ok = held2 and st2 == RUN
+    fails += 0 if ok else 1
+    print('  %s   negative control: with no flag and no deadline the mission persists (so aborting is not the default)' % ('PASS' if ok else 'FAIL'))
+
+    # the flags are SET from the world model, not scored
+    def flags(threat, garrison, asset, fcv, fecv):
+        sc = dict(role='barb', threat=threat, garrison=garrison, asset=asset,
+                  fieldCV=fcv, fieldEnemy=fecv)
+        env = make_env(sc)
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        it.run('AI_SetFlags', [0])
+        return bool(env['ai_ifThreat'][0]), bool(env['ai_ifRetreat'][0])
+
+    t1, r1 = flags(900.0, 200.0, 1.0, 500.0, 100.0)
+    t2, r2 = flags(100.0, 900.0, 1.0, 500.0, 100.0)
+    t3, r3 = flags(0.0, 0.0, 0.0, 500.0, 900.0)
+    setting = [
+        ('a threat that outmatches the garrison raises the threat flag', t1),
+        ('a garrison that can cope does not', not t2),
+        ('an outmatched field army raises the retreat flag', r3),
+        ('a winning field army does not', not r1),
+        ('a threat against NOTHING WE OWN never interrupts (round-2 asset gate)', not t3),
+    ]
+    for name, okf in setting:
+        fails += 0 if okf else 1
+        print('  %s %s' % ('PASS' if okf else 'FAIL', name))
+
+    print('\n%s: %d mission assertions failed' % ('PASS' if not fails else 'FAIL', fails))
+    return 1 if fails else 0
+
+
 # --------------------------- round 7: a centroid is not a position (14.2)
 
 def centroid():
@@ -2233,6 +2333,23 @@ ROUND3_GUARDS = [
      r'function AI_BoardEnum\b.*?IsUnitType\(u, UNIT_TYPE_HERO\) and ai_navLoaded < AI_NAV_MIN_LOAD', True),
     ('no transport is left with cargo and no destination',
      r'function AI_NavIdle\b.*?call AI_TryOrder\(ship, AI_ORD_UNLOAD, ai_homeX\[pid\]', True),
+    # --- stage 3 / S1: attacks as procedures -----------------------------
+    ('a running mission holds the tick instead of re-scoring',
+     r'if not AI_MissionTick\(pid\) then\s*\n\s*call AI_UpdatePosture\(pid\)', True),
+    ('interrupts are FLAGS set from the world model, not scores',
+     r'function AI_SetFlags\b(?:(?!\nendfunction)[\s\S])*?set ai_ifThreat\[pid\] =', True),
+    ('the mission checks flags before anything else',
+     r'function AI_MissionTick\b(?:(?!\nendfunction)[\s\S])*?if ai_ifThreat\[pid\] then\s*\n\s*call AI_MissionAbort', True),
+    ('staging releases on a deadline rather than waiting (FormGroup)',
+     r'if ai_now >= ai_msPhaseEnd\[pid\] then\s*\n\s*if ai_msState\[pid\] == AI_MS_STAGE then\s*\n\s*set ai_msState\[pid\] = AI_MS_MARCH', True),
+    ('a failed march raises the stuck flag rather than idling',
+     r'call AI_MissionAbort\(pid, "this attack is going nowhere"\)\s*\n\s*set ai_ifStuck\[pid\] = true', True),
+    ('orders are issued on a refresh interval, not every tick',
+     r'function AI_MissionTick\b(?:(?!\nendfunction)[\s\S])*?if ai_now >= ai_msNextOrder\[pid\] then', True),
+    ('adopting an attack objective starts a mission',
+     r'call AI_MissionStart\(pid, t\)', True),
+    ('the goal layer still owns the CHOICE, so Guard B survives',
+     r'function AI_SelectGoal\b(?:(?!\nendfunction)[\s\S])*?set bestGoal = AI_ArgMaxGoal', True),
     # --- round 7: the centroid ------------------------------------------
     ('the field centroid is validated before anything geometric uses it',
      r'set wm_fieldHPFrac\[pid\] = 1\.0\s*\n\s*endif(?:\s*//[^\n]*\n)*\s*if AI_ValidateField\(pid\) then', True),
@@ -2261,8 +2378,11 @@ ROUND3_GUARDS = [
      r'function AI_NearestContestable\b', True),
     ('committing to an objective is what resets the idle clock',
      r'set ai_commitAt\[pid\] = ai_now', True),
-    ('the naval idle branch runs whatever the goal is',
-     r'call AI_Execute\(pid\)\s*\n(?:\s*//[^\n]*\n)*\s*call AI_NavIdle\(pid\)', True),
+    # S1 moved AI_Execute inside a conditional, so this now asserts the
+    # STRONGER property: NavIdle sits AFTER the endif, i.e. it runs whatever
+    # the goal is AND whatever the mission is doing.
+    ('the naval idle branch runs outside the mission branch, unconditionally',
+     r'function AI_Think\b(?:(?!\nendfunction)[\s\S])*?call AI_Execute\(pid\)\s*\n\s*endif(?:\s*//[^\n]*\n)*\s*call AI_NavIdle\(pid\)', True),
     ('a siege goal no longer buys rams by itself (finding 7)',
      r'ai_goal\[pid\] == GOAL_SIEGE\) and wm_lumber', False),
     ('a defensive or retreating dispatch gives rams no job',
@@ -2402,7 +2522,7 @@ def order_guards():
 
 
 def order_model(dedup, players=11, army=100, horizon=600, objective_every=60,
-                engaged=0.5, wounded=0.05, round3=False):
+                engaged=0.5, wounded=0.05, round3=False, missions=False):
     """Count movement orders per second under the round-1 and round-2 policies.
 
     This is a MODEL of the issuance policy, not an execution of the map: it
@@ -2426,6 +2546,11 @@ def order_model(dedup, players=11, army=100, horizon=600, objective_every=60,
                 due = (tick % int(period)) == (p % int(period))
             else:
                 due = (tick % int(period)) == 0        # round 1: everyone together
+            # S1: while a mission is running the field dispatch fires only
+            # once per AI_MS_REFRESH, not on every think tick. That is the
+            # order-economy half of "issue one order and sleep".
+            if missions and due:
+                due = (tick % int(CONSTS['AI_MS_REFRESH'])) < period
             if due:
                 issued = 0
                 for u in range(army):
@@ -2487,10 +2612,12 @@ def orders():
     b_peak, b_mean = order_model(False)
     a_peak, a_mean = order_model(True)
     c_peak, c_mean = order_model(True, round3=True)
+    s1_peak, s1_mean = order_model(True, round3=True, missions=True)
     print('  %-34s %10s %12s' % ('', 'peak/tick', 'mean/second'))
     print('  %-34s %10d %12.1f' % ('round 1 (no dedup, in step)', b_peak, b_mean))
     print('  %-34s %10d %12.1f' % ('round 2 (dedup + slice + phase)', a_peak, a_mean))
     print('  %-34s %10d %12.1f' % ('round 3 (+ raid, hero, lanes, naval)', c_peak, c_mean))
+    print('  %-34s %10d %12.1f' % ('S1 (missions: order and sleep)', s1_peak, s1_mean))
     print('  %-34s %9.1fx %11.1fx' % ('reduction vs round 1', b_peak / float(c_peak),
                                       b_mean / float(c_mean)))
     ok = a_peak <= b_peak / 5.0 and a_mean <= b_mean / 5.0
@@ -2507,6 +2634,15 @@ def orders():
         fails += 1
     print('%s: ROUND 3 DOES NOT REGRESS IT -- peak %d <= the budgeted bound %d, and still 5x under round 1'
           % ('PASS' if ok3 else 'FAIL', c_peak, bound))
+    # S1's selling point is that a blocking-procedure model issues FEWER
+    # orders, not more. If that is not true the rewrite has not paid for
+    # itself and we should know from the trace, not from a playtest.
+    ok4 = s1_mean < c_mean
+    if not ok4:
+        fails += 1
+    print('%s: S1 IMPROVES IT -- mean %.1f/s vs %.1f/s (%.0f%% fewer), peak %d vs %d'
+          % ('PASS' if ok4 else 'FAIL', s1_mean, c_mean,
+             100.0 * (c_mean - s1_mean) / c_mean, s1_peak, c_peak))
     return 1 if fails else 0
 
 
@@ -2536,6 +2672,7 @@ def main():
     rc |= strategy()
     rc |= tribes()
     rc |= formation()
+    rc |= missions()
     rc |= centroid()
     rc |= impossible()
     rc |= romanlock()

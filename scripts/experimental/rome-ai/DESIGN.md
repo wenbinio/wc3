@@ -1953,3 +1953,82 @@ S1/S3 should turn on. **Stage 3 remains unbegun.**
 
 Artifact sizes for identification: playable **19,026,065**, probe
 **19,038,147**.
+
+---
+
+## 18. Stage 3 / S1 — attacks as procedures with interrupt flags
+
+Owner authorised stage 3. S1 landed first; a build is available before S3.
+
+### 18.1 What changed
+
+An **attack** (EXPAND or SIEGE) is now a **mission**: chosen once, then run to a
+terminal state **without re-scoring**. `AI_MissionTick` holds the think tick
+while a mission runs, so the goal layer only chooses again when no mission holds
+it. Everything else — defend, retreat, consolidate, tech — keeps per-tick
+scoring, which is what preserves Guard B: **DEFEND and RETREAT still win by
+score**; the flags only make an abort immediate instead of waiting out the dwell.
+
+**Interrupts are flags, not scores.** `AI_SetFlags` sets `ai_ifThreat` and
+`ai_ifRetreat` from the world model each tick; any one of them ends the mission
+and returns control. They never compete with each other or with a goal score.
+`ai_ifStuck` is raised by a failed march. **S3's threat field is designed to
+drive exactly these** — the plumbing exists for it rather than being bolted on
+afterwards.
+
+**Deadlines back all three possibility gates.** A staging phase past
+`AI_MS_STAGE_T` **releases into the march** (FormGroup's "send anyway after
+60 s"); a march past `AI_MS_MARCH_T` **aborts and raises the stuck flag**. This
+is the more robust construct, exactly as argued: a possibility gate must know in
+advance what makes a goal impossible, and we have shipped three and found a
+fourth unanticipated impossible state each time. A deadline does not predict —
+it notices nothing happened.
+
+### 18.2 One deliberate deviation from the corpus, and why
+
+The corpus stages by **holding** the army until the group is full. **We do not.**
+Six rounds of playtests on this map have produced one dominant failure — armies
+standing still — and a staging hold is a new way to stand still. The phase
+exists and carries the deadline; it just marches while it gathers. Recorded as a
+deviation rather than an oversight.
+
+### 18.3 The order economy improved, as S1 promised
+
+| policy | peak/tick | mean/second |
+|---|---|---|
+| round 1 (no dedup, in step) | 1705 | 880.0 |
+| round 2 (dedup + slice + phase) | 204 | 55.3 |
+| round 3 (+ raid, hero, lanes, naval) | 234 | 79.3 |
+| **S1 (missions: order and sleep)** | **234** | **74.4** |
+
+**6% fewer orders per second**, and the trace now *asserts* the improvement
+rather than assuming it — a blocking-procedure model that issued more orders
+would mean the rewrite had not paid for itself, and we should learn that from
+the trace rather than a playtest. Peak is unchanged because it is set by the
+per-tick slice budget, which S1 does not touch.
+
+### 18.4 Everything dearly bought, still green
+
+All verified at this commit: **Guards A and B**; all three possibility gates
+(mass, gold floor, tech-on-no-money); the **unconditional idle floor**, still
+*under* the decision layer rather than folded into the state machine; objective
+completion expiring claim, dwell and progress tracker; centroid validation and
+cargo-not-position. `AI_NavIdle`'s guard is now **stronger** than before — it
+asserts NavIdle sits after the `endif`, i.e. it runs whatever the goal is *and*
+whatever the mission is doing.
+
+Trace **319 assertions, 0 FAILs**, including 11 new S1 assertions with a
+negative control (with no flag and no deadline the mission must persist —
+otherwise the four abort assertions would pass simply because everything
+aborts). `validate-map` 191/192 identical; `npm test` 617/0.
+
+**The playable build still contains no engine-AI calls** — S1/S3 and S9 stay
+unentangled, as instructed. Playable **19,027,426**, probe **19,038,147**.
+
+### 18.5 S3 — next
+
+Cluster-and-project army tracking with a continuous threat field: cluster at
+1500, keep centroid/velocity/strength, project three ticks, score towns
+`Σ strength / dist^0.8` floored at 600 with horizon 3000, and override distance
+entirely when an army is heading at you within 23°. It feeds `ai_ifThreat`
+directly. **Not started at this commit.**
