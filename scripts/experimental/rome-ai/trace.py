@@ -2012,6 +2012,240 @@ def voice():
     return 1 if fails else 0
 
 
+def perimeter():
+    """PLAYTEST 8 -- "they can't get out of their camps", and the GENERAL form.
+
+    Third venue for one failure: round 3 was armies stacked behind their own
+    city gate, round 5 was Gray piled on a bridge, round 8 is barbarians
+    sealed in their camps. Each earlier fix addressed the venue. This one
+    addresses the class, because the class is not what it looked like.
+
+    WHAT THE CAMP PERIMETER IS ACTUALLY MADE OF, from the map:
+      * B001 x16 per camp -- a custom destructable named "Pathing Blocker 8",
+        derived from YTpc, carrying PathTextures\\8x8Default.tga. Invisible.
+      * D01J x16-18 -- the palisade fence ART, at the same radius.
+      Both sit on a ring of radius ~850-1090 about the camp. Seven camps
+      (players 0,1,2,4,6,8,11) share the layout.
+
+    So it is neither a gate to open nor a wall to break, and hypothesis A is
+    refuted on the artifact: there is nothing to register. It is also not
+    SEALED -- the Franks ring has gaps of 49 and 67 degrees, some 770 and
+    1050 world units wide, and the engine paths through them.
+
+    THE ARMY WAS NEVER ORDERED OUT. AI_SendEnum dropped every MOVE order
+    whose destination was within AI_HOME_R (2500) of the unit, as a general
+    arrival tolerance. The muster rally sits at AI_MUSTER_OFF (1200). Every
+    muster order was therefore cancelled before issue -- a regression I
+    introduced last round, via a guard written three rounds earlier.
+
+    The general invariant is asserted last, and it is the one that would have
+    caught all three venues: AN ARMY ORDERED SOMEWHERE IT IS NOT MUST RECEIVE
+    ORDERS. A dispatch that issues nothing is never correct."""
+    print('\n' + '=' * 78)
+    print('PLAYTEST 8 -- an army ordered somewhere it is not must receive orders')
+    print('=' * 78)
+    import math
+    fails = 0
+    HOME = (0.0, 0.0)
+    CAMP_R = 950.0                  # measured from the map, all seven camps
+
+    def camp_units(n=12):
+        """A barbarian army standing inside its own palisade ring."""
+        out = []
+        for i in range(n):
+            a = 2.0 * math.pi * i / n
+            r = CAMP_R * 0.8
+            out.append((HOME[0] + r * math.cos(a), HOME[1] + r * math.sin(a), 40.0))
+        return out
+
+    def dispatch(funcs, units, dest, kind=None, threat=0.0):
+        """Run the REAL AI_SendArmy and count the orders that reach a unit."""
+        kind = CONSTS['AI_ORD_MOVE'] if kind is None else kind
+        sc = dict(role='barb', army=40.0 * len(units), threat=threat,
+                  fieldX=HOME[0], fieldY=HOME[1])
+        env = make_env(sc)
+        env['ai_homeX'] = {0: HOME[0]}
+        env['ai_homeY'] = {0: HOME[1]}
+        issued = []
+        nat = make_natives(env, 0.0)
+        seq, st = list(units), {}
+        def enum_driver(g, fn):
+            for u in seq:
+                st['cur'] = u
+                fn()
+        nat['GetEnumUnit'] = lambda: st.get('cur')
+        nat['GetUnitX'] = lambda u: u[0]
+        nat['GetUnitY'] = lambda u: u[1]
+        nat['GetUnitState'] = lambda u, s: 1000.0
+        nat['GetUnitTypeId'] = lambda u: 0
+        nat['IsUnitType'] = lambda u, t: False
+        nat['IsUnitLoaded'] = lambda u: False
+        nat['AI_IsStructure'] = lambda u: False
+        nat['AI_IsTransport'] = lambda u: False
+        nat['AI_CV'] = lambda u: u[2]
+        nat['AI_LaneOf'] = lambda u: 0
+        nat['AI_UnitFor'] = lambda pid, k: 0
+        nat['AI_LanesAt'] = lambda x, y: CONSTS['AI_LANES']
+        nat['AI_SetLanes'] = lambda n: None
+        nat['CreateGroup'] = lambda: 'g'
+        nat['DestroyGroup'] = lambda g: None
+        nat['GroupEnumUnitsOfPlayer'] = lambda g, p, f: None
+        nat['ForGroup'] = enum_driver
+        nat['Filter'] = lambda f: f
+        nat['AI_TryOrder'] = lambda u, k, x, y, t: issued.append((u, k, x, y))
+        Interp(funcs, CONSTS, env, nat).run(
+            'AI_SendArmy', [0, dest[0], dest[1], kind, None])
+        return issued
+
+    RALLY = (CONSTS['AI_MUSTER_OFF'], 0.0)      # exactly where the muster puts it
+    units = camp_units()
+
+    got = dispatch(FUNCS, units, RALLY)
+    ok = len(got) == len(units)
+    fails += 0 if ok else 1
+    print('  %s the muster reaches every unit in the camp: %d order(s) for %d units'
+          % ('PASS' if ok else 'FAIL', len(got), len(units)))
+
+    # NEGATIVE CONTROL: the pre-fix guard, synthesised from the shipped body.
+    # It used AI_HOME_R as a general arrival tolerance; restore that one line
+    # and the same dispatch must go silent.
+    prefix = dict(FUNCS)
+    params, body = FUNCS['AI_SendEnum'][0], FUNCS['AI_SendEnum'][1]
+    old, skipping, depth = [], False, 0
+    for ln in body:
+        s = ln.strip()
+        if s.startswith('if ai_ordKind == AI_ORD_MOVE then'):
+            skipping, depth = True, 0
+            old.append('    if ai_ordKind == AI_ORD_MOVE and AI_Dist(GetUnitX(u), '
+                       'GetUnitY(u), ai_orderX, ai_orderY) < AI_HOME_R then')
+            old.append('        set u = null')
+            old.append('        return')
+            old.append('    endif')
+            continue
+        if skipping:
+            if s.startswith('if '):
+                depth += 1
+            elif s == 'endif':
+                if depth == 0:
+                    skipping = False
+                    continue
+                depth -= 1
+            continue
+        old.append(ln)
+    if len(old) == len(body):
+        fails += 1
+        print('  FAIL negative control is INERT: the shipped AI_SendEnum has no MOVE '
+              'guard block, so the pre-fix body could not be built')
+    prefix['AI_SendEnum'] = (params, old)
+    nc = dispatch(prefix, units, RALLY)
+    ok = len(nc) == 0
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL: with AI_HOME_R as the arrival tolerance the same '
+          'dispatch issues %d orders -- the army is never told to leave'
+          % ('PASS' if ok else 'FAIL', len(nc)))
+
+    # the round-5 optimisation must SURVIVE: ordered home, already home
+    ok = len(dispatch(FUNCS, units, HOME)) == 0
+    fails += 0 if ok else 1
+    print('  %s round 5 still holds: units already home are not told to go home'
+          % ('PASS' if ok else 'FAIL'))
+
+    # ... and a unit far from home IS still sent home
+    far = [(9000.0, 0.0, 40.0)]
+    ok = len(dispatch(FUNCS, far, HOME)) == 1
+    fails += 0 if ok else 1
+    print('  %s ... but a unit out in the field still gets the order to come home'
+          % ('PASS' if ok else 'FAIL'))
+
+    # arrival is a real tolerance, not a neighbourhood
+    at_dest = [(RALLY[0] + 50.0, RALLY[1], 40.0)]
+    ok = len(dispatch(FUNCS, at_dest, RALLY)) == 0
+    fails += 0 if ok else 1
+    print('  %s a unit already standing on the destination is not re-ordered '
+          '(arrival tolerance %.0f, not %.0f)'
+          % ('PASS' if ok else 'FAIL', CONSTS['AI_ARRIVE_R'], CONSTS['AI_HOME_R']))
+
+    # ---- THE GENERAL INVARIANT --------------------------------------------
+    # Expressed over the whole dispatch, at every range that has ever trapped
+    # an army: behind a city gate (round 3), on a bridge (round 5), inside a
+    # camp (round 8). If any of these goes silent, an army is standing still
+    # while believing it was ordered to move.
+    print('  -- the general form, swept over range --')
+    silent = []
+    for d in (500.0, 900.0, 1200.0, 1800.0, 2400.0, 2600.0, 5000.0, 12000.0):
+        n = len(dispatch(FUNCS, units, (d, 0.0)))
+        if n == 0:
+            silent.append(d)
+    ok = not silent
+    fails += 0 if ok else 1
+    print('     %s an army ordered to a destination it is NOT standing on receives '
+          'orders at every range (silent at: %s)'
+          % ('PASS' if ok else 'FAIL', silent or 'none'))
+
+    # and the same sweep on the pre-fix body must be silent below AI_HOME_R,
+    # proving the sweep can actually detect the class rather than merely
+    # passing over it
+    # The control is asserted at the range that actually mattered rather than
+    # over a count: the pre-fix body must be silent at exactly AI_MUSTER_OFF,
+    # which is where the shipped muster puts its rally. (It is NOT silent at
+    # every short range -- at 1800 the far side of the camp is already beyond
+    # AI_HOME_R of the destination and does get an order. That partial
+    # silencing is precisely why the bug read as "some stragglers outside".)
+    nc_silent = [d for d in (500.0, 900.0, 1200.0, 1800.0, 2400.0)
+                 if len(dispatch(prefix, units, (d, 0.0))) == 0]
+    ok = CONSTS['AI_MUSTER_OFF'] in nc_silent
+    fails += 0 if ok else 1
+    print('     %s NEGATIVE CONTROL: the pre-fix body is silent at the muster offset '
+          '%.0f (silent at %s) -- the sweep detects the real defect'
+          % ('PASS' if ok else 'FAIL', CONSTS['AI_MUSTER_OFF'],
+             [int(x) for x in nc_silent]))
+
+    # the garrison hold is allowed to silence a dispatch, and must not be
+    # mistaken for this bug: it is a DECISION, and it is capped.
+    held = dispatch(FUNCS, units, (5000.0, 0.0), threat=100000.0)
+    ok = 0 < len(held) < len(units)
+    fails += 0 if ok else 1
+    print('     %s a huge threat holds SOME of the army back (%d of %d ordered) and '
+          'never all of it -- a decision, not a silence'
+          % ('PASS' if ok else 'FAIL', len(held), len(units)))
+
+    # ---- a rally point must be a PLACE ------------------------------------
+    # Round 7 proved that a computed point on this map lands in open water
+    # often enough to matter; a muster that gathers at an unreachable point is
+    # the same trap with a new cause.
+    def rally(water):
+        sc = dict(role='barb', t=100.0,
+                  points=[dict(kind=CONSTS['AI_PK_CITY'], x=8000.0, y=0.0, owner=5)],
+                  msState=CONSTS['AI_MS_NONE'], msTarget=-1)
+        env = make_env(sc)
+        env['ai_now'] = 100.0
+        env['ai_homeX'] = {0: 0.0}
+        env['ai_homeY'] = {0: 0.0}
+        env['_water'] = water
+        nat = make_natives(env, 0.0)
+        nat['AI_Say'] = lambda pid, s: None
+        nat['AI_Tel'] = lambda ev, b: None
+        nat['AI_Num'] = str
+        nat['AI_TelAI'] = lambda pid: '1'
+        Interp(FUNCS, CONSTS, env, nat).run('AI_MissionStart', [0, 0])
+        return env['ai_msRX'][0], env['ai_msRY'][0]
+
+    dry = rally((1.0, -1.0))                     # empty interval: all walkable
+    ok = abs(dry[0] - CONSTS['AI_MUSTER_OFF']) < 1.0
+    fails += 0 if ok else 1
+    print('  %s on dry ground the rally sits forward at %.0f' % ('PASS' if ok else 'FAIL', dry[0]))
+
+    # a strait covering exactly where the rally would land
+    wet = rally((CONSTS['AI_MUSTER_OFF'] - 300.0, CONSTS['AI_MUSTER_OFF'] + 300.0))
+    ok = wet == (0.0, 0.0)
+    fails += 0 if ok else 1
+    print('  %s a rally that lands in open water falls back to home, which is always '
+          'real ground (got %.0f, %.0f)' % ('PASS' if ok else 'FAIL', wet[0], wet[1]))
+
+    print('%s: no dispatch can silently order nobody' % ('PASS' if not fails else 'FAIL'))
+    return 1 if fails else 0
+
+
 def mission_churn():
     """EXTERNAL AUDIT, defect 4 -- CONFIRMED BY RUNTIME DATA, not by reading.
 
@@ -3185,8 +3419,17 @@ ROUND3_GUARDS = [
      r'return s \* AI_CanMass\(pid\) \* AI_WantsMore\(pid\)', True),
     ('the proximity scale adapts to the faction own geography',
      r'function AI_TargetScore\b.*?/ wm_proxScale\[pid\]\)', True),
-    ('a unit already at home is not re-ordered home',
-     r'function AI_SendEnum\b(?:(?!\nendfunction)[\s\S])*?if ai_ordKind == AI_ORD_MOVE and AI_Dist\(GetUnitX\(u\), GetUnitY\(u\), ai_orderX, ai_orderY\) < AI_HOME_R then', True),
+    # PLAYTEST 8. The round-5 invariant is unchanged -- a unit already home is
+    # not told to go home -- but its IMPLEMENTATION was a general arrival
+    # tolerance of AI_HOME_R, which cancelled every short-range MOVE order and
+    # froze the muster inside the camps. The guard now pins the SCOPED form:
+    # the suppression applies to a destination that IS home.
+    ('a unit already at home is not re-ordered home, scoped to a home destination',
+     r'function AI_SendEnum\b(?:(?!\nendfunction)[\s\S])*?AI_Dist\(ai_orderX, ai_orderY, ai_homeX\[ai_curPid\], ai_homeY\[ai_curPid\]\) < AI_ARRIVE_R', True),
+    # and the regression itself is forbidden by name: AI_HOME_R must never
+    # again be the arrival tolerance for a MOVE order.
+    ('AI_HOME_R is NOT used as a general MOVE arrival tolerance (playtest 8)',
+     r'ai_ordKind == AI_ORD_MOVE and AI_Dist\(GetUnitX\(u\), GetUnitY\(u\), ai_orderX, ai_orderY\) < AI_HOME_R', False),
     ('transports are never dispatched by the land army',
      r'function AI_SendEnum\b(?:(?!\nendfunction)[\s\S])*?if AI_IsTransport\(u\) then', True),
     ('a hero never boards ahead of its army',
@@ -3585,6 +3828,7 @@ def main():
     rc |= muster()
     rc |= early_barbarians()
     rc |= voice()
+    rc |= perimeter()
     rc |= centroid()
     rc |= impossible()
     rc |= romanlock()

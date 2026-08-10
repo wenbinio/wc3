@@ -41,6 +41,9 @@
 
     constant real    AI_MICRO_PERIOD  = 1.0
     constant real    AI_HOME_R        = 2500.0
+    // PLAYTEST 8: how close counts as ARRIVED. Distinct from AI_HOME_R, which
+    // is the home NEIGHBOURHOOD -- conflating the two froze the muster.
+    constant real    AI_ARRIVE_R      = 400.0
     constant real    AI_FIELD_R       = 1400.0
     constant real    AI_TOUCH_R       = 900.0
     constant real    AI_DWELL         = 9.0
@@ -3490,9 +3493,30 @@ function AI_SendEnum takes nothing returns nothing
     // telling troops that were already home to go home. That is the second
     // half of "the Romans do not use their starting units": they were
     // enrolled and scored all along, and every order slot was a no-op.
-    if ai_ordKind == AI_ORD_MOVE and AI_Dist(GetUnitX(u), GetUnitY(u), ai_orderX, ai_orderY) < AI_HOME_R then
-        set u = null
-        return
+    // PLAYTEST 8 -- "they cannot get out of their camps". THIS LINE was the
+    // trap, and the muster I shipped last round walked straight into it.
+    //
+    // The round-5 optimisation is correct and stays: a unit already standing
+    // in the home neighbourhood needs no order to go HOME. But it was written
+    // as a general ARRIVAL TOLERANCE of AI_HOME_R -- 2500 -- so it silently
+    // cancelled every MOVE order whose destination was closer than that. The
+    // muster rally sits at AI_MUSTER_OFF, 1200, and a barbarian camp is about
+    // 950 across, so EVERY muster order was dropped before it was issued. The
+    // army was never told to leave. It was not stuck behind the palisade: the
+    // palisade has two gaps 49 and 67 degrees wide and the engine paths
+    // through them happily. It was never ordered through them.
+    //
+    // The guard is now scoped to what it was actually for -- a destination
+    // that IS home -- and general arrival uses a real arrival tolerance.
+    if ai_ordKind == AI_ORD_MOVE then
+        if AI_Dist(ai_orderX, ai_orderY, ai_homeX[ai_curPid], ai_homeY[ai_curPid]) < AI_ARRIVE_R and AI_Dist(GetUnitX(u), GetUnitY(u), ai_homeX[ai_curPid], ai_homeY[ai_curPid]) < AI_HOME_R then
+            set u = null
+            return                          // ordered home, and already home
+        endif
+        if AI_Dist(GetUnitX(u), GetUnitY(u), ai_orderX, ai_orderY) < AI_ARRIVE_R then
+            set u = null
+            return                          // already standing on the destination
+        endif
     endif
     // ROUND 3, queue item 8: a ram with no wall to break holds behind the
     // line. It is the map own declared wall-breaker and nothing else.
@@ -4633,6 +4657,16 @@ function AI_MissionStart takes integer pid, integer t returns nothing
             set ai_msRX[pid] = ai_homeX[pid] + (ai_ptX[t] - ai_homeX[pid])/d*AI_MUSTER_OFF
             set ai_msRY[pid] = ai_homeY[pid] + (ai_ptY[t] - ai_homeY[pid])/d*AI_MUSTER_OFF
         endif
+    endif
+    // PLAYTEST 8. A rally point is a PLACE the army has to stand on, and round
+    // 7 already proved that a computed point on this map lands in open water
+    // often enough to matter. IsTerrainPathable is INVERTED: true means
+    // blocked. An unwalkable rally falls back to home, which is always real
+    // ground -- gathering at home is worse than gathering forward, and far
+    // better than gathering at a point nobody can reach.
+    if IsTerrainPathable(ai_msRX[pid], ai_msRY[pid], PATHING_TYPE_WALKABILITY) then
+        set ai_msRX[pid] = ai_homeX[pid]
+        set ai_msRY[pid] = ai_homeY[pid]
     endif
 endfunction
 

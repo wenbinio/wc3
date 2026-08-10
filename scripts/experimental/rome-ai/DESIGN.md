@@ -2407,3 +2407,97 @@ and the temporary Roman–barbarian alliance.
 Playable **19,044,140**. Trace **436 assertions, 0 FAILs**; `npm test` 620
 pass; preflight 7 maps 0 FAIL; validate-map 191/192 with 152 warnings, which
 is parity with the unmodified map.
+
+---
+
+## §22 Playtest 8 — "they can't get out of their camps"
+
+Third venue for one failure: round 3 was armies stacked behind their own city
+gate, round 5 was Gray piled on a bridge, round 8 is barbarians sealed inside
+their camps. The first two fixes addressed the venue. This one had to address
+the class — and the class turned out not to be what the venue suggested.
+
+### 22.1 What the camp perimeter is actually made of
+
+Measured from the map, not assumed. Seven camps (`h002`), owned by players
+0, 1, 2, 4, 6, 8 and 11, all share one layout:
+
+| type | count per camp | radius | what it is |
+|---|---|---|---|
+| `B001` | 16 | 850–1090 | custom destructable, **"Pathing Blocker 8"**, derived from `YTpc`, `bptx = PathTextures\8x8Default.tga`. Invisible. |
+| `D01J` | 16–18 | 850–1090 | the palisade fence **art** |
+
+**Hypothesis A is refuted on the artifact.** The perimeter is not a gate and
+not a wall: there is nothing to register, nothing to open, and nothing worth
+breaking. It is also **not sealed** — the Franks ring has gaps of 49° and 67°,
+about 770 and 1050 world units wide, and the engine paths through them
+without help.
+
+Two consequences worth keeping: `IsTerrainPathable` reads **terrain** pathing
+and is blind to destructable-applied pathing, so the corridor and lane model
+cannot see a palisade at all; and the gate registry is correctly scoped to the
+twelve city-gate unit types, because those are the only openable things on the
+map.
+
+### 22.2 The actual cause — and it was mine
+
+`AI_SendEnum` dropped every `AI_ORD_MOVE` order whose destination was within
+**`AI_HOME_R` (2500)** of the unit. That guard is round 5's, and its
+*invariant* is right: a unit already standing in the home neighbourhood should
+not be told to go home. But it was implemented as a **general arrival
+tolerance**, and nothing before this round ever asked the army to move a short
+distance.
+
+The muster I shipped last round puts its rally at `AI_MUSTER_OFF` = **1200**.
+A camp is about 950 across. So every unit was within 2500 of the rally and
+**every muster order was cancelled before it was issued**. The army was not
+trapped behind the palisade. It was never told to leave.
+
+**This is a regression I introduced, via a guard written three rounds
+earlier** — the coordinator's hypothesis B was right that the muster caused
+it, wrong about the mechanism (the rally is *outside* the palisade; the order
+to reach it was suppressed). Hypothesis C was right in spirit: the failure is
+that a bare move order was produced and reached nobody.
+
+The fix separates the two ideas that had been conflated:
+
+* `AI_ARRIVE_R` (400) — how close counts as **arrived**.
+* `AI_HOME_R` (2500) — the home **neighbourhood**, unchanged.
+
+The round-5 suppression is now scoped to a destination that *is* home, and
+general arrival uses the arrival tolerance. A rally that lands on unwalkable
+terrain falls back to home, because round 7 already proved computed points on
+this map land in open water often enough to matter.
+
+### 22.3 The general form
+
+The coordinator asked for the class, not the venue. The invariant that would
+have caught all three venues is not about walls at all:
+
+> **An army ordered somewhere it is not must receive orders. A dispatch that
+> issues nothing is never correct.**
+
+`trace.py` `perimeter()` sweeps `AI_SendArmy` over eight ranges from 500 to
+12000 with an army standing inside a camp ring and asserts that none of them
+goes silent. Its negative control restores the pre-fix guard and shows the
+sweep going silent at exactly `AI_MUSTER_OFF` — so the sweep detects the
+class rather than merely passing over it. The control also documents why the
+bug read the way it did: the pre-fix body is silent at 500/900/1200 but *not*
+at 1800, where the far side of the camp is already beyond `AI_HOME_R` of the
+destination. That partial silencing is the "few stragglers outside" in the
+screenshot.
+
+The garrison hold is explicitly distinguished from this failure: it may
+reduce a dispatch, never silence it, and the sweep asserts that even a
+threat of 100000 leaves some of the army ordered.
+
+A source guard now forbids the regression **by name**: `AI_HOME_R` may never
+again appear as the arrival tolerance for a MOVE order.
+
+### 22.4 Note on the regrouping line
+
+It appears once in this playtest rather than repeatedly, which is what §21.4's
+edge-firing fix predicted. Not the old problem.
+
+Playable **19,045,571**. Trace **448 assertions, 0 FAILs**; `npm test` 620
+pass; validate-map 191/192 with 152 warnings (parity).
