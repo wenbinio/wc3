@@ -263,6 +263,8 @@ def make_env(sc):
         'ai_exCV': __import__('collections').defaultdict(float),
         'ai_marchDX': 0.0, 'ai_marchDY': 0.0, 'ai_congN': 0, '_ht': {},
         'ai_sortieGate': d(-1), 'ai_sortieAt': d(0.0),
+        'wm_musterPool': d(0.0), 'ai_musterAt': 0.0,
+        'ai_sayGlobal': '', 'ai_sayGlobalAt': -999.0,
         'ai_msRX': d(0.0), 'ai_msRY': d(0.0),
         'wm_fieldCV': d(sc.get('fieldCV', 0.0)),
         'wm_fieldX': d(sc.get('fieldX', 0.0)), 'wm_fieldY': d(sc.get('fieldY', 0.0)),
@@ -398,6 +400,7 @@ def make_natives(env, noise=0.0):
         'SaveReal': lambda ht, a, b, v: env['_ht'].__setitem__((a, b), v),
         'LoadReal': lambda ht, a, b: env['_ht'].get((a, b), 0.0),
         'R2I': int,
+        'ModuloInteger': lambda a, b: a % b if b else 0,
         'PATHING_TYPE_WALKABILITY': 1,
         'StringHash': lambda x: sum(ord(c) for c in str(x)),
         'Pow': lambda x, p: x ** p,
@@ -1813,19 +1816,46 @@ def muster():
           'objection answered, not ignored' % ('PASS' if ok else 'FAIL'))
 
     # ---- AI_MusterFrac itself, against real units -------------------------
-    # rally is at (1200, 0); AI_MUSTER_R is the counting radius
-    NEAR, FAR = (1200.0, 0.0, 100.0), (9000.0, 0.0, 100.0)
-    env = tick(None, units=[NEAR, NEAR, NEAR, FAR])
+    # Rally is at (1200, 0). AI_MUSTER_R counts as ARRIVED; AI_MUSTER_GATHER is
+    # the pool the muster is ABOUT. PLAYTEST 10: the denominator used to be
+    # wm_army -- every unit the faction owned anywhere -- which on the real map
+    # put only 34-40% of a faction inside the radius at mission start, so a 70%
+    # bar could never be met and the deadline was the only exit.
+    NEAR = (1200.0, 0.0, 100.0)                       # at the rally
+    COMING = (1200.0 + 2500.0, 0.0, 100.0)            # in the pool, not yet arrived
+    ELSEWHERE = (1200.0 + 20000.0, 0.0, 100.0)        # on other business entirely
+    env = tick(None, units=[NEAR, NEAR, NEAR, COMING])
     ok = env['ai_msState'][0] == MARCH and env['wm_massed'][0] == 300.0
     fails += 0 if ok else 1
-    print('  %s the REAL AI_MusterFrac counts what arrived (%.0f CV of 400) and releases '
-          'at 75%%' % ('PASS' if ok else 'FAIL', env['wm_massed'][0]))
+    print('  %s the REAL AI_MusterFrac counts what arrived (%.0f of %.0f CV in the pool) '
+          'and releases at 75%%'
+          % ('PASS' if ok else 'FAIL', env['wm_massed'][0], env['wm_musterPool'][0]))
 
-    env = tick(None, units=[NEAR, FAR, FAR, FAR])
+    env = tick(None, units=[NEAR, COMING, COMING, COMING])
     ok = env['ai_msState'][0] == STAGE and env['wm_massed'][0] == 100.0
     fails += 0 if ok else 1
     print('  %s ... and holds at 25%% (%.0f CV) -- the count is real, not a constant'
           % ('PASS' if ok else 'FAIL', env['wm_massed'][0]))
+
+    # THE PLAYTEST 10 FIX: troops on the far side of the map are not part of
+    # this concentration and must not make the bar unreachable.
+    env = tick(None, units=[NEAR, NEAR, NEAR] + [ELSEWHERE] * 12)
+    ok = env['ai_msState'][0] == MARCH
+    fails += 0 if ok else 1
+    print('  %s twelve units on the far side of the map do NOT hold the muster hostage '
+          '(pool %.0f, massed %.0f)' % ('PASS' if ok else 'FAIL',
+                                        env['wm_musterPool'][0], env['wm_massed'][0]))
+
+    # NEGATIVE CONTROL: with wm_army as the denominator -- the shipped bug --
+    # the same fifteen-unit faction could not reach the bar at all.
+    total_cv = 100.0 * 15
+    old_frac = 300.0 / total_cv
+    ok = old_frac < CONSTS['AI_MUSTER_FRAC']
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL: the old whole-army denominator gives %.0f%%, under '
+          'the %.0f%% bar -- timeout was the only exit, which is what three factions '
+          'reporting it in one second showed'
+          % ('PASS' if ok else 'FAIL', 100.0 * old_frac, 100.0 * CONSTS['AI_MUSTER_FRAC']))
 
     print('%s: the army gathers before it commits, and cannot wait forever'
           % ('PASS' if not fails else 'FAIL'))
@@ -2021,6 +2051,47 @@ def voice():
     print('  %s no string literal in the module contains an ASCII apostrophe (%d '
           'literals checked)%s' % ('PASS' if ok else 'FAIL', len(strings),
                                    '' if ok else ' -- ' + repr(apos[:3])))
+
+    # PLAYTEST 10: three factions said the SAME line in one second, which reads
+    # like a system. A pool per event kind, varied by faction, plus a
+    # cross-faction suppression window.
+    def vline(pid, kind, now=100.0):
+        env = make_env(dict(role='barb'))
+        env['ai_now'] = now
+        return Interp(FUNCS, CONSTS, env, make_natives(env, 0.0)).run('AI_VLine', [pid, kind])
+
+    for kind, name in ((CONSTS['LINE_FORMED'], 'formed up'),
+                       (CONSTS['LINE_TIMEOUT'], 'released on timeout')):
+        said = {p: vline(p, kind) for p in range(12)}
+        ok = len(set(said.values())) >= 6
+        fails += 0 if ok else 1
+        print('  %s "%s" has %d distinct phrasings across the twelve factions'
+              % ('PASS' if ok else 'FAIL', name, len(set(said.values()))))
+
+    # the SAME faction varies over time rather than being fixed forever, swept
+    # rather than sampled at two points -- two samples can land on one variant
+    # by coincidence and read as a pass
+    over_time = {vline(0, CONSTS['LINE_TIMEOUT'], 100.0 + 20.0 * i) for i in range(12)}
+    ok = len(over_time) >= 2
+    fails += 0 if ok else 1
+    print('  %s ... and one faction does not repeat the same phrasing forever '
+          '(%d variants over four minutes)' % ('PASS' if ok else 'FAIL', len(over_time)))
+
+    # the variant must NOT consume the seeded decision stream (gotcha 30).
+    # Checked against COMMENT-STRIPPED source: the body's own comment says
+    # "deliberately NOT AI_Rand", which a naive grep reads as a use.
+    src = re.sub(r'//.*$', '', '\n'.join(FUNCS['AI_VLine'][1]), flags=re.M)
+    ok = 'AI_Rand' not in src
+    fails += 0 if ok else 1
+    print('  %s the phrasing draw does NOT consume AI_Rand -- cosmetic text must not '
+          'fork the seeded decision stream' % ('PASS' if ok else 'FAIL'))
+
+    # cross-faction de-duplication
+    ssrc = '\n'.join(FUNCS['AI_Say'][1])
+    ok = 'ai_sayGlobal' in ssrc and 'AI_SAY_DEDUP' in ssrc
+    fails += 0 if ok else 1
+    print('  %s an identical line from a DIFFERENT faction is suppressed within %.0fs'
+          % ('PASS' if ok else 'FAIL', CONSTS['AI_SAY_DEDUP']))
 
     print('%s: the AI reads like a person and logs like a machine'
           % ('PASS' if not fails else 'FAIL'))

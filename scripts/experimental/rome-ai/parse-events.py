@@ -243,6 +243,40 @@ def report(events, csv_path=None):
                 print('      ** %d attack(s) ended "going nowhere" -- stall detector fired'
                       % ends[p][4])
 
+    # ---- muster: arrival vs timeout, the direct measure of concentration ---
+    # PLAYTEST 10: three factions emitted the release-anyway line in the same
+    # second. If timeout dominates, "concentrate before committing" is not
+    # happening and everything downstream is judged on a false premise.
+    mus = defaultdict(lambda: [0, 0])
+    fracs = []
+    for e in events:
+        if e['ev'] == 'mus' and len(e['f']) >= 4:
+            try:
+                p_, reason, frac = int(e['f'][0]), int(e['f'][2]), int(e['f'][3])
+            except (ValueError, IndexError):
+                continue
+            mus[p_][1 if reason else 0] += 1
+            fracs.append(frac / 1000.0)
+    if mus:
+        print('\n-- MUSTER: released on arrival vs on timeout ' + '-' * 27)
+        tot_a = sum(v[0] for v in mus.values())
+        tot_t = sum(v[1] for v in mus.values())
+        for p_ in sorted(mus):
+            if ai_mask is not None and not is_ai.get(p_):
+                continue
+            a, t = mus[p_]
+            n = a + t
+            print('   %-13s %d muster(s): %d on arrival, %d on timeout (%d%% arrival)'
+                  % (FACTION.get(p_, p_), n, a, t, round(100.0 * a / n) if n else 0))
+        n = tot_a + tot_t
+        share = round(100.0 * tot_a / n) if n else 0
+        print('   %-13s %d%% released on ARRIVAL, mean fraction gathered %.0f%%'
+              % ('OVERALL', share, 100.0 * (sum(fracs) / len(fracs) if fracs else 0.0)))
+        if n and share < 50:
+            print('   ** TIMEOUT DOMINATES: the muster is not concentrating anything.')
+            print('      "Concentrate before committing" is not happening -- treat every')
+            print('      downstream commitment number as measured on a false premise.')
+
     # ---- churn: the defect signature the FIRST live log carried ------------
     # A mission that ends and restarts on the SAME target within a few seconds
     # is not a decision, it is an oscillation. The owner's very first run
@@ -337,6 +371,28 @@ def selftest():
     print('   %s NEGATIVE CONTROL: an exit without the census fields reports NO '
           'percentage rather than inventing one' % ('PASS' if ok_poor else 'FAIL'))
 
+    print('\n-- muster ratio (playtest 10) ' + '-' * 43)
+    MUS = '\n'.join(['FORAI|1|0|0|run|12345|4095|0'] +
+                    ['FORAI|1|%d|%d|mus|4|1|1|200|400|2000|0' % (i + 1, 60 + i) for i in range(4)] +
+                    ['FORAI|1|9|90|mus|4|1|0|800|3200|4000|0'])
+    mus_ev, _, _ = parse(extract(MUS))
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        report(mus_ev)
+    mtxt = buf.getvalue()
+    ok_mus = '20% released on ARRIVAL' in mtxt and 'TIMEOUT DOMINATES' in mtxt
+    print('   %s a timeout-dominated run is reported as such and called out'
+          % ('PASS' if ok_mus else 'FAIL'))
+    GOOD = '\n'.join(['FORAI|1|0|0|run|12345|4095|0'] +
+                     ['FORAI|1|%d|%d|mus|4|1|0|900|3600|4000|0' % (i + 1, 60 + i) for i in range(4)])
+    good_ev, _, _ = parse(extract(GOOD))
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        report(good_ev)
+    ok_good = 'TIMEOUT DOMINATES' not in buf.getvalue()
+    print('   %s NEGATIVE CONTROL: an arrival-dominated run is NOT flagged'
+          % ('PASS' if ok_good else 'FAIL'))
+
     print('\n-- churn detector, against the real logged defect ' + '-' * 23)
     LIVE = '\n'.join([
         'FORAI|1|161|121|mis|9|1|end|1|108|-1080707829',
@@ -371,7 +427,8 @@ def selftest():
           % ('PASS' if far_ok else 'FAIL'))
 
     ok = (bool(p2) and any('duplicate' in x for x in p3)
-          and got9 and got2 and clean and far_ok and ok_rich and ok_poor)
+          and got9 and got2 and clean and far_ok and ok_rich and ok_poor
+          and ok_mus and ok_good)
     print('\n%s: self-test' % ('PASS' if ok else 'FAIL'))
     return 0 if ok else 1
 

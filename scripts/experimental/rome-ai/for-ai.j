@@ -236,6 +236,9 @@
     constant real    AI_EARLY_T      = 420.0  // the opening, in game seconds
     constant real    AI_EARLY_COMMIT = 120.0  // army the opening treats as enough
     constant real    AI_MUSTER_FRAC_EARLY = 0.45  // and it commits on less of it
+    // PLAYTEST 10: the pool a muster is ABOUT. Beyond this, troops are on
+    // other business and were never going to join this concentration.
+    constant real    AI_MUSTER_GATHER = 3800.0
     constant real    AI_MS_REFRESH   = 8.0    // re-issue interval while running
     constant real    AI_MS_THREAT    = 1.10   // threat vs garrison that interrupts
     constant real    AI_RETREAT_RATIO = 1.15   // the round-2 retreat bar, as a FLAG
@@ -255,6 +258,9 @@
     real    array    ai_exCV
     integer          ai_dispPid      = 0
     integer          ai_congN        = 0
+    real             ai_musterAt     = 0.0   // fraction measured this tick
+    string           ai_sayGlobal    = ""    // last line said by ANY faction
+    real             ai_sayGlobalAt  = -999.0
     integer array    ai_sortieGate           // gate opened to let THIS army out
     real    array    ai_sortieAt             // when we opened it
     real             ai_marchDX      = 0.0   // unit vector along the march line
@@ -498,6 +504,9 @@
     constant real    AI_HOLD_ARMY     = 240.0  // enough army to garrison anything
 
     // gate states
+    constant real    AI_SAY_DEDUP     = 12.0   // same line from another faction
+    constant integer LINE_FORMED      = 0
+    constant integer LINE_TIMEOUT     = 1
     constant integer AI_GS_CLOSED     = 0
     constant integer AI_GS_OPEN       = 1
     constant integer AI_GS_GONE       = 2
@@ -521,6 +530,7 @@
     real    array    wm_threat          // VISIBLE enemy CV near own structures
     boolean array    ai_scattered       // PLAYTEST 7: narrate the EDGE, not the tick
     real    array    wm_massed          // PLAYTEST 7: own CV at the muster point
+    real    array    wm_musterPool      // PLAYTEST 10: own CV the muster is ABOUT
     real    array    wm_threatX
     real    array    wm_threatY
     real    array    wm_fieldCV
@@ -1180,6 +1190,88 @@ function AI_Voice takes integer pid returns integer
     return 1
 endfunction
 
+//===========================================================================
+//  PLAYTEST 10 -- VOICED LINE POOLS, AND CROSS-FACTION DE-DUPLICATION
+//
+//  The screenshot showed three factions emitting the IDENTICAL line in the
+//  same instant:
+//      Vandals: I am not waiting all day. move, with whoever turned up
+//      Saxons:  I am not waiting all day. move, with whoever turned up
+//      Britons: I am not waiting all day. move, with whoever turned up
+//  which reads like a system, the exact opposite of what the flavour pass was
+//  for. Two cheap fixes, no subsystem: a small pool per event kind varied by
+//  faction and by the map's own PRNG, and a short suppression window on an
+//  identical line from a DIFFERENT faction.
+//===========================================================================
+
+function AI_VLine takes integer pid, integer kind returns string
+    local integer v = AI_Voice(pid)
+    // Deliberately NOT AI_Rand: that is the map's single seeded decision
+    // stream, and consuming it for cosmetic text would fork every downstream
+    // decision (gotcha 30). This varies by faction and slowly over time, and
+    // costs the stream nothing.
+    local integer r = ModuloInteger(pid*7 + R2I(ai_now/17.0), 3)
+    if kind == LINE_FORMED then
+        if v == 0 then
+            if r == 0 then
+                return "everyone is here. go"
+            elseif r == 1 then
+                return "that is the lot of them. move"
+            endif
+            return "good. now we go"
+        elseif v == 2 then
+            if r == 0 then
+                return "the column is formed. advance"
+            elseif r == 1 then
+                return "ranks are made. we march"
+            endif
+            return "assembled. forward"
+        elseif v == 3 then
+            if r == 0 then
+                return "the host is gathered. we ride"
+            elseif r == 1 then
+                return "all are come. let us go"
+            endif
+            return "we are ready. onward"
+        endif
+        if r == 0 then
+            return "all here. move"
+        elseif r == 1 then
+            return "that will do. off we go"
+        endif
+        return "everyone up. we are going"
+    endif
+    // LINE_TIMEOUT
+    if v == 0 then
+        if r == 0 then
+            return "I am done waiting. move, the rest can catch up"
+        elseif r == 1 then
+            return "no more standing about. go"
+        endif
+        return "we go now, with who we have"
+    elseif v == 2 then
+        if r == 0 then
+            return "we will wait no longer. advance as we are"
+        elseif r == 1 then
+            return "the hour is past. march with those assembled"
+        endif
+        return "enough delay. forward"
+    elseif v == 3 then
+        if r == 0 then
+            return "we have waited long enough. we ride regardless"
+        elseif r == 1 then
+            return "no more delay. those here will suffice"
+        endif
+        return "we go, ready or not"
+    endif
+    if r == 0 then
+        return "not waiting all day. move, with whoever turned up"
+    elseif r == 1 then
+        return "stragglers can follow. we are off"
+    endif
+    return "right, that is long enough. go"
+endfunction
+
 function AI_KindName takes integer kind returns string
     if kind == AI_PK_CAPITAL then
         return "a capital"
@@ -1302,11 +1394,19 @@ function AI_Say takes integer pid, string msg returns nothing
     if msg == ai_sayLast[pid] then
         return                              // nothing changed; do not repeat
     endif
+    // PLAYTEST 10: three factions emitted the IDENTICAL line in one second,
+    // which reads like a system rather than like people. Suppress an identical
+    // line from a DIFFERENT faction inside a short window.
+    if msg == ai_sayGlobal and (ai_now - ai_sayGlobalAt) < AI_SAY_DEDUP then
+        return
+    endif
     if ai_now < ai_sayAt[pid] then
         return
     endif
     set ai_sayLast[pid] = msg
     set ai_sayAt[pid] = ai_now + AI_SAY_GAP
+    set ai_sayGlobal = msg
+    set ai_sayGlobalAt = ai_now
     // ROUND 4, finding 4: allies only. Never AI_Broadcast from here.
     call AI_BroadcastAllies(pid, AI_Name(pid) + ": " + msg)
 endfunction
@@ -4969,13 +5069,37 @@ endfunction
 // PLAYTEST 7. What share of our army has actually reached the muster point.
 // Measured, not assumed: the owner's report was that half the army never
 // leaves, and the only way to know a muster worked is to count what arrived.
+// PLAYTEST 10. The denominator was wm_army -- EVERY unit the faction owns,
+// anywhere on the map. Measured against the real map: at mission start only
+// 34-40 percent of a barbarian faction's units are within the muster radius of
+// its rally, because the rest are garrisoning other holdings or already in the
+// field elsewhere. They are never coming. So a 70 percent bar could not be
+// met, the deadline was the ONLY exit, and three factions emitted the
+// release-anyway line in the same second -- which is what gave this away.
+//
+// That is the fifth instance of this project's oldest failure: a condition that
+// cannot be satisfied, so the state is left only by timeout.
+//
+// The muster is a LOCAL question -- of the troops in this neighbourhood, how
+// many have closed up? -- so both terms are local. Units beyond the gather
+// radius are on other business and are not part of this concentration.
 function AI_MusterFrac takes integer pid returns real
     local group g
-    if wm_army[pid] <= 0.0 then
-        return 1.0                          // nothing to gather: never block
-    endif
+    local real near
     set ai_curP = ai_p[pid]
     set ai_curPid = pid
+    // the pool this muster is actually about
+    set g = CreateGroup()
+    call GroupEnumUnitsInRange(g, ai_msRX[pid], ai_msRY[pid], AI_MUSTER_GATHER, Filter(function AI_OwnUnitFilter))
+    call AI_ResetAcc()
+    call ForGroup(g, function AI_SumOwnArmy)
+    call DestroyGroup(g)
+    set g = null
+    set near = ai_accCV
+    if near <= 0.0 then
+        return 1.0                          // nothing nearby to gather
+    endif
+    // how much of it has closed up
     set g = CreateGroup()
     call GroupEnumUnitsInRange(g, ai_msRX[pid], ai_msRY[pid], AI_MUSTER_R, Filter(function AI_OwnUnitFilter))
     call AI_ResetAcc()
@@ -4983,7 +5107,8 @@ function AI_MusterFrac takes integer pid returns real
     call DestroyGroup(g)
     set g = null
     set wm_massed[pid] = ai_accCV
-    return ai_accCV / wm_army[pid]
+    set wm_musterPool[pid] = near
+    return ai_accCV / near
 endfunction
 
 // AUDIT 4. Idempotent: a mission already running on this target is NOT
@@ -5080,11 +5205,17 @@ function AI_MissionTick takes integer pid returns boolean
     // 3. MUSTER COMPLETE. PLAYTEST 7. The army gathers before it commits, and
     //    leaves as soon as enough of it has arrived -- not when a clock says
     //    so. The deadline below is the escape hatch, not the mechanism.
-    if ai_msState[pid] == AI_MS_STAGE and AI_MusterFrac(pid) >= AI_MusterNeed(pid) then
+    if ai_msState[pid] == AI_MS_STAGE then
+        set ai_musterAt = AI_MusterFrac(pid)
+    endif
+    if ai_msState[pid] == AI_MS_STAGE and ai_musterAt >= AI_MusterNeed(pid) then
         set ai_msState[pid] = AI_MS_MARCH
         set ai_msPhaseEnd[pid] = ai_now + AI_MS_MARCH_T
         set ai_msNextOrder[pid] = 0.0       // re-order immediately, at the target
-        call AI_Say(pid, "all here. move")
+        // PLAYTEST 10: release reason 0 = MEASURED ARRIVAL. The ratio of this
+        // to reason 1 is the direct measure of whether the muster works at all.
+        call AI_Tel("mus", AI_Num(pid) + "|" + AI_TelAI(pid) + "|0|" + AI_Num(R2I(1000.0*ai_musterAt)) + "|" + AI_Num(R2I(wm_massed[pid])) + "|" + AI_Num(R2I(wm_musterPool[pid])))
+        call AI_Say(pid, AI_VLine(pid, LINE_FORMED))
     endif
     // 4. DEADLINE. A phase that cannot finish RELEASES rather than waiting.
     if ai_now >= ai_msPhaseEnd[pid] then
@@ -5095,7 +5226,11 @@ function AI_MissionTick takes integer pid returns boolean
             set ai_msState[pid] = AI_MS_MARCH
             set ai_msPhaseEnd[pid] = ai_now + AI_MS_MARCH_T
             set ai_msNextOrder[pid] = 0.0
-            call AI_Say(pid, "I am not waiting all day. move, with whoever turned up")
+            // release reason 1 = TIMEOUT. If this dominates, the concentration
+            // work has not landed and everything downstream is being judged on
+            // a false premise -- which is exactly what playtest 10 showed.
+            call AI_Tel("mus", AI_Num(pid) + "|" + AI_TelAI(pid) + "|1|" + AI_Num(R2I(1000.0*AI_MusterFrac(pid))) + "|" + AI_Num(R2I(wm_massed[pid])) + "|" + AI_Num(R2I(wm_musterPool[pid])))
+            call AI_Say(pid, AI_VLine(pid, LINE_TIMEOUT))
         else
             call AI_MissionAbort(pid, 4)
             set ai_ifStuck[pid] = true

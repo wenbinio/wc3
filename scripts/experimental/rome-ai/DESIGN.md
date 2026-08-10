@@ -2609,3 +2609,93 @@ where the next person will see it.
 Playable **19,051,594**. Trace **472 assertions, 0 FAILs**; `npm test` 620
 pass; validate-map 191/192 with 152 warnings (parity); order economy peak 234
 / mean 74.4, unchanged.
+
+---
+
+## §24 Playtest 10 — the gate, the muster that never completed, and the chorus
+
+### 24.1 "Romans open gates for Barbarians" / "Persia should auto-open its own gate"
+
+One rule, and it is **not** default-open:
+
+> A faction opens its own gate **only** when it has a current need to move
+> through it, and **never** while that gate faces a live threat.
+
+Default-open satisfies Persia and destroys Rome, whose closed gate is its
+single biggest structural advantage.
+
+**Mechanism, from the source — possibility A at two sites.** `AI_ManageGates`
+carried an explicit comment: *"an OWN gate on our crossing opens
+UNCONDITIONALLY"*, added in round 3 on the reasoning that an army which cannot
+leave while an enemy is visible never leaves. Right about **visibility**, wrong
+about **contest**: round 2 refused to open for any visible enemy anywhere, and
+the correction over-swung into opening the door for an army standing in it.
+The second site is worse — `AI_ForceOpenNear`, the stall backstop, force-opened
+the nearest gate with no check at all, so an army stalled *because* enemies
+were at the gate forced that very gate open for them.
+
+**Possibility C was half true.** A close path existed but exempted the approach
+gate (`i != ap`) and required zero friendly units present — so the gate an army
+left through stayed open behind it while the fight went on in the doorway.
+
+Fixed: `AI_GateSafeToOpen` gates every open, refusing on enemy CV in the
+doorway and on live threat to the city when the gate is within `AI_HOME_R` of
+home — so the rule is **local**, not a global freeze. Two bars give a dead band
+so a gate cannot flap. The approach gate is no longer exempt from closing, and
+the close bar is no longer "no friendly units present": a gate we are *losing*
+shuts even with our own troops there, because a few soldiers outside the wall
+is a better trade than the wall being open. Every open is a **sortie debt**,
+paid on abort, on the army clearing the gate, or on a 90 s lease.
+
+### 24.2 The muster was never completing — and could not
+
+The chorus of three factions emitting the release-anyway line in one second was
+the tell. Measured on the real map: at mission start only **34–40 %** of a
+barbarian faction's units are within the muster radius of its rally, because
+the denominator was `wm_army` — **every unit the faction owns, anywhere**. The
+rest garrison other holdings or are already in the field. They were never
+coming. A 70 % bar was therefore **unreachable**, and the deadline was the only
+exit: "concentrate before committing" was not happening at all, and every
+commitment number downstream was being read on a false premise.
+
+**Fifth instance of this project's oldest failure**: a condition that cannot be
+satisfied, so the state is left only by timeout. It joins the round-4
+CONSOLIDATE clock ramp, the round-5 gold floor, the round-6 TECH-on-no-money,
+and the §21 abort/restart loop.
+
+The muster is a **local** question — of the troops in this neighbourhood, how
+many have closed up? — so both terms are now local: massed within
+`AI_MUSTER_R`, over the pool within `AI_MUSTER_GATHER`. Twelve units on the far
+side of the map no longer hold a muster hostage.
+
+**And it is now measured, not argued.** A `mus` event carries the release
+reason (0 = measured arrival, 1 = timeout) with the fraction and both terms;
+the parser prints the per-faction and overall arrival share and **calls out a
+timeout-dominated run explicitly**, because that ratio is the direct test of
+whether the concentration work landed. Negative-controlled both ways.
+
+### 24.3 The chorus
+
+Three factions emitting identical text in one instant reads like a system —
+the opposite of the flavour pass's purpose. Two cheap fixes, no subsystem: a
+small pool per event kind varied by faction and slowly over time (9 distinct
+phrasings across twelve factions per kind), and a 12 s suppression window on an
+identical line from a *different* faction.
+
+One trap avoided and worth recording: the variant must **not** draw from
+`AI_Rand`. That is the map's single seeded decision stream, and spending it on
+cosmetic text would fork every downstream decision (gotcha 30). The variant is
+derived from faction id and coarse time instead, and an assertion enforces it —
+checked against **comment-stripped** source, because the body's own comment
+says "deliberately NOT AI_Rand" and a naive grep reads that as a use.
+
+### 24.4 Still open
+
+Visigoths' pathing (item 2 of the brief) is deliberately **not** guessed at: the
+muster ratio and the commitment census now in the telemetry are the instruments
+that will answer it, and both changed materially this round. The next log
+should be read before any change is made there.
+
+Playable **19,055,674**. Trace **495 assertions, 0 FAILs**; `npm test` 620
+pass; validate-map 191/192 with 152 warnings (parity); order economy peak 234 /
+mean 74.4, unchanged.
