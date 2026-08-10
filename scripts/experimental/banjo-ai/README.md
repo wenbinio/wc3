@@ -64,10 +64,16 @@ point that drops re-orders inside 96 units (re-issuing a move restarts pathing
 — that IS the stutter), and the twelve slots' think ticks are staggered so they
 never decide in the same frame.
 
+**A bot exists only where the host made a Computer slot.** Empty slots are
+left empty -- nobody asked for them to be filled. Note that this map's own
+`config()` declares all twelve slots `MAP_CONTROL_USER`, so whether the lobby
+offers a Computer option is a question only the game answers; `-aifill` is the
+deliberate way to put bots on empty slots if it does not.
+
 **No cheating.** The AI reads only what the map itself makes global, gets no
 gold, speed or vision, and the harness asserts the absence of every cheat
 surface. Difficulty (`-aieasy` / `-ainormal` / `-aihard`) is aim noise,
-reaction latency and whether it uses its abilities.
+reaction latency and whether it uses its abilities; `-aioff` stops them.
 
 ## Files
 

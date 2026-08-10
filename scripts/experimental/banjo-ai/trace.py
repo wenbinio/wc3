@@ -396,6 +396,19 @@ def source_guards(src):
     ok(re.search(r'constant real\s+BAI_GOAL1X', src) is None,
        'no hard-coded goal coordinates')
 
+    # A bot exists only where a Computer slot was made. The automatic path must
+    # test for MAP_CONTROL_COMPUTER; filling empty slots must be reachable only
+    # from an explicit chat command.
+    auto = src[src.index('function BAI_Start takes'):src.index('function BAI_Fill takes')]
+    ok('MAP_CONTROL_COMPUTER' in auto and 'PLAYER_SLOT_STATE_PLAYING' in auto,
+       'the automatic path claims Computer slots only')
+    ok('!= PLAYER_SLOT_STATE_PLAYING' not in auto,
+       'the automatic path never claims an empty slot')
+    fill_calls = [l for l in src.splitlines() if 'BAI_Fill()' in l]
+    ok(len(fill_calls) == 1 and '-aifill' in src,
+       'empty slots are filled only from the -aifill command',
+       '%d call site(s)' % len(fill_calls))
+
     # The kick path is the map's own function, and it is the only one used.
     code_lines = [l for l in src.splitlines() if not l.strip().startswith('//')]
     ok(sum(l.count('s__Ball_castUtil(') for l in code_lines) == 1,

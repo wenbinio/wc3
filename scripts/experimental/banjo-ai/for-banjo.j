@@ -1216,22 +1216,20 @@ endfunction
 // ArrangeStartPositions itself once the AI slots are in the list. Human
 // positions shift to make room, which is correct: there are now more players.
 //----------------------------------------------------------------------------
-function BAI_Start takes nothing returns nothing
+//----------------------------------------------------------------------------
+// Hand the athletes out and start thinking. Registration has to happen BEFORE
+// positions are handed out, because ArrangeStartPositions divides each team's
+// start rect by that team's player count -- so it is re-run, but ONLY when a
+// slot was actually added to the map's player list. A computer slot is already
+// PLAYING and therefore already registered and already positioned by the map
+// itself, and re-arranging for nothing would move the humans for nothing.
+//----------------------------------------------------------------------------
+function BAI_Activate takes boolean registeredSomeone returns nothing
     local integer i = 0
-    loop
-        exitwhen i >= MAX_PLAYERS
-        if GetPlayerSlotState(Player(i)) != PLAYER_SLOT_STATE_PLAYING or GetPlayerController(Player(i)) == MAP_CONTROL_COMPUTER then
-            call BAI_EnablePlayer(i)
-        endif
-        set i = i + 1
-    endloop
-
-    call BAI_InitRoster()
-    set BAI_rosterOffset = ModuloInteger(BAI_Rand(), BAI_rosterN)
-    call ArrangeStartPositions()
+    if registeredSomeone then
+        call ArrangeStartPositions()
+    endif
     call BAI_RefreshGeometry()
-
-    set i = 0
     loop
         exitwhen i >= MAX_PLAYERS
         if BAI_on[i] then
@@ -1239,12 +1237,55 @@ function BAI_Start takes nothing returns nothing
         endif
         set i = i + 1
     endloop
-
     set BAI_enabled = true
     if BAI_timer == null then
         set BAI_timer = CreateTimer()
     endif
     call TimerStart(BAI_timer, BAI_THINK_PERIOD, true, function BAI_Tick)
+endfunction
+
+function BAI_Start takes nothing returns nothing
+    local integer i = 0
+    local boolean added = false
+
+    call BAI_InitRoster()
+    set BAI_rosterOffset = ModuloInteger(BAI_Rand(), BAI_rosterN)
+
+    // A bot exists ONLY where the host made a Computer slot. An empty slot is
+    // left empty: it is a slot nobody asked to be filled.
+    //
+    // Note for anyone reading this next to the map: this map's own config()
+    // declares all twelve slots MAP_CONTROL_USER, so whether the lobby offers
+    // a Computer option at all is a question only the game answers. If it does
+    // not, -aifill is the deliberate way in.
+    loop
+        exitwhen i >= MAX_PLAYERS
+        if GetPlayerSlotState(Player(i)) == PLAYER_SLOT_STATE_PLAYING and GetPlayerController(Player(i)) == MAP_CONTROL_COMPUTER then
+            if not BAI_on[i] then
+                set added = true
+            endif
+            call BAI_EnablePlayer(i)
+        endif
+        set i = i + 1
+    endloop
+
+    call BAI_Activate(added)
+endfunction
+
+// Opt-in: put a bot on every EMPTY slot as well. Nothing calls this unless a
+// human types -aifill, so the default stays "computer slots only".
+function BAI_Fill takes nothing returns nothing
+    local integer i = 0
+    local boolean added = false
+    loop
+        exitwhen i >= MAX_PLAYERS
+        if GetPlayerSlotState(Player(i)) != PLAYER_SLOT_STATE_PLAYING and not BAI_on[i] then
+            set added = true
+            call BAI_EnablePlayer(i)
+        endif
+        set i = i + 1
+    endloop
+    call BAI_Activate(added)
 endfunction
 
 function BAI_OnFieldChoose takes nothing returns boolean
@@ -1264,6 +1305,8 @@ function BAI_Chat takes nothing returns boolean
         set BAI_enabled = false
     elseif s == "-aion" then
         call BAI_Start()
+    elseif s == "-aifill" then
+        call BAI_Fill()
     endif
     return false
 endfunction
