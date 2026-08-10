@@ -1254,10 +1254,10 @@ function BAI_Start takes nothing returns nothing
     // A bot exists ONLY where the host made a Computer slot. An empty slot is
     // left empty: it is a slot nobody asked to be filled.
     //
-    // Note for anyone reading this next to the map: this map's own config()
-    // declares all twelve slots MAP_CONTROL_USER, so whether the lobby offers
-    // a Computer option at all is a question only the game answers. If it does
-    // not, -aifill is the deliberate way in.
+    // The map's own config() declares all twelve slots MAP_CONTROL_USER, which
+    // left it open whether the lobby would offer a Computer option at all.
+    // Game-verified 2026-08-10: it does. -aifill stays as an opt-in way to put
+    // bots on empty slots, but it is a convenience, not a fallback.
     loop
         exitwhen i >= MAX_PLAYERS
         if GetPlayerSlotState(Player(i)) == PLAYER_SLOT_STATE_PLAYING and GetPlayerController(Player(i)) == MAP_CONTROL_COMPUTER then

@@ -65,10 +65,11 @@ point that drops re-orders inside 96 units (re-issuing a move restarts pathing
 never decide in the same frame.
 
 **A bot exists only where the host made a Computer slot.** Empty slots are
-left empty -- nobody asked for them to be filled. Note that this map's own
-`config()` declares all twelve slots `MAP_CONTROL_USER`, so whether the lobby
-offers a Computer option is a question only the game answers; `-aifill` is the
-deliberate way to put bots on empty slots if it does not.
+left empty -- nobody asked for them to be filled. The map's own `config()`
+declares all twelve slots `MAP_CONTROL_USER`, which left it open whether the
+lobby would offer a Computer option at all; **game-verified 2026-08-10: it
+does.** `-aifill` remains as an opt-in way to put bots on empty slots, and is
+now a convenience rather than a fallback.
 
 **No cheating.** The AI reads only what the map itself makes global, gets no
 gold, speed or vision, and the harness asserts the absence of every cheat
