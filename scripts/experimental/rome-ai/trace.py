@@ -1845,7 +1845,7 @@ def early_barbarians():
         nat = make_natives(env, 0.0)
         nat['AI_Say'] = lambda pid, s: None
         nat['AI_CanMass'] = lambda pid: 1.0        # massing IS possible: the trap
-        nat['AI_PostureName'] = lambda p: ''
+        nat['AI_PostureName'] = lambda pid, p: ''
         Interp(FUNCS, CONSTS, env, nat).run('AI_UpdatePosture', [0])
         return env['ai_posture'][0]
 
@@ -1909,6 +1909,105 @@ def early_barbarians():
                                             100.0 * need_early, 100.0 * need_late))
 
     print('%s: the opening is aggressive, and the aggression expires on a clock'
+          % ('PASS' if not fails else 'FAIL'))
+    return 1 if fails else 0
+
+
+def voice():
+    """PLAYTEST 7: "they should be speaking as though they're human".
+
+    Flavour is presentation, and presentation is exactly where a diagnostic
+    channel gets quietly broken. Two hard constraints came with the request
+    and both are asserted here rather than trusted: the FORAI| event stream
+    stays machine-parseable, and the ally scoping stays intact so no line
+    reaches a player who should not see it.
+
+    HARNESS NOTE: jass_expr_to_py rewrites the JASS operators `and`/`or`/`not`
+    textually, without respecting string boundaries, so a returned STRING that
+    contains one of those words comes back with altered spacing. It does not
+    affect any numeric or boolean path -- the whole rest of this file -- but
+    it means no assertion may compare a voiced line for EQUALITY against a
+    literal typed here. Everything below compares lines for DIFFERENCE or
+    non-emptiness, which is unaffected. The shipped .j is of course intact."""
+    print('\n' + '=' * 78)
+    print('PLAYTEST 7 -- the factions sound like people, and the machine channel does not')
+    print('=' * 78)
+    fails = 0
+
+    def say(pid, goal):
+        env = make_env(dict(role='barb'))
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        return it.run('AI_GoalName', [pid, goal])
+
+    HUNS, FRANKS, WROME, PERSIA = 0, 1, 3, 7
+    G = CONSTS['GOAL_EXPAND']
+    lines = {p: say(p, G) for p in (HUNS, FRANKS, WROME, PERSIA)}
+    ok = len(set(lines.values())) == 4
+    fails += 0 if ok else 1
+    print('  %s Huns, Franks, West Rome and Persia say four DIFFERENT things about the '
+          'same decision' % ('PASS' if ok else 'FAIL'))
+    for p in (HUNS, FRANKS, WROME, PERSIA):
+        print('       %-10s %s' % (('Huns', 'Franks', '', 'West Rome', '', '', '',
+                                    'Persia')[p], lines[p]))
+
+    # a voice is a property of the FACTION, not of the moment
+    ok = say(HUNS, G) == lines[HUNS]
+    fails += 0 if ok else 1
+    print('  %s the same faction says the same thing twice -- a voice, not a roll'
+          % ('PASS' if ok else 'FAIL'))
+
+    # every goal and posture must be voiced for every faction: a missing branch
+    # returns the fallback, which reads as the wrong faction talking
+    goals = [CONSTS[g] for g in ('GOAL_EXPAND', 'GOAL_DEFEND', 'GOAL_SIEGE',
+                                 'GOAL_TECH', 'GOAL_RETREAT', 'GOAL_CONSOLIDATE')]
+    empty = [(p, g) for p in range(12) for g in goals if not say(p, g).strip()]
+    ok = not empty
+    fails += 0 if ok else 1
+    print('  %s every faction has a line for every goal (%d combinations checked)'
+          % ('PASS' if ok else 'FAIL', 12 * len(goals)))
+
+    # ---- the machine channel is untouched ---------------------------------
+    # AI_Tel builds the FORAI| payload; no voice helper may appear in it.
+    tel = '\n'.join(FUNCS['AI_Tel'][1])
+    ok = 'AI_Voice' not in tel and 'AI_GoalName' not in tel and 'AI_PostureName' not in tel
+    fails += 0 if ok else 1
+    print('  %s no voice helper is reachable from AI_Tel -- flavour cannot enter the '
+          'event stream' % ('PASS' if ok else 'FAIL'))
+
+    # every AI_Tel call site passes only AI_Num/AI_TelAI-wrapped values
+    bad = re.findall(r'call AI_Tel\(\s*"(\w+)"\s*,\s*([^\n]*)\)', CODE)
+    leaky = [ev for ev, body in bad
+             if re.search(r'AI_(GoalName|PostureName|KindName|OwnerName|Name|Voice)\b', body)]
+    ok = not leaky
+    fails += 0 if ok else 1
+    print('  %s no AI_Tel call site interpolates a human-readable name (%d sites checked)'
+          % ('PASS' if ok else 'FAIL', len(bad)))
+
+    # ---- the scoping is untouched -----------------------------------------
+    src = '\n'.join(FUNCS['AI_Say'][1])
+    ok = 'AI_BroadcastAllies' in src and 'AI_Broadcast(' not in src
+    fails += 0 if ok else 1
+    print('  %s AI_Say still goes to ALLIES only -- flavour did not widen the audience'
+          % ('PASS' if ok else 'FAIL'))
+
+    ok = 'ai_talk' in src
+    fails += 0 if ok else 1
+    print('  %s ... and is still gated on ai_talk, so -aispy is unchanged'
+          % ('PASS' if ok else 'FAIL'))
+
+    # ---- no ASCII apostrophes crept into the new prose --------------------
+    # gotcha 34 is disputed, but the DELTA check holds and this file is
+    # injected into war3map.j. Human-sounding prose is exactly where
+    # contractions arrive.
+    strings = re.findall(r'"([^"\n]*)"', CODE)
+    apos = [s for s in strings if "'" in s]
+    ok = not apos
+    fails += 0 if ok else 1
+    print('  %s no string literal in the module contains an ASCII apostrophe (%d '
+          'literals checked)%s' % ('PASS' if ok else 'FAIL', len(strings),
+                                   '' if ok else ' -- ' + repr(apos[:3])))
+
+    print('%s: the AI reads like a person and logs like a machine'
           % ('PASS' if not fails else 'FAIL'))
     return 1 if fails else 0
 
@@ -3169,8 +3268,14 @@ ROUND3_GUARDS = [
      r'set ai_target\[pid\] = -1\s*\n\s*set ai_goalSince\[pid\] = -9999\.0', True),
     ('taking an objective arms the aggression floor',
      r'set ai_goalSince\[pid\] = -9999\.0\s*\n\s*set ai_commitAt\[pid\] = -9999\.0', True),
+    # Keyed on STRUCTURE, not on prose. This guard used to match the chat line
+    # "moving on ..." and the playtest-7 flavour pass renamed it, so a guard
+    # over a real invariant failed for a cosmetic reason. A source guard must
+    # never depend on player-facing text: that text is meant to change.
+    # Bounded with the (?!endif) form -- an unbounded .*? here has walked past
+    # a block and produced a false PASS twice in this file's history.
     ('the idle clock is stamped on a CHANGE of objective, not every tick',
-     r'if ai_target\[pid\] != t then\s*\n\s*call AI_Say\(pid, "moving on.*?set ai_commitAt\[pid\] = ai_now', True),
+     r'if ai_target\[pid\] != t then(?:(?!endif)[\s\S])*?set ai_commitAt\[pid\] = ai_now', True),
     ('a waiting ram holds behind the ARMY, not back towards home',
      r'set ai_ramX = wm_fieldX\[pid\] - \(dx/d\)\*AI_RAM_HOLD_R', True),
     ('an idle army takes the nearest contestable objective, unconditionally',
@@ -3479,6 +3584,7 @@ def main():
     rc |= mission_churn()
     rc |= muster()
     rc |= early_barbarians()
+    rc |= voice()
     rc |= centroid()
     rc |= impossible()
     rc |= romanlock()
