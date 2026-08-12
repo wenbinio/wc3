@@ -243,7 +243,17 @@
     // other business and were never going to join this concentration.
     constant real    AI_MUSTER_GATHER = 3800.0
     constant real    AI_MS_REFRESH   = 8.0    // re-issue interval while running
-    constant real    AI_MS_THREAT    = 1.10   // threat vs garrison that interrupts
+    constant real    AI_MS_THREAT    = 1.10   // threat vs garrison that prevents a start
+    // PLAYTEST 12: hysteresis on the INTERRUPT path, which S1 exempted. The
+    // abort bar is materially higher than the start bar, and higher again once
+    // the mission is past staging and committed.
+    constant real    AI_MS_ABORT     = 1.85
+    constant real    AI_MS_ABORT_MARCH = 2.60
+    constant real    AI_GAR_FLOOR    = 60.0   // never divide by an empty city
+    // BRYTENWALDA STEAL #1: ONE constant gating both "may adopt an objective"
+    // and "may march on it". Deliberately low -- it is a coupling, not a
+    // difficulty knob, and Brytenwalda's own bar is 25 food.
+    constant real    AI_PROSECUTE_CV = 150.0
     constant real    AI_RETREAT_RATIO = 1.15   // the round-2 retreat bar, as a FLAG
     integer array    ai_msState
     integer array    ai_msTarget
@@ -274,6 +284,7 @@
     real    array    ai_sortieAt             // when we opened it
     real             ai_marchDX      = 0.0   // unit vector along the march line
     real             ai_marchDY      = 0.0
+    real    array    ai_msGarRef             // PLAYTEST 12: garrison at mission start
     real    array    ai_msRX                 // PLAYTEST 7: the muster point
     real    array    ai_msRY
     // Interrupt flags: SET by other subsystems, never scored against anything.
@@ -526,6 +537,7 @@
     constant real    AI_WD_WINDOW     = 20.0   // observation window
     constant integer AI_WD_STRIKES    = 2      // consecutive frozen windows
     constant real    AI_WD_GRID       = 400.0  // position quantisation
+    constant real    AI_WD_CV         = 200.0  // field-CV bucket: a trickle is not movement
     constant integer AI_ECHO_N        = 12
     constant real    AI_ECHO_T        = 20.0
     // voice event kinds -- indices match gen-voices.py A_KINDS / B_KINDS
@@ -2504,6 +2516,43 @@ endfunction
 //  often, the decision layer is broken and the log says so.
 //===========================================================================
 
+// PLAYTEST 12 -- THE WATCHDOG WAS DEFEATED BY SCALE, and the flaw is in the
+// question it asked, not in its plumbing.
+//
+// It asked "has anything about this FACTION changed". For a barbarian with
+// three holdings that is a sharp question. For West Rome with 27 control
+// points, 10 cities and 15 towns it is guaranteed to be true every window: the
+// turn income alone moves gold, and a faction with that income is always
+// training something, so wm_gold and wm_food move every single window while the
+// field army stands in Rome. The signature therefore always changed, the
+// watchdog never fired, and Rome went on doing nothing.
+//
+// That is the FOURTH measure calibrated on barbarian scale and silently wrong
+// at Roman scale -- after the food cap (100 vs 300), the frontier (4200 vs
+// 18000) and the garrison (a share of a small army vs a share of a huge one).
+//
+// The fix is to ask about the ARMY, which is the thing whose stillness we
+// actually care about and the thing the owner is looking at when he says Rome
+// does nothing. Three terms, and every one of them is deliberately immune to
+// the empire ticking over:
+//
+//   * the FIELD centroid, quantised -- units trained at home do not move it;
+//   * FIELD CV, bucketed coarsely -- this is army OUTSIDE the home radius, so
+//     production inside the city cannot inflate it and a trickle cannot fake
+//     movement;
+//   * army health -- damage dealt or taken anywhere in the field army.
+//
+// Gold, food, territory and total army size are all excluded ON PURPOSE. Each
+// of them is exactly how a large empire disguises a motionless army.
+function AI_ArmySig takes integer pid returns integer
+    local integer sig = 0
+    set sig = R2I(wm_fieldX[pid] / AI_WD_GRID) * 7919
+    set sig = sig + R2I(wm_fieldY[pid] / AI_WD_GRID) * 131
+    set sig = sig + R2I(wm_fieldCV[pid] / AI_WD_CV) * 17
+    set sig = sig + R2I(wm_fieldHPFrac[pid] * 20.0)
+    return sig
+endfunction
+
 // A cheap signature of everything this faction can observably affect. Any real
 // change moves at least one term. Deliberately NOT derived from goals, claims,
 // postures or missions -- the whole point is that it shares no vocabulary with
@@ -2541,7 +2590,14 @@ function AI_Watchdog takes integer pid returns boolean
         return false
     endif
     set ai_wdAt[pid] = ai_now + AI_WD_WINDOW
-    set sig = AI_WorldSig(pid)
+    // PLAYTEST 12: the ARMY, not the faction. A faction with no army at all is
+    // not stuck in the sense this backstop exists for -- there is nothing to
+    // unstick, and producing one is the decision layer's job.
+    if wm_army[pid] <= 0.0 then
+        set ai_wdStuck[pid] = 0
+        return false
+    endif
+    set sig = AI_ArmySig(pid)
     if sig == ai_wdSig[pid] then
         set ai_wdStuck[pid] = ai_wdStuck[pid] + 1
     else
@@ -3659,6 +3715,28 @@ function AI_ArgMaxGoal takes real sCon, real sExp, real sDef, real sSie, real sT
     return g
 endfunction
 
+// PLAYTEST 12 -- BRYTENWALDA STEAL #1
+// (docs/reference/brytenwalda-ai-decomposition.md sections 5 and 6.1).
+//
+// Brytenwalda's war gate is FoodUsed >= 25 and its attack gate is
+// FoodUsed > 25 -- THE SAME CONSTANT. A faction there only ever declares a war
+// it will immediately prosecute, which is why nineteen factions on one script,
+// issuing roughly one order per attack wave, never sit at home. The
+// intelligence is in the gate, not in the score.
+//
+// We score six goals every tick with no equivalent guarantee that the chosen
+// goal is executable NOW, and "Rome adopts an objective it is not willing to
+// march on" is the exact failure. So this is a FILTER UPSTREAM of the scorers
+// rather than another term inside them: below the bar, the acquisitive goals
+// are not candidates at all.
+//
+// It cannot deadlock: CONSOLIDATE, TECH, DEFEND and RETREAT stay available and
+// are precisely the goals that raise field strength, so the bar is reached by
+// doing the thing the bar asks for. The watchdog sits above all of it.
+function AI_CanProsecute takes integer pid returns boolean
+    return wm_army[pid] >= AI_PROSECUTE_CV
+endfunction
+
 function AI_SelectGoal takes integer pid returns integer
     local real sCon = AI_ScoreConsolidate(pid)
     local real sDef = AI_ScoreDefend(pid)
@@ -3714,6 +3792,12 @@ function AI_SelectGoal takes integer pid returns integer
     // write-off, and a posture that overrides those is that same bug wearing
     // a strategy hat. So the comparison is run FIRST without the bias, and if
     // defence or retreat would have won, the bias is not applied at all.
+    // BRYTENWALDA STEAL #1, applied here so it cannot be outvoted: an
+    // objective may not be ADOPTED by a faction that cannot march on it now.
+    if not AI_CanProsecute(pid) then
+        set sExp = 0.0
+        set sSie = 0.0
+    endif
     set bestGoal = AI_ArgMaxGoal(sCon, sExp, sDef, sSie, sTec, sRet)
     if bestGoal != GOAL_DEFEND and bestGoal != GOAL_RETREAT then
         if ai_posture[pid] == POSTURE_CONSOLIDATE then
@@ -5079,12 +5163,64 @@ endfunction
 // any one of them ends the mission and hands control back to the chooser,
 // which then picks DEFEND or RETREAT on its own merits. That is what keeps
 // Guard B intact through the rewrite.
+// PLAYTEST 12 -- "East Rome just runs around its capital", diagnosed by the
+// AI's own chat in two lines:
+//
+//     East Rome: we move on a city. it belongs to Ostrogoths
+//     East Rome: back. Constantinople comes first
+//
+// A SELF-CAUSED FEEDBACK LOOP. The recall test was
+// wm_threat > AI_MS_THREAT * wm_garrison, and wm_garrison is own CV within
+// AI_HOME_R of home -- so it COLLAPSES the moment the army marches out. The
+// army leaves, the denominator drops, the ratio crosses, the mission aborts,
+// the army comes home, the denominator recovers, a new mission starts, and it
+// leaves again. The input to the decision was a function of the decision's own
+// output. No threshold can fix that; it oscillates by construction.
+//
+// Two changes, and they are the pair the round-3 Schmitt trigger already has
+// for goals and that the interrupt path was deliberately exempted from:
+//
+//   1. A STABLE DENOMINATOR. While a mission runs, the comparison uses the
+//      garrison SNAPSHOT taken when the mission started, not the live value.
+//      Departure can no longer manufacture the emergency that cancels it.
+//   2. HYSTERESIS AND A COMMITMENT FLOOR. Aborting needs a materially higher
+//      threat than the level that would have prevented the mission starting,
+//      and once past staging the bar rises again.
+//
+// A real emergency still interrupts: wm_capThreat -- the capital itself under
+// assault -- aborts at any bar, because that is the case the exemption existed
+// for in the first place.
+function AI_ThreatBar takes integer pid returns real
+    if ai_msState[pid] == AI_MS_NONE then
+        return AI_MS_THREAT                 // no mission: the ordinary bar
+    endif
+    if ai_msState[pid] == AI_MS_MARCH then
+        return AI_MS_ABORT_MARCH            // committed: hardest to recall
+    endif
+    return AI_MS_ABORT
+endfunction
+
 function AI_SetFlags takes integer pid returns nothing
+    local real gar = wm_garrison[pid]
+    local real bar = AI_ThreatBar(pid)
+    // the stable denominator: what we LEFT BEHIND, not what is standing here
+    if ai_msState[pid] != AI_MS_NONE and ai_msGarRef[pid] > 0.0 then
+        set gar = ai_msGarRef[pid]
+    endif
+    if gar < AI_GAR_FLOOR then
+        set gar = AI_GAR_FLOOR              // never divide by an empty city
+    endif
     // S1 + S3: the threat FIELD is what sets the interrupt, which is the
     // composition the two were designed for. The round-2 asset gate is kept
     // -- a threat against nothing we own is still not an emergency.
-    set ai_ifThreat[pid] = (wm_threat[pid] > 0.0) and (wm_asset[pid] > 0.0) and (wm_threat[pid] > AI_MS_THREAT * wm_garrison[pid])
-    if wm_townIdx[pid] >= 0 and wm_townThreat[pid] > AI_TF_COEF then
+    set ai_ifThreat[pid] = (wm_threat[pid] > 0.0) and (wm_asset[pid] > 0.0) and (wm_threat[pid] > bar * gar)
+    if wm_townIdx[pid] >= 0 and wm_townThreat[pid] > AI_TF_COEF * bar then
+        set ai_ifThreat[pid] = true
+    endif
+    // THE EMERGENCY. A capital actually under assault recalls the army at any
+    // bar -- this is the case the no-hysteresis exemption was written for, and
+    // it is kept explicitly rather than by accident.
+    if wm_capThreat[pid] then
         set ai_ifThreat[pid] = true
     endif
     set ai_ifRetreat[pid] = (wm_fieldCV[pid] > 1.0) and (wm_fieldEnemyCV[pid] > AI_RETREAT_RATIO * wm_fieldCV[pid])
@@ -5224,11 +5360,23 @@ function AI_MissionStart takes integer pid, integer t returns nothing
     if AI_MissionHeld(pid, t) then
         return                          // barred: a mission just failed here
     endif
+    // BRYTENWALDA STEAL #1, the OTHER half of the coupling. The same constant
+    // that gates adopting an objective gates marching on one. Brytenwalda's
+    // war gate and attack gate share FoodUsed 25 and that is the whole trick;
+    // two different numbers here would just be two more thresholds to drift
+    // apart, which is what we have been doing for eight rounds.
+    if not AI_CanProsecute(pid) then
+        return
+    endif
     call AI_Tel("mis", AI_Num(pid) + "|" + AI_TelAI(pid) + "|start|0|" + AI_Num(t))
     set ai_msState[pid] = AI_MS_STAGE
     set ai_msTarget[pid] = t
     set ai_msPhaseEnd[pid] = ai_now + AI_MS_STAGE_T
     set ai_msNextOrder[pid] = 0.0
+    // PLAYTEST 12: freeze the recall denominator now, while the army is still
+    // home. Everything after this is the mission's own doing and must not feed
+    // back into the decision to cancel it.
+    set ai_msGarRef[pid] = wm_garrison[pid]
     // PLAYTEST 7. The muster point: on our own ground, a short way out of home
     // ON THE LINE TO THE OBJECTIVE, so gathering is already the first step of
     // the march rather than a detour backwards. If the objective is closer

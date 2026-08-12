@@ -2892,3 +2892,95 @@ change.
 
 Playable **19,072,620**. Trace **542 assertions, 0 FAILs**; `npm test` 620
 pass; validate-map 191/192 with 152 warnings (parity).
+
+---
+
+## §27 Rome does nothing — three angles, one complaint
+
+### 27.1 No log was supplied
+
+Neither playtest 12 message came with a `FORAI` log, so "did any `wd` event
+fire for players 3, 9 or 10?" cannot be answered from data. **Stated rather
+than inferred.** The scale hypothesis is instead settled positively in the
+harness, against West Rome's real holdings, which is nearly as strong and does
+not depend on anyone's memory of a screenshot.
+
+### 27.2 The watchdog was defeated by scale — hypothesis confirmed
+
+`AI_WorldSig` asked *"has anything about this faction changed"* — territory,
+army size, position, health, gold, food. Reproduced in the harness: for a
+**motionless** Roman army whose empire is merely ticking over (turn income
+arriving, units training), the faction signature takes **6 distinct values over
+6 windows**. It could never fire. The coordinator's diagnosis was exactly
+right, and this is the **fourth** measure calibrated on barbarian scale and
+silently wrong at Roman scale — after the food cap (100 vs 300), the frontier
+(4200 vs 18000) and the garrison (a share of a small army vs a huge one).
+
+`AI_ArmySig` asks about the army instead: quantised **field** centroid,
+bucketed **field** CV, and army health. Gold, food, territory and total army
+size are excluded **on purpose** — each is precisely how a large empire
+disguises a still army. Field CV rather than total army is what makes
+production immune: units trained inside the home radius never enter it.
+
+Same motionless Roman: **1 signature value across 6 windows**, and the watchdog
+fires. A Roman army that is genuinely marching still never trips it.
+
+**Four assertions were reversed, not repaired.** They previously said that a
+faction training units, spending gold, or changing holdings must *prevent* the
+watchdog firing. That premise is what defeated it, so the contract is now the
+opposite and the assertions say so in their own output.
+
+### 27.3 East Rome's oscillation was a self-caused feedback loop
+
+Diagnosed from two chat lines. The recall test was
+`wm_threat > AI_MS_THREAT * wm_garrison`, and `wm_garrison` is own CV **within
+`AI_HOME_R` of home** — so it collapses the moment the army marches out. Army
+leaves → denominator drops → ratio crosses → abort → army returns → denominator
+recovers → new mission → leaves again. **The input to the decision was a
+function of the decision's own output.** No threshold fixes that.
+
+Two changes, the pair the goal layer has had since round 3 and the interrupt
+path was deliberately exempted from:
+
+1. **A stable denominator.** While a mission runs, the comparison uses the
+   garrison **snapshot taken at mission start**, frozen while the army is still
+   home. Departure can no longer manufacture the emergency that cancels it.
+2. **Hysteresis and a commitment floor.** Start bar 1.10, abort 1.85, marching
+   2.60. A threat that would prevent a start no longer aborts one in progress.
+
+**The emergency is kept explicitly**: `wm_capThreat` — the capital itself under
+assault — recalls the army at any bar. That is the case the exemption was
+written for, and it is now a named branch rather than a side effect of having
+no hysteresis.
+
+The negative control is arithmetic on the same numbers: the old live-garrison
+test fires where the new one does not.
+
+### 27.4 Brytenwalda steal #1 — one constant, two gates
+
+Its war gate is `FoodUsed >= 25` and its attack gate `FoodUsed > 25`. **The
+same constant**, so a faction only ever declares a war it will immediately
+prosecute. `AI_CanProsecute` is now that gate, and it guards **both** adopting
+an objective (`AI_SelectGoal`, applied before the argmax so it cannot be
+outvoted) and marching on one (`AI_MissionStart`). One constant, asserted to
+appear once, because two numbers here would just be two more thresholds to
+drift apart — which is what we have been doing for eight rounds.
+
+It cannot deadlock: below the bar the faction picks CONSOLIDATE, TECH, DEFEND
+or RETREAT, which are exactly the goals that raise field strength, so the bar
+is reached by doing what the bar asks. Asserted.
+
+Also recorded from that dossier, against our instinct to add sophistication:
+Brytenwalda runs **one order per attack wave**, roughly 1–3 orders per minute
+across nineteen factions, and reads as competent. Our order economy is 74/s.
+
+### 27.5 The voices earned their keep
+
+An eight-round-old bug became diagnosable from two sentences in a screenshot.
+`back. Constantinople comes first` names the reversal and the reason; no amount
+of watching an army mill about would have. **Keep the AI narrating its
+reversals** — an AI that says *why* it changed its mind is debuggable in a way
+a silent one is not. That is now a design constraint, not a flourish.
+
+Playable **19,076,161**. Trace **563 assertions, 0 FAILs**; `npm test` 620
+pass; validate-map 191/192 with 152 warnings (parity).

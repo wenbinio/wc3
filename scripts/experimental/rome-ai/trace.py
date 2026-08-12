@@ -277,6 +277,7 @@ def make_env(sc):
         'ai_sortieGate': d(-1), 'ai_sortieAt': d(0.0),
         'wm_musterPool': d(0.0), 'ai_musterAt': 0.0,
         'ai_wdSig': d(-1), 'ai_wdStuck': d(0), 'ai_wdAt': d(0.0), 'ai_wdFired': 0,
+        'ai_msGarRef': d(0.0),
         'ai_sayGlobal': '', 'ai_sayGlobalAt': -999.0,
         'ai_msRX': d(0.0), 'ai_msRY': d(0.0),
         'wm_fieldCV': d(sc.get('fieldCV', 0.0)),
@@ -2034,30 +2035,49 @@ def watchdog():
     print('  %s NEGATIVE CONTROL: an army that is MOVING never trips it over %d '
           'windows' % ('PASS' if ok else 'FAIL', len(moved)))
 
-    for label, key, val in (('taking damage', 'wm_fieldHPFrac', 0.5),
-                            ('training units', 'wm_food', 40.0),
-                            ('spending gold', 'wm_gold', 120.0),
-                            ('losing army', 'wm_army', 400.0)):
+    # Army-level liveness: these are the signals that DO count, because they
+    # are the ones a still army cannot produce.
+    for label, key, val, step in (('taking or dealing damage', 'wm_fieldHPFrac', 0.9, -0.1),
+                                  ('gaining or losing field strength', 'wm_fieldCV', 400.0, 250.0)):
         env, it = world()
         seq = []
         for n in range(6):
             env['ai_now'] = 100.0 + n * (W + 1.0)
-            env[key][0] = val + n * 20.0
+            env[key][0] = val + n * step
             seq.append(it.run('AI_Watchdog', [0]))
         ok = not any(seq)
         fails += 0 if ok else 1
-        print('  %s ... nor does a faction %s' % ('PASS' if ok else 'FAIL', label))
+        print('  %s ... nor does an army %s' % ('PASS' if ok else 'FAIL', label))
 
-    # territory changing hands is observable too
+    # PLAYTEST 12 REVERSAL, stated rather than quietly edited. These four used
+    # to assert that faction-level activity PREVENTS the watchdog firing. That
+    # premise is exactly what defeated it at Roman scale, so the contract is now
+    # the opposite: an empire that trains, spends and gains or loses territory
+    # while its army stands still is precisely the case this must catch.
+    for label, key, val in (('training units', 'wm_food', 40.0),
+                            ('spending gold', 'wm_gold', 120.0),
+                            ('growing its total army', 'wm_army', 900.0)):
+        env, it = world()
+        fired = False
+        for n in range(4):
+            env['ai_now'] = 100.0 + n * (W + 1.0)
+            env[key][0] = val + n * 40.0
+            fired = it.run('AI_Watchdog', [0])
+        ok = fired is True
+        fails += 0 if ok else 1
+        print('  %s a faction %s while its ARMY stands still STILL trips it'
+              % ('PASS' if ok else 'FAIL', label))
+
     env, it = world()
-    seq = []
-    for n in range(6):
+    fired = False
+    for n in range(4):
         env['ai_now'] = 100.0 + n * (W + 1.0)
         env['_ptOwner'][1] = 0 if n % 2 else 5
-        seq.append(it.run('AI_Watchdog', [0]))
-    ok = not any(seq)
+        fired = it.run('AI_Watchdog', [0])
+    ok = fired is True
     fails += 0 if ok else 1
-    print('  %s ... nor one whose holdings are changing hands'
+    print('  %s ... as does one whose holdings change hands while the army does not '
+          'move -- 27 control points must not disguise a parked legion'
           % ('PASS' if ok else 'FAIL'))
 
     # ---- THE VANDALS CASE, from the screenshot ---------------------------
@@ -2183,7 +2203,242 @@ def watchdog():
     print('  %s NEGATIVE CONTROL: with full headroom the term is inert, so it cannot '
           'distort the ordinary value table' % ('PASS' if ok else 'FAIL'))
 
+    # ---- PLAYTEST 12: the scale defeat, and the army-keyed fix ------------
+    # No FORAI log was supplied for this playtest, so the scale hypothesis is
+    # settled here instead -- against West Rome's REAL holdings rather than an
+    # invented fixture. 27 control points at 10 gold a turn means a Roman is
+    # always training something, so gold and food move every window.
+    def roman(sig_fn, windows=6):
+        sc = dict(role='rome', army=3000.0, fieldX=0.0, fieldY=0.0,
+                  points=[dict(kind=CONSTS['AI_PK_CITY'], x=3000.0, y=0.0, owner=5)])
+        env = make_env(sc)
+        env['ai_now'] = 100.0
+        env['ai_homeX'] = {0: 0.0}
+        env['ai_homeY'] = {0: 0.0}
+        env['wm_fieldCV'] = {0: 0.0}          # the whole army is INSIDE the city
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        seen = set()
+        for n in range(windows):
+            env['ai_now'] = 100.0 + n * (W + 1.0)
+            # the empire ticks over: income arrives and is spent on units
+            env['wm_gold'][0] = 400.0 + 37.0 * n
+            env['wm_food'][0] = 60.0 + 3.0 * n
+            env['wm_army'][0] = 3000.0 + 40.0 * n
+            seen.add(it.run(sig_fn, [0]))
+        return len(seen)
+
+    n_world = roman('AI_WorldSig')
+    ok = n_world > 1
+    fails += 0 if ok else 1
+    print('  %s SCALE DEFEAT REPRODUCED: the faction signature takes %d distinct '
+          'values over %d windows for a motionless Roman army -- so the watchdog '
+          'could never fire' % ('PASS' if ok else 'FAIL', n_world, 6))
+
+    n_army = roman('AI_ArmySig')
+    ok = n_army == 1
+    fails += 0 if ok else 1
+    print('  %s THE FIX: the ARMY signature is constant (%d value) for the same '
+          'motionless army, whatever the empire is doing'
+          % ('PASS' if ok else 'FAIL', n_army))
+
+    # and the army-keyed watchdog actually fires on that Roman
+    sc = dict(role='rome', army=3000.0, fieldX=0.0, fieldY=0.0,
+              points=[dict(kind=CONSTS['AI_PK_CITY'], x=3000.0, y=0.0, owner=5)])
+    env = make_env(sc)
+    env['ai_homeX'] = {0: 0.0}
+    env['ai_homeY'] = {0: 0.0}
+    env['wm_fieldCV'] = {0: 0.0}
+    it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+    fired = False
+    for n in range(4):
+        env['ai_now'] = 100.0 + n * (W + 1.0)
+        env['wm_gold'][0] = 400.0 + 37.0 * n
+        env['wm_food'][0] = 60.0 + 3.0 * n
+        fired = it.run('AI_Watchdog', [0])
+    ok = fired is True
+    fails += 0 if ok else 1
+    print('  %s ... so a Roman army parked in its capital while the empire ticks '
+          'over now TRIPS the watchdog' % ('PASS' if ok else 'FAIL'))
+
+    # a Roman army that is actually marching must still not trip it
+    env = make_env(sc)
+    env['ai_homeX'] = {0: 0.0}
+    env['ai_homeY'] = {0: 0.0}
+    it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+    seq = []
+    for n in range(6):
+        env['ai_now'] = 100.0 + n * (W + 1.0)
+        env['wm_fieldX'][0] = 900.0 * n
+        env['wm_fieldCV'][0] = 2000.0
+        seq.append(it.run('AI_Watchdog', [0]))
+    ok = not any(seq)
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL: a Roman army that IS marching still never trips it'
+          % ('PASS' if ok else 'FAIL'))
+
+    # production inside the city must not read as movement
+    env = make_env(sc)
+    env['ai_homeX'] = {0: 0.0}
+    env['ai_homeY'] = {0: 0.0}
+    env['wm_fieldCV'] = {0: 0.0}
+    it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+    fired = False
+    for n in range(4):
+        env['ai_now'] = 100.0 + n * (W + 1.0)
+        env['wm_army'][0] = 3000.0 + 300.0 * n     # training hard, all at home
+        fired = it.run('AI_Watchdog', [0])
+    ok = fired is True
+    fails += 0 if ok else 1
+    print('  %s ... and a city training units at full tilt does NOT disguise the '
+          'motionless army' % ('PASS' if ok else 'FAIL'))
+
+    sig = '\n'.join(FUNCS['AI_ArmySig'][1])
+    ok = not any(w in sig for w in ('wm_gold', 'wm_food', 'ai_pt', 'wm_army['))
+    fails += 0 if ok else 1
+    print('  %s the army signature reads no gold, food, territory or total army size '
+          '-- each is how a large empire disguises a still army'
+          % ('PASS' if ok else 'FAIL'))
+
     print('%s: a faction the world has stopped responding to always does something'
+          % ('PASS' if not fails else 'FAIL'))
+    return 1 if fails else 0
+
+
+def oscillation():
+    """PLAYTEST 12 -- "East Rome just runs around its capital", diagnosed by the
+    AI's own two chat lines:
+
+        East Rome: we move on a city. it belongs to Ostrogoths
+        East Rome: back. Constantinople comes first
+
+    A SELF-CAUSED FEEDBACK LOOP. The recall test was
+    wm_threat > AI_MS_THREAT * wm_garrison, and wm_garrison is own CV within
+    AI_HOME_R of home -- so it collapses the moment the army marches out. The
+    input to the decision was a function of the decision's own output.
+
+    Also PLAYTEST 12: Brytenwalda steal #1. Its war gate is FoodUsed >= 25 and
+    its attack gate FoodUsed > 25 -- the same constant -- so a faction only
+    declares a war it will immediately prosecute."""
+    print('\n' + '=' * 78)
+    print('PLAYTEST 12 -- a departure cannot manufacture the emergency that recalls it')
+    print('=' * 78)
+    fails = 0
+    NONE, STAGE, MARCH = (CONSTS['AI_MS_NONE'], CONSTS['AI_MS_STAGE'],
+                          CONSTS['AI_MS_MARCH'])
+
+    def flags(threat, garrison, msState=NONE, garRef=0.0, capThreat=False):
+        sc = dict(role='rome', threat=threat, garrison=garrison, army=2000.0,
+                  asset=CONSTS['AI_VAL_CP'], msState=msState, capThreat=capThreat)
+        env = make_env(sc)
+        env['ai_msGarRef'] = {0: garRef}
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        it.run('AI_SetFlags', [0])
+        return env['ai_ifThreat'][0]
+
+    HOME_GAR, RAID = 800.0, 500.0
+
+    # ---- THE LOOP, reproduced and then broken ----------------------------
+    # at home: 500 raiders against an 800 garrison is not an emergency
+    ok = flags(RAID, HOME_GAR) is False
+    fails += 0 if ok else 1
+    print('  %s with the army at home a %.0f-CV raid is not an emergency'
+          % ('PASS' if ok else 'FAIL', RAID))
+
+    # the army marches out: live garrison collapses to what was left behind
+    LEFT = 200.0
+    ok = flags(RAID, LEFT, msState=MARCH, garRef=HOME_GAR) is False
+    fails += 0 if ok else 1
+    print('  %s ... and it is STILL not an emergency once the army has left, because '
+          'the denominator is the garrison snapshot, not the collapsed live value'
+          % ('PASS' if ok else 'FAIL'))
+
+    # NEGATIVE CONTROL: the old live-garrison comparison, on the same numbers
+    ok = RAID > CONSTS['AI_MS_THREAT'] * LEFT
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL: the OLD test (%.0f > %.2f x %.0f live) fires on those '
+          'same numbers -- that is the loop, reproduced arithmetically'
+          % ('PASS' if ok else 'FAIL', RAID, CONSTS['AI_MS_THREAT'], LEFT))
+
+    # ---- hysteresis: the abort bar is above the start bar ----------------
+    ok = (CONSTS['AI_MS_ABORT'] > CONSTS['AI_MS_THREAT']
+          and CONSTS['AI_MS_ABORT_MARCH'] > CONSTS['AI_MS_ABORT'])
+    fails += 0 if ok else 1
+    print('  %s the bars rise with commitment: start %.2f, abort %.2f, marching %.2f'
+          % ('PASS' if ok else 'FAIL', CONSTS['AI_MS_THREAT'],
+             CONSTS['AI_MS_ABORT'], CONSTS['AI_MS_ABORT_MARCH']))
+
+    MID = 1.5 * CONSTS['AI_MS_THREAT'] * HOME_GAR
+    ok = (flags(MID, HOME_GAR) is True
+          and flags(MID, LEFT, msState=MARCH, garRef=HOME_GAR) is False)
+    fails += 0 if ok else 1
+    print('  %s a threat that would PREVENT a start does not ABORT one already '
+          'marching -- the interrupt path finally has the hysteresis the goal '
+          'layer has had since round 3' % ('PASS' if ok else 'FAIL'))
+
+    # ---- but a real emergency still interrupts ---------------------------
+    HUGE = 6.0 * HOME_GAR
+    ok = flags(HUGE, LEFT, msState=MARCH, garRef=HOME_GAR) is True
+    fails += 0 if ok else 1
+    print('  %s an overwhelming assault still recalls a marching army'
+          % ('PASS' if ok else 'FAIL'))
+
+    ok = flags(1.0, LEFT, msState=MARCH, garRef=HOME_GAR, capThreat=True) is True
+    fails += 0 if ok else 1
+    print('  %s ... and the CAPITAL under assault recalls it at any bar -- the case '
+          'the no-hysteresis exemption existed for, kept explicitly'
+          % ('PASS' if ok else 'FAIL'))
+
+    # the snapshot is taken while the army is still home
+    src = '\n'.join(FUNCS['AI_MissionStart'][1])
+    ok = 'ai_msGarRef' in src
+    fails += 0 if ok else 1
+    print('  %s the denominator is frozen at mission START, before the army moves'
+          % ('PASS' if ok else 'FAIL'))
+
+    # ---- BRYTENWALDA STEAL #1: one constant, both gates -------------------
+    sel = '\n'.join(FUNCS['AI_SelectGoal'][1])
+    st = '\n'.join(FUNCS['AI_MissionStart'][1])
+    ok = 'AI_CanProsecute' in sel and 'AI_CanProsecute' in st
+    fails += 0 if ok else 1
+    print('  %s BRYTENWALDA STEAL #1: the SAME gate guards adopting an objective and '
+          'marching on one' % ('PASS' if ok else 'FAIL'))
+
+    pros = re.sub(r'//.*$', '', '\n'.join(FUNCS['AI_CanProsecute'][1]), flags=re.M)
+    ok = pros.count('AI_PROSECUTE_CV') == 1
+    fails += 0 if ok else 1
+    print('  %s ... and it is ONE constant, not two that can drift apart'
+          % ('PASS' if ok else 'FAIL'))
+
+    def goal(army):
+        sc = dict(role='barb', t=400.0, army=army, goalSince=-999.0,
+                  points=[dict(kind=CONSTS['AI_PK_CP'], x=1200.0, y=0.0, owner=5)])
+        env = make_env(sc)
+        env['ai_now'] = 400.0
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        seed_capital(env, it, sc)
+        return it.run('AI_SelectGoal', [0])
+
+    weak = goal(0.5 * CONSTS['AI_PROSECUTE_CV'])
+    ok = weak not in (CONSTS['GOAL_EXPAND'], CONSTS['GOAL_SIEGE'])
+    fails += 0 if ok else 1
+    print('  %s below the bar an acquisitive goal is not even a CANDIDATE (chose %s)'
+          % ('PASS' if ok else 'FAIL', weak))
+
+    strong = goal(6.0 * CONSTS['AI_PROSECUTE_CV'])
+    ok = strong in (CONSTS['GOAL_EXPAND'], CONSTS['GOAL_SIEGE'])
+    fails += 0 if ok else 1
+    print('  %s above it the same faction attacks (chose %s) -- a filter, not a freeze'
+          % ('PASS' if ok else 'FAIL', strong))
+
+    # it must not create a sixth impossible state: the goals that RAISE army
+    # strength stay available below the bar
+    ok = weak in (CONSTS['GOAL_CONSOLIDATE'], CONSTS['GOAL_TECH'],
+                  CONSTS['GOAL_DEFEND'], CONSTS['GOAL_RETREAT'])
+    fails += 0 if ok else 1
+    print('  %s ... and below the bar it picks a goal that RAISES strength, so the bar '
+          'is reached by doing what it asks' % ('PASS' if ok else 'FAIL'))
+
+    print('%s: the army no longer cancels its own campaigns'
           % ('PASS' if not fails else 'FAIL'))
     return 1 if fails else 0
 
@@ -2771,7 +3026,7 @@ def perimeter():
     # often enough to matter; a muster that gathers at an unreachable point is
     # the same trap with a new cause.
     def rally(water):
-        sc = dict(role='barb', t=100.0,
+        sc = dict(role='barb', t=100.0, army=4 * CONSTS['AI_PROSECUTE_CV'],
                   points=[dict(kind=CONSTS['AI_PK_CITY'], x=8000.0, y=0.0, owner=5)],
                   msState=CONSTS['AI_MS_NONE'], msTarget=-1)
         env = make_env(sc)
@@ -3346,7 +3601,9 @@ def mission_churn():
 
     def scen(funcs, **kw):
         """One faction, one enemy point (index 0), a mission running on it."""
-        sc = dict(role='barb', t=100.0,
+        # army above AI_PROSECUTE_CV: this section is about the RESTART guard,
+        # and a faction below the Brytenwalda coupling bar would never reach it
+        sc = dict(role='barb', t=100.0, army=4 * CONSTS['AI_PROSECUTE_CV'],
                   points=[dict(kind=CONSTS['AI_PK_CITY'], x=1000.0, y=0.0, owner=5)],
                   msState=STAGE, msTarget=0)
         sc.update(kw)
@@ -4913,6 +5170,7 @@ def main():
     rc |= voice()
     rc |= no_cheating()
     rc |= watchdog()
+    rc |= oscillation()
     rc |= perimeter()
     rc |= partition()
     rc |= congestion()
