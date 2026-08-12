@@ -59,6 +59,7 @@ REQUIRED = [
     r'real BALL_BUMP_SPEED_LOSS=',
     r'constant integer MAX_PLAYERS',
     r'constant integer SPRINT_RAWCODE',
+    r'constant real SPRINT_NEW_SPEED',
     r'constant integer SPRINT_BUFF_RAWCODE',
     r'constant integer SLAM_RAWCODE',
 ]

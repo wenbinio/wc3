@@ -58,6 +58,10 @@
     constant real    BAI_POWERSHOT_RANGE   = 3200.0   // powershot is near-frictionless
     constant real    BAI_MARK_DEPTH        = 190.0    // how far goal-side of a marked man
     constant real    BAI_PASS_LEAD         = 170.0    // pass into space, not at the feet
+    constant real    BAI_SPACING           = 300.0    // do not stand on a team-mate
+    constant integer BAI_SPRINT_WAIT       = 2        // acts between sprint toggles
+    constant real    BAI_SPRINT_RESERVE    = 30.0     // never burn the tank below this
+    constant real    BAI_SPRINT_RESUME     = 55.0     // ... and wait for this before again
 
 // ---- ability order strings, from the object data's Ncl6 base-order field ----
     constant string  BAI_ORD_POWERSHOT     = "parasite"
@@ -65,6 +69,7 @@
     constant string  BAI_ORD_CURVE_CCW     = "carrionscarabs"
     constant string  BAI_ORD_CURVE_CW      = "cannibalize"
     constant string  BAI_ORD_SPRINT        = "immolation"
+    constant string  BAI_ORD_SPRINT_OFF    = "unimmolation"
 
 // ---- ability rawcodes the map does not expose as globals --------------------
     constant integer BAI_POWERSHOT_ABIL    = 'A003'
@@ -88,6 +93,8 @@
     boolean array    BAI_useAbilities
     boolean array    BAI_registered         // registered into the map's player list
     boolean array    BAI_claimed            // opponent already marked this think
+    integer array    BAI_sprintWait         // anti-spam: SPRINT_SPAM_DISABLE_COOLDOWN
+    integer array    BAI_sprintFails        // consecutive failed toggles
 
     timer            BAI_timer              = null
     integer          BAI_subTick            = 0
@@ -675,23 +682,120 @@ endfunction
 // attempt, this slot stops trying for the rest of the game. Slam and Powershot
 // use order strings that are declared in the map's own object data.
 //----------------------------------------------------------------------------
-function BAI_TrySprint takes integer pid, unit u returns nothing
-    if not BAI_useAbilities[pid] or not BAI_sprintWorks[pid] then
+//----------------------------------------------------------------------------
+// SPRINT IS A STAMINA BUDGET, NOT A SPEED SETTING.
+//
+// From the ability's own data: Sprint drains Eim2 = 30 mana/second against the
+// athlete's 10/second regen, so it costs a NET 20/second out of a pool of 100.
+// That is five seconds of sprint, and ten seconds to refill. A bot that holds
+// the toggle down is empty exactly when the next fifty-fifty arrives, and is
+// then the slowest man on the pitch -- which is worse than never sprinting.
+//
+// So it is spent on moments that a good player spends it on:
+//   * a loose ball where sprinting is what DECIDES the race, not one already
+//     won or already lost;
+//   * carrying the ball with someone on you -- the carrier is slowed by the
+//     map's own debuff, so this is where the speed is worth most;
+//   * closing down a carrier near our own goal.
+// and it is switched OFF the moment none of those holds, so the tank refills.
+//
+// The toggle-off order is the standard AEim counterpart, which is an
+// inference: it is self-verified below, and a failure only stops the toggling,
+// never the rest of the play.
+//----------------------------------------------------------------------------
+function BAI_Sprinting takes unit u returns boolean
+    return GetUnitAbilityLevel(u, SPRINT_BUFF_RAWCODE) > 0
+endfunction
+
+function BAI_ManageSprint takes integer pid, unit u, boolean want returns nothing
+    local real mana = GetUnitState(u, UNIT_STATE_MANA)
+    local boolean on = BAI_Sprinting(u)
+
+    if not BAI_sprintWorks[pid] or GetUnitAbilityLevel(u, SPRINT_RAWCODE) == 0 then
         return
     endif
-    if GetUnitAbilityLevel(u, SPRINT_RAWCODE) == 0 then
+
+    // Hysteresis on BOTH the tank and the clock. The map penalises a spammed
+    // toggle (SPRINT_SPAM_DISABLE_COOLDOWN), and a bare threshold would flap
+    // across it every act.
+    if mana < BAI_SPRINT_RESERVE then
+        set want = false
+    elseif not on and mana < BAI_SPRINT_RESUME then
+        set want = false
+    endif
+
+    if want == on then
         return
     endif
-    if GetUnitAbilityLevel(u, SPRINT_BUFF_RAWCODE) > 0 then
-        return                        // already sprinting
+    if BAI_sprintWait[pid] > 0 then
+        set BAI_sprintWait[pid] = BAI_sprintWait[pid] - 1
+        return
     endif
-    call IssueImmediateOrder(u, BAI_ORD_SPRINT)
-    if GetUnitAbilityLevel(u, SPRINT_BUFF_RAWCODE) == 0 then
-        // The order did nothing this time. One failure is not proof (the
-        // ability may simply be on cooldown), so only a failure while the
-        // ability is off cooldown and unbuffed disables further attempts.
-        set BAI_sprintWorks[pid] = false
+    set BAI_sprintWait[pid] = BAI_SPRINT_WAIT
+
+    if want then
+        call IssueImmediateOrder(u, BAI_ORD_SPRINT)
+        if not BAI_Sprinting(u) then
+            if BAI_sprintFails[pid] >= 3 then
+                set BAI_sprintWorks[pid] = false
+            else
+                set BAI_sprintFails[pid] = BAI_sprintFails[pid] + 1
+            endif
+        else
+            set BAI_sprintFails[pid] = 0
+        endif
+    else
+        call IssueImmediateOrder(u, BAI_ORD_SPRINT_OFF)
     endif
+endfunction
+
+//----------------------------------------------------------------------------
+// Would sprinting actually DECIDE this race? Compares my time to the intercept
+// point against the nearest opponent's, at walking pace and at sprint pace. If
+// I win it either way, or lose it either way, the stamina is wasted.
+//
+// Expects BAI_ipx/BAI_ipy to hold the intercept point.
+//----------------------------------------------------------------------------
+function BAI_SprintDecides takes integer team, unit me returns boolean
+    local integer i     = 0
+    local real    walk  = GetUnitMoveSpeed(me)
+    local real    best  = 999999.0
+    local real    mine
+    local real    sprintT
+    local unit    u
+    local real    sp
+    if walk < 1.0 then
+        set walk = 1.0
+    endif
+    // If already sprinting, GetUnitMoveSpeed reports the sprint speed; the
+    // comparison below only needs the two candidate speeds, so take the walk
+    // figure as the lower of the two.
+    if BAI_Sprinting(me) then
+        set walk = 300.0
+    endif
+    set mine    = BAI_Dist(GetUnitX(me), GetUnitY(me), BAI_ipx, BAI_ipy) / walk
+    set sprintT = BAI_Dist(GetUnitX(me), GetUnitY(me), BAI_ipx, BAI_ipy) / SPRINT_NEW_SPEED
+
+    loop
+        exitwhen i >= MAX_PLAYERS
+        if GetPlayerTeam(Player(i)) != team then
+            set u = BAI_UnitOf(i)
+            if BAI_Alive(u) then
+                set sp = GetUnitMoveSpeed(u)
+                if sp < 1.0 then
+                    set sp = 1.0
+                endif
+                if BAI_Dist(GetUnitX(u), GetUnitY(u), BAI_ipx, BAI_ipy) / sp < best then
+                    set best = BAI_Dist(GetUnitX(u), GetUnitY(u), BAI_ipx, BAI_ipy) / sp
+                endif
+            endif
+        endif
+        set i = i + 1
+    endloop
+    set u = null
+
+    // Worth it only when it flips the answer.
+    return mine > best and sprintT <= best
 endfunction
 
 function BAI_TrySlam takes integer pid, unit u, unit carrier returns boolean
@@ -706,6 +810,139 @@ function BAI_TrySlam takes integer pid, unit u, unit carrier returns boolean
     endif
     call IssueImmediateOrder(u, BAI_ORD_SLAM)
     return true
+endfunction
+
+//----------------------------------------------------------------------------
+// Aim. A shot at the middle of the goal is a shot at the keeper. This picks the
+// half of the mouth furthest from whoever is guarding it, and aims 70% of the
+// way to that post.
+//----------------------------------------------------------------------------
+function BAI_AimY takes integer team, real gx, real gy returns real
+    local integer i     = 0
+    local real    bestD = 999999.0
+    local real    guard = gy
+    local unit    u
+    loop
+        exitwhen i >= MAX_PLAYERS
+        if GetPlayerTeam(Player(i)) != team then
+            set u = BAI_UnitOf(i)
+            if BAI_Alive(u) then
+                if BAI_Dist(GetUnitX(u), GetUnitY(u), gx, gy) < bestD then
+                    set bestD = BAI_Dist(GetUnitX(u), GetUnitY(u), gx, gy)
+                    set guard = GetUnitY(u)
+                endif
+            endif
+        endif
+        set i = i + 1
+    endloop
+    set u = null
+    if bestD > 900.0 then
+        return gy + BAI_Noise(BAI_goalHalf * 0.5)   // nobody home: anywhere in the mouth
+    endif
+    if guard > gy then
+        return gy - BAI_goalHalf * 0.7              // he is high, go low
+    endif
+    return gy + BAI_goalHalf * 0.7
+endfunction
+
+//----------------------------------------------------------------------------
+// Spacing. Two bots converging on the same point is one bot and a spectator.
+// If a team-mate is already closer to this spot than I am, slide off it.
+//----------------------------------------------------------------------------
+function BAI_Space takes integer pid, integer team, real x, real y returns nothing
+    local integer i = 0
+    local unit    u
+    local real    d
+    local real    dx
+    local real    dy
+    local real    len
+    set BAI_ipx = x
+    set BAI_ipy = y
+    loop
+        exitwhen i >= MAX_PLAYERS
+        if i != pid and GetPlayerTeam(Player(i)) == team then
+            set u = BAI_UnitOf(i)
+            if BAI_Alive(u) then
+                set d = BAI_Dist(GetUnitX(u), GetUnitY(u), BAI_ipx, BAI_ipy)
+                if d < BAI_SPACING then
+                    set dx = BAI_ipx - GetUnitX(u)
+                    set dy = BAI_ipy - GetUnitY(u)
+                    set len = SquareRoot(dx * dx + dy * dy)
+                    if len < 1.0 then
+                        set dx = 0.0
+                        set dy = 1.0
+                        set len = 1.0
+                    endif
+                    set BAI_ipx = GetUnitX(u) + dx / len * BAI_SPACING
+                    set BAI_ipy = GetUnitY(u) + dy / len * BAI_SPACING
+                endif
+            endif
+        endif
+        set i = i + 1
+    endloop
+    set u = null
+endfunction
+
+//----------------------------------------------------------------------------
+// Am I actually the quickest to the ball? Ranking by raw distance sends the
+// nearest man even when a team-mate three steps further away is sprinting at
+// it from the right angle. This ranks by TIME -- distance to the intercept
+// point over each athlete's own move speed, which differs once sprint is up.
+//
+// Expects BAI_ipx/BAI_ipy to hold the intercept point (BAI_Intercept first).
+//----------------------------------------------------------------------------
+function BAI_QuickestToBall takes integer pid, integer team, unit me returns boolean
+    local integer i  = 0
+    local real    sp = GetUnitMoveSpeed(me)
+    local real    my
+    local unit    u
+    local real    t
+    if sp < 1.0 then
+        set sp = 1.0
+    endif
+    set my = BAI_Dist(GetUnitX(me), GetUnitY(me), BAI_ipx, BAI_ipy) / sp
+    loop
+        exitwhen i >= MAX_PLAYERS
+        if i != pid and GetPlayerTeam(Player(i)) == team then
+            set u = BAI_UnitOf(i)
+            if BAI_Alive(u) then
+                set sp = GetUnitMoveSpeed(u)
+                if sp < 1.0 then
+                    set sp = 1.0
+                endif
+                set t = BAI_Dist(GetUnitX(u), GetUnitY(u), BAI_ipx, BAI_ipy) / sp
+                if t < my then
+                    set u = null
+                    return false
+                endif
+            endif
+        endif
+        set i = i + 1
+    endloop
+    set u = null
+    return true
+endfunction
+
+//----------------------------------------------------------------------------
+// Lane cutting. Because a catch is a PROXIMITY test, a defender standing on the
+// line between the ball and the man he is marking does not merely discourage
+// the pass -- he takes it. This is worth more than shadowing the receiver, so
+// while an opponent holds the ball a marker stands in the lane rather than
+// goal-side. Overwrites BAI_ipx/BAI_ipy.
+//----------------------------------------------------------------------------
+function BAI_CutLane takes real ballx, real bally, real markx, real marky returns nothing
+    local real dx  = ballx - markx
+    local real dy  = bally - marky
+    local real len = SquareRoot(dx * dx + dy * dy)
+    if len < 1.0 then
+        set BAI_ipx = markx
+        set BAI_ipy = marky
+        return
+    endif
+    // A third of the way from the receiver back toward the ball: close enough
+    // to intercept, far enough not to be simply run past.
+    set BAI_ipx = markx + dx / len * (len / 3.0)
+    set BAI_ipy = marky + dy / len * (len / 3.0)
 endfunction
 
 //----------------------------------------------------------------------------
@@ -925,8 +1162,8 @@ function BAI_Act takes integer pid returns nothing
     //--- 1. I have the ball ---------------------------------------------------
     if car == u then
         set d = BAI_Dist(ux, uy, gx, gy)
-        // Aim off-centre so the shot does not always run at the keeper.
-        set aimY = gy + BAI_Noise(BAI_goalHalf * 0.6)
+        // Shoot away from whoever is guarding the mouth, not at him.
+        set aimY = BAI_AimY(team, gx, gy)
 
         if d < BAI_SHOOT_RANGE and BAI_LaneClear(team, ux, uy, gx, aimY) then
             call BAI_Kick(pid, u, gx, aimY)
@@ -962,7 +1199,7 @@ function BAI_Act takes integer pid returns nothing
             return
         endif
 
-        call BAI_TrySprint(pid, u)
+        call BAI_ManageSprint(pid, u, BAI_NearestEnemyDist(team, ux, uy) < BAI_PRESSURE_RANGE * 2.0)
         call BAI_TryOrder(pid, u, 1, gx, gy)
         set u = null
         set car = null
@@ -974,8 +1211,17 @@ function BAI_Act takes integer pid returns nothing
         if role == 0 then
             call BAI_TryOrder(pid, u, 1, ownx + (bx - ownx) * 0.12, owny)
         else
-            // Offer an option ahead of the carrier, spread off his line.
-            call BAI_TryOrder(pid, u, 1, (GetUnitX(car) + gx) / 2.0, GetUnitY(car) + BAI_SUPPORT_SPREAD * I2R(1 - 2 * ModuloInteger(pid, 2)))
+            call BAI_ManageSprint(pid, u, false)
+            // Offer an option ahead of the carrier, spread off his line and
+            // off each other -- and inside kick range, or the pass cannot be
+            // played at all.
+            call BAI_Space(pid, team, (GetUnitX(car) + gx) / 2.0, GetUnitY(car) + BAI_SUPPORT_SPREAD * I2R(1 - 2 * ModuloInteger(pid, 2)))
+            if BAI_Dist(GetUnitX(car), GetUnitY(car), BAI_ipx, BAI_ipy) > BAI_PASS_RANGE then
+                set d = BAI_Dist(GetUnitX(car), GetUnitY(car), BAI_ipx, BAI_ipy)
+                set BAI_ipx = GetUnitX(car) + (BAI_ipx - GetUnitX(car)) / d * BAI_PASS_RANGE
+                set BAI_ipy = GetUnitY(car) + (BAI_ipy - GetUnitY(car)) / d * BAI_PASS_RANGE
+            endif
+            call BAI_TryOrder(pid, u, 1, BAI_ipx, BAI_ipy)
         endif
         set u = null
         set car = null
@@ -996,13 +1242,17 @@ function BAI_Act takes integer pid returns nothing
             endif
             call BAI_TryOrder(pid, u, 1, ownx + (bx - ownx) / d * BAI_KEEPER_DEPTH, owny + (by - owny) / d * BAI_KEEPER_DEPTH)
         elseif role == 2 then
-            // Nearest man closes the carrier down.
-            call BAI_TrySprint(pid, u)
+            // Nearest man closes the carrier down, and spends stamina on it
+            // only while the danger is in our half.
+            call BAI_ManageSprint(pid, u, BAI_Dist(GetUnitX(car), GetUnitY(car), ownx, owny) < 2200.0)
             call BAI_TryOrder(pid, u, 1, GetUnitX(car), GetUnitY(car))
         else
-            // Everyone else picks up a DIFFERENT opponent and stands goal-side
-            // of him, instead of piling onto the ball.
+            // Everyone else picks up a DIFFERENT opponent and stands in the
+            // passing lane to him -- a catch is a proximity test, so standing
+            // on the line takes the ball rather than merely discouraging it.
             call BAI_MarkSpot(pid, team, BAI_DefenceRank(pid, team) - 1)
+            call BAI_CutLane(GetUnitX(car), GetUnitY(car), BAI_ipx, BAI_ipy)
+            call BAI_Space(pid, team, BAI_ipx, BAI_ipy)
             call BAI_TryOrder(pid, u, 1, BAI_ipx, BAI_ipy)
         endif
         set u = null
@@ -1022,17 +1272,20 @@ function BAI_Act takes integer pid returns nothing
         else
             call BAI_TryOrder(pid, u, 1, ownx + (bx - ownx) / d * BAI_KEEPER_DEPTH, owny + (by - owny) / d * BAI_KEEPER_DEPTH)
         endif
-    elseif role == 2 then
-        call BAI_TrySprint(pid, u)
+    elseif BAI_QuickestToBall(pid, team, u) then
+        // Only the man who gets there FIRST goes -- ranked by time, not by
+        // distance, because sprint makes those different answers -- and he
+        // burns stamina only when sprinting is what wins the race.
+        call BAI_ManageSprint(pid, u, BAI_SprintDecides(team, u))
         call BAI_TryOrder(pid, u, 1, BAI_ipx, BAI_ipy)
     else
-        // Second man goes for it too; the rest hold their marks.
-        if BAI_DefenceRank(pid, team) <= 1 then
-            call BAI_TryOrder(pid, u, 1, BAI_ipx, BAI_ipy)
-        else
-            call BAI_MarkSpot(pid, team, BAI_DefenceRank(pid, team) - 2)
-            call BAI_TryOrder(pid, u, 1, BAI_ipx, BAI_ipy)
-        endif
+        // Everyone else takes up a position instead of joining a chase they
+        // lose: goal-side of an opponent, spaced off their own team-mates --
+        // walking, so the tank refills for the next contested ball.
+        call BAI_ManageSprint(pid, u, false)
+        call BAI_MarkSpot(pid, team, BAI_DefenceRank(pid, team) - 1)
+        call BAI_Space(pid, team, BAI_ipx, BAI_ipy)
+        call BAI_TryOrder(pid, u, 1, BAI_ipx, BAI_ipy)
     endif
 
     set u = null
@@ -1179,6 +1432,8 @@ function BAI_EnablePlayer takes integer pid returns nothing
     set BAI_aimNoise[pid] = 60.0
     set BAI_useAbilities[pid] = true
     set BAI_sprintWorks[pid] = true
+    set BAI_sprintFails[pid] = 0
+    set BAI_sprintWait[pid] = 0
     call BAI_ForgetOrder(pid)
     call BAI_Register(pid)
 endfunction

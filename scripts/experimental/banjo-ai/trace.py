@@ -100,6 +100,7 @@ type playercolor extends handle
 type playerslotstate extends handle
 type mapcontrol extends handle
 type playerstate extends handle
+type unitstate extends handle
 
 native SquareRoot takes real x returns real
 native I2R takes integer i returns real
@@ -132,10 +133,12 @@ native TriggerAddCondition takes trigger whichTrigger, boolexpr condition return
 native TriggerRegisterPlayerChatEvent takes trigger whichTrigger, player whichPlayer, string chatMessageToDetect, boolean exactMatchOnly returns nothing
 native Condition takes code func returns conditionfunc
 native GetEventPlayerChatString takes nothing returns string
+native GetUnitState takes unit whichUnit, unitstate whichUnitState returns real
 
 constant native ConvertUnitType takes integer i returns unittype
 constant native ConvertPlayerSlotState takes integer i returns playerslotstate
 constant native ConvertMapControl takes integer i returns mapcontrol
+constant native ConvertUnitState takes integer i returns unitstate
 """
 
 # Everything the module reads out of the map. This IS the contract: it is
@@ -150,6 +153,8 @@ globals
     constant integer SPRINT_RAWCODE       = 'A001'
     constant integer SPRINT_BUFF_RAWCODE  = 'B000'
     constant integer SLAM_RAWCODE         = 'A00C'
+    constant unitstate UNIT_STATE_MANA  = ConvertUnitState(1)
+    constant real    SPRINT_NEW_SPEED     = 400.0
     constant real    BALL_CATCH_RANGE     = 90.0
     constant real    GRAVITY_ACCELERATION = 1.50
     real             BALL_FRICTION_GROUND = 0.45
@@ -408,6 +413,26 @@ def source_guards(src):
     ok(len(fill_calls) == 1 and '-aifill' in src,
        'empty slots are filled only from the -aifill command',
        '%d call site(s)' % len(fill_calls))
+
+    # Sprint is free (0 mana, no cooldown) but the map disables a spammed
+    # toggle, so attempts must be spaced and conditional on the buff.
+    sp = src[src.index('function BAI_ManageSprint takes'):src.index('function BAI_TrySlam takes')]
+    ok('GetUnitState(u, UNIT_STATE_MANA)' in sp and 'BAI_SPRINT_RESERVE' in sp,
+       'sprint respects the stamina tank (net 20/s off a pool of 100)')
+    ok('BAI_ORD_SPRINT_OFF' in sp,
+       'sprint is switched OFF again so the tank refills')
+    ok(re.search(r'if BAI_sprintWait\[pid\] > 0 then\s*\n\s*set BAI_sprintWait\[pid\] = BAI_sprintWait\[pid\] - 1\s*\n\s*return', sp) is not None,
+       'the toggle is rate-limited (SPRINT_SPAM_DISABLE_COOLDOWN)')
+    ok(src.count('call BAI_ManageSprint(pid, u, true)') == 0,
+       'nothing asks for sprint unconditionally')
+
+    # Chasing is ranked by time, not distance, because sprint changes speeds.
+    ok(src.count('BAI_QuickestToBall(pid, team, u)') == 1 and 'GetUnitMoveSpeed(u)' in src,
+       'the loose-ball chase is decided by time-to-ball, not raw distance')
+    ok(src.count('call BAI_CutLane(') == 1,
+       'markers stand in the passing lane, not behind it')
+    ok('BAI_AimY' in src and 'BAI_Noise(BAI_goalHalf * 0.6)' not in src,
+       'shots aim away from the keeper rather than at a random point')
 
     # The kick path is the map's own function, and it is the only one used.
     code_lines = [l for l in src.splitlines() if not l.strip().startswith('//')]
