@@ -134,6 +134,13 @@ native TriggerRegisterPlayerChatEvent takes trigger whichTrigger, player whichPl
 native Condition takes code func returns conditionfunc
 native GetEventPlayerChatString takes nothing returns string
 native GetUnitState takes unit whichUnit, unitstate whichUnitState returns real
+native GetUnitCurrentOrder takes unit whichUnit returns integer
+native RemoveGuardPosition takes unit whichUnit returns nothing
+native OrderId2String takes integer orderId returns string
+native DisplayTimedTextToPlayer takes player toPlayer, real x, real y, real duration, string message returns nothing
+native I2S takes integer i returns string
+native GetLocalPlayer takes nothing returns player
+native R2I takes real r returns integer
 
 constant native ConvertUnitType takes integer i returns unittype
 constant native ConvertPlayerSlotState takes integer i returns playerslotstate
@@ -155,6 +162,8 @@ globals
     constant integer SLAM_RAWCODE         = 'A00C'
     constant unitstate UNIT_STATE_MANA  = ConvertUnitState(1)
     constant real    SPRINT_NEW_SPEED     = 400.0
+    constant real    KICK_SPEED           = 30.0
+    constant real    KICK_Z               = 7.00
     constant real    BALL_CATCH_RANGE     = 90.0
     constant real    GRAVITY_ACCELERATION = 1.50
     real             BALL_FRICTION_GROUND = 0.45
@@ -414,6 +423,8 @@ def source_guards(src):
        'empty slots are filled only from the -aifill command',
        '%d call site(s)' % len(fill_calls))
 
+    code_lines = [l for l in src.splitlines() if not l.strip().startswith('//')]
+
     # Sprint is free (0 mana, no cooldown) but the map disables a spammed
     # toggle, so attempts must be spaced and conditional on the buff.
     sp = src[src.index('function BAI_ManageSprint takes'):src.index('function BAI_TrySlam takes')]
@@ -431,11 +442,19 @@ def source_guards(src):
        'the loose-ball chase is decided by time-to-ball, not raw distance')
     ok(src.count('call BAI_CutLane(') == 1,
        'markers stand in the passing lane, not behind it')
+    ok('BAI_PassSafety(team, x, y, GetUnitX(u), GetUnitY(u), u)' in src,
+       'passes are chosen by reach time (opponent vs receiver), not a corridor')
+    ok(sum(l.count('call RemoveGuardPosition(u)') for l in code_lines) == 1,
+       'bot athletes have their guard position removed (computer-slot wander)')
+    ok(re.search(r'set BAI_buffNext\[pid\] = BAI_Sprinting\(u\)', src) is not None
+       and 'BAI_sprintFails[pid] >= 3' in src,
+       'the sprint verdict waits for the NEXT act, not the same one')
+    ok('BAI_sliding[pid]' in src and re.search(r'if BAI_sliding\[pid\] then\s*\n\s*set u = null\s*\n\s*return', src) is not None,
+       'a bot being slid by the map holds its order instead of re-issuing')
     ok('BAI_AimY' in src and 'BAI_Noise(BAI_goalHalf * 0.6)' not in src,
        'shots aim away from the keeper rather than at a random point')
 
     # The kick path is the map's own function, and it is the only one used.
-    code_lines = [l for l in src.splitlines() if not l.strip().startswith('//')]
     ok(sum(l.count('s__Ball_castUtil(') for l in code_lines) == 1,
        'kicks go through the map\'s own cast handler, once')
 

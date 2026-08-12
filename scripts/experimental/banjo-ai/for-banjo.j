@@ -95,6 +95,19 @@
     boolean array    BAI_claimed            // opponent already marked this think
     integer array    BAI_sprintWait         // anti-spam: SPRINT_SPAM_DISABLE_COOLDOWN
     integer array    BAI_sprintFails        // consecutive failed toggles
+    boolean array    BAI_sprintReq          // what we asked for last act
+    boolean array    BAI_sprintOrderOK      // the toggle order was accepted
+    boolean array    BAI_buffNow            // buff seen in the same act
+    boolean array    BAI_buffNext           // buff seen on the FOLLOWING act
+    integer array    BAI_lastOrdId          // order id we last issued
+    integer array    BAI_ordCount           // orders issued since the last report
+    real    array    BAI_prevX              // where the bot was last act
+    real    array    BAI_prevY
+    real    array    BAI_actualSpeed        // observed units/second
+    boolean array    BAI_sliding            // displaced by something not us
+    integer array    BAI_markOf             // who this bot is marking (hysteresis)
+    boolean          BAI_debug              = false
+    integer          BAI_debugPid           = 0
 
     timer            BAI_timer              = null
     integer          BAI_subTick            = 0
@@ -426,6 +439,11 @@ function BAI_TryOrder takes integer pid, unit u, integer kind, real x, real y re
     set BAI_lastOrdX[pid] = x
     set BAI_lastOrdY[pid] = y
     call IssuePointOrder(u, "move", x, y)
+    // Provenance: what WE asked for, so the debug layer can compare it against
+    // what the unit is actually doing. A current order this never issued is
+    // the direct signature of something else driving the unit.
+    set BAI_lastOrdId[pid] = GetUnitCurrentOrder(u)
+    set BAI_ordCount[pid] = BAI_ordCount[pid] + 1
     return true
 endfunction
 
@@ -596,8 +614,135 @@ function BAI_LaneClear takes integer team, real x0, real y0, real x1, real y1 re
 endfunction
 
 //----------------------------------------------------------------------------
-// Pass selection: the teammate who is both closer to the target goal than the
-// carrier and has a clear lane. Returns the player id, or -1.
+// PASS SAFETY BY REACH TIME, not by a corridor.
+//
+// "Is anybody standing near the straight line?" is the wrong question -- it
+// answers geometry when the thing that matters is a race. This simulates the
+// candidate pass with the map's own ball physics and asks the RoboCup
+// question instead: how many ticks before the intended receiver controls it
+// could ANY opponent reach the ball on its way?
+//
+//     safety = earliestOpponentInterceptTick - intendedControlTick
+//
+// Positive means the pass arrives first. The flight is sampled every 4th tick
+// rather than every tick: the ball moves ~30 units a tick at kick speed and an
+// opponent's catch radius is 90, so a 4-tick stride cannot step over an
+// interception.
+//----------------------------------------------------------------------------
+function BAI_PassSafety takes integer team, real x0, real y0, real tx, real ty, unit receiver returns integer
+    local real    dx  = tx - x0
+    local real    dy  = ty - y0
+    local real    len = SquareRoot(dx * dx + dy * dy)
+    local real    x   = x0
+    local real    y   = y0
+    local real    h   = 0.0
+    local real    vx
+    local real    vy
+    local real    vz  = KICK_Z
+    local integer i   = 0
+    local integer j
+    local integer control = -1
+    local integer steal   = -1
+    local real    vlen
+    local real    scale
+    local unit    o
+    local real    sp
+
+    if len < 1.0 then
+        return -1
+    endif
+    set vx = dx / len * KICK_SPEED
+    set vy = dy / len * KICK_SPEED
+
+    loop
+        exitwhen i >= BAI_PREDICT_TICKS or (control >= 0 and steal >= 0)
+        // the map's own step, once per tick
+        if h < 1.0 then
+            set vlen = SquareRoot(vx * vx + vy * vy + vz * vz)
+            if vlen > BALL_FRICTION_GROUND then
+                set scale = (vlen - BALL_FRICTION_GROUND) / vlen
+                set vx = vx * scale
+                set vy = vy * scale
+                set vz = vz * scale
+            else
+                set vx = 0.0
+                set vy = 0.0
+                set vz = 0.0
+            endif
+        else
+            set vz = vz - GRAVITY_ACCELERATION
+            set vlen = SquareRoot(vx * vx + vy * vy + vz * vz)
+            if vlen > BALL_FRICTION_AIR then
+                set scale = (vlen - BALL_FRICTION_AIR) / vlen
+                set vx = vx * scale
+                set vy = vy * scale
+                set vz = vz * scale
+            else
+                set vx = 0.0
+                set vy = 0.0
+                set vz = 0.0
+            endif
+        endif
+        set x = x + vx
+        set y = y + vy
+        if h + vz < 0.0 and vz < 0.0 then
+            set h  = 0.0
+            set vz = -vz - BALL_BUMP_SPEED_LOSS - GRAVITY_ACCELERATION / 2.0
+            if vz < 0.0 then
+                set vz = 0.0
+            endif
+        else
+            set h = h + vz
+        endif
+
+        if ModuloInteger(i, 4) == 0 then
+            // when could the intended receiver control it?
+            if control < 0 then
+                set sp = GetUnitMoveSpeed(receiver) / 32.0
+                if sp < 0.01 then
+                    set sp = 0.01
+                endif
+                if BAI_Dist(GetUnitX(receiver), GetUnitY(receiver), x, y) <= sp * I2R(i) + BALL_CATCH_RANGE then
+                    set control = i
+                endif
+            endif
+            // when could any opponent?
+            if steal < 0 then
+                set j = 0
+                loop
+                    exitwhen j >= MAX_PLAYERS
+                    if GetPlayerTeam(Player(j)) != team then
+                        set o = BAI_UnitOf(j)
+                        if BAI_Alive(o) then
+                            set sp = GetUnitMoveSpeed(o) / 32.0
+                            if sp < 0.01 then
+                                set sp = 0.01
+                            endif
+                            if BAI_Dist(GetUnitX(o), GetUnitY(o), x, y) <= sp * I2R(i) + BALL_CATCH_RANGE then
+                                set steal = i
+                            endif
+                        endif
+                    endif
+                    set j = j + 1
+                endloop
+            endif
+        endif
+        set i = i + 1
+    endloop
+    set o = null
+
+    if control < 0 then
+        return -999                      // he never gets it at all
+    endif
+    if steal < 0 then
+        return 999                       // nobody can touch it
+    endif
+    return steal - control
+endfunction
+
+//----------------------------------------------------------------------------
+// Pass selection: the team-mate who both advances the ball and can actually be
+// reached before an opponent gets there. Returns the player id, or -1.
 //----------------------------------------------------------------------------
 function BAI_BestPass takes integer pid, integer team, real x, real y returns integer
     local integer i    = 0
@@ -617,7 +762,9 @@ function BAI_BestPass takes integer pid, integer team, real x, real y returns in
                 set d = BAI_Dist(x, y, GetUnitX(u), GetUnitY(u))
                 if d < BAI_PASS_RANGE and d > 200.0 then
                     set gain = mine - BAI_Dist(GetUnitX(u), GetUnitY(u), gx, gy)
-                    if gain > bestGain and BAI_LaneClear(team, x, y, GetUnitX(u), GetUnitY(u)) then
+                    // Advancing the ball is necessary but not sufficient: the
+                    // pass also has to beat every opponent to the ball.
+                    if gain > bestGain and BAI_PassSafety(team, x, y, GetUnitX(u), GetUnitY(u), u) > 4 then
                         set bestGain = gain
                         set best = i
                     endif
@@ -724,6 +871,7 @@ function BAI_ManageSprint takes integer pid, unit u, boolean want returns nothin
         set want = false
     endif
 
+    set BAI_sprintReq[pid] = want
     if want == on then
         return
     endif
@@ -734,16 +882,13 @@ function BAI_ManageSprint takes integer pid, unit u, boolean want returns nothin
     set BAI_sprintWait[pid] = BAI_SPRINT_WAIT
 
     if want then
-        call IssueImmediateOrder(u, BAI_ORD_SPRINT)
-        if not BAI_Sprinting(u) then
-            if BAI_sprintFails[pid] >= 3 then
-                set BAI_sprintWorks[pid] = false
-            else
-                set BAI_sprintFails[pid] = BAI_sprintFails[pid] + 1
-            endif
-        else
-            set BAI_sprintFails[pid] = 0
-        endif
+        set BAI_sprintOrderOK[pid] = IssueImmediateOrder(u, BAI_ORD_SPRINT)
+        // Same-cycle buff visibility is NOT assumed. Whether a toggle's buff is
+        // readable before IssueImmediateOrder returns is not something worth
+        // making load-bearing, so a same-act miss is recorded as diagnostic and
+        // the verdict waits for the NEXT act (BAI_buffNext, sampled at the top
+        // of BAI_Act). Only repeated next-act misses disable sprint.
+        set BAI_buffNow[pid] = BAI_Sprinting(u)
     else
         call IssueImmediateOrder(u, BAI_ORD_SPRINT_OFF)
     endif
@@ -1049,6 +1194,20 @@ function BAI_MarkSpot takes integer pid, integer team, integer rank returns noth
         set BAI_claimed[bestI] = true
         set seen = seen + 1
     endloop
+    // Hysteresis. Re-solving the assignment every act makes defenders swap
+    // marks and wander between two men instead of reaching either -- the same
+    // failure that pushed RoboCup teams off plain optimal assignment. Keep the
+    // existing mark unless the new candidate is substantially closer to goal.
+    if BAI_markOf[pid] >= 0 and BAI_markOf[pid] != bestI then
+        set o = BAI_UnitOf(BAI_markOf[pid])
+        if BAI_Alive(o) and GetPlayerTeam(Player(BAI_markOf[pid])) != team then
+            if BAI_Dist(GetUnitX(o), GetUnitY(o), ownx, owny) < bestD + 400.0 then
+                set bestI = BAI_markOf[pid]
+            endif
+        endif
+        set o = null
+    endif
+    set BAI_markOf[pid] = bestI
     set o = null
 
     if bestI < 0 then
@@ -1131,6 +1290,42 @@ function BAI_Act takes integer pid returns nothing
 
     set ux   = GetUnitX(u)
     set uy   = GetUnitY(u)
+
+    // Sample last act's outcomes BEFORE deciding anything this act.
+    //
+    // buffNext answers the question the same-act read cannot: did the sprint
+    // toggle actually take? Three consecutive next-act misses, while we were
+    // asking for it, is the only thing that disables sprint.
+    if BAI_sprintReq[pid] then
+        set BAI_buffNext[pid] = BAI_Sprinting(u)
+        if BAI_buffNext[pid] then
+            set BAI_sprintFails[pid] = 0
+        else
+            set BAI_sprintFails[pid] = BAI_sprintFails[pid] + 1
+            if BAI_sprintFails[pid] >= 3 then
+                set BAI_sprintWorks[pid] = false
+            endif
+        endif
+    endif
+
+    // Observed displacement, which is NOT the same thing as move speed: the
+    // map shoves athletes around with SetUnitX/Y for bumps and slides, and
+    // GetUnitMoveSpeed reports the locomotion parameter, not what the unit
+    // actually achieved through turning, collision and those shoves.
+    set BAI_actualSpeed[pid] = BAI_Dist(ux, uy, BAI_prevX[pid], BAI_prevY[pid]) / (BAI_THINK_PERIOD * I2R(BAI_SLOT_STAGGER))
+    // A displacement far beyond what locomotion can produce is somebody else
+    // moving this unit. SetUnitX/Y does NOT clear the move order, so the
+    // pathfinder keeps steering toward the old target from wherever the shove
+    // left it -- re-sending move every act while that happens is the worst
+    // possible response. The bot holds its order instead and reissues ONCE
+    // when the slide ends.
+    set BAI_sliding[pid] = BAI_actualSpeed[pid] > SPRINT_NEW_SPEED * 2.0
+    set BAI_prevX[pid] = ux
+    set BAI_prevY[pid] = uy
+    if BAI_sliding[pid] then
+        set u = null
+        return
+    endif
     set gx   = BAI_TargetGoalX(team)
     set gy   = BAI_TargetGoalY(team)
     set ownx = BAI_OwnGoalX(team)
@@ -1293,6 +1488,66 @@ function BAI_Act takes integer pid returns nothing
 endfunction
 
 //----------------------------------------------------------------------------
+// -aidebug. A playtest that returns impressions cannot separate four different
+// failures that all look like "the bots are wrong". This prints the causal
+// boundary instead of a proxy for it:
+//
+//   currentOrder != lastAIOrder      -> something ELSE is driving the unit
+//   sprintReq but buffNext = 0       -> the ability/order is not working
+//   buffNow/Next set but speed flat  -> the ability data is not working
+//   speed fine but intercepts lost   -> our solver, or pathing, or the slide
+//
+// Printed for one slot at a time (-aidebug cycles through the AI slots) so the
+// screen stays readable at 2 lines a second.
+//----------------------------------------------------------------------------
+function BAI_DebugLine takes integer pid returns nothing
+    local unit u = BAI_UnitOf(pid)
+    local string m
+    if not BAI_debug or pid != BAI_debugPid or not BAI_Alive(u) then
+        set u = null
+        return
+    endif
+    set m = "|cffffcc00[bot " + I2S(pid) + "]|r role=" + I2S(BAI_role[pid])
+    set m = m + " mark=" + I2S(BAI_markOf[pid])
+    set m = m + " icept=" + I2S(BAI_ipTicks)
+    set m = m + " mana=" + I2S(R2I(GetUnitState(u, UNIT_STATE_MANA)))
+    if BAI_sprintReq[pid] then
+        set m = m + " sprintReq=1"
+    else
+        set m = m + " sprintReq=0"
+    endif
+    if BAI_sprintOrderOK[pid] then
+        set m = m + " ordOK=1"
+    else
+        set m = m + " ordOK=0"
+    endif
+    if BAI_buffNow[pid] then
+        set m = m + " buffNow=1"
+    else
+        set m = m + " buffNow=0"
+    endif
+    if BAI_buffNext[pid] then
+        set m = m + " buffNext=1"
+    else
+        set m = m + " buffNext=0"
+    endif
+    set m = m + " spd=" + I2S(R2I(GetUnitMoveSpeed(u)))
+    set m = m + " actual=" + I2S(R2I(BAI_actualSpeed[pid]))
+    set m = m + " curOrd=" + OrderId2String(GetUnitCurrentOrder(u))
+    set m = m + " aiOrd=" + OrderId2String(BAI_lastOrdId[pid])
+    if GetUnitCurrentOrder(u) != BAI_lastOrdId[pid] then
+        set m = m + "|cffff0000 <-INTERFERENCE|r"
+    endif
+    set m = m + " ord/s=" + I2S(BAI_ordCount[pid] * 2)
+    if BAI_sliding[pid] then
+        set m = m + " SLIDING"
+    endif
+    set BAI_ordCount[pid] = 0
+    call DisplayTimedTextToPlayer(GetLocalPlayer(), 0.0, 0.0, 2.0, m)
+    set u = null
+endfunction
+
+//----------------------------------------------------------------------------
 // THINK LOOP. One sub-tick per BAI_THINK_PERIOD; each slot is handled on the
 // sub-tick matching its id modulo BAI_SLOT_STAGGER, so the twelve slots never
 // decide in the same frame.
@@ -1374,6 +1629,14 @@ function BAI_EnsureAthlete takes integer pid returns nothing
     set Players___playerUnit[pid] = u
     call SetUnitColor(u, GetPlayerColor(Player(pid)))
     call Pick___addAbilities(u)
+    // A computer-owned unit keeps a GUARD POSITION: it obeys a scripted move,
+    // then wanders back toward where it started once that order ends. The map
+    // never clears one (it never expected a computer slot), and this is the
+    // documented cause of exactly the tug-of-war a bot on a Computer slot would
+    // show. Suppressing acquisition is NOT needed as well -- the athlete's
+    // object data has attacks disabled (uaen 0), so there is nothing to
+    // auto-acquire.
+    call RemoveGuardPosition(u)
     set u = null
 endfunction
 
@@ -1418,6 +1681,7 @@ function BAI_Tick takes nothing returns nothing
         exitwhen i >= MAX_PLAYERS
         if BAI_on[i] and ModuloInteger(i, BAI_SLOT_STAGGER) == BAI_subTick then
             call BAI_Act(i)
+            call BAI_DebugLine(i)
         endif
         set i = i + 1
     endloop
@@ -1434,6 +1698,7 @@ function BAI_EnablePlayer takes integer pid returns nothing
     set BAI_sprintWorks[pid] = true
     set BAI_sprintFails[pid] = 0
     set BAI_sprintWait[pid] = 0
+    set BAI_markOf[pid] = -1
     call BAI_ForgetOrder(pid)
     call BAI_Register(pid)
 endfunction
@@ -1562,6 +1827,21 @@ function BAI_Chat takes nothing returns boolean
         call BAI_Start()
     elseif s == "-aifill" then
         call BAI_Fill()
+    elseif s == "-aidebug" then
+        // Cycle to the next AI slot, and switch off after the last one.
+        set BAI_debugPid = BAI_debugPid + 1
+        loop
+            exitwhen BAI_debugPid >= MAX_PLAYERS or BAI_on[BAI_debugPid]
+            set BAI_debugPid = BAI_debugPid + 1
+        endloop
+        if BAI_debugPid >= MAX_PLAYERS then
+            set BAI_debugPid = 0
+            set BAI_debug = false
+            call DisplayTimedTextToPlayer(GetLocalPlayer(), 0.0, 0.0, 6.0, "AI debug off")
+        else
+            set BAI_debug = true
+            call DisplayTimedTextToPlayer(GetLocalPlayer(), 0.0, 0.0, 6.0, "AI debug: slot " + I2S(BAI_debugPid))
+        endif
     endif
     return false
 endfunction

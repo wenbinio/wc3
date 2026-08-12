@@ -71,6 +71,13 @@ lobby would offer a Computer option at all; **game-verified 2026-08-10: it
 does.** `-aifill` remains as an opt-in way to put bots on empty slots, and is
 now a convenience rather than a fallback.
 
+**`-aidebug`** cycles a per-bot readout: role, mark, intercept ticks, mana,
+sprint request / order accepted / buff this act / buff next act, move speed
+versus *observed* displacement, and the current order against the last order
+the AI itself issued. That last pair is the point — a current order the AI
+never issued is the direct signature of something else driving the unit, which
+is the one failure mode a Computer slot introduces and an empty slot does not.
+
 **No cheating.** The AI reads only what the map itself makes global, gets no
 gold, speed or vision, and the harness asserts the absence of every cheat
 surface. Difficulty (`-aieasy` / `-ainormal` / `-aihard`) is aim noise,
@@ -165,6 +172,22 @@ Iteration order: **(1)** play it once and collect the real list; (2) per-class
 ability play, starting with the keeper's `Jump`; (3) off-ball movement worth the
 name; (4) a proper shot model that respects bounce height.
 
-Related: `docs/reference/wc3-ai-prior-art.md` (why no good custom-map AI
-exists), `scripts/experimental/rome-ai/` (the same exercise on a strategy map,
-and the source of the order-economy lesson applied here from day one).
+## Prior art — the broad claim was wrong
+
+An earlier version of this README leaned on "no good custom-map AI exists".
+That is too strong and should not be repeated: WC3 custom-map bots issuing
+combat-tempo unit orders long predate this. A 2011 Hero AI framework for arena
+maps issues `move`/`attack`/target orders from its own action loop; DotA AI
+maps are documented from 2006 onward; there is published AI research on a
+Tower Line Wars variant.
+
+The defensible claim is much narrower: **no published prior art was found for a
+Warcraft III custom-map bot playing continuous 5v5 ball-sport through in-engine
+orders, with predictive interception, reach-time pass evaluation and dynamic
+marking.** No counterexample has turned up, but proving that negative would
+need a far wider trawl of old maps whose source was never published.
+
+Related: `docs/reference/wc3-ai-prior-art.md` (read it with the correction
+above in mind), `scripts/experimental/rome-ai/` (the same exercise on a
+strategy map, and the source of the order-economy lesson applied here from day
+one).

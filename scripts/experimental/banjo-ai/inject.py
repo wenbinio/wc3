@@ -53,6 +53,8 @@ REQUIRED = [
     r'function s__Ball_castUtil takes unit',
     r'function Pick___addAbilities takes unit',
     r'constant real BALL_CATCH_RANGE',
+    r'constant real KICK_SPEED',
+    r'constant real KICK_Z',
     r'constant real GRAVITY_ACCELERATION',
     r'real BALL_FRICTION_AIR=',
     r'real BALL_FRICTION_GROUND=',
