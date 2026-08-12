@@ -56,6 +56,20 @@ question it answers, its date, and how it goes stale.
   concept-forward non-RPG criterion)? Merged top-5 + decomposition
   candidates + scene sourcing notes; staleness: hosting/obtainability
   facts decay fast — re-verify URLs before starting a pass.
+- **brytenwalda-ai-decomposition.md** (2026-08-12) — how does the one WC3
+  map with a genuinely good territorial AI actually do it? Reads the
+  shipped artifact (1.37a): a real engine-`.ai` user (`StartCampaignAI`,
+  one WE-generated script for 19 factions, **one** move order per wave)
+  under a map-script diplomacy layer with a hand-drawn 49-edge adjacency
+  graph. Verdict: competent by **design elimination** — buildings can only
+  upgrade in place on pre-placed plots, the sea crossing is a tech-gated
+  waygate, and the AI is forbidden to close gates — plus three named
+  cheats (a +250 lumber/45 s subsidy, a free movement-speed upgrade,
+  150–500% hero XP; gold and vision are fair). §8 is the ranked steal list
+  tied to our five playtest failures, §9 what not to copy, §10 corrects
+  brief-04-amai.md §9's "competence UNKNOWN". **Staleness**: structural
+  findings age well; the §4 cheat magnitudes are balance values — re-read
+  `Trig_SetupAI_Func001A` before citing them.
 
 ## wc3-ai-prior-art.md (2026-08-09)
 
