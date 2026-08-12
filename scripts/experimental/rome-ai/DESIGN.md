@@ -2790,3 +2790,105 @@ which is exactly the example the spec used to justify having the bound.
 Playable **19,069,240**. Trace **512 assertions, 0 FAILs**; `npm test` 620
 pass; validate-map 191/192 with 152 warnings (parity); pjass FULL clean on
 17,376 lines; the playable build still carries **zero** engine-AI calls.
+
+---
+
+## §26 The food-cap question, and the watchdog
+
+### 26.1 Our module is not implicated, proved positively
+
+The coordinator escalated a suspicion that our injection timing could skip a
+player in the map's ceiling loop. Four checks, none of them a text search:
+
+1. **`udg_AllPlayers` membership cannot depend on us.** It is populated by
+   twelve unconditional `ForceAddPlayerSimple(Player(0..11))` calls in
+   `Trig_Player_Groups_Actions` (war3map.j 3463–3474). No slot-state test, no
+   controller test, nothing we could influence.
+2. **Our injection removes nothing.** Of the original 9,822 lines, **zero** are
+   absent from the built script.
+3. **Our hook did run early, and now does not.** `AI_Init` was appended to
+   `InitCustomTriggers`, which only *creates* triggers;
+   `RunInitializationTriggers` is what fires `Player_Groups` and
+   `Melee_Initialization`. So `AI_Init` ran before the ceilings were set and
+   before the starting 300/300 was handed out. **That could not have caused the
+   observed number** — nothing we call writes player state — but initialising
+   against a half-built world is fragile for no benefit, so the hook now sits at
+   the end of `RunInitializationTriggers`. Recorded as hygiene, not as a fix.
+4. **The module cannot write player state at all**, and this is now a standing
+   assertion rather than a memory: `no_cheating()` sweeps the comment- and
+   string-stripped source for sixteen resource/tech/handicap natives, checks
+   every `PLAYER_STATE` access is a `Get`, and pins that the only
+   world-changing calls are unit orders, one gate replace and one animation.
+   Negative-controlled twice — the sweep sees `GetPlayerState` in the real
+   source, and detects an injected `SetPlayerState`.
+
+Per the coordinator, the anomaly modelling itself is dropped: the owner
+reframed the system as a progression, so there may be no anomaly.
+
+### 26.2 Artifact facts, recorded so they are not re-derived
+
+* `PLAYER_STATE_FOOD_CAP_CEILING` is written in exactly **seven**
+  `SetPlayerState` calls, all in `Melee_Initialization`: 100 for all twelve via
+  `ForForce(udg_AllPlayers, ...)`, then 200 for Persia and 300 for each Roman.
+  **Nothing writes one again.**
+* Supply is provided by structures (`ufma`): Supply Center **+100**/**+50**,
+  Roman Forum **+50**, Barbarian Camp **+50**, Roman City **+25**, Bagage Train
+  **+20**, Roman Town **+10**, Roman Barracks **+10**.
+* Measured starting supply: every barbarian **100** (camp 50 + supply centre
+  50), **Vandals 75** (city 25 + centre 50, no camp), **Persia 150**, each
+  Roman clamped to its 300 ceiling.
+* Observed in play: Vandals **113/75** — usage can exceed provided supply.
+* **Persia sits in the barbarian force** (`pink`), so a barbarian-side human
+  sees a 150/200 ally among eight 100-cap ones.
+
+### 26.3 The actionable half: supply is worth scoring
+
+If capturing a settlement raises your own supply, a town is worth more to a
+food-capped faction than its ground alone. **Nothing priced that** — a town
+scored 0.45 against a control point's 1.00 regardless of how starved the
+faction was, which is backwards for the faction that most needs one.
+`AI_PointValueIdx` now adds a supply-hunger term to towns and cities, scaled by
+how capped we are, so it is **inert for a faction with headroom** and cannot
+distort the ordinary table.
+
+### 26.4 The watchdog — the answer to "is there a more robust way?"
+
+There is, and it is not another gate. Five rounds of *a goal that stays
+selected while unable to make progress*, each fixed in **the same vocabulary as
+the bug**, each followed by a variant nobody anticipated. Every backstop we had
+— idle floor, possibility gates, mission deadlines, stall detector — is
+triggered by **what the AI believes about itself**, and all five failures were
+states we had not modelled.
+
+The watchdog asks a question about the **world**: has anything about this
+faction changed — territory, army size, position, health, gold, food? Two
+consecutive frozen windows and the entire decision stack is bypassed: tear down
+the mission, the objective and the commit clock, and attack-move the army at
+the nearest enemy holding. **A modelling gap cannot defeat it**, because if the
+AI is wrong in a way nobody imagined, the world still fails to change.
+
+It reads **nothing** from the decision layer — asserted by name against
+`ai_goal`, `ai_claim`, `ai_posture`, `ai_msState`, `ai_bestS`, `ai_commitAt`,
+`ai_progD`, `wm_capReady` — sits above the mission and goal layers in
+`AI_Think`, and cannot be suppressed by any of them.
+
+**It is a backstop, not a strategy: every firing is a defect signal**, so every
+firing emits a `wd` event carrying the goal, mission state, army, gold and
+target it was stuck on. If it fires often, the decision layer is broken and the
+log says so instead of the owner.
+
+Verified against the Vandals case specifically — 0 gold, 0 lumber, 113 food
+against a 75 cap, large army — it fires and produces an attack. Negative
+controls: an army that is moving, taking damage, training, spending gold,
+losing units, or whose holdings are changing hands **never** trips it across
+six windows each.
+
+One guard-maintenance note, the third in three rounds: the round-5 "NavIdle
+runs outside the mission branch" guard was a regex pinning a *shape*, and the
+watchdog branch changed the shape without touching the invariant. It is now
+checked **positionally** — find the mission branch, walk to its matching
+`endif`, assert `AI_NavIdle` comes after it. Guards key on structure; shapes
+change.
+
+Playable **19,072,620**. Trace **542 assertions, 0 FAILs**; `npm test` 620
+pass; validate-map 191/192 with 152 warnings (parity).

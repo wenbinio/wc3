@@ -243,6 +243,54 @@ def report(events, csv_path=None):
                 print('      ** %d attack(s) ended "going nowhere" -- stall detector fired'
                       % ends[p][4])
 
+    # ---- supply: the cap, and whether anything ever raised a ceiling -------
+    # The owner asked whether someone had stealthily raised the barbarian food
+    # cap. That should be a question the log answers, so it now is -- for all
+    # twelve players, including the ones the AI does not drive.
+    sup = {}
+    ceil_raised = []
+    for e in events:
+        if e['ev'] == 'sup' and len(e['f']) >= 6:
+            try:
+                p_ = int(e['f'][0])
+                cap0, cap1 = int(e['f'][2]), int(e['f'][3])
+                c0, c1 = int(e['f'][4]), int(e['f'][5])
+            except (ValueError, IndexError):
+                continue
+            first = p_ not in sup
+            sup[p_] = (cap1, c1)
+            if not first and c1 > c0:
+                ceil_raised.append((e['t'], p_, c0, c1))
+    if sup:
+        print('\n-- SUPPLY: food cap and ceiling ' + '-' * 40)
+        for p_ in sorted(sup):
+            cap, ceil = sup[p_]
+            note = ''
+            if ceil > 100:
+                note = '   (ceiling above the 100 default -- set at map init)'
+            print('   %-13s %3d / %3d%s' % (FACTION.get(p_, p_), cap, ceil, note))
+        if ceil_raised:
+            print('   ** A CEILING WAS RAISED DURING THE GAME:')
+            for t, p_, c0, c1 in ceil_raised:
+                print('      %4ds %s %d -> %d' % (t, FACTION.get(p_, p_), c0, c1))
+            print('      The map sets every ceiling once at init and never again,')
+            print('      so this would mean something else wrote player state.')
+        else:
+            print('   no ceiling changed during the run (the map sets them once at init)')
+        # The expected ceilings, measured from Melee_Initialization: 100 for
+        # everyone, then 200 for Persia and 300 for each Roman. Reported on the
+        # header so any future question of this shape is answered by the log's
+        # first lines instead of by an investigation.
+        EXPECT = {7: 200, 3: 300, 9: 300, 10: 300}
+        odd = [(p_, sup[p_][1], EXPECT.get(p_, 100))
+               for p_ in sorted(sup) if sup[p_][1] != EXPECT.get(p_, 100)]
+        if odd:
+            print('   ** CEILING NOT AS THE MAP SETS IT:')
+            for p_, got, want in odd:
+                print('      %-13s %d, expected %d' % (FACTION.get(p_, p_), got, want))
+        else:
+            print('   all ceilings match the map: 100 default, 200 Persia, 300 each Roman')
+
     # ---- muster: arrival vs timeout, the direct measure of concentration ---
     # PLAYTEST 10: three factions emitted the release-anyway line in the same
     # second. If timeout dominates, "concentrate before committing" is not
@@ -371,6 +419,38 @@ def selftest():
     print('   %s NEGATIVE CONTROL: an exit without the census fields reports NO '
           'percentage rather than inventing one' % ('PASS' if ok_poor else 'FAIL'))
 
+    print('\n-- supply reporting (playtest 11) ' + '-' * 39)
+    SUP = '\n'.join(['FORAI|1|0|0|run|12345|4095|0',
+                     'FORAI|1|1|1|sup|1|1|0|100|0|100|0',
+                     'FORAI|1|2|1|sup|7|1|0|150|0|200|0'])
+    sup_ev, _, _ = parse(extract(SUP))
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        report(sup_ev)
+    stxt = buf.getvalue()
+    ok_sup = ('100 / 100' in stxt and '150 / 200' in stxt
+              and 'no ceiling changed' in stxt
+              and 'all ceilings match the map' in stxt)
+    print('   %s caps and ceilings are reported, and a clean run says so'
+          % ('PASS' if ok_sup else 'FAIL'))
+    RAISE = SUP + '\nFORAI|1|3|400|sup|1|1|100|150|100|150|0'
+    r_ev, _, _ = parse(extract(RAISE))
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        report(r_ev)
+    ok_raise = 'A CEILING WAS RAISED' in buf.getvalue()
+    print('   %s NEGATIVE CONTROL: a ceiling raised mid-game IS flagged -- the check '
+          'can actually fire' % ('PASS' if ok_raise else 'FAIL'))
+    ODD = '\n'.join(['FORAI|1|0|0|run|12345|4095|0',
+                      'FORAI|1|1|1|sup|1|1|0|100|0|175|0'])
+    o_ev, _, _ = parse(extract(ODD))
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        report(o_ev)
+    ok_odd = 'CEILING NOT AS THE MAP SETS IT' in buf.getvalue()
+    print('   %s NEGATIVE CONTROL: a ceiling that does not match the map is flagged '
+          'on the header' % ('PASS' if ok_odd else 'FAIL'))
+
     print('\n-- muster ratio (playtest 10) ' + '-' * 43)
     MUS = '\n'.join(['FORAI|1|0|0|run|12345|4095|0'] +
                     ['FORAI|1|%d|%d|mus|4|1|1|200|400|2000|0' % (i + 1, 60 + i) for i in range(4)] +
@@ -428,7 +508,7 @@ def selftest():
 
     ok = (bool(p2) and any('duplicate' in x for x in p3)
           and got9 and got2 and clean and far_ok and ok_rich and ok_poor
-          and ok_mus and ok_good)
+          and ok_mus and ok_good and ok_sup and ok_raise and ok_odd)
     print('\n%s: self-test' % ('PASS' if ok else 'FAIL'))
     return 0 if ok else 1
 

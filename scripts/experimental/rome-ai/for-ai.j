@@ -101,6 +101,9 @@
     constant real    AI_VAL_CP        = 1.00
     constant real    AI_VAL_CITY      = 0.65
     constant real    AI_VAL_TOWN      = 0.45
+    // PLAYTEST 11: what a settlement is worth to a faction that is FOOD-CAPPED,
+    // over and above the ground. Roman Town = Food 10, Roman City = Food 25.
+    constant real    AI_VAL_SUPPLY    = 0.55
     constant real    AI_VAL_CAMP      = 0.75
     constant real    AI_VAL_PLOT      = 0.25
     constant real    AI_VAL_SHIPYARD  = 0.02
@@ -259,6 +262,10 @@
     integer          ai_dispPid      = 0
     integer          ai_congN        = 0
     real             ai_musterAt     = 0.0   // fraction measured this tick
+    integer array    ai_wdSig                // watchdog: last world signature
+    integer array    ai_wdStuck              // consecutive frozen windows
+    real    array    ai_wdAt                 // next window boundary
+    integer          ai_wdFired      = 0     // total activations, all factions
     integer array    ai_vSeq                 // per-faction line sequence (spec 6.1)
     string  array    ai_echoMsg              // cross-faction echo ring (spec 6.2)
     real    array    ai_echoAt
@@ -368,6 +375,8 @@
     boolean          ai_telTrunc   = false
     real             ai_telNext    = 0.0
     string  array    ai_telBuf
+    integer array    tel_cap                 // last logged food cap per player
+    integer array    tel_ceil                // and its ceiling
     integer array    tel_owner                // ground-truth owner per point
     integer          tel_cursor    = 0
     boolean array    tel_out                  // has this faction left home
@@ -512,6 +521,11 @@
     // bribe -- so an ally-scoped feed carries NINE speakers for the whole
     // thirty minutes, not ten. One slot per faction, and a window comfortably
     // wider than AI_SAY_GAP so a burst cannot walk out of the ring.
+    // THE WATCHDOG. A backstop, so the window is long: it must never race the
+    // decision layer, only catch a faction the decision layer has abandoned.
+    constant real    AI_WD_WINDOW     = 20.0   // observation window
+    constant integer AI_WD_STRIKES    = 2      // consecutive frozen windows
+    constant real    AI_WD_GRID       = 400.0  // position quantisation
     constant integer AI_ECHO_N        = 12
     constant real    AI_ECHO_T        = 20.0
     // voice event kinds -- indices match gen-voices.py A_KINDS / B_KINDS
@@ -1540,6 +1554,20 @@ function AI_PointValueIdx takes integer pid, integer i returns real
             set v = v + AI_VAL_RAZE_TOWN
         endif
     endif
+    // PLAYTEST 11 -- SUPPLY HUNGER. Measured from the artifact: a Roman Town
+    // carries Food 10 and a Roman City Food 25, so capturing a settlement
+    // raises the captor's own supply. Nothing priced that: a town scored
+    // AI_VAL_TOWN (0.45) against a control point's 1.00 no matter how
+    // food-starved the faction was, which is backwards for the faction that
+    // most needs one. A faction AT its cap cannot field another soldier until
+    // it takes a settlement, so for that faction a settlement is worth more
+    // than the ground it stands on.
+    //
+    // Scaled by how capped we are, so it is inert for a faction with headroom
+    // and cannot distort the ordinary value table.
+    if kind == AI_PK_TOWN or kind == AI_PK_CITY then
+        set v = v + AI_VAL_SUPPLY * AI_C01(wm_food[pid] / wm_foodCap[pid])
+    endif
     return v
 endfunction
 
@@ -2450,6 +2478,80 @@ function AI_ThreatField takes integer pid returns nothing
 endfunction
 
 //===========================================================================
+//  THE WATCHDOG -- observed world change, not believed self state
+//
+//  The owner asked whether there is a more robust way to do this, after the
+//  FIFTH instance of "a goal that stays selected while unable to make
+//  progress" (round-4 clock ramp, round-5 gold floor, round-6 TECH on no
+//  money, the abort/restart loop, the muster that could not complete).
+//
+//  He is right that there is, and it is not another gate. Every backstop we
+//  have built -- the idle floor, the possibility gates, the mission deadlines,
+//  the stall detector -- is triggered by what the AI BELIEVES ABOUT ITSELF:
+//  no commitment, no progress toward a chosen objective, no valid goal. All of
+//  those are expressed in the same vocabulary as the bug, so each fix is
+//  defeated by the next state we failed to model. That does not converge.
+//
+//  This asks a question about the WORLD instead: has anything about this
+//  faction changed? Units moved, damage dealt or taken, a holding changed
+//  hands, a unit trained. If nothing has changed for two consecutive windows,
+//  the decision stack is bypassed entirely and the army is attack-moved at the
+//  nearest enemy. A modelling gap cannot defeat it: if the AI is wrong in a
+//  way nobody has imagined, the world still fails to change.
+//
+//  It is a BACKSTOP, NOT A STRATEGY. Every firing is a defect signal, so every
+//  firing is telemetered and the parser reports it prominently. If it fires
+//  often, the decision layer is broken and the log says so.
+//===========================================================================
+
+// A cheap signature of everything this faction can observably affect. Any real
+// change moves at least one term. Deliberately NOT derived from goals, claims,
+// postures or missions -- the whole point is that it shares no vocabulary with
+// the decision layer.
+function AI_WorldSig takes integer pid returns integer
+    local integer sig = 0
+    local integer i = 0
+    local integer own = 0
+    // territory: who holds what, over our own registered points
+    loop
+        exitwhen i >= ai_pointCount
+        if ai_pt[i] != null and GetOwningPlayer(ai_pt[i]) == ai_p[pid] then
+            set own = own + i + 1
+        endif
+        set i = i + 1
+    endloop
+    set sig = own * 7919
+    // army: size, value and where it is. Position is quantised so that jitter
+    // does not read as movement but a real march does.
+    set sig = sig + R2I(wm_army[pid]) * 31
+    set sig = sig + ai_accN * 17
+    set sig = sig + R2I(wm_fieldX[pid] / AI_WD_GRID) * 13
+    set sig = sig + R2I(wm_fieldY[pid] / AI_WD_GRID) * 11
+    // health: damage dealt or taken anywhere in the army
+    set sig = sig + R2I(wm_fieldHPFrac[pid] * 100.0) * 3
+    // economy: a unit trained or a building bought moves gold or food
+    set sig = sig + R2I(wm_gold[pid]) + R2I(wm_food[pid]) * 5
+    return sig
+endfunction
+
+// True when this faction has been observably frozen for two whole windows.
+function AI_Watchdog takes integer pid returns boolean
+    local integer sig
+    if ai_now < ai_wdAt[pid] then
+        return false
+    endif
+    set ai_wdAt[pid] = ai_now + AI_WD_WINDOW
+    set sig = AI_WorldSig(pid)
+    if sig == ai_wdSig[pid] then
+        set ai_wdStuck[pid] = ai_wdStuck[pid] + 1
+    else
+        set ai_wdSig[pid] = sig
+        set ai_wdStuck[pid] = 0
+    endif
+    return ai_wdStuck[pid] >= AI_WD_STRIKES
+endfunction
+
+//===========================================================================
 //  World scan
 //===========================================================================
 
@@ -2849,6 +2951,36 @@ endfunction
 
 // ctrl: the scoreboard. Sliced so a full sweep costs a bounded number of
 // reads per tick regardless of how many points the map has.
+// PLAYTEST 11 -- SUPPLY IS NOW A LOGGED QUANTITY.
+//
+// The owner asked whether someone had stealthily raised the barbarian food
+// cap. Answering it took a source audit and a decomposition; it should have
+// been a question the log answered by itself. It is now: every faction's cap
+// and CEILING are emitted at start and on any change, for ALL TWELVE players
+// including the ones this module does not drive -- a diagnostic that only
+// covered our own factions could not have answered the question that was
+// actually asked.
+//
+// Reads only. GetPlayerState is a read; this module contains no
+// SetPlayerState, AddResourceAmount, SetPlayerHandicap or tech-granting call
+// of any kind, and trace.py asserts that.
+function AI_TelScanSupply takes nothing returns nothing
+    local integer i = 0
+    local integer cap
+    local integer ceil
+    loop
+        exitwhen i >= AI_MAX_PLAYERS
+        set cap = GetPlayerState(Player(i), PLAYER_STATE_RESOURCE_FOOD_CAP)
+        set ceil = GetPlayerState(Player(i), PLAYER_STATE_FOOD_CAP_CEILING)
+        if cap != tel_cap[i] or ceil != tel_ceil[i] then
+            call AI_Tel("sup", AI_Num(i) + "|" + AI_TelAI(i) + "|" + AI_Num(tel_cap[i]) + "|" + AI_Num(cap) + "|" + AI_Num(tel_ceil[i]) + "|" + AI_Num(ceil))
+            set tel_cap[i] = cap
+            set tel_ceil[i] = ceil
+        endif
+        set i = i + 1
+    endloop
+endfunction
+
 function AI_TelScanControl takes nothing returns nothing
     local integer done = 0
     local integer i = tel_cursor
@@ -5406,12 +5538,51 @@ endfunction
 //  Timers
 //===========================================================================
 
+// The watchdog's action. Deliberately the simplest thing that can possibly
+// work: tear down whatever this faction thought it was doing -- by
+// construction that thing is not working -- and attack-move the whole army at
+// the nearest enemy. No scores, no claims, no approach routing, no muster.
+function AI_WatchdogAct takes integer pid returns nothing
+    local integer i = 0
+    local integer best = -1
+    local real bd = 999999.0
+    local real d
+    set ai_wdFired = ai_wdFired + 1
+    call AI_Tel("wd", AI_Num(pid) + "|" + AI_TelAI(pid) + "|" + AI_Num(ai_goal[pid]) + "|" + AI_Num(ai_msState[pid]) + "|" + AI_Num(R2I(wm_army[pid])) + "|" + AI_Num(R2I(wm_gold[pid])) + "|" + AI_Num(ai_target[pid]))
+    // tear down the belief state, so the next tick starts clean rather than
+    // resuming the thing that was not working
+    call AI_MissionAbort(pid, 5)
+    set ai_target[pid] = -1
+    set ai_goalSince[pid] = -9999.0
+    set ai_commitAt[pid] = -9999.0
+    set ai_navState[pid] = AI_NAV_NONE
+    // nearest enemy holding, by straight-line distance. No value model: the
+    // point is to DO something, and the decision layer gets the tick back as
+    // soon as the world starts changing again.
+    loop
+        exitwhen i >= ai_pointCount
+        if ai_pt[i] != null and not (GetOwningPlayer(ai_pt[i]) == ai_p[pid] or IsPlayerAlly(GetOwningPlayer(ai_pt[i]), ai_p[pid])) then
+            set d = AI_Dist(ai_ptX[i], ai_ptY[i], wm_fieldX[pid], wm_fieldY[pid])
+            if d < bd then
+                set bd = d
+                set best = i
+            endif
+        endif
+        set i = i + 1
+    endloop
+    if best >= 0 then
+        call AI_SendArmy(pid, ai_ptX[best], ai_ptY[best], AI_ORD_ATTACKP, null)
+        call AI_Say(pid, AI_LineB(pid, V_FALLBACK))
+    endif
+endfunction
+
 function AI_Think takes nothing returns nothing
     local integer pid = 0
     local integer newGoal
     set ai_now = ai_now + 1.0
     set ai_ordersTick = 0
     call AI_TelScanControl()
+    call AI_TelScanSupply()
     if ai_now >= ai_telNext then
         set ai_telNext = ai_now + AI_TEL_FLUSH
         call AI_TelFlush()
@@ -5423,6 +5594,12 @@ function AI_Think takes nothing returns nothing
                 set ai_nextThink[pid] = ai_now + AI_ThinkPeriod(pid)
                 call AI_ScanWorld(pid)
                 call AI_SetFlags(pid)
+                // THE WATCHDOG, checked BEFORE the decision stack and able to
+                // bypass all of it. It takes no account of goals, claims,
+                // postures or missions, and nothing below can suppress it.
+                if AI_Watchdog(pid) then
+                    call AI_WatchdogAct(pid)
+                else
                 // S1: a RUNNING attack is not re-scored. Only when no mission
                 // holds the tick does the goal layer choose again.
                 if not AI_MissionTick(pid) then
@@ -5435,6 +5612,7 @@ function AI_Think takes nothing returns nothing
                         call AI_Say(pid, AI_GoalName(pid, newGoal))
                     endif
                     call AI_Execute(pid)
+                endif
                 endif
                 // ROUND 5: runs whatever the goal is, so a crossing can
                 // always be ended by something other than the goal that
@@ -5764,6 +5942,14 @@ function AI_Init takes nothing returns nothing
         // designed. An instrument has to explain its own blind spot.
         call AI_Broadcast("FoR-AI: you see reports from your ALLIES only. Type -aispy to watch every faction.")
         call AI_Broadcast("FoR-AI: -aieasy / -ainormal / -aihard, -aiquiet / -aitalk.")
-        call AI_Broadcast("FoR-AI handicap: NONE - no resource or vision cheating, fog is respected.")
+        // PLAYTEST 11. This line used to say "fog is respected", full stop.
+        // The external audit (DESIGN 21.1, defect 6) established that is too
+        // strong: observed enemy STRENGTH is fog-gated, but territorial
+        // OWNERSHIP is read live and map-wide. The resource claim IS exact --
+        // the module contains no SetPlayerState, AddResourceAmount,
+        // SetPlayerHandicap or tech-granting call, and trace.py asserts it --
+        // so the two halves are now stated separately and honestly.
+        call AI_Broadcast("FoR-AI handicap: NONE - no resource, supply or income cheating of any kind.")
+        call AI_Broadcast("FoR-AI vision: enemy STRENGTH is fog-gated; who owns a city is read map-wide.")
     endif
 endfunction

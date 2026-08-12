@@ -6,8 +6,20 @@ split at injection time:
 
   * its globals go inside the map's existing globals block, before endglobals;
   * its functions go immediately before InitCustomTriggers, so every AI_
-    function is declared before the AI_Init() call that is appended to the end
-    of InitCustomTriggers.
+    function is declared before the AI_Init() call;
+  * that call is appended to the end of RunInitializationTriggers, NOT of
+    InitCustomTriggers. InitCustomTriggers only CREATES triggers;
+    RunInitializationTriggers is what fires Player_Groups and
+    Melee_Initialization, and those are what populate udg_AllPlayers, set every
+    player's food-cap ceiling and hand out the starting 300 gold / 300 lumber.
+    Hooking into InitCustomTriggers meant AI_Init ran BEFORE any of that.
+
+    That ordering did NOT cause the playtest-11 food-cap question (DESIGN 26
+    shows the arithmetic, and our module cannot write player state at all), but
+    initialising against a world the map has not finished setting up is fragile
+    for no benefit -- our first read of gold and lumber would have seen the
+    pre-initialisation values. Moved on those grounds, as hygiene rather than
+    as a fix.
 
 Idempotent: re-running strips the previous injection first.
 """
@@ -65,11 +77,12 @@ if not m:
 fblock = MB + '\n' + mod_funcs.rstrip('\n') + '\n' + ME + '\n\n'
 script = script[:m.start()] + fblock + script[m.start():]
 
-# 3. hook AI_Init at the end of InitCustomTriggers
-m = re.search(r'(function InitCustomTriggers takes nothing returns nothing\n)(.*?)(\nendfunction\n)',
+# 3. hook AI_Init at the end of RunInitializationTriggers -- AFTER the map's
+#    own initialisation triggers have run (see the module docstring)
+m = re.search(r'(function RunInitializationTriggers takes nothing returns nothing\n)(.*?)(\nendfunction\n)',
               script, re.S)
 if not m:
-    sys.exit('InitCustomTriggers not found')
+    sys.exit('RunInitializationTriggers not found')
 script = (script[:m.start()] + m.group(1) + m.group(2) +
           '\n    call AI_Init(  )\n' + m.group(3) + script[m.end():])
 

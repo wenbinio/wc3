@@ -276,6 +276,7 @@ def make_env(sc):
         'ai_echoAt': __import__('collections').defaultdict(float), 'ai_echoHead': 0,
         'ai_sortieGate': d(-1), 'ai_sortieAt': d(0.0),
         'wm_musterPool': d(0.0), 'ai_musterAt': 0.0,
+        'ai_wdSig': d(-1), 'ai_wdStuck': d(0), 'ai_wdAt': d(0.0), 'ai_wdFired': 0,
         'ai_sayGlobal': '', 'ai_sayGlobalAt': -999.0,
         'ai_msRX': d(0.0), 'ai_msRY': d(0.0),
         'wm_fieldCV': d(sc.get('fieldCV', 0.0)),
@@ -1967,6 +1968,349 @@ def early_barbarians():
                                             100.0 * need_early, 100.0 * need_late))
 
     print('%s: the opening is aggressive, and the aggression expires on a clock'
+          % ('PASS' if not fails else 'FAIL'))
+    return 1 if fails else 0
+
+
+def watchdog():
+    """PLAYTEST 11 -- the owner: "is there a more robust way to do this?"
+
+    Five rounds of "a goal that stays selected while unable to make progress",
+    each fixed by a gate or a deadline expressed in the SAME VOCABULARY as the
+    bug, each followed by a variant nobody anticipated. That does not converge.
+
+    Every backstop we have is triggered by what the AI believes about itself.
+    This one asks a question about the WORLD: has anything changed? A
+    modelling gap cannot defeat it -- if the AI is wrong in a way nobody has
+    imagined, the world still fails to change.
+
+    Verified against the Vandals case from the screenshot specifically: 0 gold,
+    0 lumber, 113 food used against a cap of 75, and a large army. Every
+    production goal is impossible by construction; the watchdog must still
+    produce an attack."""
+    print('\n' + '=' * 78)
+    print('PLAYTEST 11 -- the watchdog fires on a frozen WORLD, not on a belief')
+    print('=' * 78)
+    fails = 0
+
+    def world(**kw):
+        sc = dict(role='barb', t=100.0, army=600.0, fieldX=0.0, fieldY=0.0,
+                  points=[dict(kind=CONSTS['AI_PK_CITY'], x=3000.0, y=0.0, owner=5),
+                          dict(kind=CONSTS['AI_PK_CP'], x=800.0, y=0.0, owner=6)])
+        sc.update(kw)
+        env = make_env(sc)
+        env['ai_now'] = sc['t']
+        env['ai_homeX'] = {0: 0.0}
+        env['ai_homeY'] = {0: 0.0}
+        nat = make_natives(env, 0.0)
+        nat['AI_Say'] = lambda pid, m: None
+        nat['AI_Tel'] = lambda ev, b: env.setdefault('_tel', []).append((ev, b))
+        nat['AI_Num'] = str
+        nat['AI_TelAI'] = lambda pid: '1'
+        return env, Interp(FUNCS, CONSTS, env, nat)
+
+    W = CONSTS['AI_WD_WINDOW']
+
+    # ---- frozen world: fires on the STRIKES-th consecutive window ---------
+    env, it = world()
+    fired = []
+    for n in range(4):
+        env['ai_now'] = 100.0 + n * (W + 1.0)
+        fired.append(it.run('AI_Watchdog', [0]))
+    ok = fired[:2] == [False, False] and fired[2] is True
+    fails += 0 if ok else 1
+    print('  %s a frozen world fires on window %d, not before (%s)'
+          % ('PASS' if ok else 'FAIL', CONSTS['AI_WD_STRIKES'] + 1, fired))
+
+    # ---- NEGATIVE CONTROL: a world that is changing must NEVER fire -------
+    env, it = world()
+    moved = []
+    for n in range(6):
+        env['ai_now'] = 100.0 + n * (W + 1.0)
+        env['wm_fieldX'][0] = 500.0 * n          # the army is marching
+        moved.append(it.run('AI_Watchdog', [0]))
+    ok = not any(moved)
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL: an army that is MOVING never trips it over %d '
+          'windows' % ('PASS' if ok else 'FAIL', len(moved)))
+
+    for label, key, val in (('taking damage', 'wm_fieldHPFrac', 0.5),
+                            ('training units', 'wm_food', 40.0),
+                            ('spending gold', 'wm_gold', 120.0),
+                            ('losing army', 'wm_army', 400.0)):
+        env, it = world()
+        seq = []
+        for n in range(6):
+            env['ai_now'] = 100.0 + n * (W + 1.0)
+            env[key][0] = val + n * 20.0
+            seq.append(it.run('AI_Watchdog', [0]))
+        ok = not any(seq)
+        fails += 0 if ok else 1
+        print('  %s ... nor does a faction %s' % ('PASS' if ok else 'FAIL', label))
+
+    # territory changing hands is observable too
+    env, it = world()
+    seq = []
+    for n in range(6):
+        env['ai_now'] = 100.0 + n * (W + 1.0)
+        env['_ptOwner'][1] = 0 if n % 2 else 5
+        seq.append(it.run('AI_Watchdog', [0]))
+    ok = not any(seq)
+    fails += 0 if ok else 1
+    print('  %s ... nor one whose holdings are changing hands'
+          % ('PASS' if ok else 'FAIL'))
+
+    # ---- THE VANDALS CASE, from the screenshot ---------------------------
+    # 0 gold, 0 lumber, 113 food against a cap of 75, large army: every
+    # production goal impossible by construction.
+    env, it = world(gold=0.0, lumber=0.0, food=113.0, army=1130.0)
+    for n in range(4):
+        env['ai_now'] = 100.0 + n * (W + 1.0)
+        f = it.run('AI_Watchdog', [0])
+    ok = f is True
+    fails += 0 if ok else 1
+    print('  %s THE VANDALS CASE (0 gold, 113 food over a 75 cap, big army) trips it'
+          % ('PASS' if ok else 'FAIL'))
+
+    orders = []
+    nat_env = env
+    it2 = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+    env['ai_goal'][0] = CONSTS['GOAL_CONSOLIDATE']
+    env['ai_msState'][0] = CONSTS['AI_MS_STAGE']
+    env['ai_msTarget'][0] = 0
+    nat = make_natives(env, 0.0)
+    nat['AI_Say'] = lambda pid, m: None
+    nat['AI_Tel'] = lambda ev, b: env.setdefault('_tel', []).append((ev, b))
+    nat['AI_Num'] = str
+    nat['AI_TelAI'] = lambda pid: '1'
+    nat['AI_SendArmy'] = lambda pid, x, y, k, t: orders.append((x, y, k))
+    Interp(FUNCS, CONSTS, env, nat).run('AI_WatchdogAct', [0])
+    ok = bool(orders) and orders[0][2] == CONSTS['AI_ORD_ATTACKP']
+    fails += 0 if ok else 1
+    print('  %s ... and it produces an ATTACK, not another round of nothing (%s)'
+          % ('PASS' if ok else 'FAIL', orders[:1]))
+
+    ok = orders and abs(orders[0][0] - 800.0) < 1.0
+    fails += 0 if ok else 1
+    print('  %s ... at the NEAREST enemy holding, with no value model involved'
+          % ('PASS' if ok else 'FAIL'))
+
+    # ---- it tears down the belief state ----------------------------------
+    ok = (env['ai_target'][0] == -1 and env['ai_msState'][0] == CONSTS['AI_MS_NONE']
+          and env['ai_commitAt'][0] < 0)
+    fails += 0 if ok else 1
+    print('  %s ... and tears down the mission and objective it was clinging to'
+          % ('PASS' if ok else 'FAIL'))
+
+    # ---- every firing is telemetered -------------------------------------
+    ok = any(ev == 'wd' for ev, _ in env.get('_tel', []))
+    fails += 0 if ok else 1
+    print('  %s every activation emits a wd event -- a firing is a DEFECT SIGNAL, '
+          'not a feature' % ('PASS' if ok else 'FAIL'))
+
+    # ---- it shares no vocabulary with the decision layer ------------------
+    sig = '\n'.join(FUNCS['AI_WorldSig'][1] + FUNCS['AI_Watchdog'][1])
+    banned = [w for w in ('ai_goal', 'ai_claim', 'ai_posture', 'ai_msState',
+                          'ai_bestS', 'ai_commitAt', 'ai_progD', 'wm_capReady')
+              if w in sig]
+    ok = not banned
+    fails += 0 if ok else 1
+    print('  %s the watchdog reads NOTHING from the decision layer%s -- it cannot be '
+          'defeated by a state we failed to model'
+          % ('PASS' if ok else 'FAIL', '' if ok else ': ' + ', '.join(banned)))
+
+    # ---- nothing below it can suppress it --------------------------------
+    think = '\n'.join(FUNCS['AI_Think'][1])
+    m = re.search(r'if AI_Watchdog\(pid\) then(?:(?!endif)[\s\S])*?call AI_WatchdogAct', think)
+    ok = m is not None
+    fails += 0 if ok else 1
+    print('  %s it is checked in AI_Think itself, above the mission and goal layers'
+          % ('PASS' if ok else 'FAIL'))
+    ok = think.index('AI_Watchdog(pid)') < think.index('AI_MissionTick(pid)')
+    fails += 0 if ok else 1
+    print('  %s ... and BEFORE them, so no goal, mission or posture can suppress it'
+          % ('PASS' if ok else 'FAIL'))
+
+    # ROUND 5's invariant, re-checked POSITIONALLY now that the watchdog branch
+    # sits above it: AI_NavIdle must run outside the mission branch, so a
+    # crossing can always be ended by something other than the goal that
+    # started it. The old regex guard pinned a shape, and a shape changes.
+    lines = FUNCS['AI_Think'][1]
+    nav = next(i for i, l in enumerate(lines) if 'AI_NavIdle(pid)' in l)
+    mis = next(i for i, l in enumerate(lines) if 'AI_MissionTick(pid)' in l)
+    depth, mis_end = 0, None
+    for i in range(mis, len(lines)):
+        t = lines[i].strip()
+        if t.startswith('if ') and t.endswith(' then'):
+            depth += 1
+        elif t == 'endif':
+            depth -= 1
+            if depth == 0:
+                mis_end = i
+                break
+    ok = mis_end is not None and nav > mis_end
+    fails += 0 if ok else 1
+    print('  %s AI_NavIdle still runs OUTSIDE the mission branch (line %s vs branch '
+          'ending %s) -- checked positionally, not by shape'
+          % ('PASS' if ok else 'FAIL', nav, mis_end))
+
+    # ---- supply hunger (the actionable half of the food-cap question) -----
+    def val(kind, food, cap):
+        sc = dict(role='barb', army=600.0, food=food,
+                  points=[dict(kind=kind, x=1500.0, y=0.0, owner=5)])
+        env = make_env(sc)
+        env['wm_foodCap'] = {0: cap}
+        env['wm_food'] = {0: food}
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        return it.run('AI_PointValueIdx', [0, 0])
+
+    TOWN, CP = CONSTS['AI_PK_TOWN'], CONSTS['AI_PK_CP']
+    starved = val(TOWN, 100.0, 100.0)
+    roomy = val(TOWN, 10.0, 100.0)
+    ok = starved > roomy
+    fails += 0 if ok else 1
+    print('  %s a town is worth MORE to a food-capped faction (%.2f vs %.2f) -- a '
+          'Roman Town carries Food 10 and nothing priced that'
+          % ('PASS' if ok else 'FAIL', starved, roomy))
+
+    ok = abs(val(CP, 100.0, 100.0) - val(CP, 10.0, 100.0)) < 1e-9
+    fails += 0 if ok else 1
+    print('  %s ... and a control point, which carries no supply, is unaffected'
+          % ('PASS' if ok else 'FAIL'))
+
+    ok = abs(roomy - val(TOWN, 0.0, 100.0)) < 0.06
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL: with full headroom the term is inert, so it cannot '
+          'distort the ordinary value table' % ('PASS' if ok else 'FAIL'))
+
+    print('%s: a faction the world has stopped responding to always does something'
+          % ('PASS' if not fails else 'FAIL'))
+    return 1 if fails else 0
+
+
+def no_cheating():
+    """PLAYTEST 11 -- "did someone stealthily raise the food cap of the
+    barbarians? It should be 100 max."
+
+    We have told the owner repeatedly that no material cheating is active.
+    That claim has already been too strong once (the fog contract, DESIGN
+    21.1 defect 6), so it is now a STANDING ASSERTION over the shipped source
+    rather than a thing anyone has to remember.
+
+    The answer to the question itself is in DESIGN 26: the map sets every
+    ceiling once in Melee_Initialization -- 100 for the eight true barbarians,
+    200 for Persia, 300 for each Roman -- and never writes one again. Our
+    module cannot write player state at all.
+    """
+    print('\n' + '=' * 78)
+    print('PLAYTEST 11 -- the module cannot grant itself anything')
+    print('=' * 78)
+    fails = 0
+
+    # every engine native the module calls, comment- and string-stripped
+    def strip_code(text):
+        out, instr, i = [], False, 0
+        while i < len(text):
+            c = text[i]
+            if instr:
+                out.append(c)
+                instr = not (c == '"')
+                i += 1
+                continue
+            if c == '"':
+                instr = True
+                out.append(c)
+                i += 1
+                continue
+            if text.startswith('//', i):
+                j = text.find('\n', i)
+                i = j if j >= 0 else len(text)
+                continue
+            out.append(c)
+            i += 1
+        return ''.join(out)
+
+    body = strip_code(TEXT)
+    called = {c for c in re.findall(r'\b([A-Z][A-Za-z0-9_]+)\s*\(', body)
+              if not c.startswith('AI_')}
+
+    BANNED = ['SetPlayerState', 'SetPlayerStateBJ', 'AddResourceAmount',
+              'SetPlayerHandicap', 'SetPlayerHandicapXP', 'SetPlayerTechResearched',
+              'SetPlayerTechMaxAllowed', 'AddPlayerTechResearched',
+              'SetPlayerTechMaxAllowedSwap', 'SetPlayerTechResearchedSwap',
+              'SetPlayerFoodCap', 'UnitAddItem', 'SetResourceAmount',
+              'SetPlayerAbilityAvailable', 'ShareEverythingWithTeam',
+              'SetPlayerAlliance']
+    hit = sorted(called & set(BANNED))
+    ok = not hit
+    fails += 0 if ok else 1
+    print('  %s the module calls NONE of the %d resource/tech/handicap-granting '
+          'natives%s' % ('PASS' if ok else 'FAIL', len(BANNED),
+                         '' if ok else ' -- CALLS: ' + ', '.join(hit)))
+
+    # NEGATIVE CONTROL: the sweep must be able to see a call if one existed
+    ok = 'GetPlayerState' in called
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL: the same sweep DOES see GetPlayerState, so it is '
+          'reading real call sites rather than finding nothing'
+          % ('PASS' if ok else 'FAIL'))
+
+    fake = strip_code('function X takes nothing returns nothing\n'
+                      '    call SetPlayerState(p, s, 999)\nendfunction\n')
+    fake_called = {c for c in re.findall(r'\b([A-Z][A-Za-z0-9_]+)\s*\(', fake)}
+    ok = bool(fake_called & set(BANNED))
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL: an injected SetPlayerState IS detected by the sweep'
+          % ('PASS' if ok else 'FAIL'))
+
+    # every player-state access is a READ
+    writes = re.findall(r'(?<!Get)PlayerState\s*\(', body)
+    ok = not writes
+    fails += 0 if ok else 1
+    print('  %s every PLAYER_STATE access in the module is a GetPlayerState (%d reads)'
+          % ('PASS' if ok else 'FAIL', len(re.findall(r'GetPlayerState\s*\(', body))))
+
+    # the only state-changing natives are orders and one animation
+    CHANGERS = {c for c in called
+                if re.match(r'^(Set|Add|Remove|Create|Issue|Start|Enable|Replace|Share|Cripple|Suspend)', c)}
+    ALLOWED = {'IssueImmediateOrderById', 'IssuePointOrder', 'IssueTargetOrder',
+               'IssueTargetOrderById', 'SetUnitAnimation', 'ReplaceUnitBJ',
+               'CreateGroup', 'CreateTimer', 'CreateTrigger', 'SetUnitPosition',
+               'SaveInteger', 'SaveReal', 'StartSound'}
+    extra = sorted(CHANGERS - ALLOWED)
+    ok = not extra
+    fails += 0 if ok else 1
+    print('  %s the only world-changing calls are unit ORDERS, a gate replace and an '
+          'animation%s' % ('PASS' if ok else 'FAIL',
+                           '' if ok else ' -- also: ' + ', '.join(extra)))
+
+    # the handicap is still labelled and still 1.0, and is never set to
+    # anything else anywhere in the module
+    sets = re.findall(r'set ai_handicap\[[^\]]+\]\s*=\s*([0-9.]+)', body)
+    ok = bool(sets) and all(abs(float(v) - 1.0) < 1e-9 for v in sets)
+    fails += 0 if ok else 1
+    print('  %s ai_handicap is set to %s and to nothing else -- no material advantage '
+          'is dialled in' % ('PASS' if ok else 'FAIL', sorted(set(sets)) or 'NOTHING'))
+
+    # the broadcast claim must not overstate what holds. DESIGN 21.1 defect 6:
+    # strength is fog-gated, ownership is not, and saying "fog is respected"
+    # flat was too strong.
+    claims = re.findall(r'AI_Broadcast\("FoR-AI ([^"]*)"\)', TEXT)
+    fogline = [c for c in claims if 'fog' in c.lower() or 'vision' in c.lower()]
+    ok = bool(fogline) and not any(re.search(r'fog is respected\.?$', c) for c in fogline)
+    fails += 0 if ok else 1
+    print('  %s the in-game claim does not say "fog is respected" flat -- it states '
+          'the strength/ownership split (defect 6)' % ('PASS' if ok else 'FAIL'))
+
+    # supply is logged for ALL twelve, not just the factions we drive
+    ssrc = '\n'.join(FUNCS['AI_TelScanSupply'][1])
+    ok = 'AI_MAX_PLAYERS' in ssrc and 'FOOD_CAP_CEILING' in ssrc
+    fails += 0 if ok else 1
+    print('  %s supply telemetry covers ALL twelve players and logs the CEILING -- a '
+          'diagnostic limited to our own factions could not answer the question '
+          'that was asked' % ('PASS' if ok else 'FAIL'))
+
+    print('%s: nothing in the module can grant a resource, a tech or a cap'
           % ('PASS' if not fails else 'FAIL'))
     return 1 if fails else 0
 
@@ -4030,8 +4374,15 @@ CODE = re.sub(r'//.*$', '', TEXT, flags=re.M)
 ROUND3_GUARDS = [
     ('the food cap reads PLAYER_STATE_RESOURCE_FOOD_CAP',
      r'set wm_foodCap\[pid\]\s*=\s*I2R\(GetPlayerState\(p, PLAYER_STATE_RESOURCE_FOOD_CAP\)\)', True),
-    ('the wrong player state (FOOD_CAP_CEILING) is gone from the code',
-     r'PLAYER_STATE_FOOD_CAP_CEILING', False),
+    # ROUND 3 read FOOD_CAP_CEILING as if it were the cap, which it is not.
+    # The invariant is that it must never feed wm_foodCap -- NOT that the
+    # constant is banned outright, because playtest 11 reads the ceiling
+    # deliberately, for telemetry, so that "did someone raise the cap" is a
+    # question the log answers. Narrowed to the thing that was actually wrong.
+    ('wm_foodCap is read from RESOURCE_FOOD_CAP, never from the CEILING',
+     r'wm_foodCap\[pid\] = I2R\(GetPlayerState\(p, PLAYER_STATE_RESOURCE_FOOD_CAP\)\)', True),
+    ('the ceiling is never assigned into wm_foodCap',
+     r'wm_foodCap\[[^\]]*\]\s*=\s*I2R\(GetPlayerState\([^)]*FOOD_CAP_CEILING', False),
     ('AI_ChooseApproach projects gates onto the field->objective segment',
      r'function AI_ChooseApproach\b.*?AI_GateCorridor\(pid, i\)', True),
     ('AI_ChooseApproach crosses walls in t order (AI_GATE_SAMEWALL)',
@@ -4253,7 +4604,12 @@ ROUND3_GUARDS = [
     # STRONGER property: NavIdle sits AFTER the endif, i.e. it runs whatever
     # the goal is AND whatever the mission is doing.
     ('the naval idle branch runs outside the mission branch, unconditionally',
-     r'function AI_Think\b(?:(?!\nendfunction)[\s\S])*?call AI_Execute\(pid\)\s*\n\s*endif(?:\s*//[^\n]*\n)*\s*call AI_NavIdle\(pid\)', True),
+     # Structural, not shape-pinned: playtest 11 added the watchdog branch
+     # above this, so the old "endif directly followed by NavIdle" pattern no
+     # longer matches even though the invariant is untouched. What matters is
+     # that NavIdle is NOT inside the mission branch, which is checked
+     # positionally in the watchdog section instead of by regex here.
+     r'function AI_Think\b(?:(?!\nendfunction)[\s\S])*?call AI_NavIdle\(pid\)', True),
     ('a siege goal no longer buys rams by itself (finding 7)',
      r'ai_goal\[pid\] == GOAL_SIEGE\) and wm_lumber', False),
     ('a defensive or retreating dispatch gives rams no job',
@@ -4555,6 +4911,8 @@ def main():
     rc |= muster()
     rc |= early_barbarians()
     rc |= voice()
+    rc |= no_cheating()
+    rc |= watchdog()
     rc |= perimeter()
     rc |= partition()
     rc |= congestion()
