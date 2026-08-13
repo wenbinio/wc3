@@ -70,6 +70,24 @@ question it answers, its date, and how it goes stale.
   brief-04-amai.md §9's "competence UNKNOWN". **Staleness**: structural
   findings age well; the §4 cheat magnitudes are balance values — re-read
   `Trig_SetupAI_Func001A` before citing them.
+- **squid-game-ai-decomposition.md** (2026-08-13) — what does an AI that
+  *plays a game* rather than *commands an army* actually compute? Reads
+  Squid Game v1.5 (konvan5 & GhostHeroine, wc3maps 258947 — the only one
+  of four Squid Game maps still hosted, and Hive-tagged AI) plus Baradé's
+  slot-playing minimal version. Verdict: **no engine AI at all**, ~12
+  per-minigame trigger brains, 200 NPC contestants over 3 computer slots
+  (a third option beside slot-filling and slot-playing), **no material
+  cheat** and three handicaps in the *player's* favour. Carries the exact
+  red-light cascade, the `2.0/N` one-bot-per-tick glass-bridge scheduler,
+  the 120 s dalgona budget and the tug-of-war fumble rates (20% base,
+  +20% against a human). §5 is why it passes the eye (five tempo
+  mechanisms, plus the one place it fails: no hesitation at the bridge
+  frontier); §7 is the short, honest transfer list — inertia gate,
+  load-normalised action budget, error-rate-as-difficulty. §8 corrects
+  wc3-ai-prior-art.md §4 points 2 and 3 and the CLAUDE.md storagebox URL.
+  **Staleness**: structural findings age well; every probability is a
+  balance value from the hosted `v1_5_4` build (Hive now ships a later
+  `_FIX`) — re-read the named triggers before citing numbers.
 
 ## wc3-ai-prior-art.md (2026-08-09)
 
