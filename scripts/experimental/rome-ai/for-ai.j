@@ -254,6 +254,12 @@
     // and "may march on it". Deliberately low -- it is a coupling, not a
     // difficulty knob, and Brytenwalda's own bar is 25 food.
     constant real    AI_PROSECUTE_CV = 150.0
+    // SQUID GAME steals 3 and 4: pacing, and difficulty as an error rate.
+    constant real    AI_REACT_BASE   = 2.0    // seconds between noticing and acting
+    constant real    AI_REACT_SPREAD = 1.5    // per-faction variation
+    constant real    AI_ERR_EASY     = 0.35
+    constant real    AI_ERR_NORMAL   = 0.15
+    constant real    AI_ERR_HARD     = 0.05
     constant real    AI_RETREAT_RATIO = 1.15   // the round-2 retreat bar, as a FLAG
     integer array    ai_msState
     integer array    ai_msTarget
@@ -271,6 +277,8 @@
     real    array    ai_exCV
     integer          ai_dispPid      = 0
     integer          ai_congN        = 0
+    integer array    ai_budgetTick           // last tick this player's budget opened
+    integer          ai_tickSeq      = 0     // think-tick counter
     real             ai_musterAt     = 0.0   // fraction measured this tick
     integer array    ai_wdSig                // watchdog: last world signature
     integer array    ai_wdStuck              // consecutive frozen windows
@@ -284,6 +292,7 @@
     real    array    ai_sortieAt             // when we opened it
     real             ai_marchDX      = 0.0   // unit vector along the march line
     real             ai_marchDY      = 0.0
+    real    array    ai_threatSince          // PLAYTEST 13: when the threat was NOTICED
     real    array    ai_msGarRef             // PLAYTEST 12: garrison at mission start
     real    array    ai_msRX                 // PLAYTEST 7: the muster point
     real    array    ai_msRY
@@ -435,7 +444,10 @@
     constant integer AI_ORD_UNLOAD    = 5   // unload a transport at a point
     constant real    AI_ORDER_TOL     = 350.0  // same destination if within
     constant real    AI_ORDER_REFRESH = 20.0   // safety re-issue interval
-    constant integer AI_ORDER_SLICE   = 24     // orders per player per think
+    constant integer AI_ORDER_SLICE   = 24     // orders per player per THINK TICK
+    // SQUID GAME STEAL #1: chance a BUSY unit is left alone rather than
+    // re-decided. Game6AI leaves a busy bot alone 75% of the time.
+    constant real    AI_INERTIA_KEEP  = 0.75
     // PLAYTEST 9: the slice is a COST control, not a selection. Without a
     // rotating window it always serves the same prefix of the enumeration,
     // and the tail of a big army is never ordered at all.
@@ -981,8 +993,14 @@ endfunction
 // Park-Miller minimal standard generator, Schrage decomposition.
 // Every intermediate stays below 2^31 so the stream is identical under
 // 32-bit and 64-bit integer arithmetic.
+// NOTE ON DIVISION, as for the formation slots (playtest 9): JASS integer
+// division truncates and trace.py evaluates this source as Python, where "/"
+// does not. Written as R2I(I2R(a)/I2R(b)), which truncates identically under
+// both -- so the harness executes the SAME Park-Miller stream the game does.
+// Before this, every probabilistic assertion measured through the interpreter
+// was reading a degenerate sequence.
 function AI_Rand takes nothing returns integer
-    local integer k = ai_seed / 127773
+    local integer k = R2I(I2R(ai_seed) / 127773.0)
     set ai_seed = 16807*(ai_seed - k*127773) - 2836*k
     if ai_seed < 0 then
         set ai_seed = ai_seed + 2147483647
@@ -993,6 +1011,11 @@ endfunction
 // uniform real in [0,1)
 function AI_RandReal takes nothing returns real
     return I2R(AI_Rand()) / 2147483647.0
+endfunction
+
+// A seeded coin. Behaviour, so it consumes the map-owned stream deliberately.
+function AI_Chance takes real p returns boolean
+    return AI_RandReal() < p
 endfunction
 
 // symmetric noise in [-amp, +amp]
@@ -1896,10 +1919,28 @@ endfunction
 //===========================================================================
 
 // true when the unit does not already carry this exact order
+// SQUID GAME STEAL #1 -- THE INERTIA GATE.
+//
+// Game6AI: re-decide freely for an IDLE unit; for a BUSY one, re-decide only
+// 25% of the time. Two lines, and it is the cheapest known fix for the very
+// first thing this project ever got wrong -- playtest 1's Roman unit-lag
+// stutter from re-ordering everything every tick.
+//
+// It is strictly weaker than the per-unit last-order memory below and strictly
+// cheaper, and the two compose: the memory says "this order is unchanged", the
+// inertia gate says "even if it changed, you are already doing something
+// sensible". Volume is controlled by the budget; CHURN is controlled here.
+//
+// The roll is a DECISION, so it goes through the map-owned seeded stream --
+// unlike the cosmetic line picker, which must not (gotcha 29/30).
 function AI_NeedsOrder takes unit u, integer kind, real x, real y, integer tid returns boolean
     local integer h = GetHandleId(u)
     if GetUnitCurrentOrder(u) == 0 then
         return true                       // idle: it has lost or finished its order
+    endif
+    // busy: mostly leave it alone
+    if AI_Chance(AI_INERTIA_KEEP) then
+        return false
     endif
     if LoadInteger(ai_ht, h, 0) != kind then
         return true
@@ -1911,6 +1952,28 @@ function AI_NeedsOrder takes unit u, integer kind, real x, real y, integer tid r
         return true
     endif
     return (ai_now - LoadReal(ai_ht, h, 3)) >= AI_ORDER_REFRESH
+endfunction
+
+// SQUID GAME STEAL #2 -- a LOAD-NORMALISED action budget.
+//
+// Game5AI computes AITime = 2.0 / N and moves ONE bot per tick with the cursor
+// persisting, so its total action rate is constant however many bots are on
+// the bridge. Ours was constant per DISPATCH and there are five dispatch sites
+// -- march, raid, respond, naval, watchdog -- each of which reset ai_issued to
+// zero. A tick that marched and raided and answered a threat therefore spent
+// three full slices, so the rate scaled with how much was going on, which is
+// exactly backwards for the 300-food Roman case.
+//
+// The budget is now opened ONCE PER PLAYER PER TICK. Later dispatches in the
+// same tick inherit what is left, and the rotating window (playtest 9) decides
+// who gets it. Constant rate, and the cursor still guarantees fairness.
+function AI_OpenBudget takes integer pid returns nothing
+    if ai_budgetTick[pid] == ai_tickSeq then
+        return                              // already opened this tick
+    endif
+    set ai_budgetTick[pid] = ai_tickSeq
+    set ai_issued = 0
+    set ai_budget = AI_ORDER_SLICE
 endfunction
 
 function AI_TryOrder takes unit u, integer kind, real x, real y, unit tgt returns nothing
@@ -3186,6 +3249,51 @@ function AI_Congestion takes integer pid, real x, real y returns integer
     return ai_congN
 endfunction
 
+// SQUID GAME STEAL #3 -- PACING AS A FIRST-CLASS PROPERTY.
+//
+// The decomposition's sharpest line is that the map is convincing everywhere it
+// was given a reason to be SLOW, and its one visible flaw is the single place
+// it should have been slowest. Our AI reacts instantly and identically every
+// time: it notices and acts in the same tick, always, for every faction.
+//
+// So there is now a deliberate latency between NOTICING and ACTING, varying per
+// faction. Two payoffs, and the second is the one that matters:
+//
+//   * it reads as a person deciding rather than a machine switching;
+//   * it is an ORTHOGONAL damper on the oscillation class, because a reversal
+//     that must survive a latency window cannot fire on a transient. That sits
+//     beside the interrupt hysteresis of playtest 12 rather than replacing it:
+//     hysteresis raises the bar, latency requires the bar to stay crossed.
+//
+// SQUID GAME STEAL #4 -- DIFFICULTY AS AN ERROR RATE. Game3UseAbility is 20%
+// base and +20% with a human on the other end; there is no material dial at
+// all. So competence here is decision quality, reaction speed and attention --
+// and the material knob stays present, labelled and at ZERO (ai_handicap 1.0),
+// which the owner asked for and which this map is the shipped precedent for.
+function AI_ErrorRate takes integer pid returns real
+    if ai_diff[pid] == AI_EASY then
+        return AI_ERR_EASY
+    endif
+    if ai_diff[pid] == AI_HARD then
+        return AI_ERR_HARD
+    endif
+    return AI_ERR_NORMAL
+endfunction
+
+// How long this faction sits on a new observation before acting on it. Varies
+// per faction so twelve of them do not turn in unison, and with difficulty,
+// because slower reactions are a competence axis that grants nothing.
+function AI_React takes integer pid returns real
+    local real d = AI_REACT_BASE + I2R(ModuloInteger(pid * 5, 4)) * AI_REACT_SPREAD
+    if ai_diff[pid] == AI_EASY then
+        return d * 2.0
+    endif
+    if ai_diff[pid] == AI_HARD then
+        return d * 0.5
+    endif
+    return d
+endfunction
+
 // AUDIT 4. Is this target barred because a mission just failed on it? Declared
 // here rather than beside the mission code because the SCORER is its first
 // consumer and JASS is single-pass.
@@ -3282,20 +3390,36 @@ function AI_TargetScore takes integer pid, integer i returns real
 endfunction
 
 // Returns the best point index, or -1. Sets ai_accCV to the raw best score.
+// SQUID GAME STEAL #4. The error is injected HERE, at the decision, not at the
+// execution: an erring faction picks a real but worse objective rather than
+// fumbling an order. It grants nothing and costs nothing -- competence is the
+// dial, material is not.
 function AI_BestTarget takes integer pid returns integer
     local integer i = 0
     local integer best = -1
+    local integer second = -1
     local real bs = 0.0
+    local real ss = 0.0
     local real s
     loop
         exitwhen i >= ai_pointCount
         set s = AI_TargetScore(pid, i)
         if s > bs then
+            set ss = bs
+            set second = best
             set bs = s
             set best = i
+        elseif s > ss then
+            set ss = s
+            set second = i
         endif
         set i = i + 1
     endloop
+    // the error roll: a real objective, just not the best one
+    if second >= 0 and AI_Chance(AI_ErrorRate(pid)) then
+        set ai_accCV = ss
+        return second
+    endif
     set ai_accCV = bs
     return best
 endfunction
@@ -4140,8 +4264,7 @@ function AI_SendArmy takes integer pid, real x, real y, integer kind, unit tgt r
     set ai_orderY = y
     set ai_ordKind = kind
     set ai_orderTarget = tgt
-    set ai_issued = 0
-    set ai_budget = AI_ORDER_SLICE
+    call AI_OpenBudget(pid)
     // PLAYTEST 7, the owner's headline finding: "Ostrogoths push with half
     // their army at base; practically true of all factions." This formula was
     // it, literally. The hold was sized as a FRACTION OF OUR OWN ARMY --
@@ -4220,8 +4343,7 @@ function AI_Respond takes integer pid, real x, real y, real budget returns nothi
     set ai_orderY = y
     set ai_respCV = 0.0
     set ai_respBudget = budget
-    set ai_issued = 0
-    set ai_budget = AI_ORDER_SLICE
+    call AI_OpenBudget(pid)
     call GroupEnumUnitsOfPlayer(g, ai_p[pid], Filter(function AI_OwnUnitFilter))
     call ForGroup(g, function AI_RespondEnum)
     call DestroyGroup(g)
@@ -4565,12 +4687,13 @@ function AI_NavIdle takes integer pid returns nothing
     // No crossing objective any more. Put the cargo back on our own shore.
     set ship = AI_FindShip(pid)
     if ship != null then
-        set ai_issued = 0
-        set ai_budget = AI_ORDER_SLICE
+        call AI_OpenBudget(pid)
         call AI_TryOrder(ship, AI_ORD_UNLOAD, ai_homeX[pid], ai_homeY[pid], null)
         call AI_Say(pid, AI_LineB(pid, V_NAVAL_CANCEL))
     endif
     set ai_navState[pid] = AI_NAV_NONE
+    set ai_threatSince[pid] = -1.0
+    set ai_budgetTick[pid] = -1
     set ai_sortieGate[pid] = -1
     set ai_navShip[pid] = null
     set ship = null
@@ -4622,8 +4745,7 @@ function AI_NavStep takes integer pid, integer t returns boolean
             set ai_orderTarget = ship
             set ai_orderX = GetUnitX(ship)
             set ai_orderY = GetUnitY(ship)
-            set ai_issued = 0
-            set ai_budget = AI_ORDER_SLICE
+            call AI_OpenBudget(pid)
             set g = CreateGroup()
             call GroupEnumUnitsOfPlayer(g, ai_p[pid], Filter(function AI_OwnUnitFilter))
             call ForGroup(g, function AI_BoardEnum)
@@ -4636,8 +4758,7 @@ function AI_NavStep takes integer pid, integer t returns boolean
     endif
     // Sailing. ONE order: the point form of unloadall makes the engine sail
     // there and beach the cargo, so we model neither the route nor the shore.
-    set ai_issued = 0
-    set ai_budget = AI_ORDER_SLICE
+    call AI_OpenBudget(pid)
     call AI_TryOrder(ship, AI_ORD_UNLOAD, ai_ptX[t], ai_ptY[t], null)
     if loaded <= 0 and (ai_now - ai_navSince[pid]) > AI_NAV_LOAD_T then
         set ai_navState[pid] = AI_NAV_NONE  // cargo ashore: back to the land layer
@@ -5217,9 +5338,20 @@ function AI_SetFlags takes integer pid returns nothing
     if wm_townIdx[pid] >= 0 and wm_townThreat[pid] > AI_TF_COEF * bar then
         set ai_ifThreat[pid] = true
     endif
+    // SQUID GAME STEAL #3: the threat must SURVIVE the reaction window. A
+    // transient spike no longer reverses a campaign, which is a second and
+    // independent defence against the oscillation class.
+    if ai_ifThreat[pid] then
+        if ai_threatSince[pid] < 0.0 then
+            set ai_threatSince[pid] = ai_now        // noticed; not yet acted on
+        endif
+        set ai_ifThreat[pid] = (ai_now - ai_threatSince[pid]) >= AI_React(pid)
+    else
+        set ai_threatSince[pid] = -1.0
+    endif
     // THE EMERGENCY. A capital actually under assault recalls the army at any
-    // bar -- this is the case the no-hysteresis exemption was written for, and
-    // it is kept explicitly rather than by accident.
+    // bar AND at once -- this is the case the no-hysteresis exemption was
+    // written for, and latency must not blunt it either.
     if wm_capThreat[pid] then
         set ai_ifThreat[pid] = true
     endif
@@ -5729,6 +5861,7 @@ function AI_Think takes nothing returns nothing
     local integer newGoal
     set ai_now = ai_now + 1.0
     set ai_ordersTick = 0
+    set ai_tickSeq = ai_tickSeq + 1
     call AI_TelScanControl()
     call AI_TelScanSupply()
     if ai_now >= ai_telNext then

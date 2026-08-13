@@ -277,7 +277,9 @@ def make_env(sc):
         'ai_sortieGate': d(-1), 'ai_sortieAt': d(0.0),
         'wm_musterPool': d(0.0), 'ai_musterAt': 0.0,
         'ai_wdSig': d(-1), 'ai_wdStuck': d(0), 'ai_wdAt': d(0.0), 'ai_wdFired': 0,
-        'ai_msGarRef': d(0.0),
+        'ai_msGarRef': d(0.0), 'ai_threatSince': d(-1.0), 'ai_budgetTick': d(-1), 'ai_tickSeq': 0,
+        'ai_issued': 0, 'ai_budget': 0, 'ai_ordersTick': 0,
+        'ai_seed': 0,
         'ai_sayGlobal': '', 'ai_sayGlobalAt': -999.0,
         'ai_msRX': d(0.0), 'ai_msRY': d(0.0),
         'wm_fieldCV': d(sc.get('fieldCV', 0.0)),
@@ -390,6 +392,12 @@ def make_natives(env, noise=0.0):
         'GetOwningPlayer': lambda h: env['_ptOwner'].get(h, 1),
         'IsPlayerAlly': lambda a, b: (a, b) in env.get('_allies', ()) or (b, a) in env.get('_allies', ()),
         'AI_Noise': lambda amp: noise,
+        # PLAYTEST 13. Difficulty is now an ERROR RATE, which makes selection
+        # stochastic. The scenario table is deliberately deterministic ("noise
+        # disabled so selection is deterministic"), so the error rate is zeroed
+        # by default on exactly the same grounds and driven explicitly by the
+        # difficulty section, which is the only place it is under test.
+        'AI_ErrorRate': lambda pid: env.get('_errorRate', 0.0),
         # gate state is read off the live unit type in the real module; here it
         # comes from the scenario, so the ROUTING logic under test stays the
         # code read from for-ai.j
@@ -1121,8 +1129,12 @@ ORDER_GUARDS = [
      r'function AI_MicroEnum\b.*?call AI_TryOrder\('),
     ('the defensive response routes through AI_TryOrder',
      r'function AI_RespondEnum\b.*?call AI_TryOrder\('),
-    ('AI_SendArmy arms the budget before enumerating',
-     r'function AI_SendArmy\b.*?set ai_budget = AI_ORDER_SLICE.*?call ForGroup\('),
+    # SQUID GAME STEAL #2: the budget is now opened ONCE PER TICK rather than
+    # once per dispatch, so the shape is a call rather than an assignment.
+    ('AI_SendArmy opens the tick budget before enumerating',
+     r'function AI_SendArmy\b.*?call AI_OpenBudget\(pid\).*?call ForGroup\('),
+    ('the budget is opened per TICK, not per dispatch',
+     r'function AI_OpenBudget\b(?:(?!\nendfunction)[\s\S])*?if ai_budgetTick\[pid\] == ai_tickSeq then\s*\n\s*return'),
     ('AI_MicroPlayer arms the budget before enumerating',
      r'function AI_MicroPlayer\b.*?set ai_budget = AI_MICRO_SLICE.*?call ForGroup\('),
     ('players are phase-offset so they do not all think on one tick',
@@ -2304,6 +2316,249 @@ def watchdog():
     return 1 if fails else 0
 
 
+def pacing():
+    """PLAYTEST 13 -- Squid Game steals 1 and 2, MEASURED on the real functions.
+
+    The order-economy section above is a MODEL: it reads the constants from
+    source and simulates issuance. That was honest for comparing slice sizes,
+    but it cannot see either of these changes, because both live inside
+    functions the model does not execute. So this measures the shipped
+    AI_NeedsOrder / AI_TryOrder / AI_OpenBudget directly, and reports the
+    before/after that the model cannot.
+    """
+    print('\n' + '=' * 78)
+    print('PLAYTEST 13 -- pacing: the inertia gate and a load-normalised budget')
+    print('=' * 78)
+    fails = 0
+
+    UNITS, TICKS, DISPATCHES = 70, 40, 3
+
+    def measure(funcs, inertia=True, per_tick=True):
+        """Drive the REAL order path for TICKS ticks, DISPATCHES dispatches each."""
+        env = make_env(dict(role='barb', army=7000.0))
+        env['ai_seed'] = CONSTS['AI_SEED_DEFAULT']
+        issued = []
+        nat = make_natives(env, 0.0)
+        state = {'busy': {}}
+        nat['GetHandleId'] = lambda u: u
+        nat['GetUnitCurrentOrder'] = lambda u: state['busy'].get(u, 0)
+        nat['IssuePointOrder'] = lambda u, o, x, y: issued.append(u)
+        nat['IssueTargetOrder'] = lambda u, o, t: issued.append(u)
+        nat['SaveInteger'] = lambda ht, a, b, v: env['_ht'].__setitem__((a, b), v)
+        nat['SaveReal'] = lambda ht, a, b, v: env['_ht'].__setitem__((a, b), v)
+        nat['LoadInteger'] = lambda ht, a, b: env['_ht'].get((a, b), 0)
+        nat['LoadReal'] = lambda ht, a, b: env['_ht'].get((a, b), 0.0)
+        if not inertia:
+            nat['AI_Chance'] = lambda p: False        # pre-fix: never leave a busy unit alone
+        it = Interp(funcs, CONSTS, env, nat)
+        per_tick_counts = []
+        for t in range(TICKS):
+            env['ai_now'] = float(t)
+            env['ai_tickSeq'] = t + 1
+            before = len(issued)
+            for dispatch in range(DISPATCHES):
+                if per_tick:
+                    it.run('AI_OpenBudget', [0])
+                else:
+                    env['ai_issued'] = 0                # pre-fix: per DISPATCH
+                    env['ai_budget'] = CONSTS['AI_ORDER_SLICE']
+                for u in range(UNITS):
+                    # destination drifts, so the memory alone would re-order
+                    it.run('AI_TryOrder', [u, CONSTS['AI_ORD_ATTACKP'],
+                                           100.0 * t + 37.0 * dispatch, 0.0, None])
+            for u in issued[before:]:
+                state['busy'][u] = 1                    # ordered units are now busy
+            per_tick_counts.append(len(issued) - before)
+        return len(issued), max(per_tick_counts), len(issued) / float(TICKS)
+
+    tot_new, peak_new, mean_new = measure(FUNCS)
+    tot_old, peak_old, mean_old = measure(FUNCS, inertia=False, per_tick=False)
+
+    print('  measured on the SHIPPED order path: %d units, %d ticks, %d dispatches/tick'
+          % (UNITS, TICKS, DISPATCHES))
+    print('  %-38s %10s %12s' % ('', 'peak/tick', 'mean/tick'))
+    print('  %-38s %10d %12.1f' % ('before (per-dispatch, no inertia)', peak_old, mean_old))
+    print('  %-38s %10d %12.1f' % ('after  (per-tick + inertia gate)', peak_new, mean_new))
+    if mean_new > 0:
+        print('  %-38s %10s %11.1fx' % ('reduction', '', mean_old / mean_new))
+
+    ok = peak_old > CONSTS['AI_ORDER_SLICE']
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL: the pre-fix path really did spend %d orders in one '
+          'tick, more than one slice of %d -- the budget scaled with dispatches'
+          % ('PASS' if ok else 'FAIL', peak_old, CONSTS['AI_ORDER_SLICE']))
+
+    ok = peak_new <= CONSTS['AI_ORDER_SLICE']
+    fails += 0 if ok else 1
+    print('  %s LOAD-NORMALISED: the shipped path never exceeds ONE slice per tick '
+          '(%d <= %d) however many dispatches run'
+          % ('PASS' if ok else 'FAIL', peak_new, CONSTS['AI_ORDER_SLICE']))
+
+    ok = mean_new < mean_old
+    fails += 0 if ok else 1
+    print('  %s the measured mean FELL (%.1f -> %.1f per tick)'
+          % ('PASS' if ok else 'FAIL', mean_old, mean_new))
+
+    # the inertia gate on its own, isolated from the budget change
+    _, _, mean_budget_only = measure(FUNCS, inertia=False, per_tick=True)
+    ok = mean_new < mean_budget_only
+    fails += 0 if ok else 1
+    print('  %s the INERTIA GATE contributes on its own (%.1f with budget only -> '
+          '%.1f with both)' % ('PASS' if ok else 'FAIL', mean_budget_only, mean_new))
+
+    # an IDLE unit is never left alone: the gate is about churn, not silence
+    env = make_env(dict(role='barb'))
+    env['ai_seed'] = CONSTS['AI_SEED_DEFAULT']
+    nat = make_natives(env, 0.0)
+    nat['GetHandleId'] = lambda u: u
+    nat['GetUnitCurrentOrder'] = lambda u: 0            # idle
+    nat['LoadInteger'] = lambda ht, a, b: 0
+    nat['LoadReal'] = lambda ht, a, b: 0.0
+    it = Interp(FUNCS, CONSTS, env, nat)
+    ok = all(it.run('AI_NeedsOrder', [u, CONSTS['AI_ORD_MOVE'], 500.0, 0.0, 0]) is True
+             for u in range(40))
+    fails += 0 if ok else 1
+    print('  %s an IDLE unit is ALWAYS re-decided -- the gate controls churn, and a '
+          'unit doing nothing is not churn' % ('PASS' if ok else 'FAIL'))
+
+    # a busy unit is mostly left alone, at about the documented rate
+    env = make_env(dict(role='barb'))
+    env['ai_seed'] = CONSTS['AI_SEED_DEFAULT']
+    nat = make_natives(env, 0.0)
+    nat['GetHandleId'] = lambda u: u
+    nat['GetUnitCurrentOrder'] = lambda u: 1            # busy
+    nat['LoadInteger'] = lambda ht, a, b: 0
+    nat['LoadReal'] = lambda ht, a, b: 0.0
+    it = Interp(FUNCS, CONSTS, env, nat)
+    N = 400
+    kept = sum(1 for u in range(N)
+               if it.run('AI_NeedsOrder', [u, CONSTS['AI_ORD_MOVE'], 500.0, 0.0, 0]) is False)
+    frac = kept / float(N)
+    ok = abs(frac - CONSTS['AI_INERTIA_KEEP']) < 0.08
+    fails += 0 if ok else 1
+    print('  %s a BUSY unit is left alone %.0f%% of the time (target %.0f%%)'
+          % ('PASS' if ok else 'FAIL', 100 * frac, 100 * CONSTS['AI_INERTIA_KEEP']))
+
+    # the roll must consume the SEEDED stream: this is behaviour, not flavour
+    src = re.sub(r'//.*$', '', '\n'.join(FUNCS['AI_Chance'][1]), flags=re.M)
+    ok = 'AI_RandReal' in src
+    fails += 0 if ok else 1
+    print('  %s the inertia roll goes through the seeded stream -- it is a DECISION, '
+          'unlike the cosmetic line picker' % ('PASS' if ok else 'FAIL'))
+
+    # ---- STEAL #3: latency between noticing and acting --------------------
+    def threat_over_time(pid, waits):
+        sc = dict(role='barb', threat=900.0, garrison=200.0, asset=1.0, army=600.0)
+        env = make_env(sc)
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        out = []
+        for w in waits:
+            env['ai_now'] = 300.0 + w
+            it.run('AI_SetFlags', [pid])
+            out.append(bool(env['ai_ifThreat'][pid]))
+        return out
+
+    seq = threat_over_time(0, [0.0, 0.5, 1.0, 30.0])
+    ok = seq[0] is False and seq[-1] is True
+    fails += 0 if ok else 1
+    print('  %s a threat is NOTICED before it is acted on: %s over 0.0/0.5/1.0/30.0s'
+          % ('PASS' if ok else 'FAIL', seq))
+
+    # THE ORTHOGONAL DAMPER: a transient cannot reverse a campaign
+    sc = dict(role='barb', threat=900.0, garrison=200.0, asset=1.0, army=600.0)
+    env = make_env(sc)
+    it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+    it.run('AI_SetFlags', [0])                      # spike noticed
+    env['wm_threat'] = {0: 0.0}                     # ... and gone again
+    env['ai_now'] = 301.0
+    it.run('AI_SetFlags', [0])
+    env['wm_threat'] = {0: 900.0}                   # it comes back
+    env['ai_now'] = 302.0
+    it.run('AI_SetFlags', [0])
+    ok = env['ai_ifThreat'][0] is False
+    fails += 0 if ok else 1
+    print('  %s A TRANSIENT SPIKE CANNOT REVERSE A CAMPAIGN -- the notice clock '
+          'restarts when the threat lapses. Orthogonal to the playtest-12 '
+          'hysteresis: that raises the bar, this requires it to STAY crossed'
+          % ('PASS' if ok else 'FAIL'))
+
+    # but the capital emergency is never blunted by latency
+    sc = dict(role='rome', threat=1.0, garrison=800.0, asset=1.0, army=2000.0,
+              capThreat=True)
+    env = make_env(sc)
+    it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+    it.run('AI_SetFlags', [0])
+    ok = env['ai_ifThreat'][0] is True
+    fails += 0 if ok else 1
+    print('  %s ... and a capital under assault still fires on the FIRST tick -- '
+          'latency must not blunt the emergency either'
+          % ('PASS' if ok else 'FAIL'))
+
+    # factions do not all turn in unison
+    env = make_env(dict(role='barb'))
+    it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+    env['ai_diff'] = {p: CONSTS['AI_NORMAL'] for p in range(12)}
+    reacts = {it.run('AI_React', [p]) for p in range(12)}
+    ok = len(reacts) >= 3
+    fails += 0 if ok else 1
+    print('  %s twelve factions have %d distinct reaction times, so they do not turn '
+          'in unison' % ('PASS' if ok else 'FAIL', len(reacts)))
+
+    # ---- STEAL #4: difficulty is an error rate, not material --------------
+    def err(diff):
+        env = make_env(dict(role='barb'))
+        env['ai_diff'] = {0: diff}
+        nat = make_natives(env, 0.0)
+        del nat['AI_ErrorRate']              # interpret the REAL function here
+        it = Interp(FUNCS, CONSTS, env, nat)
+        return it.run('AI_ErrorRate', [0]), it.run('AI_React', [0])
+
+    e_easy, r_easy = err(CONSTS['AI_EASY'])
+    e_norm, r_norm = err(CONSTS['AI_NORMAL'])
+    e_hard, r_hard = err(CONSTS['AI_HARD'])
+    ok = e_easy > e_norm > e_hard and r_easy > r_norm > r_hard
+    fails += 0 if ok else 1
+    print('  %s difficulty is COMPETENCE: error %.2f/%.2f/%.2f and reaction '
+          '%.1f/%.1f/%.1fs across easy/normal/hard'
+          % ('PASS' if ok else 'FAIL', e_easy, e_norm, e_hard, r_easy, r_norm, r_hard))
+
+    # the error picks a REAL but worse objective, never nothing
+    def pick(rate):
+        sc = dict(role='barb', army=900.0, points=[
+            dict(kind=CONSTS['AI_PK_CITY'], x=900.0, y=0.0, owner=5),
+            dict(kind=CONSTS['AI_PK_CP'], x=6000.0, y=0.0, owner=5)])
+        env = make_env(sc)
+        env['ai_seed'] = CONSTS['AI_SEED_DEFAULT']
+        env['_errorRate'] = rate
+        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        return [it.run('AI_BestTarget', [0]) for _ in range(60)]
+
+    clean = set(pick(0.0))
+    ok = len(clean) == 1
+    fails += 0 if ok else 1
+    print('  %s at error rate 0 the choice is deterministic (%s)'
+          % ('PASS' if ok else 'FAIL', clean))
+
+    erring = pick(0.5)
+    ok = len(set(erring)) == 2 and -1 not in erring
+    fails += 0 if ok else 1
+    print('  %s at a high error rate it picks a REAL but worse objective, never '
+          'nothing (%s)' % ('PASS' if ok else 'FAIL', sorted(set(erring))))
+
+    # the MATERIAL knob stays present, labelled and at zero
+    body = re.sub(r'//.*$', '', TEXT, flags=re.M)
+    sets = re.findall(r'set ai_handicap\[[^\]]+\]\s*=\s*([0-9.]+)', body)
+    ok = bool(sets) and all(abs(float(v) - 1.0) < 1e-9 for v in sets)
+    fails += 0 if ok else 1
+    print('  %s the MATERIAL knob is present, labelled and at ZERO (handicap %s) -- '
+          'Squid Game is the shipped precedent that avoiding it is viable'
+          % ('PASS' if ok else 'FAIL', sorted(set(sets))))
+
+    print('%s: the AI acts at a constant rate and stops arguing with itself'
+          % ('PASS' if not fails else 'FAIL'))
+    return 1 if fails else 0
+
+
 def oscillation():
     """PLAYTEST 12 -- "East Rome just runs around its capital", diagnosed by the
     AI's own two chat lines:
@@ -2332,6 +2587,8 @@ def oscillation():
         env = make_env(sc)
         env['ai_msGarRef'] = {0: garRef}
         it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        it.run('AI_SetFlags', [0])
+        env['ai_now'] = env['ai_now'] + 2.0 * it.run('AI_React', [0])
         it.run('AI_SetFlags', [0])
         return env['ai_ifThreat'][0]
 
@@ -3835,6 +4092,11 @@ def missions():
                   fieldCV=fcv, fieldEnemy=fecv)
         env = make_env(sc)
         it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+        # PLAYTEST 13: noticing and acting are no longer the same instant. The
+        # flag is observed, the reaction window is allowed to pass, and it is
+        # observed again -- which is what the AI itself now does.
+        it.run('AI_SetFlags', [0])
+        env['ai_now'] = env['ai_now'] + 2.0 * it.run('AI_React', [0])
         it.run('AI_SetFlags', [0])
         return bool(env['ai_ifThreat'][0]), bool(env['ai_ifRetreat'][0])
 
@@ -5171,6 +5433,7 @@ def main():
     rc |= no_cheating()
     rc |= watchdog()
     rc |= oscillation()
+    rc |= pacing()
     rc |= perimeter()
     rc |= partition()
     rc |= congestion()

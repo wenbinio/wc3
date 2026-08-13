@@ -2984,3 +2984,107 @@ a silent one is not. That is now a design constraint, not a flourish.
 
 Playable **19,076,161**. Trace **563 assertions, 0 FAILs**; `npm test` 620
 pass; validate-map 191/192 with 152 warnings (parity).
+
+---
+
+## §28 Pacing, from Squid Game
+
+Its thesis, which is the point: **that map spends its complexity budget on
+pacing, not on decisions**, and reads as competent while making one- and
+two-bit decisions. We have 580 assertions and an AI the owner watches jog
+around its capital.
+
+### 28.1 Two bugs caught on the way in, both worth more than the feature
+
+**A shipped infinite recursion.** My own bulk edit rewrote the two lines
+*inside* `AI_OpenBudget`, so it called itself. **pjass passed it** — recursion
+is legal JASS — and the trace did not see it because nothing exercised the
+budget path. It surfaced only because the new measurement drove the real
+function and got zero orders. A measurement that executes shipped code found
+what a parser and 563 structural assertions could not.
+
+**`AI_Rand` was degenerate in the harness.** `ai_seed / 127773` is integer
+division in JASS and float division in Python, so `trace.py` was running a
+sequence that repeated 0.978 forever. **Every probabilistic assertion measured
+through the interpreter was reading a fake stream.** Rewritten in the
+`R2I(I2R(a)/I2R(b))` form already used for the formation slots — identical
+under both, and the game's behaviour is unchanged. This is the third appearance
+of the integer-division trap; it is now in the two places that draw numbers.
+
+### 28.2 Steal #1 — the inertia gate
+
+`Game6AI`: re-decide freely for an **idle** unit; for a **busy** one, re-decide
+only 25% of the time. Two lines, and it composes with the per-unit last-order
+memory rather than replacing it — the memory says *this order is unchanged*,
+the gate says *even if it changed, you are already doing something sensible*.
+Volume is the budget's job; **churn** is the gate's.
+
+The roll consumes the seeded stream, deliberately: this is a decision, unlike
+the cosmetic line picker, which must not (gotcha 29/30).
+
+### 28.3 Steal #2 — a load-normalised budget
+
+`Game5AI` computes `2.0 / N` and moves one bot per tick, so its action rate is
+constant. Ours was constant per **dispatch**, and there are five dispatch sites
+— march, raid, respond, naval, watchdog — each of which reset the counter. A
+tick that marched *and* raided *and* answered a threat spent three full slices.
+The budget now opens **once per player per tick**; later dispatches inherit
+what is left, and the playtest-9 rotating window decides who gets it.
+
+### 28.4 Measured, not modelled
+
+The existing order-economy figure (74.4/s) is a **model** that reads constants
+from source and simulates issuance. It cannot see either change, because both
+live inside functions it does not execute. So the claim is measured on the
+shipped `AI_NeedsOrder`/`AI_TryOrder`/`AI_OpenBudget`, 70 units × 40 ticks ×
+3 dispatches:
+
+| | peak/tick | mean/tick |
+|---|---:|---:|
+| before (per-dispatch, no inertia) | **72** | **22.8** |
+| after (per-tick + inertia gate) | **24** | **15.4** |
+
+Peak is now hard-capped at one slice however many dispatches run, and the
+inertia gate contributes independently (19.3 with the budget change alone →
+15.4 with both). A busy unit is left alone **76%** of the time against a 75%
+target; an idle unit is **always** re-decided.
+
+### 28.5 Steal #3 — pacing as a property
+
+There is now a deliberate latency between **noticing** and **acting**, varying
+per faction (four distinct reaction times across twelve factions, and scaled by
+difficulty). Two payoffs, and the second is the one that matters: it reads as a
+person deciding, and it is an **orthogonal damper on the oscillation class** —
+a reversal that must survive a latency window cannot fire on a transient. It
+sits beside the playtest-12 hysteresis rather than replacing it: **hysteresis
+raises the bar, latency requires the bar to stay crossed.** Asserted: a spike
+that lapses and returns does not reverse a campaign.
+
+The capital emergency is exempt and fires on the first tick. Latency must not
+blunt it any more than hysteresis was allowed to.
+
+### 28.6 Steal #4 — difficulty as an error rate
+
+Competence is now the dial: error rate (0.35 / 0.15 / 0.05) and reaction speed
+(4 / 2 / 1 s) across easy/normal/hard. The error is injected at the **decision**
+— an erring faction picks a real but worse objective, never nothing — rather
+than at execution. **The material knob stays present, labelled and at zero**
+(`ai_handicap` 1.0, asserted). The owner authorised material cheating as a last
+resort and said we should avoid it; Squid Game is the shipped precedent that
+avoiding it is viable.
+
+### 28.7 OPEN DESIGN QUESTION FOR THE OWNER — not implemented
+
+Squid Game carries **three handicaps in the player's favour**: a worse trait
+roll for bots, a higher fumble rate specifically when a human is on the other
+end, and a structural exemption for human-containing pairs. **It is deliberately
+tuned to lose gracefully.**
+
+That is a product decision about what Fall of Rome's AI is *for* — a sparring
+partner that should be beatable, or an opponent that should try to win — and it
+is the owner's call, not ours. Nothing has been built either way. If the answer
+is "it should lose gracefully", the error rate added in §28.6 is already the
+right lever and only needs a human-adjacency term.
+
+Playable **19,079,014**. Trace **580 assertions, 0 FAILs**; `npm test` 620
+pass; validate-map 191/192 with 152 warnings (parity).
