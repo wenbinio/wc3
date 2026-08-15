@@ -161,7 +161,32 @@ def report(events, csv_path=None):
         print('   %-13s %+8d' % (FACTION[p], net))
     total = sum(n for _, n in rows)
     print('   %-13s %+8d   across %d AI faction(s) that changed at all'
-          % ('TOTAL', total, moved))
+          % ('TOTAL (AI)', total, moved))
+    # PRODUCT DECISION 2026-08-14: this AI is an opponent that tries to WIN, so
+    # the success criterion is no longer "the scoreboard moved" but "can it
+    # contest a human". The human's factions are therefore REPORTED -- clearly
+    # labelled, and excluded from every AI-only aggregate above -- so a run
+    # answers "did the AI keep pace with the person playing?" rather than
+    # merely "did the AI do something?".
+    if ai_mask is not None:
+        humans = [p for p in sorted(FACTION) if not is_ai.get(p)]
+        if humans:
+            print('\n-- THE HUMAN(S), for comparison (NOT counted above) ' + '-' * 20)
+            h_total = 0
+            for p in humans:
+                net = owned.get(p, 0)
+                h_total += net
+                print('   %-13s %+8d   (human)' % (FACTION[p], net))
+            print('   %-13s %+8d' % ('TOTAL (human)', h_total))
+            best_ai = max((n for _, n in rows), default=0)
+            if h_total > 0 and best_ai <= 0:
+                print('   VERDICT: the human gained ground and no AI faction did.')
+            elif best_ai >= h_total and h_total >= 0:
+                print('   VERDICT: at least one AI faction kept pace with the human'
+                      ' (%+d vs %+d).' % (best_ai, h_total))
+            else:
+                print('   VERDICT: the human out-gained every AI faction'
+                      ' (%+d vs best AI %+d).' % (h_total, best_ai))
     if moved == 0:
         print('   VERDICT: no AI faction gained or lost a single point. The map did not move.')
 
@@ -419,6 +444,29 @@ def selftest():
     print('   %s NEGATIVE CONTROL: an exit without the census fields reports NO '
           'percentage rather than inventing one' % ('PASS' if ok_poor else 'FAIL'))
 
+    print('\n-- human comparison (product decision 2026-08-14) ' + '-' * 23)
+    # AI mask 4094 = every slot but player 0, so the Huns are the human.
+    HUM = '\n'.join(['FORAI|1|0|0|run|12345|4094|0',
+                      'FORAI|1|1|10|ctrl|5|0|3|0|1|0|0',
+                      'FORAI|1|2|20|ctrl|6|0|3|1|1|1|0'])
+    h_ev, _, _ = parse(extract(HUM))
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        report(h_ev)
+    htxt = buf.getvalue()
+    ok_hum = ('THE HUMAN(S)' in htxt and 'VERDICT:' in htxt
+              and 'TOTAL (AI)' in htxt)
+    print('   %s the human faction is reported for comparison and labelled'
+          % ('PASS' if ok_hum else 'FAIL'))
+    # Narrowed to the TERRITORY table itself: the header line "NOT AI
+    # (excluded...)" legitimately names the human, so a whole-block search
+    # would fail for the wrong reason.
+    terr = htxt.split('-- TERRITORY')[1].split('-- THE HUMAN(S)')[0]
+    ok_excl = 'Huns' not in terr and 'TOTAL (AI)' in terr
+    print('   %s NEGATIVE CONTROL: the human is absent from the AI-only TERRITORY '
+          'table%s' % ('PASS' if ok_excl else 'FAIL',
+                       '' if ok_excl else ' -- ' + repr(terr[:120])))
+
     print('\n-- supply reporting (playtest 11) ' + '-' * 39)
     SUP = '\n'.join(['FORAI|1|0|0|run|12345|4095|0',
                      'FORAI|1|1|1|sup|1|1|0|100|0|100|0',
@@ -508,7 +556,7 @@ def selftest():
 
     ok = (bool(p2) and any('duplicate' in x for x in p3)
           and got9 and got2 and clean and far_ok and ok_rich and ok_poor
-          and ok_mus and ok_good and ok_sup and ok_raise and ok_odd)
+          and ok_mus and ok_good and ok_sup and ok_raise and ok_odd and ok_hum and ok_excl)
     print('\n%s: self-test' % ('PASS' if ok else 'FAIL'))
     return 0 if ok else 1
 

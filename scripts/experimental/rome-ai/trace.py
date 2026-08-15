@@ -1985,6 +1985,164 @@ def early_barbarians():
     return 1 if fails else 0
 
 
+def plays_to_win():
+    """PRODUCT DECISION, 2026-08-14: this AI is an OPPONENT THAT TRIES TO WIN,
+    not a sparring partner tuned to be beatable.
+
+    DESIGN 28.7 put the question to the owner after the Squid Game
+    decomposition found that map carries three deliberate concessions to the
+    human. The answer was the opposite policy, so the concessions must not
+    merely be absent today -- their absence is asserted, in the same spirit as
+    no_cheating(), so that a later small mercy cannot go unnoticed.
+
+    Three things are pinned here:
+      1. nothing in the module branches on whether an opponent is HUMAN;
+      2. the difficulty dial is a SELECTOR -- hard is strongest on every axis
+         and nothing degrades at hard;
+      3. the material knob is still zero, and the banner still says so."""
+    print('\n' + '=' * 78)
+    print('PRODUCT DECISION -- an opponent that plays to win')
+    print('=' * 78)
+    fails = 0
+
+    def strip_code(text):
+        out, instr, i = [], False, 0
+        while i < len(text):
+            c = text[i]
+            if instr:
+                out.append(c)
+                instr = not (c == '"')
+                i += 1
+                continue
+            if c == '"':
+                instr = True
+                out.append(c)
+                i += 1
+                continue
+            if text.startswith('//', i):
+                j = text.find('\n', i)
+                i = j if j >= 0 else len(text)
+                continue
+            out.append(c)
+            i += 1
+        return ''.join(out)
+
+    body = strip_code(TEXT)
+
+    # ---- 1. no branch on human-ness --------------------------------------
+    # Reading the controller is legitimate in exactly three places: deciding
+    # which slots WE play, and addressing chat to people. Everything else would
+    # be the AI treating a human opponent differently from a computer one.
+    ALLOWED = {'AI_Broadcast', 'AI_BroadcastAllies', 'AI_SlotIsVacant',
+               'AI_TelAI', 'AI_TelScanControl', 'AI_TelScanSupply'}
+    offenders = []
+    cur = None
+    for line in body.split('\n'):
+        m = re.match(r'function\s+(\w+)', line)
+        if m:
+            cur = m.group(1)
+        if re.search(r'GetPlayerController|MAP_CONTROL_USER|PLAYER_SLOT_STATE', line):
+            if cur not in ALLOWED:
+                offenders.append((cur, line.strip()[:60]))
+    ok = not offenders
+    fails += 0 if ok else 1
+    print('  %s NO DECISION BRANCHES ON WHETHER AN OPPONENT IS HUMAN -- the controller '
+          'is read only to pick our own slots and to address chat%s'
+          % ('PASS' if ok else 'FAIL', '' if ok else ' -- ' + repr(offenders[:2])))
+
+    # NEGATIVE CONTROL: the sweep must see a real read, or it proves nothing
+    ok = any(f in body for f in ('GetPlayerController',))
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL: the sweep DOES find controller reads (in the allowed '
+          'functions), so it is scanning real code' % ('PASS' if ok else 'FAIL'))
+
+    # and it would catch one placed in a decision function
+    fake = strip_code('function AI_ScoreExpand takes nothing returns nothing\n'
+                      '    if GetPlayerController(p) == MAP_CONTROL_USER then\n'
+                      '    endif\nendfunction\n')
+    caught, cur = [], None
+    for line in fake.split('\n'):
+        m = re.match(r'function\s+(\w+)', line)
+        if m:
+            cur = m.group(1)
+        if 'GetPlayerController' in line and cur not in ALLOWED:
+            caught.append(cur)
+    ok = caught == ['AI_ScoreExpand']
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL: an injected controller read inside a SCORER is '
+          'detected' % ('PASS' if ok else 'FAIL'))
+
+    # no mercy-shaped vocabulary anywhere
+    MERCY = ['isHuman', 'IsPlayerHuman', 'humanAdjacent', 'ai_mercy', 'AI_MERCY',
+             'ai_fumble', 'AI_FUMBLE']
+    hit = [w for w in MERCY if w in body]
+    ok = not hit
+    fails += 0 if ok else 1
+    print('  %s no mercy mechanism exists by name (%d checked)%s'
+          % ('PASS' if ok else 'FAIL', len(MERCY), '' if ok else ': ' + ', '.join(hit)))
+
+    # ---- 2. the dial is a SELECTOR: hard is strongest on every axis -------
+    def axis(fn, diff):
+        env = make_env(dict(role='barb'))
+        env['ai_diff'] = {0: diff}
+        nat = make_natives(env, 0.0)
+        nat.pop('AI_ErrorRate', None)
+        return Interp(FUNCS, CONSTS, env, nat).run(fn, [0])
+
+    E, N, H = CONSTS['AI_EASY'], CONSTS['AI_NORMAL'], CONSTS['AI_HARD']
+    # every axis where LOWER is stronger
+    for fn, label in (('AI_ThinkPeriod', 'thinks more often'),
+                      ('AI_NoiseAmp', 'decides less randomly'),
+                      ('AI_ErrorRate', 'errs less often'),
+                      ('AI_React', 'reacts faster')):
+        e, n, h = axis(fn, E), axis(fn, N), axis(fn, H)
+        ok = h <= n <= e and h < e
+        fails += 0 if ok else 1
+        print('  %s hard %s: %s %.2f / %.2f / %.2f (easy/normal/hard)'
+              % ('PASS' if ok else 'FAIL', label, fn, e, n, h))
+
+    # nothing is switched OFF at hard: the only difficulty gate in the micro
+    # path skips work at EASY, never at hard
+    micro = '\n'.join(FUNCS['AI_MicroPlayer'][1])
+    gates = re.findall(r'if ai_diff\[pid\] == (\w+) then\s*\n\s*return', micro)
+    ok = all(g == 'AI_EASY' for g in gates)
+    fails += 0 if ok else 1
+    print('  %s nothing is disabled at HARD -- the only early return in the micro path '
+          'is gated on EASY (%s)' % ('PASS' if ok else 'FAIL', gates or 'none'))
+
+    # the DEFAULT is a real opponent, not a polite one
+    ok = axis('AI_ErrorRate', N) <= 0.20 and axis('AI_React', N) <= 3.0
+    fails += 0 if ok else 1
+    print('  %s the DEFAULT (normal) is a setting a competent player should meet: '
+          '%.2f error, %.1fs reaction'
+          % ('PASS' if ok else 'FAIL', axis('AI_ErrorRate', N), axis('AI_React', N)))
+
+    m = re.search(r'set ai_diff\[pid\]\s*=\s*(\w+)', body)
+    dflt = re.search(r'set ai_diff\[pid\]\s*=\s*difficulty', body) is not None
+    ok = dflt
+    fails += 0 if ok else 1
+    print('  %s difficulty is set once from a named parameter, so there is one place '
+          'to audit it' % ('PASS' if ok else 'FAIL'))
+
+    # ---- 3. material stays zero, and the banner still says so -------------
+    sets = re.findall(r'set ai_handicap\[[^\]]+\]\s*=\s*([0-9.]+)', body)
+    ok = bool(sets) and all(abs(float(v) - 1.0) < 1e-9 for v in sets)
+    fails += 0 if ok else 1
+    print('  %s material advantage is still ZERO (handicap %s) and stays LAST resort'
+          % ('PASS' if ok else 'FAIL', sorted(set(sets))))
+
+    claims = re.findall(r'AI_Broadcast\("FoR-AI ([^"]*)"\)', TEXT)
+    hb = [c for c in claims if 'handicap' in c.lower()]
+    ok = bool(hb) and 'NONE' in hb[0]
+    fails += 0 if ok else 1
+    print('  %s ... and the banner still discloses it: "%s"'
+          % ('PASS' if ok else 'FAIL', (hb[0][:60] + '...') if hb else 'MISSING'))
+
+    print('%s: it plays to win, fairly, and cannot quietly be made merciful'
+          % ('PASS' if not fails else 'FAIL'))
+    return 1 if fails else 0
+
+
 def watchdog():
     """PLAYTEST 11 -- the owner: "is there a more robust way to do this?"
 
@@ -5431,6 +5589,7 @@ def main():
     rc |= early_barbarians()
     rc |= voice()
     rc |= no_cheating()
+    rc |= plays_to_win()
     rc |= watchdog()
     rc |= oscillation()
     rc |= pacing()

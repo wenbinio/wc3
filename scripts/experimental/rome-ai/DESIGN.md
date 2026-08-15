@@ -3088,3 +3088,85 @@ right lever and only needs a human-adjacency term.
 
 Playable **19,079,014**. Trace **580 assertions, 0 FAILs**; `npm test` 620
 pass; validate-map 191/192 with 152 warnings (parity).
+
+---
+
+## §29 PRODUCT DECISION, 2026-08-14 — an opponent that tries to win
+
+DESIGN §28.7 put the question to the owner after the Squid Game decomposition
+found that map carries three deliberate concessions to the human. **The answer
+is the opposite policy**: Fall of Rome's AI is an **opponent that tries to
+win**, not a sparring partner tuned to be beatable.
+
+This settles several things that had been drifting, and it is dated because it
+is a product decision rather than a bug fix.
+
+### 29.1 No player-favouring handicaps, ever
+
+Squid Game's three concessions — a worse trait roll for bots, an elevated
+fumble rate specifically when a human is on the other end, and a structural
+exemption for human-containing pairs — are **correct for that map and wrong for
+this one**. The human-adjacency term flagged in §28.7 as the easy lever is
+**deliberately not built**.
+
+Their absence is now **asserted**, in the same spirit as `no_cheating()`:
+`plays_to_win()` sweeps the comment- and string-stripped source and fails if any
+function outside a three-name allowlist reads `GetPlayerController`,
+`MAP_CONTROL_USER` or `PLAYER_SLOT_STATE`. The allowlist is exactly the
+legitimate uses — `AI_SlotIsVacant` (which slots *we* play) and
+`AI_Broadcast`/`AI_BroadcastAllies` (addressing chat to people) — plus the
+telemetry scanners. A mercy-vocabulary sweep runs beside it.
+
+Negative-controlled twice: the sweep is shown to find the real controller reads
+in the allowed functions, and an injected read inside `AI_ScoreExpand` is
+detected. **This forecloses the failure where someone later adds a small mercy
+and nobody notices.**
+
+### 29.2 The error dial is a selector, not a governor
+
+It exists so a player can choose a weaker opponent, not so the AI is politely
+bad by default. Audited across every axis that varies with difficulty:
+
+| axis | easy | normal | hard |
+|---|---:|---:|---:|
+| `AI_ThinkPeriod` (s) | 8.0 | 4.0 | **2.0** |
+| `AI_NoiseAmp` | 0.25 | 0.10 | **0.03** |
+| `AI_ErrorRate` | 0.35 | 0.15 | **0.05** |
+| `AI_React` (s) | 4.0 | 2.0 | **1.0** |
+
+Hard is strongest on all four and **nothing is switched off at hard** — the
+only difficulty early-return in the micro path is gated on `AI_EASY`, which was
+already deliberate (round 3: difficulty makes an AI play worse, it does not make
+it throw away an irreplaceable hero). All of that is asserted, including that
+the **default** is a setting a competent player should meet.
+
+### 29.3 Material cheating stays at zero and stays last
+
+"Tries to win" is **not** licence to reach for it — it raises the bar on
+competence instead. Squid Game is the existence proof that a well-paced honest
+AI reads as strong. `ai_handicap` is 1.0, asserted, and the banner still
+discloses it; if it ever moves, the banner must move with it.
+
+### 29.4 The success criterion escalates
+
+"The scoreboard moves" was right for an AI that did nothing. For an AI that
+plays to win the measure is **whether it can contest a human**, so
+`parse-events.py` now reports the human's factions **alongside** the AI ones —
+clearly labelled, excluded from every AI-only aggregate, and followed by a
+verdict line comparing the best AI faction's net territory against the human's.
+A run now answers *"did the AI keep pace with the person playing?"* rather than
+*"did the AI do something?"*. A reporting change only: the AI-slot bitmask was
+already in the `run` header.
+
+### 29.5 What this costs the backlog
+
+The fog-contract decision now carries more weight. An opponent that plays to
+win should be **honest about what it can see**, and the banner currently
+discloses a split — observed enemy strength is fog-gated, territorial ownership
+is not — that we have not yet decided whether to close in code. That remains
+queued, but it is no longer merely a tidiness item.
+
+Trace **594 assertions, 0 FAILs**; `npm test` 620 pass; validate-map 191/192
+with 152 warnings (parity). **The module itself is unchanged this round** —
+"no player-favouring handicaps" is implemented by building nothing, and the
+work is the assertion that keeps it that way.
