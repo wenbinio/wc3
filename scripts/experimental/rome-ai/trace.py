@@ -271,6 +271,9 @@ def make_env(sc):
         'ai_exCount': __import__('collections').defaultdict(int),
         'ai_exCV': __import__('collections').defaultdict(float),
         'ai_marchDX': 0.0, 'ai_marchDY': 0.0, 'ai_congN': 0, '_ht': {},
+        # cached filter boolexprs (playtest 14): opaque handles to the harness
+        'ai_bxOwnUnit': 'ai_bxOwnUnit',        'ai_bxFriendly': 'ai_bxFriendly',        'ai_bxGate': 'ai_bxGate',        'ai_bxRegister': 'ai_bxRegister',        'ai_bxShip': 'ai_bxShip',        'ai_bxYard': 'ai_bxYard',        'ai_bxTrainer': 'ai_bxTrainer',        'ai_bxRaze': 'ai_bxRaze',        'ai_bxPlot': 'ai_bxPlot',        'ai_bxForge': 'ai_bxForge',        'ai_bxHero': 'ai_bxHero',        'ai_bxMicro': 'ai_bxMicro',        'ai_bxHome': 'ai_bxHome',
+
         'ai_vSeq': __import__('collections').defaultdict(int),
         'ai_echoMsg': __import__('collections').defaultdict(str),
         'ai_echoAt': __import__('collections').defaultdict(float), 'ai_echoHead': 0,
@@ -1981,6 +1984,173 @@ def early_barbarians():
                                             100.0 * need_early, 100.0 * need_late))
 
     print('%s: the opening is aggressive, and the aggression expires on a clock'
+          % ('PASS' if not fails else 'FAIL'))
+    return 1 if fails else 0
+
+
+def leaks():
+    """PLAYTEST 14 -- "Also crashes midway."
+
+    Midway is the diagnostic: it loads, it plays for many minutes, then it
+    dies. That is something ACCUMULATING, which in Warcraft III means handles.
+
+    FOUND: Filter(function X) allocates a boolexpr on every call and JASS never
+    reclaims it. The module called it 23 times across 13 filters, almost all
+    inside per-tick enumerations -- twelve factions thinking every 2-8 seconds,
+    several enums per think. That is tens of thousands of leaked handles over a
+    match. Each filter is now built ONCE at init.
+
+    These are STANDING assertions rather than a one-off audit, because a leak
+    is invisible to every other gate we have: pjass parses it, validate-map
+    passes it, and 594 behavioural assertions never allocate anything."""
+    print('\n' + '=' * 78)
+    print('PLAYTEST 14 -- nothing accumulates: the mid-game crash class')
+    print('=' * 78)
+    fails = 0
+
+    def strip_code(text):
+        out, instr, i = [], False, 0
+        while i < len(text):
+            c = text[i]
+            if instr:
+                out.append(c)
+                instr = not (c == '"')
+                i += 1
+                continue
+            if c == '"':
+                instr = True
+                out.append(c)
+                i += 1
+                continue
+            if text.startswith('//', i):
+                j = text.find('\n', i)
+                i = j if j >= 0 else len(text)
+                continue
+            out.append(c)
+            i += 1
+        return ''.join(out)
+
+    body = strip_code(TEXT)
+
+    # ---- 1. every allocation is matched ----------------------------------
+    # Word-boundary anchored: a substring match counts GetPlayerStartLocation(
+    # as an allocation, which is how a leak audit reports a leak that is not
+    # there and then gets ignored.
+    PAIRS = [(r'CreateGroup\s*\(', r'DestroyGroup\s*\(', 'groups'),
+             (r'(?<![A-Za-z0-9_])Location\s*\(', r'RemoveLocation\s*\(', 'locations'),
+             (r'CreateForce\s*\(', r'DestroyForce\s*\(', 'forces'),
+             (r'(?<![A-Za-z0-9_])Rect\s*\(', r'RemoveRect\s*\(', 'rects')]
+    for a, b, label in PAIRS:
+        na, nb = len(re.findall(a, body)), len(re.findall(b, body))
+        ok = na == nb
+        fails += 0 if ok else 1
+        print('  %s %s: %d allocated, %d destroyed'
+              % ('PASS' if ok else 'FAIL', label, na, nb))
+
+    # ---- 2. THE CRASH: boolexprs are built once, not per call -------------
+    # Filter() cannot be paired with a destroy the way a group can, because the
+    # boolexpr must outlive the call. The invariant is therefore positional:
+    # it may appear ONLY in the one-time init.
+    cur, offenders = None, []
+    for line in body.split('\n'):
+        m = re.match(r'function\s+(\w+)', line)
+        if m:
+            cur = m.group(1)
+        if 'Filter(function' in line and cur != 'AI_Init':
+            offenders.append((cur, line.strip()[:50]))
+    ok = not offenders
+    fails += 0 if ok else 1
+    print('  %s every Filter() is built ONCE in AI_Init -- a per-call Filter is the '
+          'classic mid-game handle leak%s'
+          % ('PASS' if ok else 'FAIL', '' if ok else ' -- ' + repr(offenders[:3])))
+
+    n_init = sum(1 for line in body.split('\n') if 'Filter(function' in line)
+    ok = n_init >= 13
+    fails += 0 if ok else 1
+    print('  %s ... and all %d filters are actually built (a null boolexpr enumerates '
+          'EVERYTHING, which would be a silent behaviour change)'
+          % ('PASS' if ok else 'FAIL', n_init))
+
+    # every cached boolexpr global is assigned before any use
+    globs = re.findall(r'boolexpr\s+(ai_bx\w+)', body)
+    assigned = set(re.findall(r'set\s+(ai_bx\w+)\s*=', body))
+    missing = [g for g in globs if g not in assigned]
+    ok = bool(globs) and not missing
+    fails += 0 if ok else 1
+    print('  %s all %d cached filters are assigned%s'
+          % ('PASS' if ok else 'FAIL', len(globs),
+             '' if ok else ': ' + ', '.join(missing)))
+
+    # NEGATIVE CONTROL: the sweep must catch a Filter placed in a hot path
+    fake = strip_code('function AI_ScanWorld takes nothing returns nothing\n'
+                      '    call ForGroup(g, Filter(function AI_OwnUnitFilter))\n'
+                      'endfunction\n')
+    cur, caught = None, []
+    for line in fake.split('\n'):
+        m = re.match(r'function\s+(\w+)', line)
+        if m:
+            cur = m.group(1)
+        if 'Filter(function' in line and cur != 'AI_Init':
+            caught.append(cur)
+    ok = caught == ['AI_ScanWorld']
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL: a Filter() reintroduced into a per-tick function IS '
+          'detected' % ('PASS' if ok else 'FAIL'))
+
+    # ---- 3. arrays stay inside the JASS 8192 bound -----------------------
+    JASS_ARRAY_MAX = 8192
+    for a, b, label in ((CONSTS['AI_MAX_PLAYERS'], CONSTS['AI_MAX_POINTS'], 'pid*MAX_POINTS+i'),
+                        (CONSTS['AI_MAX_PLAYERS'], CONSTS['AI_MAX_CLUSTERS'], 'pid*MAX_CLUSTERS+k'),
+                        (CONSTS['AI_MAX_PLAYERS'], 8, 'pid*8+reason')):
+        ok = a * b <= JASS_ARRAY_MAX
+        fails += 0 if ok else 1
+        print('  %s %-22s %d x %d = %d <= %d'
+              % ('PASS' if ok else 'FAIL', label, a, b, a * b, JASS_ARRAY_MAX))
+
+    # and the registries are actually capped, or the bound above is decorative
+    ok = ('ai_pointCount < AI_MAX_POINTS' in body
+          and 'ai_gateCount < AI_MAX_GATES' in body)
+    fails += 0 if ok else 1
+    print('  %s registration is capped, so the bound above is enforced rather than '
+          'assumed' % ('PASS' if ok else 'FAIL'))
+
+    # ---- 4. no unbounded growth in the telemetry buffer ------------------
+    ok = 'ai_telCount < AI_TEL_MAX' in body and 'ai_telTrunc' in body
+    fails += 0 if ok else 1
+    print('  %s the telemetry buffer is bounded at %d lines and marks truncation '
+          'rather than growing' % ('PASS' if ok else 'FAIL', CONSTS['AI_TEL_MAX']))
+
+    # ---- 5. no direct self-recursion (pjass accepts it) ------------------
+    cur, rec = None, []
+    for line in body.split('\n'):
+        m = re.match(r'function\s+(\w+)', line)
+        if m:
+            cur = m.group(1)
+            continue
+        if cur and re.search(r'\b%s\s*\(' % re.escape(cur), line):
+            rec.append(cur)
+    ok = not rec
+    fails += 0 if ok else 1
+    print('  %s no function calls itself -- pjass accepts direct recursion and 594 '
+          'behavioural assertions did not see the AI_OpenBudget one%s'
+          % ('PASS' if ok else 'FAIL', '' if ok else ': ' + ', '.join(rec)))
+
+    fake = strip_code('function AI_Loop takes nothing returns nothing\n'
+                      '    call AI_Loop()\nendfunction\n')
+    cur, caught = None, []
+    for line in fake.split('\n'):
+        m = re.match(r'function\s+(\w+)', line)
+        if m:
+            cur = m.group(1)
+            continue
+        if cur and re.search(r'\b%s\s*\(' % re.escape(cur), line):
+            caught.append(cur)
+    ok = caught == ['AI_Loop']
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL: an injected self-call IS detected'
+          % ('PASS' if ok else 'FAIL'))
+
+    print('%s: nothing in the module accumulates over a match'
           % ('PASS' if not fails else 'FAIL'))
     return 1 if fails else 0
 
@@ -5589,6 +5759,7 @@ def main():
     rc |= early_barbarians()
     rc |= voice()
     rc |= no_cheating()
+    rc |= leaks()
     rc |= plays_to_win()
     rc |= watchdog()
     rc |= oscillation()

@@ -276,6 +276,28 @@
     integer array    ai_exCount              // census by exclusion reason
     real    array    ai_exCV
     integer          ai_dispPid      = 0
+    // PLAYTEST 14 -- THE CRASH. Filter(function X) ALLOCATES A BOOLEXPR on
+    // every call and JASS never reclaims it. This module called it 23 times
+    // across 13 filters, almost all of them inside per-tick enumerations: with
+    // twelve factions thinking every 2-8 seconds and several enums per think,
+    // that is tens of thousands of leaked handles over a match, and the handle
+    // table running dry is the classic Warcraft III MID-GAME crash. Which is
+    // exactly the symptom: it loads, it plays, and then it dies.
+    //
+    // Each filter is now built ONCE at init and referenced thereafter.
+    boolexpr         ai_bxOwnUnit    = null
+    boolexpr         ai_bxFriendly   = null
+    boolexpr         ai_bxGate       = null
+    boolexpr         ai_bxRegister   = null
+    boolexpr         ai_bxShip       = null
+    boolexpr         ai_bxYard       = null
+    boolexpr         ai_bxTrainer    = null
+    boolexpr         ai_bxRaze       = null
+    boolexpr         ai_bxPlot       = null
+    boolexpr         ai_bxForge      = null
+    boolexpr         ai_bxHero       = null
+    boolexpr         ai_bxMicro      = null
+    boolexpr         ai_bxHome       = null
     integer          ai_congN        = 0
     integer array    ai_budgetTick           // last tick this player's budget opened
     integer          ai_tickSeq      = 0     // think-tick counter
@@ -2257,11 +2279,11 @@ function AI_BuildRegistry takes nothing returns nothing
     local group g = CreateGroup()
     local integer i = 0
     local integer j = 0
-    call GroupEnumUnitsInRect(g, GetPlayableMapRect(), Filter(function AI_RegisterFilter))
+    call GroupEnumUnitsInRect(g, GetPlayableMapRect(), ai_bxRegister)
     call ForGroup(g, function AI_RegisterEnum)
     call DestroyGroup(g)
     set g = CreateGroup()
-    call GroupEnumUnitsInRect(g, GetPlayableMapRect(), Filter(function AI_GateFilter))
+    call GroupEnumUnitsInRect(g, GetPlayableMapRect(), ai_bxGate)
     call ForGroup(g, function AI_GateEnum)
     call DestroyGroup(g)
     set g = null
@@ -2793,7 +2815,7 @@ function AI_ValidateField takes integer pid returns boolean
     set ai_snapBY = ai_homeY[pid]
     set ai_curP = ai_p[pid]
     set g = CreateGroup()
-    call GroupEnumUnitsOfPlayer(g, ai_p[pid], Filter(function AI_OwnUnitFilter))
+    call GroupEnumUnitsOfPlayer(g, ai_p[pid], ai_bxOwnUnit)
     call ForGroup(g, function AI_SnapEnum)
     call DestroyGroup(g)
     set g = null
@@ -2900,7 +2922,7 @@ function AI_ScanWorld takes integer pid returns nothing
     // whole-army CV and centroid
     set ai_curP = p
     set g = CreateGroup()
-    call GroupEnumUnitsOfPlayer(g, p, Filter(function AI_OwnUnitFilter))
+    call GroupEnumUnitsOfPlayer(g, p, ai_bxOwnUnit)
     call AI_ResetAcc()
     call ForGroup(g, function AI_SumOwnArmy)
     call DestroyGroup(g)
@@ -2940,7 +2962,7 @@ function AI_ScanWorld takes integer pid returns nothing
 
     // garrison = own CV near home
     set g = CreateGroup()
-    call GroupEnumUnitsInRange(g, ai_homeX[pid], ai_homeY[pid], AI_HOME_R, Filter(function AI_OwnUnitFilter))
+    call GroupEnumUnitsInRange(g, ai_homeX[pid], ai_homeY[pid], AI_HOME_R, ai_bxOwnUnit)
     call AI_ResetAcc()
     call ForGroup(g, function AI_SumOwnArmy)
     call DestroyGroup(g)
@@ -3242,7 +3264,7 @@ function AI_Congestion takes integer pid, real x, real y returns integer
     local group g = CreateGroup()
     set ai_curP = ai_p[pid]
     set ai_congN = 0
-    call GroupEnumUnitsInRange(g, x, y, AI_CONG_R, Filter(function AI_FriendlyFilter))
+    call GroupEnumUnitsInRange(g, x, y, AI_CONG_R, ai_bxFriendly)
     call ForGroup(g, function AI_CongEnum)
     call DestroyGroup(g)
     set g = null
@@ -4296,7 +4318,7 @@ function AI_SendArmy takes integer pid, real x, real y, integer kind, unit tgt r
         set ai_exCV[pid*8 + k] = 0.0
         set k = k + 1
     endloop
-    call GroupEnumUnitsOfPlayer(g, ai_p[pid], Filter(function AI_OwnUnitFilter))
+    call GroupEnumUnitsOfPlayer(g, ai_p[pid], ai_bxOwnUnit)
     call ForGroup(g, function AI_SendEnum)
     call DestroyGroup(g)
     set g = null
@@ -4344,7 +4366,7 @@ function AI_Respond takes integer pid, real x, real y, real budget returns nothi
     set ai_respCV = 0.0
     set ai_respBudget = budget
     call AI_OpenBudget(pid)
-    call GroupEnumUnitsOfPlayer(g, ai_p[pid], Filter(function AI_OwnUnitFilter))
+    call GroupEnumUnitsOfPlayer(g, ai_p[pid], ai_bxOwnUnit)
     call ForGroup(g, function AI_RespondEnum)
     call DestroyGroup(g)
     set g = null
@@ -4595,7 +4617,7 @@ function AI_FindShip takes integer pid returns unit
     local group g = CreateGroup()
     set ai_curP = ai_p[pid]
     set ai_navPick = null
-    call GroupEnumUnitsOfPlayer(g, ai_p[pid], Filter(function AI_ShipFilter))
+    call GroupEnumUnitsOfPlayer(g, ai_p[pid], ai_bxShip)
     call ForGroup(g, function AI_NavPickEnum)
     call DestroyGroup(g)
     set g = null
@@ -4606,7 +4628,7 @@ function AI_FindYard takes integer pid returns unit
     local group g = CreateGroup()
     set ai_curP = ai_p[pid]
     set ai_navPick = null
-    call GroupEnumUnitsOfPlayer(g, ai_p[pid], Filter(function AI_YardFilter))
+    call GroupEnumUnitsOfPlayer(g, ai_p[pid], ai_bxYard)
     call ForGroup(g, function AI_NavPickEnum)
     call DestroyGroup(g)
     set g = null
@@ -4628,7 +4650,7 @@ function AI_CountLoaded takes integer pid returns integer
     local group g = CreateGroup()
     set ai_curP = ai_p[pid]
     set ai_navLoaded = 0
-    call GroupEnumUnitsOfPlayer(g, ai_p[pid], Filter(function AI_OwnUnitFilter))
+    call GroupEnumUnitsOfPlayer(g, ai_p[pid], ai_bxOwnUnit)
     call ForGroup(g, function AI_LoadedEnum)
     call DestroyGroup(g)
     set g = null
@@ -4747,7 +4769,7 @@ function AI_NavStep takes integer pid, integer t returns boolean
             set ai_orderY = GetUnitY(ship)
             call AI_OpenBudget(pid)
             set g = CreateGroup()
-            call GroupEnumUnitsOfPlayer(g, ai_p[pid], Filter(function AI_OwnUnitFilter))
+            call GroupEnumUnitsOfPlayer(g, ai_p[pid], ai_bxOwnUnit)
             call ForGroup(g, function AI_BoardEnum)
             call DestroyGroup(g)
             set g = null
@@ -4846,7 +4868,7 @@ function AI_HeroMicro takes integer pid returns nothing
     set ai_curP = ai_p[pid]
     set ai_curPid = pid
     set ai_heroUnit = null
-    call GroupEnumUnitsOfPlayer(g, ai_p[pid], Filter(function AI_OwnUnitFilter))
+    call GroupEnumUnitsOfPlayer(g, ai_p[pid], ai_bxOwnUnit)
     call ForGroup(g, function AI_OwnHeroEnum)
     call DestroyGroup(g)
     set g = null
@@ -4955,7 +4977,7 @@ function AI_FindTrainer takes integer pid returns unit
     local group g = CreateGroup()
     set ai_curP = ai_p[pid]
     set ai_trainer = null
-    call GroupEnumUnitsOfPlayer(g, ai_p[pid], Filter(function AI_TrainerFilter))
+    call GroupEnumUnitsOfPlayer(g, ai_p[pid], ai_bxTrainer)
     call ForGroup(g, function AI_PickTrainer)
     call DestroyGroup(g)
     set g = null
@@ -5039,7 +5061,7 @@ function AI_Raid takes integer pid returns nothing
     set ai_issued = 0
     set ai_budget = AI_RAID_SLICE
     set g = CreateGroup()
-    call GroupEnumUnitsOfPlayer(g, ai_p[pid], Filter(function AI_OwnUnitFilter))
+    call GroupEnumUnitsOfPlayer(g, ai_p[pid], ai_bxOwnUnit)
     call ForGroup(g, function AI_RaidEnum)
     call DestroyGroup(g)
     set g = null
@@ -5128,7 +5150,7 @@ function AI_TryRaze takes integer pid returns nothing
     set ai_razeUnit = null
     set ai_razeDist = 0.0
     set ai_razeCount = 0
-    call GroupEnumUnitsOfPlayer(g, ai_p[pid], Filter(function AI_RazeFilter))
+    call GroupEnumUnitsOfPlayer(g, ai_p[pid], ai_bxRaze)
     call ForGroup(g, function AI_RazeEnum)
     call DestroyGroup(g)
     set g = null
@@ -5164,7 +5186,7 @@ function AI_UpgradePlots takes integer pid returns nothing
     local group g = CreateGroup()
     set ai_curP = ai_p[pid]
     set ai_curPid = pid
-    call GroupEnumUnitsOfPlayer(g, ai_p[pid], Filter(function AI_PlotFilter))
+    call GroupEnumUnitsOfPlayer(g, ai_p[pid], ai_bxPlot)
     call ForGroup(g, function AI_UpgradePlotEnum)
     call DestroyGroup(g)
     set g = null
@@ -5193,7 +5215,7 @@ endfunction
 function AI_DoResearch takes integer pid returns nothing
     local group g = CreateGroup()
     set ai_curP = ai_p[pid]
-    call GroupEnumUnitsOfPlayer(g, ai_p[pid], Filter(function AI_ForgeFilter))
+    call GroupEnumUnitsOfPlayer(g, ai_p[pid], ai_bxForge)
     call ForGroup(g, function AI_ResearchEnum)
     call DestroyGroup(g)
     set g = null
@@ -5240,7 +5262,7 @@ function AI_TryLocalSupport takes integer pid returns nothing
     set ai_orderTarget = ai_pt[best]
     set ai_curP = ai_p[pid]
     set g = CreateGroup()
-    call GroupEnumUnitsOfPlayer(g, ai_p[pid], Filter(function AI_HeroFilter))
+    call GroupEnumUnitsOfPlayer(g, ai_p[pid], ai_bxHero)
     call ForGroup(g, function AI_CastSupportEnum)
     call DestroyGroup(g)
     set g = null
@@ -5455,7 +5477,7 @@ function AI_MusterFrac takes integer pid returns real
     set ai_curPid = pid
     // the pool this muster is actually about
     set g = CreateGroup()
-    call GroupEnumUnitsInRange(g, ai_msRX[pid], ai_msRY[pid], AI_MUSTER_GATHER, Filter(function AI_OwnUnitFilter))
+    call GroupEnumUnitsInRange(g, ai_msRX[pid], ai_msRY[pid], AI_MUSTER_GATHER, ai_bxOwnUnit)
     call AI_ResetAcc()
     call ForGroup(g, function AI_SumOwnArmy)
     call DestroyGroup(g)
@@ -5466,7 +5488,7 @@ function AI_MusterFrac takes integer pid returns real
     endif
     // how much of it has closed up
     set g = CreateGroup()
-    call GroupEnumUnitsInRange(g, ai_msRX[pid], ai_msRY[pid], AI_MUSTER_R, Filter(function AI_OwnUnitFilter))
+    call GroupEnumUnitsInRange(g, ai_msRX[pid], ai_msRY[pid], AI_MUSTER_R, ai_bxOwnUnit)
     call AI_ResetAcc()
     call ForGroup(g, function AI_SumOwnArmy)
     call DestroyGroup(g)
@@ -5807,7 +5829,7 @@ function AI_MicroPlayer takes integer pid returns nothing
         endif
     endif
     set g = CreateGroup()
-    call GroupEnumUnitsOfPlayer(g, ai_p[pid], Filter(function AI_MicroFilter))
+    call GroupEnumUnitsOfPlayer(g, ai_p[pid], ai_bxMicro)
     call ForGroup(g, function AI_MicroEnum)
     call DestroyGroup(g)
     set g = null
@@ -5955,7 +5977,7 @@ function AI_ResolveHome takes integer pid returns nothing
     set ai_accN = 0
     set ai_homeX[pid] = GetStartLocationX(GetPlayerStartLocation(ai_p[pid]))
     set ai_homeY[pid] = GetStartLocationY(GetPlayerStartLocation(ai_p[pid]))
-    call GroupEnumUnitsOfPlayer(g, ai_p[pid], Filter(function AI_HomeFilter))
+    call GroupEnumUnitsOfPlayer(g, ai_p[pid], ai_bxHome)
     call ForGroup(g, function AI_HomeEnum)
     call DestroyGroup(g)
     set g = null
@@ -6122,6 +6144,19 @@ endfunction
 function AI_Init takes nothing returns nothing
     local integer pid = 0
     local integer n = 0
+    set ai_bxOwnUnit = Filter(function AI_OwnUnitFilter)
+    set ai_bxFriendly = Filter(function AI_FriendlyFilter)
+    set ai_bxGate = Filter(function AI_GateFilter)
+    set ai_bxRegister = Filter(function AI_RegisterFilter)
+    set ai_bxShip = Filter(function AI_ShipFilter)
+    set ai_bxYard = Filter(function AI_YardFilter)
+    set ai_bxTrainer = Filter(function AI_TrainerFilter)
+    set ai_bxRaze = Filter(function AI_RazeFilter)
+    set ai_bxPlot = Filter(function AI_PlotFilter)
+    set ai_bxForge = Filter(function AI_ForgeFilter)
+    set ai_bxHero = Filter(function AI_HeroFilter)
+    set ai_bxMicro = Filter(function AI_MicroFilter)
+    set ai_bxHome = Filter(function AI_HomeFilter)
     set ai_ht = InitHashtable()
     loop
         exitwhen pid >= AI_MAX_PLAYERS

@@ -3170,3 +3170,80 @@ Trace **594 assertions, 0 FAILs**; `npm test` 620 pass; validate-map 191/192
 with 152 warnings (parity). **The module itself is unchanged this round** —
 "no player-favouring handicaps" is implemented by building nothing, and the
 work is the assertion that keeps it that way.
+
+---
+
+## §30 "Also crashes midway" — a boolexpr leak
+
+**Found by static audit in the first pass, and it fits the symptom exactly.**
+
+`Filter(function X)` **allocates a boolexpr on every call**, and JASS never
+reclaims it. The module called it **23 times across 13 filters**, almost all
+inside per-tick enumerations. Twelve factions thinking every 2–8 s, several
+enumerations per think, thirty minutes: tens of thousands of leaked handles.
+Handle-table exhaustion is the classic Warcraft III **mid-game** crash — it
+loads, it plays, and then it dies, which is precisely what "midway" describes.
+
+Each filter is now built **once** in `AI_Init` into a cached `boolexpr` global
+and referenced thereafter. The built script carries exactly 13 `Filter(` calls,
+all in init, down from 36.
+
+**Why nothing else caught it.** pjass parses a leak happily; validate-map
+passes; and 610 behavioural assertions never allocate anything, because the
+harness stubs the enumeration natives. A leak is invisible to every gate we had
+— which is the argument for the standing assertions below rather than a
+one-off audit.
+
+### 30.1 The other three hypotheses, checked and cleared
+
+| hypothesis | verdict |
+|---|---|
+| **Unbounded array growth** | **Clear.** The widest index is `pid*AI_MAX_POINTS+i` = 12 × 400 = **4800**, under the JASS 8192 cap; clusters 192, census 96. Registration is *capped* (`ai_pointCount < AI_MAX_POINTS`), so the bound is enforced rather than assumed. The corridor grid is a hashtable, not an array. |
+| **Further self-recursion** | **Clear.** A static sweep finds no function that calls itself; the `AI_OpenBudget` fix is complete. |
+| **Telemetry volume** | **Clear.** The buffer is bounded at `AI_TEL_MAX` = 400 lines and sets an explicit truncation flag rather than growing. |
+
+### 30.2 Standing assertions, negative-controlled
+
+`leaks()` now runs with everything else:
+
+* allocation/destroy balance for groups, locations, forces and rects — **29
+  groups allocated, 29 destroyed**;
+* `Filter()` may appear **only** in `AI_Init`, since a boolexpr must outlive
+  its call and so cannot be paired with a destroy — the invariant is
+  positional. Negative-controlled: a `Filter()` reintroduced into a per-tick
+  function is detected;
+* all 13 cached filters are actually **assigned** — a null boolexpr enumerates
+  *everything*, which would be a silent behaviour change rather than a crash;
+* the array bounds above, as arithmetic;
+* the telemetry bound;
+* no direct self-recursion, negative-controlled with an injected self-call.
+
+One audit-quality note worth keeping: the first version of the allocation
+counter matched `GetPlayerStartLocation(` as a `Location(` allocation and
+reported two phantom leaks. **A leak audit that cries wolf is how a real leak
+gets ignored** — the patterns are now word-boundary anchored.
+
+### 30.3 The recurring class, named as a checklist item
+
+The coordinator's observation from the previous round deserves recording as
+standing practice, because it is now three instances:
+
+> **Does taking this action change the quantity that authorised it?**
+
+* the garrison collapsed when the army left, cancelling the march (§27.3);
+* the world signature always changed at Roman scale, so the watchdog never
+  fired (§27.2);
+* an army in transit is spread out, which is suspected of re-triggering the
+  spread test (§31, next).
+
+**If yes, freeze the input at commitment time** — which is exactly the fix that
+worked for the recall loop. This belongs in the design review of every new
+measure, not in a postmortem after each one.
+
+Playable **19,080,766**. Trace **610 assertions, 0 FAILs**; `npm test` 620
+pass; validate-map 191/192 with 152 warnings (parity).
+
+**Still queued, in order**: the march/muster interaction (§31), the naval ferry
+(audit defect 5, now the binding constraint for two factions), then S3
+displacement, remote defence, order acknowledgement and the fog-contract
+decision.
