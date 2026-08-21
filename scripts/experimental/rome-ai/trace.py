@@ -271,6 +271,9 @@ def make_env(sc):
         'ai_exCount': __import__('collections').defaultdict(int),
         'ai_exCV': __import__('collections').defaultdict(float),
         'ai_marchDX': 0.0, 'ai_marchDY': 0.0, 'ai_congN': 0, '_ht': {},
+        'ai_kindAt': __import__('collections').defaultdict(float),
+        'ai_rateAt': __import__('collections').defaultdict(float), 'ai_rateHead': 0,
+        'ai_muteBarb': d(False), 'ai_muteRome': d(False),
         # cached filter boolexprs (playtest 14): opaque handles to the harness
         'ai_bxOwnUnit': 'ai_bxOwnUnit',        'ai_bxFriendly': 'ai_bxFriendly',        'ai_bxGate': 'ai_bxGate',        'ai_bxRegister': 'ai_bxRegister',        'ai_bxShip': 'ai_bxShip',        'ai_bxYard': 'ai_bxYard',        'ai_bxTrainer': 'ai_bxTrainer',        'ai_bxRaze': 'ai_bxRaze',        'ai_bxPlot': 'ai_bxPlot',        'ai_bxForge': 'ai_bxForge',        'ai_bxHero': 'ai_bxHero',        'ai_bxMicro': 'ai_bxMicro',        'ai_bxHome': 'ai_bxHome',
 
@@ -1988,6 +1991,179 @@ def early_barbarians():
     return 1 if fails else 0
 
 
+def chatter():
+    """PLAYTEST 15 -- "fix the voices, and let barbarian chatter be turned off".
+
+    The screenshots show the VARIATION working -- three factions, three
+    phrasings -- and the problem one level up: the same event firing for four
+    factions at once, repeatedly, for an event not worth announcing.
+
+    Three fixes, and what was CUT versus KEPT is recorded here so it does not
+    get re-litigated:
+
+      CUT to telemetry: the centroid-validity correction (V_REGROUP). It is an
+      internal snap of an unwalkable mean onto real ground -- the AI clearing
+      its throat. No phrasing makes it player-facing.
+
+      KEPT, high tier: objectives chosen and taken, all four abort reasons, the
+      hero withdrawal, and goal changes. The abort lines are the REVERSALS, and
+      they earned their place -- "back. Constantinople comes first" diagnosed an
+      eight-round-old bug from two sentences (DESIGN 27.5).
+
+      KEPT, low tier: raid, muster formed/timeout, naval, gate, fallback,
+      posture. Real events, but the first to be dropped when over budget."""
+    print('\n' + '=' * 78)
+    print('PLAYTEST 15 -- chatter: fewer non-events, and a mute that spares the log')
+    print('=' * 78)
+    fails = 0
+
+    # ---- 1. the housekeeping line is gone from chat ----------------------
+    said = re.findall(r'call AI_SayK?\(pid,[^\n]*V_REGROUP', CODE)
+    ok = not said
+    fails += 0 if ok else 1
+    print('  %s the centroid correction no longer reaches chat in ANY phrasing'
+          % ('PASS' if ok else 'FAIL'))
+
+    ok = 'AI_Tel("snap"' in CODE
+    fails += 0 if ok else 1
+    print('  %s ... it is telemetered instead, so the diagnostic value is kept'
+          % ('PASS' if ok else 'FAIL'))
+
+    # every remaining chat site carries a kind and a tier
+    bare = re.findall(r'call AI_Say\(pid,', CODE)
+    ok = not bare
+    fails += 0 if ok else 1
+    print('  %s every chat site declares an event KIND and a value TIER (%d bare '
+          'calls left)' % ('PASS' if ok else 'FAIL', len(bare)))
+
+    # the reversals are still high tier -- they earned their place
+    highs = re.findall(r'call AI_SayK\(pid, (V_ABORT_\w+), (AI_TIER_\w+)', CODE)
+    ok = len(highs) == 4 and all(t == 'AI_TIER_HIGH' for _, t in highs)
+    fails += 0 if ok else 1
+    print('  %s all four ABORT reasons are HIGH tier -- the reversals are never the '
+          'thing that gets dropped (%d found)' % ('PASS' if ok else 'FAIL', len(highs)))
+
+    # ---- 2. suppression by KIND, not only by string ----------------------
+    def say_env(now=100.0):
+        env = make_env(dict(role='barb'))
+        env['ai_now'] = now
+        env['ai_talk'] = {i: True for i in range(12)}
+        env['ai_role'] = {i: CONSTS['AI_ROLE_BARB'] for i in range(12)}
+        env['ai_sayLast'] = {i: '' for i in range(12)}
+        env['ai_sayAt'] = {i: 0.0 for i in range(12)}
+        heard = []
+        nat = make_natives(env, 0.0)
+        nat['AI_BroadcastAllies'] = lambda pid, m: heard.append((pid, m))
+        nat['AI_Name'] = lambda pid: 'F%d' % pid
+        return env, Interp(FUNCS, CONSTS, env, nat), heard
+
+    KIND = CONSTS['V_FORMED']
+    env, it, heard = say_env()
+    it.run('AI_SayK', [0, KIND, CONSTS['AI_TIER_LOW'], 'too far apart. form up'])
+    it.run('AI_SayK', [1, KIND, CONSTS['AI_TIER_LOW'], 'too spread out. form up'])
+    it.run('AI_SayK', [2, KIND, CONSTS['AI_TIER_LOW'], 'we are strung out. close up'])
+    ok = len(heard) == 1
+    fails += 0 if ok else 1
+    print('  %s four factions, four PHRASINGS, one event: %d line(s) reach the player '
+          '-- the echo ring only caught identical strings'
+          % ('PASS' if ok else 'FAIL', len(heard)))
+
+    # NEGATIVE CONTROL: different KINDS are not suppressed
+    env, it, heard = say_env()
+    it.run('AI_SayK', [0, CONSTS['V_FORMED'], CONSTS['AI_TIER_LOW'], 'all here. move'])
+    it.run('AI_SayK', [1, CONSTS['V_TAKEN'], CONSTS['AI_TIER_HIGH'], 'that is a city taken'])
+    ok = len(heard) == 2
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL: DIFFERENT events still both speak (%d)'
+          % ('PASS' if ok else 'FAIL', len(heard)))
+
+    # and the window expires
+    env, it, heard = say_env()
+    it.run('AI_SayK', [0, KIND, CONSTS['AI_TIER_LOW'], 'all here. move'])
+    env['ai_now'] = 100.0 + CONSTS['AI_KIND_T'] + 1.0
+    it.run('AI_SayK', [1, KIND, CONSTS['AI_TIER_LOW'], 'ready. go'])
+    ok = len(heard) == 2
+    fails += 0 if ok else 1
+    print('  %s ... and the kind window expires after %.0fs rather than muting forever'
+          % ('PASS' if ok else 'FAIL', CONSTS['AI_KIND_T']))
+
+    # ---- 3. the global rate cap -----------------------------------------
+    env, it, heard = say_env()
+    for n in range(40):
+        env['ai_now'] = 100.0 + n * 0.5
+        env['ai_sayAt'] = {i: 0.0 for i in range(12)}
+        env['ai_kindAt'] = __import__('collections').defaultdict(float)
+        it.run('AI_SayK', [n % 12, CONSTS['V_RAID'], CONSTS['AI_TIER_LOW'],
+                           'raid line %d' % n])
+    ok = len(heard) <= CONSTS['AI_RATE_MAX']
+    fails += 0 if ok else 1
+    print('  %s a burst of 40 low-value lines in 20s is capped at %d (%d got through)'
+          % ('PASS' if ok else 'FAIL', CONSTS['AI_RATE_MAX'], len(heard)))
+
+    # high-tier lines are NOT dropped by the cap
+    env, it, heard = say_env()
+    for n in range(40):
+        env['ai_now'] = 100.0 + n * 0.5
+        env['ai_sayAt'] = {i: 0.0 for i in range(12)}
+        env['ai_kindAt'] = __import__('collections').defaultdict(float)
+        it.run('AI_SayK', [n % 12, CONSTS['V_ABORT_HOME'], CONSTS['AI_TIER_HIGH'],
+                           'reversal %d' % n])
+    ok = len(heard) > CONSTS['AI_RATE_MAX']
+    fails += 0 if ok else 1
+    print('  %s ... but HIGH-tier reversals are never dropped by it (%d through) -- '
+          'the cap sheds colour, not diagnosis'
+          % ('PASS' if ok else 'FAIL', len(heard)))
+
+    # ---- 4. the group mutes ---------------------------------------------
+    b = '\n'.join(FUNCS['AI_BroadcastAllies'][1])
+    ok = 'ai_muteBarb' in b and 'ai_muteRome' in b and 'ai_role' in b
+    fails += 0 if ok else 1
+    print('  %s the mute is applied per LISTENER at the broadcast, keyed on the '
+          "SPEAKER's side" % ('PASS' if ok else 'FAIL'))
+
+    ok = '"-aibarb"' in CODE and '"-airome"' in CODE
+    fails += 0 if ok else 1
+    print('  %s -aibarb and -airome both exist, and are symmetrical'
+          % ('PASS' if ok else 'FAIL'))
+
+    ok = 'aibarb mutes barbarian chatter' in TEXT
+    fails += 0 if ok else 1
+    print('  %s ... and are announced in the setup lines with the others'
+          % ('PASS' if ok else 'FAIL'))
+
+    ok = 'IsPlayerAlly' in b and 'ai_spy' in b
+    fails += 0 if ok else 1
+    print('  %s ally scoping and -aispy survive the mute work untouched'
+          % ('PASS' if ok else 'FAIL'))
+
+    # ---- 5. HARD CONSTRAINT: the machine channel is unaffected -----------
+    tel = '\n'.join(FUNCS['AI_Tel'][1])
+    banned = [w for w in ('ai_muteBarb', 'ai_muteRome', 'ai_talk', 'AI_RateSpent',
+                          'ai_kindAt', 'ai_rateAt', 'AI_EchoSeen', 'ai_sayAt')
+              if w in tel]
+    ok = not banned
+    fails += 0 if ok else 1
+    print('  %s NO mute, rate cap or chat gate is reachable from AI_Tel -- muting must '
+          'never make a game unanalysable%s'
+          % ('PASS' if ok else 'FAIL', '' if ok else ': ' + ', '.join(banned)))
+
+    # NEGATIVE CONTROL: that sweep would catch one
+    fake = 'function AI_Tel takes nothing returns nothing\n    if ai_talk[0] then\nendfunction'
+    ok = 'ai_talk' in fake
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL: the sweep detects a chat gate placed inside AI_Tel'
+          % ('PASS' if ok else 'FAIL'))
+
+    # telemetry emission must not sit behind a say
+    ok = not re.search(r'call AI_SayK?\([^\n]*\n\s*call AI_Tel\(', CODE)
+    fails += 0 if ok else 1
+    print('  %s no AI_Tel call is sequenced behind a chat line' % ('PASS' if ok else 'FAIL'))
+
+    print('%s: fewer lines, none of them housekeeping, and the log is untouched'
+          % ('PASS' if not fails else 'FAIL'))
+    return 1 if fails else 0
+
+
 def leaks():
     """PLAYTEST 14 -- "Also crashes midway."
 
@@ -3292,7 +3468,7 @@ def voice():
           % ('PASS' if ok else 'FAIL'))
 
     # ---- scoping is unchanged: twelve voices, not twelve leaks -----------
-    ssrc = '\n'.join(FUNCS['AI_Say'][1])
+    ssrc = '\n'.join(FUNCS['AI_SayK'][1])
     ok = 'AI_BroadcastAllies' in ssrc and 'AI_Broadcast(' not in ssrc and 'ai_talk' in ssrc
     fails += 0 if ok else 1
     print('  %s AI_Say still ally-scoped and ai_talk-gated -- twelve voices did not '
@@ -5291,8 +5467,13 @@ ROUND3_GUARDS = [
     ('our own hero is anchored to the formation on a short leash',
      r'AI_FindEnemyHero\(pid, wm_fieldX\[pid\], wm_fieldY\[pid\], AI_HERO_SOLO_R\)', True),
     # --- round 4: findings 4, 5, 8 ---------------------------------------
+    # PLAYTEST 15: the single exit moved into AI_SayK; AI_Say is now a thin
+    # wrapper. The invariant is unchanged -- allies only, never everyone -- so
+    # the guard follows the exit rather than the old function name.
     ('AI reports go to ALLIES only, never to everyone',
-     r'function AI_Say\b.*?call AI_BroadcastAllies\(pid, AI_Name\(pid\)', True),
+     r'function AI_SayK\b.*?call AI_BroadcastAllies\(pid, AI_Name\(pid\)', True),
+    ('AI_Say is a thin wrapper over AI_SayK, so there is ONE chat exit',
+     r'function AI_Say takes integer pid, string msg returns nothing\s*\n\s*call AI_SayK\(', True),
     ('the ally scope is an explicit IsPlayerAlly test per recipient',
      r'function AI_BroadcastAllies\b.*?if IsPlayerAlly\(Player\(i\), ai_p\[pid\]\) or ai_spy\[i\] then', True),
     ('observer mode is opt-in, per player, and never global',
@@ -5759,6 +5940,7 @@ def main():
     rc |= early_barbarians()
     rc |= voice()
     rc |= no_cheating()
+    rc |= chatter()
     rc |= leaks()
     rc |= plays_to_win()
     rc |= watchdog()

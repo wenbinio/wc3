@@ -3247,3 +3247,75 @@ pass; validate-map 191/192 with 152 warnings (parity).
 (audit defect 5, now the binding constraint for two factions), then S3
 displacement, remote defence, order acknowledgement and the fog-contract
 decision.
+
+---
+
+## §31 Chatter — the variation was fine, the events were not
+
+The owner's screenshots show the twelve-voice table **working**: three factions,
+three different phrasings. The problem was one level up — **the same event
+firing for four factions at once, repeatedly, for an event not worth
+announcing.**
+
+### 31.1 What was cut, and what was kept
+
+Recorded explicitly so it is not re-litigated.
+
+**CUT to telemetry only:**
+
+| line | why |
+|---|---|
+| `V_REGROUP` — "too far apart. form up" | It is the **centroid-validity correction**, not a muster: `AI_ValidateField` snapping an unwalkable mean onto real ground. Internal housekeeping — the AI clearing its throat. No phrasing makes it player-facing. Now emits a `snap` event, so the diagnostic value is fully preserved. |
+
+The playtest-7 edge-trigger was treating the symptom, and the line came back
+under new text. **The durable fix was the audit, not another edge-trigger.**
+
+**KEPT, high tier** (never dropped by the rate cap): objectives chosen and
+taken, **all four abort reasons**, hero withdrawal, goal changes. The aborts
+are the **reversals**, and they earned their place — `back. Constantinople
+comes first` diagnosed an eight-round-old bug from two sentences (§27.5).
+
+**KEPT, low tier** (first to be shed when over budget): raid, muster
+formed/timeout, naval, gate, fallback, posture.
+
+### 31.2 Suppression by event KIND, not only by string
+
+The echo ring catches the same **string** from two factions. Four factions
+saying the same **thing** in four different **ways** walked straight through
+it — exactly the screenshot. There is now a cross-faction window on the event
+kind (25 s): one faction's "form up" mutes the others' however they phrase it.
+Asserted with three phrasings collapsing to one line, and negative-controlled
+both ways (different kinds still speak; the window expires).
+
+### 31.3 A global rate cap
+
+With nine allied barbarians speaking for the full thirty minutes — they never
+unally on a timer — per-faction limits bound nothing a person actually reads.
+Total lines are capped at **10/minute across all speakers**, and **low-tier
+events are dropped first**. Asserted: a burst of 40 low-value lines in 20 s
+yields 10; the same burst of high-tier reversals yields all 40. **The cap sheds
+colour, never diagnosis.**
+
+### 31.4 The mutes
+
+`-aibarb` and `-airome`, per **listener**, applied at the broadcast and keyed on
+the **speaker's** side. The owner plays a barbarian and hears eight allies plus
+himself, so the useful switch is group-scoped; the Roman one is symmetrical for
+the same reason. `-aiquiet`/`-aitalk` remain the all-off switch, `-aispy` is
+untouched, and both new commands are announced in the setup lines.
+
+### 31.5 The hard constraints, asserted
+
+* **The `FORAI|` channel is untouched by any of this.** No mute, rate cap or
+  chat gate is reachable from `AI_Tel` — asserted by name against eight
+  symbols, and no `AI_Tel` call is sequenced behind a chat line. **Muting must
+  never make a game unanalysable.**
+* **Ally scoping survives.** `IsPlayerAlly` and `ai_spy` are still the gate.
+
+One structural note: the single chat exit moved into `AI_SayK`, and `AI_Say` is
+now a thin wrapper over it. Two round-3 source guards were pinned to `AI_Say`'s
+body and followed the exit rather than being weakened — plus a new guard that
+`AI_Say` **delegates**, so there stays exactly one exit.
+
+Playable **19,082,214**. Trace **628 assertions, 0 FAILs**; `npm test` 620
+pass; validate-map 191/192 with 152 warnings (parity).

@@ -310,6 +310,11 @@
     string  array    ai_echoMsg              // cross-faction echo ring (spec 6.2)
     real    array    ai_echoAt
     integer          ai_echoHead     = 0
+    real    array    ai_kindAt               // last time ANY faction said this kind
+    real    array    ai_rateAt               // ring of recent broadcast times
+    integer          ai_rateHead     = 0
+    boolean array    ai_muteBarb             // per LISTENER: mute barbarian chatter
+    boolean array    ai_muteRome             // per LISTENER: mute Roman chatter
     integer array    ai_sortieGate           // gate opened to let THIS army out
     real    array    ai_sortieAt             // when we opened it
     real             ai_marchDX      = 0.0   // unit vector along the march line
@@ -572,6 +577,23 @@
     constant integer AI_WD_STRIKES    = 2      // consecutive frozen windows
     constant real    AI_WD_GRID       = 400.0  // position quantisation
     constant real    AI_WD_CV         = 200.0  // field-CV bucket: a trickle is not movement
+    // PLAYTEST 15 -- CHATTER CONTROL. The echo ring catches the same STRING
+    // from two factions. Four factions saying the same THING in four different
+    // WAYS walked straight through it, which is exactly what the owner saw. So
+    // suppression is now by EVENT KIND as well, and there is a global cap on
+    // what any one player can be made to read -- nine allied barbarians speak
+    // for the whole thirty minutes (they never unally on a timer), so
+    // per-faction limits bound nothing a person actually reads.
+    constant real    AI_KIND_T        = 25.0   // one faction's kind mutes the others'
+    constant integer AI_RATE_MAX      = 10     // lines per minute, all speakers
+    constant real    AI_RATE_WINDOW   = 60.0
+    constant integer AI_RATE_RING     = 16
+    constant integer AI_TIER_HIGH     = 0      // decisions and reversals
+    constant integer AI_TIER_LOW      = 1      // housekeeping and colour
+    constant integer EVK_B            = 16     // tier B kinds live at 16..25
+    constant integer EVK_GOAL         = 32
+    constant integer EVK_POSTURE      = 33
+    constant integer EVK_MAX          = 40
     constant integer AI_ECHO_N        = 12
     constant real    AI_ECHO_T        = 20.0
     // voice event kinds -- indices match gen-voices.py A_KINDS / B_KINDS
@@ -1445,37 +1467,92 @@ function AI_BroadcastAllies takes integer pid, string msg returns nothing
         if GetPlayerSlotState(Player(i)) == PLAYER_SLOT_STATE_PLAYING and GetPlayerController(Player(i)) == MAP_CONTROL_USER then
             // an ally, or an observer who has asked to see everything
             if IsPlayerAlly(Player(i), ai_p[pid]) or ai_spy[i] then
-                call DisplayTimedTextToPlayer(Player(i), 0, 0, AI_SAY_TTL, msg)
+                // PLAYTEST 15: per-LISTENER group mutes. The owner plays a
+                // barbarian and therefore hears eight allies plus himself, so
+                // the useful switch is group-scoped rather than all-or-nothing.
+                // Symmetrical: a Roman can mute Romans on the same grounds.
+                // -aispy is unchanged and still overrides the ally scoping.
+                if ai_role[pid] == AI_ROLE_ROME then
+                    if not ai_muteRome[i] then
+                        call DisplayTimedTextToPlayer(Player(i), 0, 0, AI_SAY_TTL, msg)
+                    endif
+                else
+                    if not ai_muteBarb[i] then
+                        call DisplayTimedTextToPlayer(Player(i), 0, 0, AI_SAY_TTL, msg)
+                    endif
+                endif
             endif
         endif
         set i = i + 1
     endloop
 endfunction
 
-function AI_Say takes integer pid, string msg returns nothing
+// PLAYTEST 15. Three gates in front of the old ones, in increasing scope:
+// the per-faction repeat guard (unchanged), the cross-faction ECHO ring on the
+// exact string (unchanged), a cross-faction window on the EVENT KIND (new),
+// and a global rate cap on what one player can be made to read (new).
+//
+// None of this is reachable from AI_Tel. Muting is a CHAT concern; the FORAI|
+// stream records everything regardless, or a quiet game becomes an
+// unanalysable one.
+function AI_RateSpent takes nothing returns integer
+    local integer i = 0
+    local integer n = 0
+    loop
+        exitwhen i >= AI_RATE_RING
+        if ai_rateAt[i] > 0.0 and (ai_now - ai_rateAt[i]) < AI_RATE_WINDOW then
+            set n = n + 1
+        endif
+        set i = i + 1
+    endloop
+    return n
+endfunction
+
+function AI_SayK takes integer pid, integer kind, integer tier, string msg returns nothing
     if not ai_talk[pid] then
         return
+    endif
+    if msg == "" then
+        return                              // AI_LineB chose silence
     endif
     if msg == ai_sayLast[pid] then
         return                              // nothing changed; do not repeat
     endif
-    // Spec 6.2. The echo ring sits IN FRONT of the per-player guards above,
-    // not instead of them. An empty string is a deliberate outcome from
-    // AI_LineB when both variants collided -- silence is valid.
-    if msg == "" then
-        return
-    endif
     if AI_EchoSeen(msg) then
-        return
+        return                              // another faction just said THIS
+    endif
+    // ... or just said this KIND, however they phrased it. This is the gate the
+    // owner's screenshot needed: four factions, four phrasings, one event.
+    if kind >= 0 and kind < EVK_MAX then
+        if (ai_now - ai_kindAt[kind]) < AI_KIND_T then
+            return
+        endif
     endif
     if ai_now < ai_sayAt[pid] then
+        return
+    endif
+    // the global cap: over budget, the cheap stuff is dropped first
+    if tier != AI_TIER_HIGH and AI_RateSpent() >= AI_RATE_MAX then
         return
     endif
     set ai_sayLast[pid] = msg
     set ai_sayAt[pid] = ai_now + AI_SAY_GAP
     call AI_EchoRecord(msg)
+    if kind >= 0 and kind < EVK_MAX then
+        set ai_kindAt[kind] = ai_now
+    endif
+    set ai_rateAt[ai_rateHead] = ai_now
+    set ai_rateHead = ai_rateHead + 1
+    if ai_rateHead >= AI_RATE_RING then
+        set ai_rateHead = 0
+    endif
     // ROUND 4, finding 4: allies only. Never AI_Broadcast from here.
     call AI_BroadcastAllies(pid, AI_Name(pid) + ": " + msg)
+endfunction
+
+// Anything still calling the old shape is colour by definition.
+function AI_Say takes integer pid, string msg returns nothing
+    call AI_SayK(pid, -1, AI_TIER_LOW, msg)
 endfunction
 
 //===========================================================================
@@ -2951,10 +3028,21 @@ function AI_ScanWorld takes integer pid returns nothing
     // event -- and AI_Say only suppresses an IMMEDIATE repeat, so alternating
     // with any other line let it through again. Narrate the EDGE, and say what
     // is actually true.
+    // PLAYTEST 15 -- DEMOTED TO TELEMETRY. This was the owner's complaint:
+    // four factions announcing "form up" at once, repeatedly. The variation
+    // was working -- three factions, three phrasings -- but the EVENT is not
+    // worth announcing in any phrasing. AI_ValidateField is an internal
+    // correction that snaps an unwalkable centroid onto real ground; it is the
+    // AI clearing its throat, and no human player would type it.
+    //
+    // The playtest-7 edge-trigger was treating the symptom. This is the same
+    // line returning under new text, so the durable fix is the audit: it goes
+    // to the machine channel, which is where a housekeeping event belongs, and
+    // the diagnostic value is fully preserved.
     if AI_ValidateField(pid) then
         if not ai_scattered[pid] then
             set ai_scattered[pid] = true
-            call AI_Say(pid, AI_LineB(pid, V_REGROUP))
+            call AI_Tel("snap", AI_Num(pid) + "|" + AI_TelAI(pid) + "|" + AI_Num(R2I(wm_fieldX[pid])) + "|" + AI_Num(R2I(wm_fieldY[pid])))
         endif
     else
         set ai_scattered[pid] = false
@@ -3827,7 +3915,7 @@ function AI_UpdatePosture takes integer pid returns nothing
     endif
     if np != ai_posture[pid] then
         set ai_posture[pid] = np
-        call AI_Say(pid, AI_PostureName(pid, np))
+        call AI_SayK(pid, EVK_POSTURE, AI_TIER_LOW, AI_PostureName(pid, np))
     endif
 endfunction
 
@@ -4711,7 +4799,7 @@ function AI_NavIdle takes integer pid returns nothing
     if ship != null then
         call AI_OpenBudget(pid)
         call AI_TryOrder(ship, AI_ORD_UNLOAD, ai_homeX[pid], ai_homeY[pid], null)
-        call AI_Say(pid, AI_LineB(pid, V_NAVAL_CANCEL))
+        call AI_SayK(pid, EVK_B + V_NAVAL_CANCEL, AI_TIER_LOW, AI_LineB(pid, V_NAVAL_CANCEL))
     endif
     set ai_navState[pid] = AI_NAV_NONE
     set ai_threatSince[pid] = -1.0
@@ -4742,7 +4830,7 @@ function AI_NavStep takes integer pid, integer t returns boolean
         set yard = AI_FindYard(pid)
         if yard != null and wm_gold[pid] >= AI_NAV_SHIP_G and wm_lumber[pid] >= AI_NAV_SHIP_L then
             call IssueImmediateOrderById(yard, AI_NAV_SHIP)
-            call AI_Say(pid, AI_LineB(pid, V_NAVAL_NEED))
+            call AI_SayK(pid, EVK_B + V_NAVAL_NEED, AI_TIER_LOW, AI_LineB(pid, V_NAVAL_NEED))
         endif
         set ai_navState[pid] = AI_NAV_NONE
         set yard = null
@@ -4755,7 +4843,7 @@ function AI_NavStep takes integer pid, integer t returns boolean
             set ai_navState[pid] = AI_NAV_LOAD
             set ai_navSince[pid] = ai_now
             call AI_Tel("emb", AI_Num(pid) + "|" + AI_TelAI(pid) + "|" + AI_Num(t))
-            call AI_Say(pid, AI_LineB(pid, V_NAVAL_BOARD))
+            call AI_SayK(pid, EVK_B + V_NAVAL_BOARD, AI_TIER_LOW, AI_LineB(pid, V_NAVAL_BOARD))
         endif
         // sail on a full enough boat, or when boarding has stopped making
         // progress -- a stuck loader must not strand the whole army
@@ -4785,7 +4873,7 @@ function AI_NavStep takes integer pid, integer t returns boolean
     if loaded <= 0 and (ai_now - ai_navSince[pid]) > AI_NAV_LOAD_T then
         set ai_navState[pid] = AI_NAV_NONE  // cargo ashore: back to the land layer
         call AI_Tel("dis", AI_Num(pid) + "|" + AI_TelAI(pid) + "|" + AI_Num(t))
-        call AI_Say(pid, AI_LineB(pid, V_NAVAL_ASHORE))
+        call AI_SayK(pid, EVK_B + V_NAVAL_ASHORE, AI_TIER_LOW, AI_LineB(pid, V_NAVAL_ASHORE))
     endif
     set ship = null
     return true
@@ -4889,7 +4977,7 @@ function AI_HeroMicro takes integer pid returns nothing
     elseif frac <= AI_HeroBreak(pid) then
         set ai_heroOut[pid] = true
         call AI_Tel("hero", AI_Num(pid) + "|" + AI_TelAI(pid) + "|withdraw|" + AI_Num(R2I(100.0*frac)))
-        call AI_Say(pid, AI_LineB(pid, V_HERO_OUT))
+        call AI_SayK(pid, EVK_B + V_HERO_OUT, AI_TIER_HIGH, AI_LineB(pid, V_HERO_OUT))
         call AI_TryOrder(ai_heroUnit, AI_ORD_MOVE, ai_homeX[pid], ai_homeY[pid], null)
         set ai_heroUnit = null
         return
@@ -4928,7 +5016,7 @@ function AI_MoveOnTarget takes integer pid, integer t returns nothing
     // the army cannot be walked off the map one tick at a time.
     set eh = AI_FindEnemyHero(pid, ai_ptX[t], ai_ptY[t], AI_HERO_LEASH)
     if eh != null then
-        call AI_Say(pid, AI_LineB(pid, V_HERO_FOCUS))
+        call AI_SayK(pid, EVK_B + V_HERO_FOCUS, AI_TIER_LOW, AI_LineB(pid, V_HERO_FOCUS))
         call AI_SendArmy(pid, GetUnitX(eh), GetUnitY(eh), AI_ORD_ATTACKU, eh)
         set eh = null
         return
@@ -4940,7 +5028,7 @@ function AI_MoveOnTarget takes integer pid, integer t returns nothing
         // Backstop: something we do not model is in the way. Force the
         // nearest own shut gate and give the reroute time to take effect.
         if AI_ForceOpenNear(pid, wm_fieldX[pid], wm_fieldY[pid]) then
-            call AI_Say(pid, AI_LineB(pid, V_GATE))
+            call AI_SayK(pid, EVK_B + V_GATE, AI_TIER_LOW, AI_LineB(pid, V_GATE))
         endif
         set ai_progAt[pid] = ai_now
     endif
@@ -5065,7 +5153,7 @@ function AI_Raid takes integer pid returns nothing
     call ForGroup(g, function AI_RaidEnum)
     call DestroyGroup(g)
     set g = null
-    call AI_Say(pid, AI_LineA(pid, V_RAID, AI_KindName(ai_ptKind[t]), AI_OwnerName(t)))
+    call AI_SayK(pid, V_RAID, AI_TIER_LOW, AI_LineA(pid, V_RAID, AI_KindName(ai_ptKind[t]), AI_OwnerName(t)))
 endfunction
 
 // Buy the role that is furthest below its target share of army CV.
@@ -5433,13 +5521,13 @@ function AI_MissionAbort takes integer pid, integer reason returns nothing
         // owed a close. The abort path is the one that used to leak them.
         call AI_CloseSortie(pid)
         if reason == 1 then
-            call AI_Say(pid, AI_LineA(pid, V_ABORT_HOME, AI_KindName(ai_ptKind[t]), AI_OwnerName(t)))
+            call AI_SayK(pid, V_ABORT_HOME, AI_TIER_HIGH, AI_LineA(pid, V_ABORT_HOME, AI_KindName(ai_ptKind[t]), AI_OwnerName(t)))
         elseif reason == 2 then
-            call AI_Say(pid, AI_LineA(pid, V_ABORT_LOST, AI_KindName(ai_ptKind[t]), AI_OwnerName(t)))
+            call AI_SayK(pid, V_ABORT_LOST, AI_TIER_HIGH, AI_LineA(pid, V_ABORT_LOST, AI_KindName(ai_ptKind[t]), AI_OwnerName(t)))
         elseif reason == 3 then
-            call AI_Say(pid, AI_LineA(pid, V_ABORT_TAKEN, AI_KindName(ai_ptKind[t]), AI_OwnerName(t)))
+            call AI_SayK(pid, V_ABORT_TAKEN, AI_TIER_HIGH, AI_LineA(pid, V_ABORT_TAKEN, AI_KindName(ai_ptKind[t]), AI_OwnerName(t)))
         else
-            call AI_Say(pid, AI_LineA(pid, V_ABORT_STALL, AI_KindName(ai_ptKind[t]), AI_OwnerName(t)))
+            call AI_SayK(pid, V_ABORT_STALL, AI_TIER_HIGH, AI_LineA(pid, V_ABORT_STALL, AI_KindName(ai_ptKind[t]), AI_OwnerName(t)))
         endif
     endif
 endfunction
@@ -5614,7 +5702,7 @@ function AI_MissionTick takes integer pid returns boolean
         // PLAYTEST 10: release reason 0 = MEASURED ARRIVAL. The ratio of this
         // to reason 1 is the direct measure of whether the muster works at all.
         call AI_Tel("mus", AI_Num(pid) + "|" + AI_TelAI(pid) + "|0|" + AI_Num(R2I(1000.0*ai_musterAt)) + "|" + AI_Num(R2I(wm_massed[pid])) + "|" + AI_Num(R2I(wm_musterPool[pid])))
-        call AI_Say(pid, AI_LineA(pid, V_FORMED, "", ""))
+        call AI_SayK(pid, V_FORMED, AI_TIER_LOW, AI_LineA(pid, V_FORMED, "", ""))
     endif
     // 4. DEADLINE. A phase that cannot finish RELEASES rather than waiting.
     if ai_now >= ai_msPhaseEnd[pid] then
@@ -5629,7 +5717,7 @@ function AI_MissionTick takes integer pid returns boolean
             // work has not landed and everything downstream is being judged on
             // a false premise -- which is exactly what playtest 10 showed.
             call AI_Tel("mus", AI_Num(pid) + "|" + AI_TelAI(pid) + "|1|" + AI_Num(R2I(1000.0*AI_MusterFrac(pid))) + "|" + AI_Num(R2I(wm_massed[pid])) + "|" + AI_Num(R2I(wm_musterPool[pid])))
-            call AI_Say(pid, AI_LineA(pid, V_TIMEOUT, "", ""))
+            call AI_SayK(pid, V_TIMEOUT, AI_TIER_LOW, AI_LineA(pid, V_TIMEOUT, "", ""))
         else
             call AI_MissionAbort(pid, 4)
             set ai_ifStuck[pid] = true
@@ -5709,7 +5797,7 @@ function AI_Execute takes integer pid returns nothing
             // floor could never fire -- which is exactly how a full army sat
             // in a captured city with the floor supposedly in place.
             if ai_target[pid] != t then
-                call AI_Say(pid, AI_LineA(pid, V_OBJ_CAPITAL, AI_KindName(ai_ptKind[t]), AI_OwnerName(t)))
+                call AI_SayK(pid, V_OBJ_CAPITAL, AI_TIER_HIGH, AI_LineA(pid, V_OBJ_CAPITAL, AI_KindName(ai_ptKind[t]), AI_OwnerName(t)))
                 set ai_commitAt[pid] = ai_now
             endif
             call AI_Claim(pid, t)
@@ -5725,7 +5813,7 @@ function AI_Execute takes integer pid returns nothing
         set t = ai_bestT[pid]
         if t >= 0 then
             if ai_target[pid] != t then
-                call AI_Say(pid, AI_LineA(pid, V_OBJ_POINT, AI_KindName(ai_ptKind[t]), AI_OwnerName(t)))
+                call AI_SayK(pid, V_OBJ_POINT, AI_TIER_HIGH, AI_LineA(pid, V_OBJ_POINT, AI_KindName(ai_ptKind[t]), AI_OwnerName(t)))
                 set ai_commitAt[pid] = ai_now      // ROUND 6: on CHANGE only
                 // score components, x1000: a win/loss alone cannot diagnose a
                 // broken selector, and every impossible-goal bug we shipped
@@ -5753,7 +5841,7 @@ function AI_Execute takes integer pid returns nothing
             call AI_Claim(pid, t)
             set ai_target[pid] = t
             set ai_commitAt[pid] = ai_now
-            call AI_Say(pid, AI_LineB(pid, V_FALLBACK))
+            call AI_SayK(pid, EVK_B + V_FALLBACK, AI_TIER_LOW, AI_LineB(pid, V_FALLBACK))
             call AI_MoveOnTarget(pid, t)
         endif
     endif
@@ -5818,7 +5906,7 @@ function AI_MicroPlayer takes integer pid returns nothing
             // faction paused for exactly as long as its objective had been
             // sticky. A completed objective also has to be released or an
             // ally cannot pick up the next one.
-            call AI_Say(pid, AI_LineA(pid, V_TAKEN, AI_KindName(ai_ptKind[t]), AI_OwnerName(t)))
+            call AI_SayK(pid, V_TAKEN, AI_TIER_HIGH, AI_LineA(pid, V_TAKEN, AI_KindName(ai_ptKind[t]), AI_OwnerName(t)))
             if t >= 0 and t < ai_pointCount and ai_claim[t] == pid then
                 set ai_claim[t] = -1                // release it for allies
             endif
@@ -5874,7 +5962,7 @@ function AI_WatchdogAct takes integer pid returns nothing
     endloop
     if best >= 0 then
         call AI_SendArmy(pid, ai_ptX[best], ai_ptY[best], AI_ORD_ATTACKP, null)
-        call AI_Say(pid, AI_LineB(pid, V_FALLBACK))
+        call AI_SayK(pid, EVK_B + V_FALLBACK, AI_TIER_LOW, AI_LineB(pid, V_FALLBACK))
     endif
 endfunction
 
@@ -5912,7 +6000,7 @@ function AI_Think takes nothing returns nothing
                         set ai_goal[pid] = newGoal
                         set ai_goalSince[pid] = ai_now
                         // posture change: a STATE CHANGE, so it is narrated
-                        call AI_Say(pid, AI_GoalName(pid, newGoal))
+                        call AI_SayK(pid, EVK_GOAL, AI_TIER_HIGH, AI_GoalName(pid, newGoal))
                     endif
                     call AI_Execute(pid)
                 endif
@@ -6065,6 +6153,27 @@ function AI_CmdActions takes nothing returns nothing
             call DisplayTextToPlayer(GetTriggerPlayer(), 0, 0, "FoR-AI: you now see EVERY faction reports. This is a diagnostic view.")
         else
             call DisplayTextToPlayer(GetTriggerPlayer(), 0, 0, "FoR-AI: back to allied reports only.")
+        endif
+        return
+    endif
+    // PLAYTEST 15: group-scoped mutes, per LISTENER. -aiquiet/-aitalk remain
+    // the all-off switch; these silence one side's chatter for the person who
+    // typed it and nobody else. The FORAI| stream is untouched by either.
+    if s == "-aibarb" then
+        set ai_muteBarb[GetPlayerId(GetTriggerPlayer())] = not ai_muteBarb[GetPlayerId(GetTriggerPlayer())]
+        if ai_muteBarb[GetPlayerId(GetTriggerPlayer())] then
+            call DisplayTextToPlayer(GetTriggerPlayer(), 0, 0, "FoR-AI: barbarian chatter muted for you. Type -aibarb again to hear it.")
+        else
+            call DisplayTextToPlayer(GetTriggerPlayer(), 0, 0, "FoR-AI: barbarian chatter back on.")
+        endif
+        return
+    endif
+    if s == "-airome" then
+        set ai_muteRome[GetPlayerId(GetTriggerPlayer())] = not ai_muteRome[GetPlayerId(GetTriggerPlayer())]
+        if ai_muteRome[GetPlayerId(GetTriggerPlayer())] then
+            call DisplayTextToPlayer(GetTriggerPlayer(), 0, 0, "FoR-AI: Roman chatter muted for you. Type -airome again to hear it.")
+        else
+            call DisplayTextToPlayer(GetTriggerPlayer(), 0, 0, "FoR-AI: Roman chatter back on.")
         endif
         return
     endif
@@ -6258,6 +6367,7 @@ function AI_Init takes nothing returns nothing
         // designed. An instrument has to explain its own blind spot.
         call AI_Broadcast("FoR-AI: you see reports from your ALLIES only. Type -aispy to watch every faction.")
         call AI_Broadcast("FoR-AI: -aieasy / -ainormal / -aihard, -aiquiet / -aitalk.")
+        call AI_Broadcast("FoR-AI: -aibarb mutes barbarian chatter for you, -airome mutes Roman.")
         // PLAYTEST 11. This line used to say "fog is respected", full stop.
         // The external audit (DESIGN 21.1, defect 6) established that is too
         // strong: observed enemy STRENGTH is fog-gated, but territorial
