@@ -33,7 +33,8 @@ FACTION = {0: 'Huns', 1: 'Franks', 2: 'Saxons', 3: 'West Rome', 4: 'Visigoths',
 KIND = {0: 'control point', 1: 'town', 2: 'city', 3: 'capital', 4: 'camp',
         5: 'plot', 6: 'shipyard'}
 ABORT = {0: 'unknown', 1: 'home threatened', 2: 'fight lost',
-         3: 'objective gone', 4: 'going nowhere'}
+         3: 'objective gone', 4: 'going nowhere', 5: 'watchdog',
+         6: 'unbreakable wall'}
 
 LINE = re.compile(r'FORAI\|(\d+)\|(\d+)\|(\d+)\|(\w+)\|(.*)')
 

@@ -333,6 +333,7 @@ def make_env(sc):
         'ai_laneN': CONSTS['AI_LANES'], 'ai_laneMid': CONSTS['AI_LANE_MID'],
         'ai_laneNX': sc.get('laneNX', 0.0), 'ai_laneNY': sc.get('laneNY', 1.0),
         'ai_ramWork': False, 'ai_ramType': 0, 'ai_ramX': 0.0, 'ai_ramY': 0.0,
+        'ai_column': False, 'ai_ramAt': d(-9999.0), 'ai_crossLast': d(-1),
         'ai_navState': d(0), 'ai_navShip': d(None),
         'ai_navAt': d(0.0), 'ai_navSince': d(0.0),
         'wm_capThreat': d(sc.get('capThreat', False)),
@@ -412,6 +413,10 @@ def make_natives(env, noise=0.0):
         # code read from for-ai.j
         'AI_GateState': lambda i: env['_gateState'].get(i, CONSTS['AI_GS_GONE']),
         'AI_GateLifeFrac': lambda i: env['_gateLife'].get(i, 1.0),
+        # every gate reader re-resolves the handle first (DESIGN 33, R1); the
+        # scenario handles here are never stale, so the refresh is a no-op.
+        # gate_identity() and gate_toy.py run the real one.
+        'AI_GateRefresh': lambda i: None,
         # the muster fraction needs a live unit enum, which only the muster
         # section models; everywhere else it comes from the scenario and
         # defaults to "already gathered" so the S1 assertions are unchanged
@@ -826,6 +831,7 @@ def gate_identity():
         env = make_env(sc)
         nat = make_natives(env, 0.0)
         del nat['AI_GateState']                      # interpret the REAL body
+        del nat['AI_GateRefresh']
         H, H2 = 1000, 2000
         types = {H: 0 if replaced else CLOSED_T, H2: CLOSED_T}
         pos = {H: (500.0, 500.0), H2: (500.0, 500.0)}
@@ -896,6 +902,7 @@ def gate_identity():
     env = make_env(sc)
     nat = make_natives(env, 0.0)
     del nat['AI_GateState']
+    del nat['AI_GateRefresh']
     env['ai_gate'][0] = 1000
     nat['GetEnumUnit'] = lambda: None
     nat['GetUnitTypeId'] = lambda u: 0
@@ -1008,27 +1015,9 @@ def gates_round3():
     print('  %s the waypoint is set PAST the crossing (apX=%.0f, gate at 4000)'
           % ('PASS' if ok else 'FAIL', env['ai_apX'][0]))
 
-    # -- the stall backstop ------------------------------------------------
-    def track(progD, progAt, fx, now):
-        sc = dict(role='barb', t=now, fieldX=fx, fieldY=0.0, progD=progD, progAt=progAt)
-        env = make_env(sc)
-        it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
-        return it.run('AI_TrackProgress', [0, 8000.0, 0.0])
-
-    T = CONSTS['AI_STALL_T']
-    stall_cases = [
-        ('closing on the objective is not a stall', track(8000.0, 0.0, 1000.0, 100.0), False),
-        ('standing still under the timer is not a stall yet',
-         track(7000.0, 100.0, 1000.0, 100.0 + T - 1.0), False),
-        ('standing still past AI_STALL_T IS a stall',
-         track(7000.0, 100.0, 1000.0, 100.0 + T + 1.0), True),
-        ('being pushed BACK resets the clock, it is not a stall',
-         track(2000.0, 100.0, 1000.0, 100.0 + T + 1.0), False),
-    ]
-    for name, got, want in stall_cases:
-        ok = (bool(got) == want)
-        fails += 0 if ok else 1
-        print('  %s %-58s -> %s' % ('PASS' if ok else 'FAIL', name, bool(got)))
+    # (the stall backstop -- AI_TrackProgress / AI_ForceOpenNear -- was deleted
+    # with the gate module, DESIGN 33; its job is done by the egress corridor
+    # and asserted as an OUTCOME in gate_toy.py)
 
     # -- ROUND 4, FINDING 7 ------------------------------------------------
     # "gates are over-prioritised when a nearby gate is already broken -- they
@@ -2094,7 +2083,7 @@ def simple_ai():
         env['ai_homeX'] = {0: 0.0}
         env['ai_homeY'] = {0: 0.0}
         nat = make_natives(env, 0.0)
-        for fn in ('AI_ScanWorld', 'AI_SetFlags', 'AI_Spend', 'AI_ManageGates',
+        for fn in ('AI_ScanWorld', 'AI_SetFlags', 'AI_Spend', 'AI_March',
                    'AI_SendArmy', 'AI_NavIdle', 'AI_WatchdogAct', 'AI_Tel',
                    'AI_SayK', 'AI_MoveOnTarget', 'AI_Raid', 'AI_TelCheckExit',
                    'AI_CloseSortie', 'AI_MusterFrac', 'AI_Watchdog'):
@@ -4340,7 +4329,8 @@ def gate_discipline():
     fails = 0
     OPEN, CLOSED = CONSTS['AI_GS_OPEN'], CONSTS['AI_GS_CLOSED']
 
-    def world(enemy_cv, threat=0.0, gate_at=(0.0, 0.0), state=CLOSED, funcs=None):
+    def world(enemy_cv, threat=0.0, gate_at=(0.0, 0.0), state=CLOSED, funcs=None,
+              own_cv=100.0, own_n=1):
         sc = dict(role='rome', threat=threat, army=800.0,
                   gates=[dict(x=gate_at[0], y=gate_at[1], orient=0, state=state, owner=0)])
         env = make_env(sc)
@@ -4358,8 +4348,8 @@ def gate_discipline():
         # would have found, so the decision logic stays the code under test
         def scan(pid, i):
             env['ai_accCV'] = enemy_cv
-            env['ai_accW'] = 100.0
-            env['ai_accN'] = 1
+            env['ai_accW'] = own_cv
+            env['ai_accN'] = own_n
         nat['AI_GateScan'] = scan
         toggles = []
         nat['AI_SetGate'] = lambda i, t: toggles.append((i, t))
@@ -4375,11 +4365,11 @@ def gate_discipline():
           'its own wall' % ('PASS' if ok else 'FAIL'))
 
     env, it, tog = world(enemy_cv=0.0, threat=0.0)
-    it.run('AI_ManageGates', [0])
+    it.run('AI_GateOpenForMarch', [0, 0])
     ok = tog and tog[0][1] == 'OPEN'
     fails += 0 if ok else 1
-    print('  %s ... and a dispatch that needs it actually opens it (on demand)'
-          % ('PASS' if ok else 'FAIL'))
+    print('  %s ... and a march that needs it actually opens it (on demand: the ONLY '
+          'open site is AI_GateOpenForMarch, called from AI_March)' % ('PASS' if ok else 'FAIL'))
 
     ok = env['ai_sortieGate'][0] == 0
     fails += 0 if ok else 1
@@ -4393,11 +4383,11 @@ def gate_discipline():
     print('  %s an enemy IN THE DOORWAY refuses the open' % ('PASS' if ok else 'FAIL'))
 
     env, it, tog = world(enemy_cv=500.0, threat=0.0)
-    it.run('AI_ManageGates', [0])
+    it.run('AI_GateOpenForMarch', [0, 0])
     opened = [t for t in tog if t[1] == 'OPEN']
     ok = not opened
     fails += 0 if ok else 1
-    print('  %s THE REPORTED BUG: a dispatch does NOT open a contested gate '
+    print('  %s THE REPORTED BUG: a march does NOT open a contested gate '
           '(%d open toggles)' % ('PASS' if ok else 'FAIL', len(opened)))
 
     # our own city under attack, even if this gate's doorway is momentarily clear
@@ -4414,28 +4404,42 @@ def gate_discipline():
     print('  %s ... but a gate far from that city is unaffected -- the rule is local, '
           'not a global freeze' % ('PASS' if ok else 'FAIL'))
 
-    # ---- the stall backstop obeys the same rule ---------------------------
-    env, it, tog = world(enemy_cv=500.0, threat=0.0)
-    forced = it.run('AI_ForceOpenNear', [0, 0.0, 0.0])
-    ok = forced is False and not [t for t in tog if t[1] == 'OPEN']
-    fails += 0 if ok else 1
-    print('  %s the STALL BACKSTOP will not force a contested gate open -- an army '
-          'stalled BECAUSE enemies are at the gate was forcing it open for them'
-          % ('PASS' if ok else 'FAIL'))
-
-    env, it, tog = world(enemy_cv=0.0, threat=0.0)
-    ok = it.run('AI_ForceOpenNear', [0, 0.0, 0.0]) is True
-    fails += 0 if ok else 1
-    print('  %s ... and still rescues a genuinely stalled army at a quiet gate'
-          % ('PASS' if ok else 'FAIL'))
-
     # ---- closing: the gate an army left through does not stay open ---------
     env, it, tog = world(enemy_cv=500.0, threat=0.0, state=OPEN)
-    it.run('AI_ManageGates', [0])
+    it.run('AI_GateTick', [0])
     ok = [t for t in tog if t[1] == 'SHUT']
     fails += 0 if ok else 1
-    print('  %s a contested OPEN gate shuts -- and the APPROACH gate is no longer '
-          'exempt from closing' % ('PASS' if ok else 'FAIL'))
+    print('  %s a contested OPEN gate shuts from AI_GateTick, which runs every think '
+          'tick whatever the goal' % ('PASS' if ok else 'FAIL'))
+
+    # O4: a gate we are LOSING shuts even with our own troops in it
+    env, it, tog = world(enemy_cv=40.0, threat=0.0, state=OPEN, own_cv=30.0, own_n=1)
+    it.run('AI_GateTick', [0])
+    ok = bool([t for t in tog if t[1] == 'SHUT'])
+    fails += 0 if ok else 1
+    print('  %s a gate we are LOSING (40 vs our 30 in the doorway) shuts with our own '
+          'troops still in it' % ('PASS' if ok else 'FAIL'))
+
+    # ... but NOT on our own sortie's tail (the feedback-loop trap, principles 3.4):
+    # while OUR sortie is passing through, only the absolute bar applies
+    env, it, tog = world(enemy_cv=40.0, threat=0.0, state=OPEN, own_cv=30.0, own_n=1)
+    env['ai_sortieGate'] = {0: 0}
+    env['ai_sortieAt'] = {0: 490.0}
+    it.run('AI_GateTick', [0])
+    ok = not [t for t in tog if t[1] == 'SHUT']
+    fails += 0 if ok else 1
+    print('  %s ... but not while OUR OWN sortie is passing through it: the relative '
+          'bars read a quantity the sortie itself moves, so they are phase-gated'
+          % ('PASS' if ok else 'FAIL'))
+
+    env, it, tog = world(enemy_cv=500.0, threat=0.0, state=OPEN, own_cv=30.0, own_n=1)
+    env['ai_sortieGate'] = {0: 0}
+    env['ai_sortieAt'] = {0: 490.0}
+    it.run('AI_GateTick', [0])
+    ok = bool([t for t in tog if t[1] == 'SHUT'])
+    fails += 0 if ok else 1
+    print('  %s ... while the ABSOLUTE bar still shuts it mid-sortie on a real assault '
+          '(500 CV)' % ('PASS' if ok else 'FAIL'))
 
     env, it, tog = world(enemy_cv=0.0, threat=0.0, state=OPEN)
     env['ai_sortieGate'] = {0: 0}
@@ -4456,19 +4460,13 @@ def gate_discipline():
     params, _ = FUNCS['AI_GateSafeToOpen']
     prefix['AI_GateSafeToOpen'] = (params, ['    return true'])
     env, it, tog = world(enemy_cv=500.0, threat=400.0, funcs=prefix)
-    it.run('AI_ManageGates', [0])
+    it.run('AI_GateOpenForMarch', [0, 0])
     opened = [t for t in tog if t[1] == 'OPEN']
     ok = bool(opened)
     fails += 0 if ok else 1
     print('  %s NEGATIVE CONTROL: without the threat check the same call opens the '
           'gate with 500 enemy CV in it -- the reported bug, reproduced'
           % ('PASS' if ok else 'FAIL'))
-
-    env, it, tog = world(enemy_cv=500.0, threat=400.0, funcs=prefix)
-    ok = it.run('AI_ForceOpenNear', [0, 0.0, 0.0]) is True
-    fails += 0 if ok else 1
-    print('  %s NEGATIVE CONTROL: and the stall backstop does too, which is the worse '
-          'of the two sites' % ('PASS' if ok else 'FAIL'))
 
     # ---- the dead band: a gate cannot flap --------------------------------
     ok = CONSTS['AI_GATE_T_CLOSE'] > CONSTS['AI_GATE_T_OPEN']
@@ -4541,7 +4539,6 @@ def mission_churn():
         ('the mission target', env['ai_msTarget'][0] == -1),
         ('the objective', env['ai_target'][0] == -1),
         ('our claim on it', env['ai_claim'][0] != 0),
-        ('the progress record', env['ai_progD'][0] >= 999999.0),
     ]
     for label, ok in checks:
         fails += 0 if ok else 1
@@ -5573,18 +5570,12 @@ ROUND3_GUARDS = [
      r'function AI_ChooseApproach\b.*?AI_GateCost\(pid, i\)', True),
     ('a stuck gate is excluded from candidate crossings',
      r'function AI_ChooseApproach\b.*?not ai_gateStuck\[i\]', True),
-    ('an OWN crossing opens before any enemy scan is consulted',
-     r'function AI_ManageGates\b.*?AI_GateIsOurs\(pid, ap\).*?call AI_SetGate\(ap,.*?call AI_GateScan\(', True),
     ('AI_SetGate plays the map own open animation',
      r'function AI_SetGate\b.*?call SetUnitAnimation\(ai_gate\[i\], "Death Alternate"\)', True),
     ('AI_SetGate plays the map own close animation',
      r'function AI_SetGate\b.*?call SetUnitAnimation\(ai_gate\[i\], "stand"\)', True),
     ('AI_SetGate self-verifies the toggle and latches a failure',
      r'function AI_SetGate\b.*?if AI_GateState\(i\) == before then\s*\n\s*set ai_gateStuck\[i\] = true', True),
-    ('AI_MoveOnTarget consults the stall detector',
-     r'function AI_MoveOnTarget\b.*?AI_TrackProgress\(pid,', True),
-    ('a stall forces the nearest own gate open',
-     r'function AI_MoveOnTarget\b.*?AI_ForceOpenNear\(pid,', True),
     # --- strategic layer (item 4) ---------------------------------------
     ('capital value is multiplied by readiness, not flat',
      r'function AI_PointValueFor\b.*?if kind == AI_PK_CAPITAL then\s*\n\s*return v \* wm_capReady\[pid\]', True),
@@ -5663,13 +5654,11 @@ ROUND3_GUARDS = [
     ('a ram with no wall to break holds behind the line',
      r'function AI_SendEnum\b.*?if GetUnitTypeId\(u\) == ai_ramType and not ai_ramWork then\s*\n\s*call AI_TryOrder\(u, AI_ORD_MOVE, ai_ramX, ai_ramY', True),
     ('ram work is decided by whether the approach must BREAK a crossing',
-     r'set ai_ramWork = \(gi >= 0\) and ai_apBreak\[pid\]', True),
-    ('rams are bought from a REMEMBERED wall, not a per-tick flag',
-     r'if \(ai_now - ai_wallSince\[pid\]\) < AI_WALL_MEM and wm_lumber\[pid\] >= AI_RAM_LUMBER', True),
+     r'function AI_March\b.*?if ai_apBreak\[pid\] then.*?set ai_ramWork = true\s*\n\s*call AI_SendArmy\(pid, ai_gateX\[gi\], ai_gateY\[gi\], AI_ORD_ATTACKU', True),
     ('meeting a wall is what starts the ram memory',
      r'if ai_apBreak\[pid\] then\s*\n\s*set ai_wallSince\[pid\] = ai_now', True),
     ('a break we cannot perform is priced out of the crossing comparison',
-     r'function AI_GateCost\b.*?if not wm_hasSiege\[pid\] then.*?AI_NOBREAK_COST', True),
+     r'function AI_GateCost\b.*?if not AI_CanBreak\(pid\) then.*?AI_NOBREAK_COST', True),
     # --- round 5: the Roman lock -----------------------------------------
     ('CONSOLIDATE is gated on more army being WANTED, not just possible',
      r'return s \* AI_CanMass\(pid\) \* AI_WantsMore\(pid\)', True),
