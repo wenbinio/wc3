@@ -271,6 +271,9 @@ def make_env(sc):
         'ai_exCount': __import__('collections').defaultdict(int),
         'ai_exCV': __import__('collections').defaultdict(float),
         'ai_marchDX': 0.0, 'ai_marchDY': 0.0, 'ai_congN': 0, '_ht': {},
+        'ai_engine': d(0), 'ai_simTarget': d(-1), 'ai_simStage': d(0),
+        'ai_simSince': d(0.0), 'ai_simAt': d(0.0), 'ai_simCursor': d(0),
+        'ai_simBest': d(-1), 'ai_simBestD': d(999999.0),
         'ai_kindAt': __import__('collections').defaultdict(float),
         'ai_rateAt': __import__('collections').defaultdict(float), 'ai_rateHead': 0,
         'ai_muteBarb': d(False), 'ai_muteRome': d(False),
@@ -1987,6 +1990,158 @@ def early_barbarians():
                                             100.0 * need_early, 100.0 * need_late))
 
     print('%s: the opening is aggressive, and the aggression expires on a clock'
+          % ('PASS' if not fails else 'FAIL'))
+    return 1 if fails else 0
+
+
+def simple_ai():
+    """THE EXPERIMENT (SIMPLE-AI-PLAN.md). Three properties must hold or the
+    comparison is worthless:
+
+      1. STRICT PER-FACTION OWNERSHIP -- the two AIs never both drive a unit;
+      2. the REFUSES-TO-MODEL list is real, not aspirational;
+      3. the simple arm does not cost MORE per tick than the complex one. The
+         plan makes that a falsification condition, not a performance note: if
+         "simple" is dearer, the comparison is contaminated whatever the
+         territory says.
+    """
+    print('\n' + '=' * 78)
+    print('THE SIMPLE-AI EXPERIMENT -- ownership, refusals, and cost')
+    print('=' * 78)
+    fails = 0
+
+    # ---- 1. strict per-faction ownership ---------------------------------
+    think = '\n'.join(FUNCS['AI_Think'][1])
+    m = re.search(r'if ai_engine\[pid\] == AI_ENG_SIMPLE then\s*\n\s*call AI_SimpleTick\(pid\)\s*\n\s*else', think)
+    ok = m is not None
+    fails += 0 if ok else 1
+    print('  %s exactly one engine drives a faction, chosen by a table and an '
+          'if/else -- the two AIs cannot both order a unit'
+          % ('PASS' if ok else 'FAIL'))
+
+    # the complex entry points are unreachable for a simple faction
+    i_simple = think.index('AI_SimpleTick')
+    for fn in ('AI_MissionTick', 'AI_SelectGoal', 'AI_Execute', 'AI_UpdatePosture'):
+        ok = fn in think and think.index(fn) > i_simple
+        fails += 0 if ok else 1
+        print('  %s %s is inside the complex branch only' % ('PASS' if ok else 'FAIL', fn))
+
+    # the assignment lives in exactly one place
+    sets = re.findall(r'set ai_engine\[[^\]]*\]\s*=', CODE)
+    ok = len(sets) == 2          # the simple arm and the else
+    fails += 0 if ok else 1
+    print('  %s the assignment table is the only thing that decides (%d write sites)'
+          % ('PASS' if ok else 'FAIL', len(sets)))
+
+    # and it assigns exactly three factions, exactly one of them Roman
+    env = make_env(dict(role='barb'))
+    it = Interp(FUNCS, CONSTS, env, make_natives(env, 0.0))
+    m = re.search(r'if pid == (\d+) or pid == (\d+) or pid == (\d+) then\s*\n\s*set ai_engine\[pid\] = AI_ENG_SIMPLE', CODE)
+    ok = m is not None
+    fails += 0 if ok else 1
+    if m:
+        simple = {int(m.group(1)), int(m.group(2)), int(m.group(3))}
+        romans = simple & {3, 9, 10}
+        ok2 = simple == {3, 4, 2} and len(romans) == 1
+        fails += 0 if ok2 else 1
+        print('  %s simple drives exactly %s -- three factions, exactly one Roman (%s)'
+              % ('PASS' if ok2 else 'FAIL', sorted(simple), sorted(romans)))
+        # controls must NOT be on the simple arm
+        ok3 = not (simple & {10, 8, 11, 1, 9})
+        fails += 0 if ok3 else 1
+        print('  %s every matched control and reference stays on the complex arm'
+              % ('PASS' if ok3 else 'FAIL'))
+    print('  %s the assignment is a single readable table' % ('PASS' if ok else 'FAIL'))
+
+    # ---- 2. the refuses-to-model list is REAL -----------------------------
+    body = '\n'.join(FUNCS['AI_SimpleTick'][1] + FUNCS['AI_SimpleCandidate'][1]
+                     + FUNCS['AI_SimpleSweep'][1] + FUNCS['AI_SimpleStale'][1])
+    body = re.sub(r'//.*$', '', body, flags=re.M)
+    REFUSED = ['AI_ThreatField', 'AI_ThreatOn', 'AI_TrackArmies', 'wm_townThreat',
+               'AI_CorrFree', 'AI_RouteBusy', 'AI_CorrTakeRoute', 'AI_Congestion',
+               'AI_UpdatePosture', 'ai_posture', 'AI_SelectGoal', 'ai_goal',
+               'AI_TargetScore', 'AI_BestTarget', 'AI_PointValueIdx',
+               'ai_claim', 'wm_capReady', 'wm_capIdx', 'AI_Holdable',
+               'wm_proxScale', 'ai_harasser', 'AI_MissionStart', 'AI_MissionTick',
+               'AI_MissionHeld', 'ai_msHold', 'AI_ThreatBar', 'ai_msGarRef',
+               'AI_NavStep', 'AI_ScoreExpand', 'AI_ScoreDefend', 'AI_ScoreSiege']
+    used = [w for w in REFUSED if w in body]
+    ok = not used
+    fails += 0 if ok else 1
+    print('  %s the simple AI touches NONE of the %d refused mechanisms%s'
+          % ('PASS' if ok else 'FAIL', len(REFUSED),
+             '' if ok else ' -- USES: ' + ', '.join(used)))
+
+    # NEGATIVE CONTROL: the sweep must be able to see one
+    ok = 'AI_Watchdog' in body and 'AI_CanProsecute' in body
+    fails += 0 if ok else 1
+    print('  %s NEGATIVE CONTROL: the same sweep DOES find the mechanisms it is '
+          'allowed to keep (watchdog, coupling)' % ('PASS' if ok else 'FAIL'))
+
+    ok = 'AI_WantsCrossing' in '\n'.join(FUNCS['AI_SimpleCandidate'][1])
+    fails += 0 if ok else 1
+    print('  %s it refuses across-water objectives outright rather than half-ferrying'
+          % ('PASS' if ok else 'FAIL'))
+
+    # ---- 3. COST: simple must not be dearer than complex ------------------
+    def tick_cost(engine):
+        sc = dict(role='rome', army=3000.0, gold=800.0, lumber=800.0,
+                  points=[dict(kind=CONSTS['AI_PK_CITY'], x=1000.0 * i, y=0.0,
+                               owner=(0 if i < 20 else 5)) for i in range(60)])
+        env = make_env(sc)
+        env['ai_now'] = 300.0
+        env['ai_engine'] = {0: engine}
+        env['ai_homeX'] = {0: 0.0}
+        env['ai_homeY'] = {0: 0.0}
+        nat = make_natives(env, 0.0)
+        for fn in ('AI_ScanWorld', 'AI_SetFlags', 'AI_Spend', 'AI_ManageGates',
+                   'AI_SendArmy', 'AI_NavIdle', 'AI_WatchdogAct', 'AI_Tel',
+                   'AI_SayK', 'AI_MoveOnTarget', 'AI_Raid', 'AI_TelCheckExit',
+                   'AI_CloseSortie', 'AI_MusterFrac', 'AI_Watchdog'):
+            nat[fn] = (lambda *a: None) if fn not in ('AI_MusterFrac', 'AI_Watchdog') \
+                else (lambda *a: 1.0 if fn == 'AI_MusterFrac' else False)
+        nat['AI_MusterFrac'] = lambda pid: 1.0
+        nat['AI_Watchdog'] = lambda pid: False
+        nat['AI_Num'] = str
+        nat['AI_TelAI'] = lambda pid: '1'
+        it = Interp(FUNCS, CONSTS, env, nat)
+        before = it.calls
+        if engine == CONSTS['AI_ENG_SIMPLE']:
+            it.run('AI_SimpleTick', [0])
+        else:
+            it.run('AI_SelectGoal', [0])
+        return it.calls - before
+
+    c_simple = tick_cost(CONSTS['AI_ENG_SIMPLE'])
+    c_complex = tick_cost(CONSTS['AI_ENG_COMPLEX'])
+    ok = c_simple <= c_complex
+    fails += 0 if ok else 1
+    print('  %s COST: one simple decision costs %d interpreter calls against the '
+          'complex goal layer\'s %d -- if simple were dearer the comparison would '
+          'be contaminated' % ('PASS' if ok else 'FAIL', c_simple, c_complex))
+
+    # the sweep is sliced, so no tick can pay the whole O(own x all)
+    sweep = '\n'.join(FUNCS['AI_SimpleSweep'][1])
+    ok = 'AI_SIM_SLICE' in sweep and 'ai_simCursor' in sweep
+    fails += 0 if ok else 1
+    print('  %s the O(own x all) sweep is SLICED with a cursor (%d points/tick), so '
+          'no single tick pays for all of it'
+          % ('PASS' if ok else 'FAIL', CONSTS['AI_SIM_SLICE']))
+
+    # ---- 4. it reports through the same channel and voices ----------------
+    body_all = '\n'.join(FUNCS['AI_SimpleTick'][1])
+    ok = 'AI_SayK' in body_all and 'AI_Tel' in body_all
+    fails += 0 if ok else 1
+    print('  %s the simple AI speaks with the same voices and reports through the '
+          'same channel, or the comparison is not like-for-like'
+          % ('PASS' if ok else 'FAIL'))
+
+    ok = 'AI_ADJ_R' in '\n'.join(FUNCS['AI_SimpleCandidate'][1])
+    fails += 0 if ok else 1
+    print('  %s adjacency uses the DERIVED radius %.0f (median NN 870, p90 2470; '
+          '1 of 267 isolated)' % ('PASS' if ok else 'FAIL', CONSTS['AI_ADJ_R']))
+
+    print('%s: one engine per faction, the refusals are real, and simple is cheaper'
           % ('PASS' if not fails else 'FAIL'))
     return 1 if fails else 0
 
@@ -5940,6 +6095,7 @@ def main():
     rc |= early_barbarians()
     rc |= voice()
     rc |= no_cheating()
+    rc |= simple_ai()
     rc |= chatter()
     rc |= leaks()
     rc |= plays_to_win()

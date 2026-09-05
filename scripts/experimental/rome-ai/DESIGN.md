@@ -3319,3 +3319,52 @@ body and followed the exit rather than being weakened — plus a new guard that
 
 Playable **19,082,214**. Trace **628 assertions, 0 FAILs**; `npm test` 620
 pass; validate-map 191/192 with 152 warnings (parity).
+
+---
+
+## §32 The simple-AI experiment, built
+
+Design, assignment and pre-registered endpoints: `SIMPLE-AI-PLAN.md`. This
+records only what was built and what the build measured.
+
+**Assignment** (one table, in `AI_Init`, and nothing else decides): simple
+drives **West Rome, Visigoths, Saxons** — three factions, exactly one Roman.
+Matched controls **North Rome, Ostrogoths, Burgundians** stay on the complex
+arm, with **Franks and East Rome** as the non-adjacent reference class.
+
+**The loop, in full**: watchdog → manage gates → spend → Brytenwalda coupling
+gate → sliced sweep for the nearest contested adjacent point → muster → march.
+There is no goal selection, because there are no goals.
+
+**The refuses-to-model list is enforced, not aspirational.** `simple_ai()`
+asserts the simple path touches **none of 31 named mechanisms** — threat field,
+corridor claims, congestion, posture, incumbency, goal scoring, value table,
+claim ledger, capital readiness, proximity scale, mission hold-offs, abort
+taxonomy, naval. Negative-controlled: the same sweep does find the two
+mechanisms it is allowed to keep. Across-water objectives are refused outright
+rather than half-ferried, which is the round-7 lesson about boats with no
+destination.
+
+**Ownership is structural.** One `if/else` on `ai_engine[pid]` in `AI_Think`;
+`AI_MissionTick`, `AI_SelectGoal`, `AI_Execute` and `AI_UpdatePosture` are all
+asserted to live inside the complex branch only, so the two AIs cannot both
+order a unit. `AI_NavIdle` sits **outside** both branches deliberately — a
+stranded boat is a safety property, not architecture, and both arms need it.
+
+**Cost, which the plan made a falsification condition rather than a note**: one
+simple decision costs **519** interpreter calls against the complex goal
+layer's **1017**. The O(own × all) sweep is sliced with a cursor at 40 points
+per tick, so no single tick pays for all of it. Simple is cheaper, so the
+comparison is not contaminated.
+
+**Labelling is the experiment.** One `eng` event per faction at init — emitted
+as its own event rather than folded into existing field layouts, which would
+have broken every consumer. `parse-events.py` now reports the three
+pre-registered endpoints directly, including the joint reading declared in
+§9.1: if territory draws while the simple arm barely gets stuck, it prints that
+this is **both** support for the thesis **and** evidence the machinery bought
+no measurable edge.
+
+Playable **19,086,080**. Trace **645 assertions, 0 FAILs**; `npm test` 620
+pass; validate-map 191/192 with 152 warnings (parity); the playable build
+carries zero engine-AI calls.

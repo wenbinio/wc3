@@ -298,6 +298,27 @@
     boolexpr         ai_bxHero       = null
     boolexpr         ai_bxMicro      = null
     boolexpr         ai_bxHome       = null
+    // ---- THE SIMPLE-AI EXPERIMENT (SIMPLE-AI-PLAN.md) -----------------
+    // Per-faction engine assignment, within one game: same map, same human,
+    // same opponents, same run. One configurable table, no logic depends on
+    // which faction is which -- only on this array.
+    constant integer AI_ENG_COMPLEX  = 0
+    constant integer AI_ENG_SIMPLE   = 1
+    // Adjacency radius. DERIVED, not chosen: across the 267 registrable points
+    // nearest-neighbour distance is median 870 and p90 2470; at 5000 the mean
+    // degree is 7.2 and exactly 1 of 267 points is isolated, against three at
+    // 4000. The smallest radius that leaves the graph effectively connected.
+    constant real    AI_ADJ_R         = 5000.0
+    constant integer AI_SIM_SLICE     = 40     // points examined per tick
+    constant real    AI_SIM_RETHINK   = 45.0   // re-sweep even if nothing changed
+    integer array    ai_engine               // pid -> which AI drives it
+    integer array    ai_simTarget            // committed objective, or -1
+    integer array    ai_simStage             // 0 muster, 1 march
+    real    array    ai_simSince             // when the stage began
+    real    array    ai_simAt                // next full re-sweep
+    integer array    ai_simCursor            // sliced scan position
+    integer array    ai_simBest              // running best of the sweep
+    real    array    ai_simBestD             // its distance
     integer          ai_congN        = 0
     integer array    ai_budgetTick           // last tick this player's budget opened
     integer          ai_tickSeq      = 0     // think-tick counter
@@ -4802,6 +4823,23 @@ function AI_NavIdle takes integer pid returns nothing
         call AI_SayK(pid, EVK_B + V_NAVAL_CANCEL, AI_TIER_LOW, AI_LineB(pid, V_NAVAL_CANCEL))
     endif
     set ai_navState[pid] = AI_NAV_NONE
+    // THE EXPERIMENT: the assignment table, and the ONLY place it lives.
+    // Simple = West Rome (3), Visigoths (4), Saxons (2) -- three factions,
+    // exactly one Roman. Matched controls stay on the complex arm: North Rome
+    // (10, 73 points against West's 72), Ostrogoths (8) and Burgundians (11).
+    // Franks (1) and East Rome (9) are the non-adjacent reference class.
+    // Vandals, Britons, Huns and Persians are excluded from the comparison
+    // entirely -- see SIMPLE-AI-PLAN.md section 2.3 for why each.
+    if pid == 3 or pid == 4 or pid == 2 then
+        set ai_engine[pid] = AI_ENG_SIMPLE
+    else
+        set ai_engine[pid] = AI_ENG_COMPLEX
+    endif
+    set ai_simTarget[pid] = -1
+    set ai_simBest[pid] = -1
+    set ai_simBestD[pid] = 999999.0
+    set ai_simCursor[pid] = 0
+    set ai_simAt[pid] = 0.0
     set ai_threatSince[pid] = -1.0
     set ai_budgetTick[pid] = -1
     set ai_sortieGate[pid] = -1
@@ -5966,6 +6004,159 @@ function AI_WatchdogAct takes integer pid returns nothing
     endif
 endfunction
 
+//===========================================================================
+//  THE SIMPLE AI -- the experiment (SIMPLE-AI-PLAN.md)
+//
+//  A fixed procedure, not a scorer. Eleven rounds produced roughly fifteen
+//  defects and they are four, repeated: a goal selected while unable to
+//  progress; a decision whose execution destroys the condition that authorised
+//  it; a measure calibrated on barbarian scale and wrong at Roman scale; an
+//  instrument that could not fire. The hypothesis is that all four are
+//  intrinsic to weighted scoring over hand-chosen thresholds, and that a
+//  procedure has none of them because it has no scores to be wrong and no
+//  thresholds to drift.
+//
+//  The whole loop is: pick the nearest contested point adjacent to something
+//  you own, muster, march, fight, repeat. Brytenwalda picks its war target
+//  UNIFORMLY AT RANDOM from an adjacency table and reads as competent to a
+//  strong player; this is barely more than that.
+//
+//  WHAT IT REFUSES TO MODEL -- and this list is the deliverable, not the code:
+//  no threat field, no corridor claims, no congestion layer, no posture, no
+//  incumbency, no dwell, no goal hysteresis, no interrupt bars, no garrison
+//  snapshot, no capital readiness, no supply hunger, no point-value table, no
+//  six-way goal scoring, no claim ledger, no write-off economics, no proximity
+//  scale, no harasser role, no tribal preferences, no mission hold-offs, no
+//  abort-reason taxonomy, and no naval. If any of those has to come back for
+//  this to function, THAT is the finding.
+//===========================================================================
+
+// Is this point a legal objective for the simple AI: contested, and adjacent
+// to something we already hold. Adjacency IS the model -- expand from your
+// border, which is the shape Brytenwalda gets from a hand-drawn table.
+function AI_SimpleCandidate takes integer pid, integer i returns boolean
+    local integer j = 0
+    if ai_pt[i] == null then
+        return false
+    endif
+    if GetOwningPlayer(ai_pt[i]) == ai_p[pid] or IsPlayerAlly(GetOwningPlayer(ai_pt[i]), ai_p[pid]) then
+        return false                        // already ours
+    endif
+    // no naval: an objective we cannot walk to is not an objective
+    if AI_WantsCrossing(pid, i) then
+        return false
+    endif
+    loop
+        exitwhen j >= ai_pointCount
+        if ai_pt[j] != null and GetOwningPlayer(ai_pt[j]) == ai_p[pid] then
+            if AI_Dist(ai_ptX[i], ai_ptY[i], ai_ptX[j], ai_ptY[j]) <= AI_ADJ_R then
+                return true
+            endif
+        endif
+        set j = j + 1
+    endloop
+    return false
+endfunction
+
+// A SLICED sweep. Candidate selection is O(own x all) -- about 19k distance
+// tests for West Rome -- so it is spread across ticks with a cursor and a
+// running best, committed when the sweep wraps. The plan makes this a hard
+// rule rather than a note: if the "simple" design costs more per tick than the
+// complex one, the comparison is contaminated and the finding is worthless.
+function AI_SimpleSweep takes integer pid returns nothing
+    local integer done = 0
+    local integer i = ai_simCursor[pid]
+    local real d
+    loop
+        exitwhen done >= AI_SIM_SLICE or ai_pointCount <= 0
+        if i >= ai_pointCount then
+            // sweep complete: commit the best we found and start again
+            set ai_simTarget[pid] = ai_simBest[pid]
+            set ai_simBest[pid] = -1
+            set ai_simBestD[pid] = 999999.0
+            set ai_simAt[pid] = ai_now + AI_SIM_RETHINK
+            set i = 0
+            set ai_simCursor[pid] = 0
+            return
+        endif
+        if AI_SimpleCandidate(pid, i) then
+            set d = AI_Dist(ai_ptX[i], ai_ptY[i], wm_fieldX[pid], wm_fieldY[pid])
+            if d < ai_simBestD[pid] then
+                set ai_simBestD[pid] = d
+                set ai_simBest[pid] = i
+            endif
+        endif
+        set i = i + 1
+        set done = done + 1
+    endloop
+    set ai_simCursor[pid] = i
+endfunction
+
+// Has the committed objective become meaningless?
+function AI_SimpleStale takes integer pid returns boolean
+    local integer t = ai_simTarget[pid]
+    if t < 0 or t >= ai_pointCount or ai_pt[t] == null then
+        return true
+    endif
+    if GetOwningPlayer(ai_pt[t]) == ai_p[pid] or IsPlayerAlly(GetOwningPlayer(ai_pt[t]), ai_p[pid]) then
+        return true                         // taken, by us or an ally
+    endif
+    return ai_now >= ai_simAt[pid]          // periodic re-look, nothing more
+endfunction
+
+function AI_SimpleTick takes integer pid returns nothing
+    local integer t
+    // 1. THE ONLY SAFETY NET. Shared with the complex arm, deliberately: it is
+    //    a property, not architecture, and the comparison needs both arms to
+    //    have it or the stuck-ness endpoint measures the net rather than the AI.
+    if AI_Watchdog(pid) then
+        call AI_WatchdogAct(pid)
+        return
+    endif
+    call AI_ManageGates(pid)                // safety: do not walk into a shut gate
+    call AI_Spend(pid)                      // build army and buildings
+    // 2. BRYTENWALDA'S COUPLING. One shared constant gates both adopting an
+    //    objective and marching on it, so a faction never holds a plan it will
+    //    not immediately prosecute.
+    if not AI_CanProsecute(pid) then
+        return
+    endif
+    // 3. PICK. Sliced sweep; the committed target only changes when it is
+    //    stale or the re-look timer fires.
+    if AI_SimpleStale(pid) then
+        call AI_SimpleSweep(pid)
+    endif
+    set t = ai_simTarget[pid]
+    if t < 0 or t >= ai_pointCount or ai_pt[t] == null then
+        return                              // nothing adjacent and contested
+    endif
+    if ai_target[pid] != t then
+        set ai_target[pid] = t
+        set ai_simStage[pid] = 0
+        set ai_simSince[pid] = ai_now
+        set ai_msRX[pid] = ai_homeX[pid]
+        set ai_msRY[pid] = ai_homeY[pid]
+        set ai_commitAt[pid] = ai_now
+        call AI_Tel("obj", AI_Num(pid) + "|" + AI_TelAI(pid) + "|" + AI_Num(t) + "|" + AI_Num(ai_ptKind[t]) + "|" + AI_Num(GetPlayerId(GetOwningPlayer(ai_pt[t]))) + "|0|0|" + AI_Num(R2I(wm_army[pid])) + "|0|0|0")
+        call AI_SayK(pid, V_OBJ_POINT, AI_TIER_HIGH, AI_LineA(pid, V_OBJ_POINT, AI_KindName(ai_ptKind[t]), AI_OwnerName(t)))
+    endif
+    // 4. MUSTER, then march. The muster is kept because it is a measured fix
+    //    (a whole-army denominator put only 34-40% of a faction inside the
+    //    radius), not because it is architecture.
+    if ai_simStage[pid] == 0 then
+        if AI_MusterFrac(pid) >= AI_MusterNeed(pid) or (ai_now - ai_simSince[pid]) >= AI_MS_STAGE_T then
+            set ai_simStage[pid] = 1
+            call AI_Tel("mus", AI_Num(pid) + "|" + AI_TelAI(pid) + "|0|1000|0|0")
+            call AI_SayK(pid, V_FORMED, AI_TIER_LOW, AI_LineA(pid, V_FORMED, "", ""))
+        else
+            call AI_SendArmy(pid, ai_msRX[pid], ai_msRY[pid], AI_ORD_MOVE, null)
+            return
+        endif
+    endif
+    // 5. MARCH. One dispatch, no routing model, no approach selection.
+    call AI_SendArmy(pid, ai_ptX[t], ai_ptY[t], AI_ORD_ATTACKP, null)
+endfunction
+
 function AI_Think takes nothing returns nothing
     local integer pid = 0
     local integer newGoal
@@ -5985,6 +6176,12 @@ function AI_Think takes nothing returns nothing
                 set ai_nextThink[pid] = ai_now + AI_ThinkPeriod(pid)
                 call AI_ScanWorld(pid)
                 call AI_SetFlags(pid)
+                // THE EXPERIMENT: strict per-faction ownership. Exactly one
+                // engine drives this faction, chosen by a table and nothing
+                // else, so the two AIs can never both order the same unit.
+                if ai_engine[pid] == AI_ENG_SIMPLE then
+                    call AI_SimpleTick(pid)
+                else
                 // THE WATCHDOG, checked BEFORE the decision stack and able to
                 // bypass all of it. It takes no account of goals, claims,
                 // postures or missions, and nothing below can suppress it.
@@ -6005,9 +6202,11 @@ function AI_Think takes nothing returns nothing
                     call AI_Execute(pid)
                 endif
                 endif
-                // ROUND 5: runs whatever the goal is, so a crossing can
-                // always be ended by something other than the goal that
-                // started it.
+                endif
+                // ROUND 5: runs whatever the goal is, so a crossing can always
+                // be ended by something other than the goal that started it.
+                // OUTSIDE the engine branch: both arms need it, and a stranded
+                // boat is a safety property rather than architecture.
                 call AI_NavIdle(pid)
                 // PLAYTEST 10: a sortie gate shuts once the army is clear of
                 // it, or when the lease expires -- whichever comes first. An
@@ -6358,6 +6557,17 @@ function AI_Init takes nothing returns nothing
         // scoreboard -- the exact mistake that produced a confident wrong
         // before/after table.
         call AI_Tel("run", AI_Num(AI_SEED_DEFAULT) + "|" + AI_Num(n) + "|0|" + AI_Num(R2I(AI_GAME_LEN)))
+        // THE EXPERIMENT: one eng event per faction, so the parser can label
+        // every other event by which AI drove it and report matched pairs
+        // directly. THIS LABELLING IS THE EXPERIMENT -- without it we get
+        // impressions again. Emitted as its own event rather than folded into
+        // the existing field layouts, which would break every consumer.
+        set pid = 0
+        loop
+            exitwhen pid >= AI_MAX_PLAYERS
+            call AI_Tel("eng", AI_Num(pid) + "|" + AI_TelAI(pid) + "|" + AI_Num(ai_engine[pid]))
+            set pid = pid + 1
+        endloop
         call AI_TelFlush()
         call AI_Broadcast("FoR-AI is playing: " + ai_roster)
         // ROUND 7: say plainly that reports are ALLY-SCOPED. A playtester

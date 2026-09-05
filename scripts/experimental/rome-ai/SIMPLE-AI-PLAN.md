@@ -1,6 +1,18 @@
 # Simple-AI experiment — design, for review before implementation
 
-**Status**: PLAN ONLY. Nothing implemented. Reported for review as instructed.
+**Status**: **IMPLEMENTED** 2026-09-05, plan approved unchanged except for the
+two corrections below, which came from the map data. The pre-registered
+endpoints in §9 were written and committed **before** implementation and have
+not been touched since.
+
+**Built**: `AI_SimpleTick` and its three helpers in `for-ai.j`; the assignment
+table in `AI_Init`; one `eng` telemetry event per faction; matched-pair
+reporting in `parse-events.py`; and `simple_ai()` in `trace.py`, which asserts
+ownership, the refusals and the cost bound.
+
+**Measured at build time**: one simple decision costs **519** interpreter calls
+against the complex goal layer's **1017** — so the cost falsification condition
+in §9.2 is not triggered, and the comparison is clean.
 
 **Date**: 2026-08-22. **Author**: this session. **Approved in principle by the
 owner** ("Do it. Plan it out in detail. Set it so it only applies to several

@@ -268,6 +268,92 @@ def report(events, csv_path=None):
                 print('      ** %d attack(s) ended "going nowhere" -- stall detector fired'
                       % ends[p][4])
 
+    # ---- THE EXPERIMENT: matched pairs, pre-registered endpoints ----------
+    # SIMPLE-AI-PLAN.md section 9. The readings were written down before any
+    # data existed and are not revised now that it does.
+    engine = {}
+    for e in events:
+        if e['ev'] == 'eng' and len(e['f']) >= 3:
+            try:
+                engine[int(e['f'][0])] = int(e['f'][2])
+            except (ValueError, IndexError):
+                continue
+    if engine:
+        PAIRS = [(3, 10, 'Roman'), (4, 8, 'Gothic'), (2, 11, 'northern')]
+        REFS = [1, 9]                      # non-adjacent to any simple faction
+        wd = defaultdict(int)
+        for e in events:
+            if e['ev'] == 'wd' and e['f']:
+                try:
+                    wd[int(e['f'][0])] += 1
+                except ValueError:
+                    pass
+        churn = detect_churn(events)
+        churn_n = defaultdict(int)
+        for (p_, _t), hits in churn.items():
+            churn_n[p_] += len(hits)
+        first_obj = {}
+        for e in events:
+            if e['ev'] == 'obj' and e['f']:
+                try:
+                    first_obj.setdefault(int(e['f'][0]), e['t'])
+                except ValueError:
+                    pass
+
+        def label(p_):
+            return 'simple' if engine.get(p_) == 1 else 'complex'
+
+        print('\n' + '=' * 70)
+        print('THE SIMPLE-AI EXPERIMENT -- pre-registered endpoints')
+        print('=' * 70)
+        print('\n-- PRIMARY: net territory, per matched pair ' + '-' * 27)
+        wins = {'simple': 0, 'complex': 0, 'draw': 0}
+        for a, b, nm in PAIRS:
+            na, nb = owned.get(a, 0), owned.get(b, 0)
+            if na > nb:
+                wins[label(a)] += 1
+            elif nb > na:
+                wins[label(b)] += 1
+            else:
+                wins['draw'] += 1
+            print('   %-9s %-13s %+4d (%-7s)   vs  %-13s %+4d (%s)'
+                  % (nm, FACTION.get(a, a), na, label(a), FACTION.get(b, b), nb, label(b)))
+        print('   pairs won: simple %d, complex %d, drawn %d'
+              % (wins['simple'], wins['complex'], wins['draw']))
+
+        print('\n-- SECONDARY: stuck-ness (does the ARCHITECTURE generate the bug class)')
+        print('   %-13s %-8s %8s %8s %10s' % ('faction', 'engine', 'watchdog', 'churn', 'first obj'))
+        for a, b, _nm in PAIRS:
+            for p_ in (a, b):
+                print('   %-13s %-8s %8d %8d %10s'
+                      % (FACTION.get(p_, p_), label(p_), wd.get(p_, 0), churn_n.get(p_, 0),
+                         ('%ds' % first_obj[p_]) if p_ in first_obj else 'never'))
+        s_wd = sum(wd.get(p_, 0) for p_ in engine if engine[p_] == 1)
+        c_wd = sum(wd.get(p_, 0) for p_ in engine if engine[p_] == 0)
+        print('   watchdog firings: simple arm %d, complex arm %d' % (s_wd, c_wd))
+
+        print('\n-- THIRD REFERENCE: non-adjacent controls (baseline drift) ' + '-' * 11)
+        for p_ in REFS:
+            print('   %-13s %+4d (%s, not adjacent to a simple faction)'
+                  % (FACTION.get(p_, p_), owned.get(p_, 0), label(p_)))
+
+        print('\n-- THE JOINT READING (declared before the run, SIMPLE-AI-PLAN 9.1) --')
+        drawish = wins['simple'] == wins['complex']
+        if drawish and s_wd * 4 < max(c_wd, 1):
+            print('   Territory DRAWS while the simple arm barely gets stuck.')
+            print('   This is BOTH: the scoring architecture demonstrably generates')
+            print('   the failure class, AND the failure class demonstrably did not')
+            print('   cost territory -- so the machinery bought no measurable edge.')
+            print('   Report both halves.')
+        elif wins['complex'] >= 2:
+            print('   The complex arm won 2 of 3 pairs: THE THESIS IS FALSIFIED.')
+            print('   The complexity was load-bearing. Say so plainly.')
+        elif wins['simple'] >= 2:
+            print('   The simple arm won 2 of 3 pairs on equal geography.')
+        else:
+            print('   No clear pair result; read the secondary endpoints and the')
+            print('   third reference class before concluding anything.')
+
     # ---- supply: the cap, and whether anything ever raised a ceiling -------
     # The owner asked whether someone had stealthily raised the barbarian food
     # cap. That should be a question the log answers, so it now is -- for all
