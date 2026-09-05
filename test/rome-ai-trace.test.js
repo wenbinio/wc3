@@ -71,6 +71,26 @@ test('rome-ai: trace.py passes every assertion against the shipped for-ai.j', (t
     `trace.py produced only ${passes} PASS lines — the harness has gone quiet`);
 });
 
+test('rome-ai: the gate toy holds every outcome and reproduces every reverted defect', (t) => {
+  if (!HAVE_DIR) return t.skip('scripts/experimental/rome-ai not present');
+  if (!PY) return t.skip('python3 not installed (optional tool)');
+  // DESIGN 33: the first closed-loop instrument in the programme. It drives the
+  // SHIPPED for-ai.j through a kinematic world for simulated minutes and
+  // asserts OUTCOMES (the army is through, the gate is shut again, it never
+  // opened into an enemy...), then reverts each shipped gate fix and requires
+  // the historical defect to come back as a failed outcome. A PASS line here
+  // is a world predicate, not a decision; a NEGATIVE CONTROL line is proof the
+  // predicate can fail. ~10s.
+  const r = run('gate_toy.py');
+  const out = (r.stdout || '') + (r.stderr || '');
+  const fails = out.split('\n').filter((l) => /\bFAIL\b/.test(l));
+  assert.deepStrictEqual(fails, [], `gate_toy.py reported failures:\n${fails.join('\n')}`);
+  assert.strictEqual(r.status, 0, `gate_toy.py exited ${r.status}\n${out.slice(-3000)}`);
+  const controls = out.split('\n').filter((l) => /PASS NEGATIVE CONTROL/.test(l)).length;
+  assert.ok(controls >= 8,
+    `gate_toy.py ran only ${controls} negative controls — the reversions have gone quiet`);
+});
+
 test('rome-ai: the telemetry parser self-test passes, incl. the churn detector', (t) => {
   if (!HAVE_DIR) return t.skip('scripts/experimental/rome-ai not present');
   if (!PY) return t.skip('python3 not installed (optional tool)');

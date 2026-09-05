@@ -334,6 +334,7 @@ def make_env(sc):
         'ai_laneNX': sc.get('laneNX', 0.0), 'ai_laneNY': sc.get('laneNY', 1.0),
         'ai_ramWork': False, 'ai_ramType': 0, 'ai_ramX': 0.0, 'ai_ramY': 0.0,
         'ai_column': False, 'ai_ramAt': d(-9999.0), 'ai_crossLast': d(-1),
+        'ai_breakGate': d(-1), 'ai_breakLife': d(1.0), 'ai_breakAt': d(0.0),
         'ai_navState': d(0), 'ai_navShip': d(None),
         'ai_navAt': d(0.0), 'ai_navSince': d(0.0),
         'wm_capThreat': d(sc.get('capThreat', False)),
@@ -385,7 +386,10 @@ def make_env(sc):
         env['ai_gate'][i] = 1000 + i
         env['ai_gateX'][i] = g.get('x', 0.0)
         env['ai_gateY'][i] = g.get('y', 0.0)
-        env['ai_gateOr'][i] = g.get('orient', 0)
+        # DESIGN 33: a gate's orientation is its WALL direction (h01W = 3 =
+        # vertical). Every routing scenario here marches along the x axis, so
+        # the wall it crosses is vertical unless the scenario says otherwise.
+        env['ai_gateOr'][i] = g.get('orient', 3)
         env['ai_gateCd'][i] = 0.0
         env['ai_gateStuck'][i] = g.get('stuck', False)
         env['_gateState'][i] = g.get('state', CONSTS['AI_GS_CLOSED'])
@@ -5652,9 +5656,9 @@ ROUND3_GUARDS = [
      r'elseif AI_RandReal\(\) < 0\.40 then\s*\n\s*set role = 1', False),
     # --- rams (item 8) and dispersal (item 10) ---------------------------
     ('a ram with no wall to break holds behind the line',
-     r'function AI_SendEnum\b.*?if GetUnitTypeId\(u\) == ai_ramType and not ai_ramWork then\s*\n\s*call AI_TryOrder\(u, AI_ORD_MOVE, ai_ramX, ai_ramY', True),
+     r'function AI_SendEnum\b.*?if GetUnitTypeId\(u\) == ai_ramType then.*?else\s*\n\s*call AI_TryOrder\(u, AI_ORD_MOVE, ai_ramX, ai_ramY', True),
     ('ram work is decided by whether the approach must BREAK a crossing',
-     r'function AI_March\b.*?if ai_apBreak\[pid\] then.*?set ai_ramWork = true\s*\n\s*call AI_SendArmy\(pid, ai_gateX\[gi\], ai_gateY\[gi\], AI_ORD_ATTACKU', True),
+     r'function AI_March\b.*?if ai_apBreak\[pid\] then.*?set ai_ramWork = true\s*\n\s*call AI_SendArmy\(pid, ai_gateX\[gi\], ai_gateY\[gi\], AI_ORD_ATTACKU, ai_gate\[gi\]\)', True),
     ('meeting a wall is what starts the ram memory',
      r'if ai_apBreak\[pid\] then\s*\n\s*set ai_wallSince\[pid\] = ai_now', True),
     ('a break we cannot perform is priced out of the crossing comparison',
@@ -5802,8 +5806,8 @@ ROUND3_GUARDS = [
      r'function AI_GateCorridor\b.*?AI_GATE_CORRIDOR_FREE', True),
     ('the formation width is MEASURED against the engine pathing',
      r'function AI_HalfSpan\b.*?IsTerrainPathable\(', True),
-    ('the tightest point on the route decides the width',
-     r'set n = AI_LanesAt\(x, y\).*?dx\*0\.34.*?dx\*0\.67.*?call AI_SetLanes\(n\)', True),
+    # (the tightest-point-on-the-route sampling is asserted as a bridge OUTCOME
+    # in gate_toy.py since DESIGN 33; the route is walked at AI_LANE_SAMPLE steps)
     ('lane count and midpoint are always set together, never derived',
      r'function AI_SetLanes\b.*?set ai_laneN = 5\s*\n\s*set ai_laneMid = 2', True),
     # --- coordination and harassers (item 7) -----------------------------

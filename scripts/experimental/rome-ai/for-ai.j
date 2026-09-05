@@ -580,7 +580,18 @@
     // own gate just outside the 1600 corridor -- is done by the egress
     // radius below, deterministically and on the first tick.
     constant real    AI_GATE_EGRESS_R = 3200.0 // an own shut gate this near the army earns the wide corridor
-    constant real    AI_GATE_STANDOFF = 2600.0 // wait this far short of a wall we cannot break yet
+    // A break is a PHASE with a progress metric -- the gate's life fraction --
+    // and a no-progress budget: if a window of AI_BREAK_BUDGET seconds sees
+    // the gate lose less than AI_BREAK_MIN of its life, the break is IMPOSSIBLE
+    // (typed) and the plan layer bars the target. The map's own damage table
+    // (war3mapMisc.txt: normal/pierce 0.35 vs the gates' divine armour, siege
+    // 1.50) means an infantry army ORDERED to attack breaks a 2000 HP gate in
+    // ~25 s and rams do it faster still; what does not break a gate is an
+    // army standing at one, which is what the budget detects.
+    constant real    AI_BREAK_BUDGET  = 60.0   // seconds a break may go without progress
+    constant real    AI_BREAK_MIN     = 0.10   // life fraction the gate must lose per window
+    constant real    AI_COLUMN_W      = 120.0  // spacing of a column's destinations past a doorway
+    constant real    AI_COLUMN_MAX    = 2400.0 // ... and how far past it the column may reach
     constant real    AI_RAM_QUEUE_T   = 60.0   // an accepted ram order counts as siege for this long
     constant real    AI_RAM_MORE      = 0.55   // further rams: the composition roll
     // The crossing is a plan PHASE with a typed outcome (game-ai-principles
@@ -588,9 +599,8 @@
     // "cross", and the mission layer consumes IMPOSSIBLE as a typed failure.
     constant integer AI_CROSS_NONE       = 0  // no wall on this march: plain attack-move
     constant integer AI_CROSS_THROUGH    = 1  // through a hole or our own (opened) gate
-    constant integer AI_CROSS_BREAK      = 2  // sieging an enemy gate with siege in hand
-    constant integer AI_CROSS_WAIT       = 3  // standing off: rams queued or affordable
-    constant integer AI_CROSS_IMPOSSIBLE = 4  // standing off with no way to buy siege
+    constant integer AI_CROSS_BREAK      = 2  // assaulting an enemy gate; rams bought meanwhile
+    constant integer AI_CROSS_IMPOSSIBLE = 4  // the assault made no progress inside its budget
     constant integer AI_CROSS_SHUT       = 5  // own gate refused to open (contested/threat)
 
     // ---- razing, playtest fault (5) -----------------------------------
@@ -720,6 +730,9 @@
     real    array    ai_wallSince       // last time a wall stood in our way
     real    array    ai_ramAt           // last ACCEPTED ram train order (E2, siege queued)
     integer array    ai_crossLast       // last AI_CROSS_* status, for transition telemetry
+    integer array    ai_breakGate       // the gate under assault, or -1
+    real    array    ai_breakLife       // its life fraction when the budget window opened
+    real    array    ai_breakAt         // when the window opened
 
     // ---- point registry (static geography, dynamic state fogged) -----
     integer          ai_pointCount   = 0
@@ -925,6 +938,8 @@
     // re-form, with no state to keep and nothing to reset.
     constant real    AI_LANE_PROBE    = 200.0   // step when measuring frontage
     constant integer AI_LANE_PROBE_N  = 6       // steps each side (max 1200)
+    constant real    AI_LANE_SAMPLE   = 500.0   // DESIGN 33: frontage sampled along the route at this step
+    constant integer AI_LANE_SAMPLE_N = 20      // ... up to this many samples (10000 units)
     integer          ai_laneN       = 5         // lanes in use THIS dispatch
     integer          ai_laneMid     = 2         // (ai_laneN-1)/2, set together
     constant integer AI_LANES         = 5       // odd, so one lane is dead centre
@@ -1062,6 +1077,13 @@ endfunction
 
 function AI_Max takes real a, real b returns real
     if a > b then
+        return a
+    endif
+    return b
+endfunction
+
+function AI_Min takes real a, real b returns real
+    if a < b then
         return a
     endif
     return b
@@ -4028,8 +4050,14 @@ function AI_SendEnum takes nothing returns nothing
     endif
     // ROUND 3, queue item 8: a ram with no wall to break holds behind the
     // line. It is the map own declared wall-breaker and nothing else.
-    if GetUnitTypeId(u) == ai_ramType and not ai_ramWork then
-        call AI_TryOrder(u, AI_ORD_MOVE, ai_ramX, ai_ramY, null)
+    // DESIGN 33: with a wall to break (ai_ramWork) the rams are the ONLY
+    // units sent at the gate; the dispatch point is the escort line.
+    if GetUnitTypeId(u) == ai_ramType then
+        if ai_ramWork and ai_orderTarget != null then
+            call AI_TryOrder(u, AI_ORD_ATTACKU, GetUnitX(ai_orderTarget), GetUnitY(ai_orderTarget), ai_orderTarget)
+        else
+            call AI_TryOrder(u, AI_ORD_MOVE, ai_ramX, ai_ramY, null)
+        endif
         call AI_Census(AI_EX_RAM, u)
         set u = null
         return
@@ -4049,6 +4077,13 @@ function AI_SendEnum takes nothing returns nothing
         else
             call AI_TryOrder(u, AI_ORD_ATTACKP, ai_orderX, ai_orderY, null)
         endif
+    elseif ai_column then
+        // T1 (DESIGN 33): THROUGH a doorway in single file. Every destination
+        // lies on the march line PAST the crossing, AI_COLUMN_W apart and
+        // capped, so the column forms at the door and disperses beyond it.
+        // Ranks stepping BACK from a waypoint 300 past a gate would put most
+        // of a 24-unit army inside the wall it is leaving -- the toy showed it.
+        call AI_TryOrder(u, ai_ordKind, ai_orderX + ai_marchDX*AI_Min(AI_COLUMN_W*I2R(slot), AI_COLUMN_MAX), ai_orderY + ai_marchDY*AI_Min(AI_COLUMN_W*I2R(slot), AI_COLUMN_MAX), null)
     else
         // ROUND 3, queue item 10: march in lanes, not in one column
         // PLAYTEST 9: a distinct point per unit -- lane ACROSS the march line,
@@ -4085,15 +4120,18 @@ function AI_SendArmy takes integer pid, real x, real y, integer kind, unit tgt r
     // army and where it is going rather than at either end. One narrow sample
     // collapses the whole column to single file, which is the only formation
     // that fits a bridge.
+    // DESIGN 33: the toy showed three fixed samples missing a bridge at
+    // 70-84 percent of a route; the route is now walked at AI_LANE_SAMPLE
+    // steps (capped), same measurement, no gaps a bridge fits through.
     set n = AI_LanesAt(x, y)
-    set k = AI_LanesAt(wm_fieldX[pid] + dx*0.34, wm_fieldY[pid] + dy*0.34)
-    if k < n then
-        set n = k
-    endif
-    set k = AI_LanesAt(wm_fieldX[pid] + dx*0.67, wm_fieldY[pid] + dy*0.67)
-    if k < n then
-        set n = k
-    endif
+    set k = 1
+    loop
+        exitwhen I2R(k)*AI_LANE_SAMPLE >= d or k > AI_LANE_SAMPLE_N
+        if AI_LanesAt(wm_fieldX[pid] + dx*(I2R(k)*AI_LANE_SAMPLE/d), wm_fieldY[pid] + dy*(I2R(k)*AI_LANE_SAMPLE/d)) < n then
+            set n = AI_LanesAt(wm_fieldX[pid] + dx*(I2R(k)*AI_LANE_SAMPLE/d), wm_fieldY[pid] + dy*(I2R(k)*AI_LANE_SAMPLE/d))
+        endif
+        set k = k + 1
+    endloop
     call AI_SetLanes(n)
     // T1 (DESIGN 33): a dispatch THROUGH a doorway is single file whatever
     // the ground measures -- IsTerrainPathable cannot see a gate at all.
@@ -4241,10 +4279,12 @@ endfunction
 //    E1  a crossing is PRICED, never chosen for being a gate: a breach is
 //        free, our own gate nearly free, an enemy gate costs the siege
 //        (AI_GateCost), and a hole earns a wider search than a wall.
-//    E2  a break is never committed without siege in hand or queued: the
-//        army stands off and rams are bought FROM the crossing decision
-//        (AI_CanBreak, AI_WantsRam). Routing does not switch off on arrival
-//        (AI_APPROACH_MIN is trivial-distance only).
+//    E2  a break is ASSAULTED, never stood in front of: everything in hand
+//        attacks the gate, rams are bought FROM the crossing decision
+//        (AI_WantsRam), and the assault is budgeted on the gate's own life
+//        (AI_BREAK_BUDGET) with a typed IMPOSSIBLE when it makes no progress.
+//        Routing does not switch off on arrival (AI_APPROACH_MIN is a
+//        trivial-distance early-out only).
 //    X1  an army whose objective lies beyond its own wall selects a crossing
 //        or stands off -- never a bare move. Own gates within
 //        AI_GATE_EGRESS_R of the army earn the wide corridor, which is what
@@ -4406,16 +4446,21 @@ function AI_GateOwnedBy takes integer pid, integer i returns boolean
     return GetOwningPlayer(ai_gate[i]) == ai_p[pid]
 endfunction
 
-// ---- E2: can this faction break a wall at all? ----------------------------
+// ---- E2: does this faction have siege for a wall? ----------------------------
 //
 // ROUND 5, the Gray jam: ~25 infantry on a causeway in front of a 1992/2000
-// armour-5 City Gate doing eight damage, because routing had switched off on
-// arrival and no ram was ever bought. A break we cannot PERFORM is not a
-// crossing, it is a wall to stand in front of. "Siege in hand" is the world
-// model (wm_hasSiege, from the army scan); "siege queued" is a ram train
-// order the trainer ACCEPTED within AI_RAM_QUEUE_T -- AI_Spend stamps it
-// through AI_RamOrdered, which is the first order-acknowledgement in the
-// module (the audit's defect 7, in the one place it decides something).
+// City Gate reading eight damage, because routing had switched off on
+// arrival: the army was attack-moving at a point behind the wall, the engine
+// dropped the unreachable order, and idle units do not acquire buildings.
+// It was never ORDERED to attack the gate. (DESIGN 12.1 inferred that
+// infantry cannot hurt a gate; the map's war3mapMisc.txt says otherwise --
+// normal damage does 0.35 to the gates' divine armour, siege 1.50 -- so a
+// siege with rams is faster, not the only kind.) Siege in hand or queued
+// therefore PRICES a crossing (AI_GateCost) and decides whether the first
+// ram is bought without a roll; it does not gate the assault. "Siege queued"
+// is a ram train order the trainer ACCEPTED within AI_RAM_QUEUE_T --
+// AI_Spend stamps it through AI_RamOrdered, the module's one
+// order-acknowledgement (the audit's defect 7, where it decides something).
 
 function AI_CanBreak takes integer pid returns boolean
     return wm_hasSiege[pid] or (ai_now - ai_ramAt[pid]) < AI_RAM_QUEUE_T
@@ -4475,9 +4520,10 @@ endfunction
 // a pre-existing hole in the gate, instead of sieging that gate ... you can
 // choke them easily". A hole is free, our own gate is nearly free because we
 // can simply open it, and an enemy gate costs a siege priced by how much of
-// it is still standing, so a half-broken gate beats a fresh one. A break we
-// have no way to perform is priced out of the comparison (still finite: if
-// it is the ONLY crossing we stand off and buy rams, see AI_March).
+// it is still standing, so a half-broken gate beats a fresh one. A break
+// with no siege in hand or queued is priced far above any alternative (still
+// finite: if it is the ONLY crossing we assault it with the infantry and buy
+// rams meanwhile, see AI_March).
 function AI_GateCost takes integer pid, integer i returns real
     if AI_GateState(i) != AI_GS_CLOSED then
         return 0.0                        // an existing breach: free
@@ -4521,6 +4567,48 @@ endfunction
 //  first -- and inside one wall (t values within AI_GATE_SAMEWALL) the
 //  CHEAPEST crossing wins, by AI_GateCost.
 
+// The wall a gate pierces runs along its ORIENTATION. Measured on the map
+// from the B001 blockers around every gate (DESIGN 33.2): h01N-family walls
+// run at 0 degrees, h01Q at 45, h01T at 135, h01W at 90. This is what turns
+// "a gate near my line" into "my line crosses this gate's wall": the 2026-09
+// toy caught the old projection test flapping THROUGH/BREAK on a wall the
+// march ran ALONG rather than across, because a gate on that wall projected
+// onto the segment while the hole the army had just used fell behind it.
+function AI_GateWallDX takes integer orient returns real
+    if orient == 0 then
+        return 1.0
+    endif
+    if orient == 1 then
+        return 0.70711
+    endif
+    if orient == 2 then
+        return -0.70711
+    endif
+    return 0.0
+endfunction
+
+function AI_GateWallDY takes integer orient returns real
+    if orient == 0 then
+        return 0.0
+    endif
+    if orient == 1 or orient == 2 then
+        return 0.70711
+    endif
+    return 1.0
+endfunction
+
+// Segment parameter t at which the march f -> f+d meets the wall line through
+// gate i, or -1 when the march runs parallel to that wall (never crosses it).
+function AI_GateCrossT takes integer i, real fx, real fy, real dx, real dy returns real
+    local real wx = AI_GateWallDX(ai_gateOr[i])
+    local real wy = AI_GateWallDY(ai_gateOr[i])
+    local real den = dx*wy - dy*wx
+    if den < 1.0 and den > -1.0 then
+        return -1.0
+    endif
+    return ((ai_gateX[i]-fx)*wy - (ai_gateY[i]-fy)*wx) / den
+endfunction
+
 function AI_ChooseApproach takes integer pid, real tx, real ty returns nothing
     local real fx = wm_fieldX[pid]
     local real fy = wm_fieldY[pid]
@@ -4547,11 +4635,12 @@ function AI_ChooseApproach takes integer pid, real tx, real ty returns nothing
         return                              // already on top of it
     endif
 
-    // pass 1 -- the FIRST wall on the march: smallest t inside the corridor
+    // pass 1 -- the FIRST wall the march crosses: smallest t at which the
+    // segment meets a gate's wall line within that gate's corridor of it
     loop
         exitwhen i >= ai_gateCount
         if ai_gate[i] != null and not ai_gateStuck[i] then
-            set t = ((ai_gateX[i]-fx)*dx + (ai_gateY[i]-fy)*dy) / len2
+            set t = AI_GateCrossT(i, fx, fy, dx, dy)
             if t >= 0.0 and t <= 1.0 and t < bestT then
                 set perp = AI_Dist(ai_gateX[i], ai_gateY[i], fx + dx*t, fy + dy*t)
                 if perp <= AI_GateCorridor(pid, i) then
@@ -4571,7 +4660,7 @@ function AI_ChooseApproach takes integer pid, real tx, real ty returns nothing
     loop
         exitwhen i >= ai_gateCount
         if ai_gate[i] != null and not ai_gateStuck[i] then
-            set t = ((ai_gateX[i]-fx)*dx + (ai_gateY[i]-fy)*dy) / len2
+            set t = AI_GateCrossT(i, fx, fy, dx, dy)
             if t >= 0.0 and t <= 1.0 and (t - bestT) <= AI_GATE_SAMEWALL then
                 set perp = AI_Dist(ai_gateX[i], ai_gateY[i], fx + dx*t, fy + dy*t)
                 if perp <= AI_GateCorridor(pid, i) then
@@ -4780,17 +4869,17 @@ endfunction
 //
 // Every land march of the army goes through here: the mission layer's
 // AI_MoveOnTarget and the simple arm's step 5. It selects the crossing, opens
-// an own gate on demand, stands off an unbreakable wall, sieges a breakable
-// one with the rams doing the work, and sends the army THROUGH a doorway in
-// column. A bare attack-move at the objective is issued only when no wall
+// an own gate on demand, assaults an enemy gate under a progress budget with
+// rams bought meanwhile, and sends the army THROUGH a doorway in column. A bare attack-move at the objective is issued only when no wall
 // stands between the army and it.
 //
 // The crossing is a PHASE of the march with a typed outcome (AI_CROSS_*),
 // not a flag re-read each tick: its precondition is "doorway clear" for our
-// own gate and "siege in hand or queued" for an enemy one; its progress is
-// the gate falling behind the march segment (t < 0, at which point
-// AI_ChooseApproach stops selecting it); its failure types are SHUT, WAIT
-// and IMPOSSIBLE, and the mission layer consumes IMPOSSIBLE as a typed abort
+// own gate and a breakable one for an enemy gate; its progress is the gate
+// falling behind the march (its wall line no longer crossed, at which point
+// AI_ChooseApproach stops selecting it) or its life falling under assault;
+// its failure types are SHUT and IMPOSSIBLE, and the mission layer consumes
+// IMPOSSIBLE as a typed abort
 // that bars the target (Orkin's blocked door, game-ai-principles 2.2). The
 // status is telemetered on every transition.
 function AI_MarchStatus takes integer pid, integer status, integer gi returns integer
@@ -4803,44 +4892,38 @@ endfunction
 
 function AI_March takes integer pid, real tx, real ty returns integer
     local integer gi
-    local real dx
-    local real dy
-    local real d
     call AI_ChooseApproach(pid, tx, ty)
     set gi = ai_apGate[pid]
     if gi < 0 then
         call AI_SendArmy(pid, tx, ty, AI_ORD_ATTACKP, null)  // no wall on this march
         return AI_MarchStatus(pid, AI_CROSS_NONE, -1)
     endif
-    set ai_column = true                    // T1: single file through the door
     if ai_apBreak[pid] then
-        if not AI_CanBreak(pid) then
-            // E2, THE VETO: no siege in hand or queued, so this break is not
-            // committed to. Stand off short of the wall on the march line, in
-            // column, and let AI_Spend buy the rams the crossing decision has
-            // just justified. Infantry never chews. If a ram cannot even be
-            // afforded the outcome is IMPOSSIBLE and the plan layer bars the
-            // target instead of waiting on money that is not coming.
-            set dx = tx - wm_fieldX[pid]
-            set dy = ty - wm_fieldY[pid]
-            set d = SquareRoot(dx*dx + dy*dy)
-            if d < 1.0 then
-                set d = 1.0
+        // E2: the crossing is shut and not ours. Break THIS gate on purpose --
+        // everything in hand attacks it (AI_ORD_ATTACKU: units inside
+        // AI_SIEGE_R take the gate, the rest close on it; rams always take the
+        // gate, AI_SendEnum) -- while AI_Spend buys the rams the crossing
+        // decision has justified (ai_wallSince -> AI_WantsRam). The phase is
+        // budgeted on PROGRESS: a window that sees the gate keep its life is
+        // a break that is not happening, and the typed failure IMPOSSIBLE
+        // lets the plan layer bar the target (Orkin's blocked door).
+        if ai_breakGate[pid] != gi then
+            set ai_breakGate[pid] = gi
+            set ai_breakLife[pid] = AI_GateLifeFrac(gi)
+            set ai_breakAt[pid] = ai_now
+        elseif (ai_now - ai_breakAt[pid]) >= AI_BREAK_BUDGET then
+            if AI_GateLifeFrac(gi) > ai_breakLife[pid] - AI_BREAK_MIN then
+                set ai_breakGate[pid] = -1
+                return AI_MarchStatus(pid, AI_CROSS_IMPOSSIBLE, gi)
             endif
-            call AI_SendArmy(pid, ai_gateX[gi] - dx/d*AI_GATE_STANDOFF, ai_gateY[gi] - dy/d*AI_GATE_STANDOFF, AI_ORD_ATTACKP, null)
-            if wm_lumber[pid] >= AI_RAM_LUMBER then
-                return AI_MarchStatus(pid, AI_CROSS_WAIT, gi)
-            endif
-            return AI_MarchStatus(pid, AI_CROSS_IMPOSSIBLE, gi)
+            set ai_breakLife[pid] = AI_GateLifeFrac(gi)
+            set ai_breakAt[pid] = ai_now
         endif
-        // the crossing is shut and not ours, and we can break it: break THIS
-        // gate on purpose, instead of attack-moving at the objective and
-        // letting the engine reroute the army onto a worse approach. The
-        // rams have work this dispatch.
         set ai_ramWork = true
         call AI_SendArmy(pid, ai_gateX[gi], ai_gateY[gi], AI_ORD_ATTACKU, ai_gate[gi])
         return AI_MarchStatus(pid, AI_CROSS_BREAK, gi)
     endif
+    set ai_breakGate[pid] = -1
     // ours (or an ally's) and shut: open it on demand -- never into a live
     // threat (a no-op for a breach) -- and walk through to the waypoint past it
     // (not narrated: a routine sortie open is housekeeping, DESIGN 31.1; the
@@ -4848,6 +4931,7 @@ function AI_March takes integer pid, real tx, real ty returns integer
     if AI_GateState(gi) == AI_GS_CLOSED then
         call AI_GateOpenForMarch(pid, gi)
     endif
+    set ai_column = true                    // T1: single file through the door
     call AI_SendArmy(pid, ai_apX[pid], ai_apY[pid], AI_ORD_ATTACKP, null)
     if AI_GateState(gi) == AI_GS_CLOSED then
         return AI_MarchStatus(pid, AI_CROSS_SHUT, gi)
@@ -6426,6 +6510,7 @@ function AI_EnablePlayer takes integer pid, integer difficulty returns nothing
     set ai_ifStuck[pid]  = false
     set ai_ramAt[pid]    = -9999.0
     set ai_crossLast[pid]= -1
+    set ai_breakGate[pid]= -1
     set ai_navState[pid] = AI_NAV_NONE
     set ai_navShip[pid]  = null
     set ai_navAt[pid]    = 0.0
