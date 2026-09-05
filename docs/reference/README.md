@@ -88,6 +88,7 @@ question it answers, its date, and how it goes stale.
   **Staleness**: structural findings age well; every probability is a
   balance value from the hosted `v1_5_4` build (Hive now ships a later
   `_FIX`) — re-read the named triggers before citing numbers.
+- **rome-ai-advisor-review-2026-09.md** (2026-09-05) — is the Fall of Rome AI programme working after fourteen rounds, is the simple-AI A/B sound, and what should the next session stop doing? Independent advisor read of DESIGN §1–§32, the plan, harness and parser, checked against `for-ai.j` and the map's own `info.json`/`units.json`. Verdict: the success metric of §12.2 was never measured; ~14 defects trace to the previous round's fix; the matched pairs are allies on lopsided frontiers with a kind-blind endpoint and two vacuous instruments; build a closed-loop toy world before any further AI change. **Staleness**: pinned to build `65a3ce2`; the geometry table is straight-line over the registry and should be re-measured if the point set or pairs change.
 
 ## wc3-ai-prior-art.md (2026-08-09)
 
