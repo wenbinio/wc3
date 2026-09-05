@@ -225,19 +225,54 @@ channel**, or the comparison is not like-for-like.
 ## 8. Cost note the implementation must respect
 
 Candidate selection is O(own × all): 72 × 267 ≈ 19k distance tests for West
-Rome. That is too much every tick, so it must be **sliced or cached** the way
-`AI_RefreshPointMemory` already is — recomputed when the objective completes or
-its hold expires, not per tick. Flagged here because it is the one place the
-simple design could accidentally cost more than the complex one.
+Rome. That is too much every tick, so it is **sliced** with a cursor the way
+`AI_RefreshPointMemory` already is — a bounded number of points per tick, with
+a running best committed when the sweep completes.
+
+**HARD RULE, not a note**: the simple AI's per-tick cost is measured against the
+complex arm's and asserted with a bound. **If the "simple" design costs more per
+tick, the comparison is contaminated and the finding is worthless** — so this
+is a falsification condition (§9.2), not a performance nicety.
 
 ---
 
-## 9. Open question for review
+## 9. PRE-REGISTERED ENDPOINTS AND READINGS
 
-The **secondary** measures (watchdog firings, churn, commitment %) are where I
-expect the interesting result even if territory is a draw: a design that *cannot*
-get stuck should show near-zero watchdog firings, and the current AI's rate is
-the number worth comparing. Confirm whether a territory draw with a large
-difference in stuck-ness counts as support, or as a null result. I would call it
-support, but it is a judgement about what we are testing and it should be made
-before the run, not after it.
+**Written before any data exists. Not to be revised once numbers arrive** —
+that is the only thing that stops a null being reinterpreted as a victory.
+
+| endpoint | measure | what it decides |
+|---|---|---|
+| **Primary** | net territory per matched pair | whether the simple architecture can play the map |
+| **Secondary** | stuck-ness: watchdog firings, mission churn, commitment %, time-to-first-objective | whether the **bug class** is architectural |
+| **Third reference** | Franks and East Rome — on the current AI, **not adjacent to any simple faction** | baseline drift, so an inflated pair delta is visible rather than assumed away |
+
+### 9.1 The joint reading, declared now
+
+**If territory draws while the simple arm shows near-zero watchdog firings
+against a complex arm that fires repeatedly, that is BOTH:**
+
+1. **support for the thesis** — the scoring architecture demonstrably generates
+   the failure class; and
+2. **an indictment of the programme** — the failure class demonstrably did not
+   cost territory, so eleven rounds of machinery bought no measurable
+   advantage.
+
+**Both halves go in the report.** Better to deliver that than a comfortable win.
+
+### 9.2 Falsification, restated against these endpoints
+
+* Simple loses territory in **2 of 3 pairs** → complexity was load-bearing.
+* Simple needs any item from §4 to function → falsified in part.
+* Both arms move nothing → null result about the shared substrate.
+* **Simple costs more per tick than complex** → the comparison is contaminated
+  and the finding is worthless regardless of the territory result. This is an
+  assertion with a bound (§8), not a note.
+
+---
+
+## 10. Resolved before build
+
+**Answered by the coordinator before implementation**: a territory draw with a
+large stuck-ness gap is **support for the diagnosis and simultaneously an
+indictment of the programme**, and is to be reported as both (§9.1).
