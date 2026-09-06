@@ -43,21 +43,28 @@ The hard cases are handled explicitly rather than reflexively:
   force ratio against the garrison it can actually see. Early a capital
   is worth less than one control point; late with a real army it is
   decisive. A weak AI correctly never commits.
-- **Walls** — it picks a crossing before it marches, by projecting every
-  gate onto the whole `field → objective` segment and crossing walls
-  nearest-first. An existing hole is free, our own gate is nearly free
-  (we just open it), an enemy gate costs a siege priced by how much of it
-  is left — and when a siege is genuinely required it attacks *that
-  gate*, not the objective behind it. A blocked exit is a first-class
-  failure state with a stall backstop behind it.
+- **Walls** — one module owns every gate decision (DESIGN.md §33), and
+  both engines call it. It picks a crossing before it marches: a gate is
+  a candidate when the `field → objective` segment crosses its *wall
+  line* (the gate's orientation, measured from the map) within corridor
+  distance, walls are crossed nearest-first, and the crossing is priced
+  — an existing hole is free, our own gate is nearly free (opened on
+  demand, never into an enemy in the doorway or a threatened city, shut
+  again behind the sortie), an enemy gate costs a siege. A break is
+  *assaulted* with everything in hand while rams are bought, under a
+  progress budget on the gate's own life that fails typed when nothing
+  moves. The army goes through a doorway in column. Every one of these is
+  an outcome assertion in `gate_toy.py`, the closed-loop world, with the
+  historical defect reproduced by reverting each fix.
 - **Water** — if the objective is on another landmass it boards a
   transport, crosses and unloads. Transport only; there is no naval
   combat model and there will not be one.
 
-**Fog is respected** — enemy strength counts only units passing
-`IsUnitVisible`. Static point geography is treated as known and declared
-as such (map layout, not live state); dynamic ownership and defence are
-remembered per player with a staleness discount. **No resource
+**Fog is split, and disclosed in the startup banner** — enemy *strength*
+counts only units passing `IsUnitVisible`; territorial *ownership* is
+read map-wide (DESIGN.md §21.1 defect 6; whether to close that is the
+owner's open call). Static point geography is treated as known and
+declared as such (map layout, not live state). **No resource
 cheating**: the `AI_HANDICAP` hook exists, defaults to 1.0, and is
 labelled a cheat. Difficulty is latency + score noise + micro on/off.
 One Park-Miller stream via Schrage (gotcha 29); randomness is spent on
@@ -95,6 +102,11 @@ since an empty slot otherwise leaves ~100 structures and a capital inert.
   replaces; goes through `lib/wts.js` so the file's byte dialect
   survives (gotcha 35); idempotent. DESIGN.md §8.7.
 - `lint_apostrophe.py` — the gotcha-34 delta lint (negative-controlled).
+- `gate_toy.py` — the closed-loop gate world (DESIGN.md §33): kinematic
+  units, walls from the map's blockers, gates replaced exactly as the
+  map's triggers replace them, a bridge, a camp ring; drives the shipped
+  `for-ai.j` for simulated minutes and asserts outcomes, with ten
+  reverted-fix negative controls. Wired into `npm test`.
 
 ## Verification (all that was possible headlessly)
 

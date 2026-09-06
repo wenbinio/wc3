@@ -3368,3 +3368,245 @@ no measurable edge.
 Playable **19,086,080**. Trace **645 assertions, 0 FAILs**; `npm test` 620
 pass; validate-map 191/192 with 152 warnings (parity); the playable build
 carries zero engine-AI calls.
+
+---
+
+## §33 The gate module — one owner for every gate decision, and the first closed loop
+
+The owner, verbatim: *"Create an AI specifically for gates — that's an
+issue."* Fourteen rounds agree with him: gates are the densest defect
+cluster in the record, and the advisor's layer table puts every one of them
+in the execution layer. This round did three things, in this order:
+measured the map's gate geometry and damage rules; consolidated every gate
+decision into one section of `for-ai.j` that both engines call; and built
+the programme's first **closed-loop** instrument, `gate_toy.py`, which
+drives the shipped module through a moving world for simulated minutes,
+asserts outcomes, and reproduces each historical defect by reverting the
+fix that closed it. The toy changed the module four times before anything
+shipped (§33.4), which is the whole argument for it.
+
+`docs/reference/game-ai-principles.md` landed mid-round and bound the
+design: a crossing is a plan **phase** with a precondition, a progress
+metric, a budget and a *typed* failure; a break with no way forward is
+vetoed at the plan layer, not discounted in a score; an own-gate decision
+must not read an input that opening the gate itself moves (§3.4); prefer
+removing a mechanism; gate on a closed-loop outcome suite. Where the doc's
+letter and the map's data disagreed (E2, §33.4 item 4) the data won and
+the reasoning is recorded.
+
+### 33.1 The defect table
+
+| venue (round) | what the owner saw | root cause, as established then | fixed then by | lives now in | toy assertion | reverted control |
+|---|---|---|---|---|---|---|
+| own city gate (R3, §9.1) | army stacked behind its own shut gate; P3 22 own gates, 0 considered | candidates only within 4200 of the **objective** | corridor test on the whole segment (§10.1) | `AI_ChooseApproach`, wall-line crossing | EGRESS: ≥90 % of the army beyond its wall by T=150, gate opened on demand, shut again inside the lease | round-2 rule → 0 % past, 0 opens |
+| own gate off the exit line (measured this round, §33.2) | — (P3's nearest own gates sit 1367–1571 off its exit line, a hair under the 1600 corridor) | the stall backstop was silently covering the margin | `AI_ForceOpenNear` after 12 s of no progress | egress radius `AI_GATE_EGRESS_R` in `AI_GateCorridor` | EGRESS with the gate **2000** off the line | egress radius 0 → army never leaves |
+| bridge (R5, §11.2) | ~40 units piled on a bridge | five fixed lanes, outer destinations in water | measured frontage at ⅓, ⅔, end | `AI_SendArmy`, route walked at `AI_LANE_SAMPLE` steps | BRIDGE: nobody at the shore, all across | `AI_LanesAt`=5 → units at the shore |
+| enemy gate, 1992/2000 (R5, §12.1, Gray) | ~25 infantry in front of an intact gate, eight damage | `AI_APPROACH_MIN` 2200 switched routing off on arrival | lowered to 600; rams from a remembered wall | `AI_March` BREAK branch under a progress budget | SIEGE: BREAK from first contact, gate down, army through; from Gray's own photographed state too | `AI_APPROACH_MIN`=2200 from Gray's state → 0 % past, gate intact, no attack order, no ram |
+| barbarian camps (PT8, §22) | armies sealed in their camps | `AI_HOME_R` as a general MOVE arrival tolerance | `AI_ARRIVE_R` | unchanged (`AI_SendEnum`) — asserted, not gate logic | CAMP: orders issued, army out through the gaps, **no crossing selected** | pre-§22.2 guard → 0 orders |
+| breach beside intact gate (R4 f7, §11.3) | sieged an intact gate next to a hole | one corridor width for holes and walls | `AI_GATE_CORRIDOR_FREE` | `AI_GateCorridor` / `AI_GateCost` | BREACH: through the hole 2500 aside, 0 attack orders, gate untouched | free corridor = 1600 → intact gate assaulted |
+| Romans open for barbarians (PT10, §24.1) | own gates opened into an enemy army | two unconditional-open sites (`AI_ManageGates` comment; `AI_ForceOpenNear`) | `AI_GateSafeToOpen`; approach gate no longer exempt from closing | `AI_GateOpenForMarch` (the **only** open site), `AI_GateTick` | CONTESTED: never opened with enemy CV in the doorway; SHUT status; city-threat case | `AI_GateSafeToOpen` → true → opens with 300 CV in the door |
+| losing gate stays open (PT10, §24.1) | the gate an army left through stayed open while the fight went on in it | close bar was "no friendly units present" | absolute + relative bars | `AI_GateTick` O4, phase-gated during our own sortie | LOSING: shut within two ticks of a 400-CV assault with own troops in it | old bar → never shuts |
+| stale registry (audit 3, §21.2) | a gate the human closed read as a hole | handles cached at init; the map replaces the unit on every toggle | lazy re-resolution in `AI_GateState`/`LifeFrac` — **but** `AI_GateIsOurs`, the close loop and the backstop still read the raw handle | every reader re-resolves (R1); the map's *death* replacement (destroyed variant created for the killer) covered too | REGISTRY: the map closes the gate mid-sortie; the next read says CLOSED and holds the new handle; the AI re-opens and gets out | refresh stripped from all readers → reads GONE, army left inside |
+| no typed failure at a wall (all rounds) | armies standing at something they could not get through, nothing said | no progress metric on a break | mission march deadline (elapsed time) | `AI_BREAK_BUDGET` on the gate's life fraction → `AI_CROSS_IMPOSSIBLE` → abort reason 6 | UNREACHABLE: a gate behind an unmodelled blocker fails IMPOSSIBLE inside one window | budget ∞ → BREAK for the whole run |
+
+Every row's "toy assertion" is an outcome over 60–360 simulated seconds;
+every "reverted control" is the same scenario with the named fix undone,
+required to **fail**. Ten controls, all reproducing (§33.5).
+
+### 33.2 Measured, not assumed
+
+**Egress geometry.** For each Roman home (start location) and its six
+nearest non-allied points, the exit line was walked against the map's
+`B001` pathing blockers (the same custom destructable as the camp rings —
+1,132 placed) and the nearest own gate to the hit point measured:
+
+| faction | wall met at (units from home) | nearest own gate to the hit point | its offset from the exit line |
+|---|---|---|---|
+| P3 W.Rome | 894–1470 | 356–1671 | **331–1571** (five of six at 1367–1571) |
+| P9 E.Rome | 1019–2675 | 306–1290 | 85–1013 |
+| P10 N.Rome | 1078–1404 (one line meets no wall) | 595–1026 | 566–957 |
+| P7 Persia | 444–829 | 200–818 | 181–540 |
+
+Every Roman home is enclosed, and P3's exit gates sit under the 1600
+corridor by 30–230 units. That margin is what the stall backstop was
+silently paying for; the egress radius (`AI_GATE_EGRESS_R` 3200: an own
+shut gate this near the army earns the wide 4800 corridor) covers it on
+the first tick, deterministically, and the backstop — the worse of the two
+unconditional-open sites — is deleted.
+
+**Orientation is the wall.** The gate registry has carried an orientation
+since round 2 without using it geometrically. Fitting the `B001` blockers
+within 700 of every gate: `h01N`-family walls run at 0°, `h01Q` at 45°,
+`h01T` at 135°, `h01W` at 90° (26 of 27 vertical gates within ±12°). So
+"which wall does this march cross" is now a real question: a gate is a
+candidate when the march segment **crosses its wall line** within the
+corridor distance of the gate (`AI_GateCrossT`), not when the gate
+projects onto the segment. §33.4 item 1 is why that matters.
+
+**The damage table.** `war3mapMisc.txt` overrides three rows:
+
+```
+DamageBonusNormal = 1.00,1.50,1.00,0.70,1.00,1.00,0.35,1.00   (default divine column 0.05)
+DamageBonusPierce = 2.00,0.75,1.00,0.35,1.00,0.50,0.35,1.50   (default 0.05)
+DamageBonusSiege  = 1.00,0.50,1.00,1.50,1.00,0.50,1.50,1.50   (default 0.05)
+```
+
+The gates (`h01N`…`h01W`) are **divine**-armoured, 2000 HP, armour 5. An
+`h00B` infantryman (25 base) ordered to attack one does ~8 per hit — the
+"8 damage" of the round-5 screenshot is **one hit of one man**, not the
+army's output. Twenty-four infantry ordered to attack deal ~90/s and take
+a gate in ~25 s; a ram (`h025`, siege) is faster, not necessary. DESIGN
+§12.1's "an army with no siege cannot meaningfully hurt a 2000 HP armour-5
+gate" was an inference from that screenshot and is **retracted**: Gray's
+army was never *ordered* to attack the gate — it was attack-moving at a
+point behind the wall, the engine dropped the unreachable order, and idle
+units do not acquire buildings. The ram purchase (round 5) was
+belt-and-braces; `AI_APPROACH_MIN` 600 was the fix.
+
+### 33.3 The module
+
+One section of `for-ai.j`, "GATES — the crossing module", after
+`AI_SendArmy`; registration (`AI_GateOrient/Filter/Enum`) stays with the
+point registry because JASS is single-pass. Nothing outside the section
+opens, closes, prices or selects a gate. Entry points, and who calls them:
+
+- `AI_March(pid, tx, ty) → AI_CROSS_*` — every land march: the mission
+  layer via `AI_MoveOnTarget`, the simple arm's step 5, and `AI_Execute`'s
+  three direct sites through `AI_MoveOnTarget`. Selects the crossing,
+  opens an own gate on demand, assaults an enemy one under the budget,
+  dispatches through a doorway in column. Returns a typed status,
+  telemetered on change as `cross|pid|ai|status|gate|lumber`.
+- `AI_GateTick(pid)` — from `AI_Think`, every think tick of every faction
+  whatever its goal or engine: the sortie debt and the losing-gate close.
+  (Rounds 3–10 ran the close policy only inside two goal branches and the
+  march path; a Roman in TECH with an open gate never closed it.)
+- `AI_WantsRam(pid)` / `AI_RamOrdered(pid)` — `AI_Spend`'s only gate
+  contact: rams from the crossing decision, the accepted order stamped
+  (the audit's defect 7, in the one place it decides something).
+- `AI_CloseSortie(pid)` — also from `AI_MissionAbort`, unchanged.
+
+The invariants, each asserted in the toy:
+
+- **R1** the registry cannot go stale: identity is position + orientation,
+  the handle a cache, and *every* reader re-resolves it (`AI_GateIsOurs`
+  and `AI_GateOwnedBy` included — the two ownership reads §21.2 left on
+  the raw handle). Both of the map's replacement paths are exercised:
+  the toggle triggers and the death triggers (which create the destroyed
+  variant **for the killer**).
+- **O1** an own gate opens only from `AI_GateOpenForMarch`, only for a
+  march that selected it. An idle faction never touches its gate.
+- **O2** never into a contested doorway or a threatened city
+  (`AI_GateSafeToOpen`, unchanged from §24.1).
+- **O3** every open is a sortie debt: shut when the army has cleared the
+  doorway *and no straggler of ours is in it*, on abort, or on the 90 s
+  lease.
+- **O4** a gate we are losing shuts with our own troops in it — **but the
+  relative bars (own CV, own count in the doorway) are phase-gated while
+  our own sortie is passing through**, because the sortie moves exactly
+  those quantities and would shut the door on its own tail (principles
+  §3.4, the self-moved-input trap). The absolute bar still applies
+  mid-sortie.
+- **E1** a crossing is priced (`AI_GateCost`: breach 0, own 400, enemy
+  6000 × life, +9000 with no siege in hand or queued) and a hole earns the
+  wide corridor; a gate is never chosen for being a gate.
+- **E2** a break is **assaulted**, never stood in front of: everything in
+  hand attacks the gate (rams always take the gate — `AI_SendEnum`), rams
+  are bought meanwhile, and the phase is budgeted on the gate's own life
+  (`AI_BREAK_BUDGET` 60 s, `AI_BREAK_MIN` 10 %) → typed `IMPOSSIBLE`,
+  which the mission layer consumes as abort reason 6 (hard hold on the
+  target — Orkin's blocked door consumed by the next selection). Routing
+  does not switch off on arrival.
+- **X1** an army whose objective lies beyond its own wall selects a
+  crossing or fails typed — never a bare move. A camp ring, which has gaps
+  and no gate, correctly produces no crossing and a bare move.
+- **T1** through a doorway in **column**: the dispatch places every
+  destination on the march line *past* the crossing (`AI_COLUMN_W` apart,
+  capped at `AI_COLUMN_MAX`), and the next refresh re-forms lanes from the
+  measured frontage, now sampled every 500 units along the route.
+
+**Deleted**: `AI_ForceOpenNear`, `AI_TrackProgress`, `AI_STALL_EPS/T/R`,
+`ai_progD/At`, `AI_ManageGates`, `AI_GateEnemyCV`, the gate lines in
+`AI_Execute`'s CONSOLIDATE/DEFEND/RETREAT branches, the sortie block in
+`AI_Think`, the bare march in `AI_SimpleTick`, the `V_GATE` chat line
+("we are stuck. open that gate" — written for the backstop; retired with
+it, spec row left in place). **Line accounting, honestly**: raw diff on
+`for-ai.j` −499/+704; comment-stripped source **4,178 → 4,259 (+81)**;
+functions 206 → 214; constants 242 → 253. Mechanisms: −2 (the stall
+backstop; the second open site), +2 (the progress budget; the typed
+outcome), 1 replaced (segment projection → wall-line crossing). The
+consolidation did not net negative lines; it netted one owner, and the
+comment block that states the invariants is 40 of the 81.
+
+### 33.4 What the toy caught before anything shipped
+
+1. **A THROUGH/BREAK flap on a wall the march ran *along*.** With a hole
+   2500 aside and an intact gate on the line, the first draft went through
+   the hole, then — with the army beside the wall — the hole projected
+   *behind* the segment (t < 0) while the intact gate still projected onto
+   it, and the module besieged a gate on a wall the march no longer
+   crossed. Round 4's "gates over-prioritised beside a breach" in a new
+   venue. Fix: candidates are gates whose **wall line** the segment
+   crosses (§33.2).
+2. **A column that marched backwards.** Single file through a waypoint
+   300 past the gate, with playtest 9's ranks stepping *back* 220 per
+   rank, put 20 of 24 destinations inside the wall the army was leaving.
+   Fix: column destinations go *forward* past the crossing.
+3. **Three frontage samples that miss a bridge.** ⅓, ⅔ and the end of a
+   4300-unit route are 1433, 2866 and 4300; the bridge is at 3000–3600. The
+   round-4 fix could not see it. Fix: sample every 500 units.
+4. **My own E2.** The first draft stood the army off 2600 from any enemy
+   gate until a ram was in hand, on DESIGN §12.1's belief that infantry
+   cannot hurt a gate. The map's damage table (§33.2) says 0.35, not 0.05;
+   the standoff would have been strictly worse than round 5's "attack with
+   what you have while rams come". The coordinator's instruction that "a
+   break with no siege is vetoed, not discounted" rests on the same
+   retracted premise; the shipped form is the doc's own §2.2 shape — a
+   phase with a progress metric and a budget, failing typed — which *is*
+   the veto, applied to the quantity that can actually be measured.
+5. **Observed, not fixed**: the rank-back formation stops the rear ranks
+   short of a *near* objective by up to `ranks × 220` (a 24-unit army in
+   one lane reaches back 5,000 units). It is playtest 9's deliberate
+   design ("the formation grows around the objective rather than queueing
+   into it") and it is not a gate concern, but the toy shows 19 of 24
+   units ordered to points before a bridge whose far end is the objective.
+   Filed for the owner; unchanged here.
+
+### 33.5 The controls, and what does not reproduce
+
+Ten reverted fixes, ten defects back (`python3 gate_toy.py`, 56 outcome
+lines, ~9 s): round 2's objective-anchored candidates; the egress radius
+removed; the unconditional open; `AI_APPROACH_MIN` 2200 from Gray's own
+start state; no break budget; one corridor for holes; five fixed lanes on
+a bridge; the arrival tolerance (camp); the pre-audit registry; the old
+close bar. Wired into `npm test` (`test/rome-ai-trace.test.js`) with a
+floor on the number of controls, so it cannot go quiet.
+
+Fidelity limits, so nobody over-reads a PASS: point units, no collision,
+one reroute per wall (through its nearest open doorway or gap), no fog, no
+ranged combat, no garrison on the walls, attack-move never acquires a
+building (the 1992/2000 evidence), rams train one per order. The camp ring
+reproduces only because the toy models the gaps as doorways — the engine's
+pathfinding through a 49° gap is assumed, as §22.1 assumed it. The Gray
+control starts from the photographed state rather than walking up to it,
+because the record does not say why no ram was bought *during* Gray's
+approach. Nothing here is a claim that the module was run in the game.
+
+### 33.6 The simple arm, amended before data
+
+`AI_SimpleTick` step 5 now marches through `AI_March` like the other
+engine. `SIMPLE-AI-PLAN.md` listed "gate open/close discipline" among the
+mechanisms kept for a like-for-like comparison and never listed routing on
+either side; the advisor's §2.6 found that a simple faction facing a wall
+had no pre-registered reading at all. Gates were never the variable under
+test, and the owner's instruction is that every AI on the map uses them.
+Recorded in the plan as an amendment dated before any log exists.
+
+### 33.7 Gates for this change
+
+pjass FULL: Parse successful. `trace.py` 0 FAILs (the assertions on
+deleted code removed, not rewritten; two guards re-pointed at the module's
+shapes; the three-sample frontage guard replaced by the toy's bridge
+outcome). `gate_toy.py` 0 failures, 10 controls. Apostrophe delta 0.
+Zero engine-AI calls. validate-map 191/192 with 152 warnings (parity).
+Playable **19,092,839** bytes (`out/rome-ai.w3x`, rebuilt from source by
+`inject.py`; scratch only, never committed).

@@ -204,6 +204,16 @@ Any threshold that cannot be filled in from that column does not get added.
 
 ## 6. Reuse — facts and safety, never architecture
 
+> **Amendment, 2026-09-05, before any log exists.** The simple arm now
+> marches through `AI_March`, the crossing module of DESIGN §33, exactly
+> as the complex arm does. This plan kept "gate open/close discipline" for
+> a like-for-like comparison and said nothing about routing on either
+> side; the advisor review (§2.6) found a simple faction facing a wall had
+> no pre-registered reading. Gates were never the variable under test and
+> the owner asked for a gate AI for every faction. No reading below
+> changes; the two arms now differ only in what this plan says they differ
+> in.
+
 Kept, so the comparison is like-for-like: the point registry; gate rawcodes,
 camp composition and gate open/close discipline; the centroid-validity
 correction; food-ceiling facts; the order choke point with its rotating budget;

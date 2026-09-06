@@ -4570,7 +4570,7 @@ endfunction
 // The wall a gate pierces runs along its ORIENTATION. Measured on the map
 // from the B001 blockers around every gate (DESIGN 33.2): h01N-family walls
 // run at 0 degrees, h01Q at 45, h01T at 135, h01W at 90. This is what turns
-// "a gate near my line" into "my line crosses this gate's wall": the 2026-09
+// "a gate near my line" into "my line crosses the wall of this gate": the 2026-09
 // toy caught the old projection test flapping THROUGH/BREAK on a wall the
 // march ran ALONG rather than across, because a gate on that wall projected
 // onto the segment while the hole the army had just used fell behind it.
