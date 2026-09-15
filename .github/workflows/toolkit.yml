@@ -25,14 +25,14 @@ jobs:
       WC3_MPQ_BACKEND: ${{ matrix.backend }}
       WC3_LUA53: /usr/bin/lua5.3
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ matrix.revision == 'base' && github.event.pull_request.base.sha || github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: '22'
-          cache: npm
+          node-version: '24'
+          package-manager-cache: false
       - name: Install native tools
         run: |
           sudo apt-get update -qq
@@ -51,16 +51,17 @@ jobs:
           smpq --version
           lua5.3 -v
           test -x vendor/pjass/pjass
-          git rev-parse HEAD
+          mkdir -p "$RUNNER_TEMP/evidence"
+          { git rev-parse HEAD; node --version; npm --version; lua5.3 -v; smpq --version; } > "$RUNNER_TEMP/evidence/environment.txt"
       - name: Run both unit tests and preflight, preserving failures
         shell: bash
         run: |
           set +e
-          npm test
-          tests=$?
-          npm run preflight -- --json="$RUNNER_TEMP/preflight-${{ matrix.revision }}-${{ matrix.backend }}.json"
-          preflight=$?
-          printf 'Unit-test exit: %s; preflight exit: %s\n' "$tests" "$preflight"
+          npm test 2>&1 | tee "$RUNNER_TEMP/evidence/tests.log"
+          tests=${PIPESTATUS[0]}
+          npm run preflight -- --json="$RUNNER_TEMP/evidence/preflight.json" 2>&1 | tee "$RUNNER_TEMP/evidence/preflight.log"
+          preflight=${PIPESTATUS[0]}
+          printf 'Unit-test exit: %s; preflight exit: %s\n' "$tests" "$preflight" | tee "$RUNNER_TEMP/evidence/exits.txt"
           {
             echo '## Toolkit checks: ${{ matrix.revision }} / ${{ matrix.backend }}'
             echo "Commit: $(git rev-parse HEAD)"
@@ -68,3 +69,27 @@ jobs:
             echo 'This is not Warcraft client, graphics, multiplayer, or release acceptance.'
           } >> "$GITHUB_STEP_SUMMARY"
           test "$tests" -eq 0 && test "$preflight" -eq 0
+      - name: Retain check evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: evidence-${{ matrix.revision }}-${{ matrix.backend }}
+          path: ${{ runner.temp }}/evidence/
+          retention-days: 7
+          if-no-files-found: warn
+      - name: Package public source and installed dependencies for offline diagnosis
+        if: matrix.revision == 'head' && matrix.backend == 'stormlib'
+        run: |
+          mkdir -p "$RUNNER_TEMP/diagnostic"
+          git archive --format=tar.gz --output="$RUNNER_TEMP/diagnostic/source.tar.gz" HEAD
+          tar --exclude='.git' -czf "$RUNNER_TEMP/diagnostic/dependencies-linux-x64.tar.gz" node_modules vendor/pjass
+          git rev-parse HEAD > "$RUNNER_TEMP/diagnostic/commit.txt"
+          sha256sum "$RUNNER_TEMP/diagnostic/"*.tar.gz > "$RUNNER_TEMP/diagnostic/SHA256SUMS"
+      - name: Retain short-lived offline diagnostic snapshot
+        if: matrix.revision == 'head' && matrix.backend == 'stormlib'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: offline-diagnostic-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ${{ runner.temp }}/diagnostic/
+          retention-days: 1
+          if-no-files-found: error
