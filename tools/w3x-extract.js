@@ -30,9 +30,11 @@
 const fs = require('fs');
 const path = require('path');
 const { hasHM3W, parseHeader, HEADER_SIZE } = require('../lib/header');
-const { extractAll } = require('../lib/mpq');
+const { extractAll, backendName } = require('../lib/mpq');
 const { recoverNames } = require('../lib/recover');
 const { writeJson } = require('../lib/source');
+const policy = require('../lib/extraction-policy');
+const { writeManifest } = require('../lib/extraction-manifest');
 
 // Read the MPQ v1 header fields of a .w3x/.mpq buffer and derive forensic
 // notes. Returns null when no MPQ magic is found at offset 0 or 512 (bare
@@ -42,7 +44,7 @@ const { writeJson } = require('../lib/source');
 // trailingBytes is fileSize - mpqOffset - archiveSize (only meaningful for
 // format version 0, whose archive-size field is 32-bit — the only version
 // the game reads). Negative = the field overshoots the file.
-function containerForensics(buf) {
+function containerForensics(buf, fileSize = buf.length) {
   const mpqOffset = hasHM3W(buf) ? HEADER_SIZE
     : buf.toString('latin1', 0, 4) === 'MPQ\x1a' ? 0 : -1;
   if (mpqOffset < 0 || buf.length < mpqOffset + 32
@@ -56,11 +58,11 @@ function containerForensics(buf) {
   }
   let trailingBytes = null;
   if (formatVersion === 0) {
-    trailingBytes = buf.length - mpqOffset - archiveSize;
+    trailingBytes = fileSize - mpqOffset - archiveSize;
     if (trailingBytes > 0) {
-      notes.push(`${trailingBytes.toLocaleString()} trailing byte(s) after the MPQ archive (file ${buf.length.toLocaleString()} bytes, archive-size field ${archiveSize.toLocaleString()} at offset ${mpqOffset}) — filler/appended data the game never reads`);
+      notes.push(`${trailingBytes.toLocaleString()} trailing byte(s) after the MPQ archive (file ${fileSize.toLocaleString()} bytes, archive-size field ${archiveSize.toLocaleString()} at offset ${mpqOffset}) — filler/appended data the game never reads`);
     } else if (trailingBytes < 0) {
-      notes.push(`MPQ archive-size field ${archiveSize.toLocaleString()} overshoots the file (${buf.length.toLocaleString()} bytes, MPQ at offset ${mpqOffset}) by ${(-trailingBytes).toLocaleString()} byte(s) — nonstandard/mangled header`);
+      notes.push(`MPQ archive-size field ${archiveSize.toLocaleString()} overshoots the file (${fileSize.toLocaleString()} bytes, MPQ at offset ${mpqOffset}) by ${(-trailingBytes).toLocaleString()} byte(s) — nonstandard/mangled header`);
     }
   } else {
     notes.push(`MPQ format version ${formatVersion} (the game reads v1 = format version 0 only)`);
@@ -71,13 +73,21 @@ function containerForensics(buf) {
 function main(argv) {
   const recover = argv.includes('--recover-names');
   const dumpUnknown = argv.includes('--dump-unknown') || recover;
-  const [mapPath, outDir] = argv.filter((a) => !a.startsWith('--'));
-  if (!mapPath || !outDir) {
+  const [mapPath, outDir, extra] = argv.filter((a) => !a.startsWith('--'));
+  const strict = argv.includes('--require-complete');
+  const invalid = argv.some(a => a.startsWith('--') && !['--recover-names', '--dump-unknown', '--require-complete'].includes(a));
+  if (!mapPath || !outDir || extra || invalid) {
     console.error('usage: node tools/w3x-extract.js [--dump-unknown] [--recover-names] <map.w3x> <outdir>');
     process.exit(2);
   }
   try {
-    const buf = fs.readFileSync(mapPath);
+    const stat = policy.checkedArchive(mapPath, policy.DEFAULT_LIMITS);
+    const inputIdentity = policy.hashFile(mapPath);
+    policy.checkAncestors(outDir);
+    if (fs.existsSync(outDir) && fs.readdirSync(outDir).length) throw policy.refusal('extract CLI requires an empty output directory');
+    const fd = fs.openSync(mapPath, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW || 0));
+    const buf = Buffer.alloc(Math.min(HEADER_SIZE + 32, stat.size));
+    try { fs.readSync(fd, buf, 0, buf.length, 0); } finally { fs.closeSync(fd); }
     fs.mkdirSync(outDir, { recursive: true });
 
     if (hasHM3W(buf)) {
@@ -91,7 +101,7 @@ function main(argv) {
     }
 
     // container forensics — informational notes only, extraction is unchanged
-    const forensics = containerForensics(buf);
+    const forensics = containerForensics(buf, stat.size);
     if (forensics) {
       for (const note of forensics.notes) console.log(`container note: ${note}`);
     }
@@ -112,17 +122,36 @@ function main(argv) {
     } else if (unresolved > 0) {
       console.log(`note: ${unresolved} anonymous member(s) were NOT extracted (listfile stripped?) — rerun with --dump-unknown (or WC3_EXTRACT_UNKNOWN=1) to dump them under _unknown/`);
     }
+    let recovery = null;
     if (recover) {
-      const st = recoverNames(mapPath, outDir);
+      const st = recovery = recoverNames(mapPath, outDir);
       console.log(`name recovery: ${st.recovered.length} name(s) recovered (${st.probed} candidate(s) probed over ${st.passes} pass(es); ${st.pruned} _unknown/ duplicate(s) pruned):`);
       for (const f of st.recovered.slice().sort()) console.log('  ' + f);
       if (st.recovered.length === 0) console.log('  (none — the map may not reference its hidden members by path)');
     }
+    if (policy.hashFile(mapPath).sha256 !== inputIdentity.sha256) throw policy.refusal('archive changed during extraction');
+    const manifest = writeManifest(mapPath, outDir, result, backendName(), recovery);
+    console.log(`extraction manifest: _extraction.json — ${manifest.complete ? 'complete within enumerated scope' : 'INCOMPLETE'}`);
+    if (strict && !manifest.complete) process.exitCode = 1;
   } catch (e) {
     console.error('extract failed: ' + (e.message || e));
     process.exit(1);
   }
 }
 
-if (require.main === module) main(process.argv.slice(2));
+if (require.main === module) {
+  if (process.env.WC3_EXTRACT_WORKER === '1') main(process.argv.slice(2));
+  else {
+    // Keep an unresponsive native parser out of the CLI controller. Resource
+    // isolation beyond the per-member limits belongs to an OS/container.
+    const r = require('child_process').spawnSync(process.execPath, [__filename, ...process.argv.slice(2)], {
+      env: { ...process.env, WC3_EXTRACT_WORKER: '1' }, encoding: 'utf8', timeout: 120000,
+      maxBuffer: 16 * 1024 ** 2, killSignal: 'SIGKILL',
+    });
+    if (r.stdout) process.stdout.write(r.stdout);
+    if (r.stderr) process.stderr.write(r.stderr);
+    if (r.error) console.error(`extraction worker failed: ${r.error.message}`);
+    process.exitCode = r.error || r.status === null ? 1 : r.status;
+  }
+}
 module.exports = { containerForensics };

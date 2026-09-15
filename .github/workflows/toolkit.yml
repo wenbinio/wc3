@@ -77,19 +77,3 @@ jobs:
           path: ${{ runner.temp }}/evidence/
           retention-days: 7
           if-no-files-found: warn
-      - name: Package public source and installed dependencies for offline diagnosis
-        if: matrix.revision == 'head' && matrix.backend == 'stormlib'
-        run: |
-          mkdir -p "$RUNNER_TEMP/diagnostic"
-          git archive --format=tar.gz --output="$RUNNER_TEMP/diagnostic/source.tar.gz" HEAD
-          tar --exclude='.git' -czf "$RUNNER_TEMP/diagnostic/dependencies-linux-x64.tar.gz" node_modules vendor/pjass
-          git rev-parse HEAD > "$RUNNER_TEMP/diagnostic/commit.txt"
-          sha256sum "$RUNNER_TEMP/diagnostic/"*.tar.gz > "$RUNNER_TEMP/diagnostic/SHA256SUMS"
-      - name: Retain short-lived offline diagnostic snapshot
-        if: matrix.revision == 'head' && matrix.backend == 'stormlib'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: offline-diagnostic-${{ github.event.pull_request.head.sha || github.sha }}
-          path: ${{ runner.temp }}/diagnostic/
-          retention-days: 1
-          if-no-files-found: error

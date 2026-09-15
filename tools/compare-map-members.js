@@ -94,6 +94,9 @@ function compareDirectories(beforeDir, afterDir, options = {}) {
     allow[kind] = new Set((options[kind] || []).map(memberName));
   }
   const changes = [];
+  const evidence = options.requireComplete ? { before: require('../lib/extraction-manifest').verifyManifest(beforeDir, before), after: require('../lib/extraction-manifest').verifyManifest(afterDir, after) } : null;
+  // Receipts refer to different archives and are not archive payloads.
+  before.members.delete('_extraction.json'); after.members.delete('_extraction.json');
   let unchanged = 0;
   for (const name of [...new Set([...before.members.keys(), ...after.members.keys()])].sort()) {
     const old = before.members.get(name), current = after.members.get(name);
@@ -101,7 +104,7 @@ function compareDirectories(beforeDir, afterDir, options = {}) {
     const kind = !old ? 'added' : !current ? 'removed' : 'changed';
     changes.push({ name, kind, allowed: allow[kind].has(name), before: old || null, after: current || null });
   }
-  const incomplete = before.unresolved.length > 0 || after.unresolved.length > 0 ||
+  const incomplete = (evidence && (!evidence.before.complete || !evidence.after.complete)) || before.unresolved.length > 0 || after.unresolved.length > 0 ||
     before.members.size === 0 || after.members.size === 0;
   const unexpected = changes.filter(c => !c.allowed).length;
   const summary = i => ({ memberCount: i.members.size, entries: i.entries,
@@ -110,8 +113,8 @@ function compareDirectories(beforeDir, afterDir, options = {}) {
     schemaVersion: 1,
     status: incomplete ? 'INCOMPLETE' : unexpected ? 'DIFFERENCES' : 'MATCH_WITHIN_SCOPE',
     scope: 'provided extracted directory members; MPQ compression/layout is not compared',
-    archiveCompleteness: 'not established; review extraction counts independently',
-    runtimeValidated: false,
+    archiveCompleteness: evidence ? 'checked against local extraction receipts; see extractionEvidence scope' : 'not established; review extraction counts independently',
+    runtimeValidated: false, extractionEvidence: evidence,
     before: summary(before), after: summary(after), unchanged, unexpected, changes,
     unusedAllowances: Object.entries(allow).flatMap(([kind, names]) =>
       [...names].filter(name => !changes.some(c => c.kind === kind && c.name === name)).map(name => ({ kind, name }))),
@@ -122,7 +125,8 @@ function main(argv) {
   const options = {}, dirs = [];
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
-    if (arg === '--include-mpq-metadata') options.includeMpqMetadata = true;
+    if (arg === '--require-complete') options.requireComplete = true;
+    else if (arg === '--include-mpq-metadata') options.includeMpqMetadata = true;
     else if (['--allow-changed', '--allow-added', '--allow-removed'].includes(arg)) {
       if (!argv[i + 1] || argv[i + 1].startsWith('--')) throw new Error(`missing path for ${arg}`);
       const key = arg.slice('--allow-'.length);
