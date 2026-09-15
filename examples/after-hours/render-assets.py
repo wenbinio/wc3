@@ -107,6 +107,8 @@ def main():
                 for frame in result['frames']:
                     raw = base64.b64decode(frame.pop('png'))
                     image = Image.open(io.BytesIO(raw)).convert('RGB')
+                    filename = f'{name}-{frame["label"]}.png'
+                    (out / filename).write_bytes(raw)
                     background = image.getpixel((0,0))
                     pixels = sum(1 for px in image.getdata() if max(abs(px[i]-background[i]) for i in range(3)) > 8)
                     if pixels < 100 or frame['visible'] < 1:
@@ -116,8 +118,6 @@ def main():
                         yellow = sum(1 for px in image.getdata() if abs(px[0]-163)<4 and abs(px[1]-148)<4 and abs(px[2]-87)<4)
                         if yellow < 100:
                             raise AssertionError('Wall material is not the authored yellow in the actual render')
-                    filename = f'{name}-{frame["label"]}.png'
-                    (out / filename).write_bytes(raw)
                     rendered[frame['label']] = image
                     summaries.append({**frame, 'file':filename, 'nonBackgroundPixels':pixels, 'sha256':hashlib.sha256(raw).hexdigest()})
                 if name == 'Custodian':

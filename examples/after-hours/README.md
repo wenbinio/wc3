@@ -38,7 +38,7 @@ polished character.
 
 `asset-checks.cjs` checks actual packed files: texture closure and full mip
 pixel decoding, visibility, finite poses, bounds, and changing arm/leg matrices.
-Nine regressions include deliberately broken variants. A sequence name alone
+Ten regressions include deliberately broken variants. A sequence name alone
 is not accepted as animation.
 
 CI additionally invokes `render-assets.py` with Playwright 1.62.0 and the

@@ -7,6 +7,8 @@ import {buildModel,box,merge} from '../../maps/northreach/assets/mdl-lib.mjs';
 const require=createRequire(import.meta.url);
 const Model=require('mdx-m3-viewer-th/dist/cjs/parsers/mdlx/model.js').default;
 const Texture=require('mdx-m3-viewer-th/dist/cjs/parsers/mdlx/texture.js').default;
+const Material=require('mdx-m3-viewer-th/dist/cjs/parsers/mdlx/material.js').default;
+const Layer=require('mdx-m3-viewer-th/dist/cjs/parsers/mdlx/layer.js').default;
 const Sequence=require('mdx-m3-viewer-th/dist/cjs/parsers/mdlx/sequence.js').default;
 const Extent=require('mdx-m3-viewer-th/dist/cjs/parsers/mdlx/extent.js').default;
 const {FloatAnimation,Vector3Animation,Vector4Animation}=require('mdx-m3-viewer-th/dist/cjs/parsers/mdlx/animations.js');
@@ -98,6 +100,17 @@ export function writeModel(dir,name,parts,min,max){
   const file=path.join(dir,name+'.mdx');
   buildModel({name,extents:{min,max,radius:Math.hypot(...max.map((v,i)=>Math.max(Math.abs(v),Math.abs(min[i]))))},geosets:parts,outFile:file});
   const m=new Model();m.load(new Uint8Array(fs.readFileSync(file)));
+  // The geometry helper intentionally SHARES materials for equal blend modes.
+  // Split those references before assigning per-part texture IDs, otherwise
+  // the final part's colour overwrites every earlier part sharing that mode.
+  const sharedMaterials=m.materials;
+  m.materials=m.geosets.map((geoset,i)=>{
+    const original=sharedMaterials[geoset.materialId];
+    const material=Object.assign(new Material(),original);
+    material.layers=original.layers.map(layer=>Object.assign(new Layer(),layer,{animations:[...layer.animations],textureId:i}));
+    geoset.materialId=i;
+    return material;
+  });
   // Store colour in explicitly decoded BLP pixels, not static-tint channel
   // conversions on which the MDL helper and independent renderer disagree.
   // White geoset tint is order-independent; each geoset has its own material.

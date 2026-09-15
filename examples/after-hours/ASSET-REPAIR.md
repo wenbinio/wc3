@@ -18,6 +18,9 @@ inspectable. They do not establish the complete cause of every in-game symptom.
   The first independent renders exposed a red/blue disagreement in the static
   tint path. Colour-in-texture removes that ambiguous conversion; a pixel-level
   regression requires the actual wall render to contain its authored yellow.
+- Each mesh part has its own material and texture binding. The pixel-colour
+  gate also caught shared-material overwrites during the repair; a regression
+  now rejects a part referencing another part's material.
 - A seven-part Custodian rig faces +X, has opposite arm/leg swings for Walk
   and Walk Fast, and actual Stand, Attack, Death and Portrait motion. Live
   sequences have explicit alpha endpoints; sampled posed geometry fits bounds.
@@ -32,7 +35,7 @@ inspectable. They do not establish the complete cause of every in-game symptom.
 ## New checks
 
 Packed-asset checks inspect texture closure, full decoding, tint flags,
-finite poses, visibility, bounds and genuinely changing limb matrices. Nine
+finite poses, visibility, bounds and genuinely changing limb matrices. Ten
 regressions include deliberately broken variants; they are not game telemetry.
 The original packed map now fails the colour-flag check.
 
