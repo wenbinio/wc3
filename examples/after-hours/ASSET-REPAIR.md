@@ -13,8 +13,11 @@ inspectable. They do not establish the complete cause of every in-game symptom.
 
 ## Repair
 
-- Final classic-MDX writer explicitly preserves the colour flag and BGR data.
-- Shared white texture is now an opaque 64x64 BLP1 with a full mip chain.
+- Final classic-MDX writer explicitly preserves the colour flag with neutral white tint.
+- Material colours are opaque 64x64 BLP1 pixels with full mip chains.
+  The first independent renders exposed a red/blue disagreement in the static
+  tint path. Colour-in-texture removes that ambiguous conversion; a pixel-level
+  regression requires the actual wall render to contain its authored yellow.
 - A seven-part Custodian rig faces +X, has opposite arm/leg swings for Walk
   and Walk Fast, and actual Stand, Attack, Death and Portrait motion. Live
   sequences have explicit alpha endpoints; sampled posed geometry fits bounds.
@@ -29,7 +32,7 @@ inspectable. They do not establish the complete cause of every in-game symptom.
 ## New checks
 
 Packed-asset checks inspect texture closure, full decoding, tint flags,
-finite poses, visibility, bounds and genuinely changing limb matrices. Eight
+finite poses, visibility, bounds and genuinely changing limb matrices. Nine
 regressions include deliberately broken variants; they are not game telemetry.
 The original packed map now fails the colour-flag check.
 

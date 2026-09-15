@@ -29,21 +29,24 @@ the artifact. Gameplay tests use mocked natives, not observed engine traversal.
 
 ## Asset repair and checks
 
-See `ASSET-REPAIR.md`. All seven models have explicit static-colour flags,
-BLP1 textures and checked bounds. The Custodian now has a seven-part jointed
-rig with Stand, Walk, Walk Fast, Attack, Death and Portrait sequences. It is
-still simple geometric prototype art, not a polished character.
+See `ASSET-REPAIR.md`. All seven models have explicit colour flags with neutral
+white tint, actual coloured BLP1 textures and checked bounds. Putting RGB colour
+in texture pixels removes an observed red/blue mismatch in static-tint conversion.
+The Custodian has a seven-part jointed rig with Stand, Walk, Walk Fast, Attack,
+Death and Portrait sequences. It is simple geometric prototype art, not a
+polished character.
 
-`asset-checks.cjs` checks actual packed files: texture closure and decoding,
-visibility, finite poses, bounds, and changing arm/leg matrices. Eight
-regressions include deliberately broken variants. A sequence name alone is
-not accepted as animation.
+`asset-checks.cjs` checks actual packed files: texture closure and full mip
+pixel decoding, visibility, finite poses, bounds, and changing arm/leg matrices.
+Nine regressions include deliberately broken variants. A sequence name alone
+is not accepted as animation.
 
 CI additionally invokes `render-assets.py` with Playwright 1.62.0 and the
 independent mdx-m3-viewer-th WebGL renderer. It requires visible pixels for all
-seven models and changing locomotion frames from a fixed camera, retaining
-actual PNGs, GIFs and asset hashes. No missing-texture image substitution is
-allowed. These are asset previews, NOT Warcraft screenshots or client acceptance.
+seven models, the actual authored yellow wall colour, and changing locomotion
+frames from a fixed camera, retaining actual PNGs, GIFs and asset hashes.
+No missing-texture image substitution is allowed. These are asset previews,
+NOT Warcraft screenshots or client acceptance.
 
 ## Remaining uncertainty
 

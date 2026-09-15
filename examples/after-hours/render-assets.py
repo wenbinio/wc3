@@ -24,6 +24,7 @@ JS = r'''async ({files, name}) => {
   }
   const scene = viewer.addScene();
   scene.viewport = [0,0,640,480];
+  scene.color.set([.12,.14,.17]);
   scene.camera.perspective(Math.PI/4, 640/480, 1, 5000);
   const solve = p => {
     if (typeof p !== 'string') return p;
@@ -110,6 +111,11 @@ def main():
                     pixels = sum(1 for px in image.getdata() if max(abs(px[i]-background[i]) for i in range(3)) > 8)
                     if pixels < 100 or frame['visible'] < 1:
                         raise AssertionError(f'{name}/{frame["label"]}: blank or culled render ({pixels} pixels)')
+                    # This caught the prior blue-wall / red-blue tint-order mistake.
+                    if name == 'Wall':
+                        yellow = sum(1 for px in image.getdata() if abs(px[0]-163)<4 and abs(px[1]-148)<4 and abs(px[2]-87)<4)
+                        if yellow < 100:
+                            raise AssertionError('Wall material is not the authored yellow in the actual render')
                     filename = f'{name}-{frame["label"]}.png'
                     (out / filename).write_bytes(raw)
                     rendered[frame['label']] = image

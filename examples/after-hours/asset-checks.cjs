@@ -17,8 +17,8 @@ function pose(model,sequence,t){
 function inspectModel(file,root){
  const b=fs.readFileSync(file),m=new Model();m.load(new Uint8Array(b));const name=path.basename(file,'.mdx');
  assert.equal(m.version,800,name+': classic MDX');assert.ok(m.geosets.length>0,name+': mesh missing');
- for(const g of m.geosetAnimations)assert.ok(g.flags&2,name+': static colour lacks enable flag');
- for(const t of m.textures){assert.equal(t.replaceableId,0);const rel=t.path.replace(/\\/g,'/');assert.ok(!rel.includes('..')&&!path.isAbsolute(rel));const tex=fs.readFileSync(path.join(root,rel));assert.equal(tex.toString('ascii',0,4),'BLP1');const image=decodeBLP(ab(tex));assert.equal(image.width,64);assert.equal(image.height,64);for(let level=0;level<7;level++){const mip=getBLPImageData(image,level);assert.equal(mip.width,64>>level);assert.equal(mip.height,64>>level);assert.ok(mip.data.every(v=>v===255),name+': texture must be opaque white, not decoder fallback');}}
+ for(const g of m.geosetAnimations){assert.ok(g.flags&2,name+': static colour lacks enable flag');assert.ok(g.color.every(v=>v===1),name+': material colour belongs in texture pixels');}
+ for(const t of m.textures){assert.equal(t.replaceableId,0);const rel=t.path.replace(/\\/g,'/');assert.ok(!rel.includes('..')&&!path.isAbsolute(rel));const tex=fs.readFileSync(path.join(root,rel));assert.equal(tex.toString('ascii',0,4),'BLP1');const image=decodeBLP(ab(tex));assert.equal(image.width,64);assert.equal(image.height,64);for(let level=0;level<7;level++){const mip=getBLPImageData(image,level);assert.equal(mip.width,64>>level);assert.equal(mip.height,64>>level);const hex=/colour-([0-9a-f]{6})\.blp$/.exec(rel);assert.ok(hex,'explicit colour texture name');const rgb=[0,2,4].map(i=>parseInt(hex[1].slice(i,i+2),16));for(let px=0;px<mip.data.length;px+=4){assert.deepEqual([...mip.data.slice(px,px+4)],[...rgb,255],name+': texture pixel/alpha mismatch');}}}
  const parsed=parseMDX(ab(b));let samples=0;
  for(let i=0;i<parsed.Sequences.length;i++)for(const t of [0,.25,.5,.75,.999]){
   const p=pose(parsed,i,t);samples++;
