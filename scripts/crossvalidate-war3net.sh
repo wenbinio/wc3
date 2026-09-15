@@ -84,7 +84,7 @@ cat > "$WORK/check.csproj" <<'EOF'
     <AssemblyName>wc3-war3net-check</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="War3Net.Build.Core" Version="6.*" />
+    <PackageReference Include="War3Net.Build.Core" Version="6.0.3" />
   </ItemGroup>
 </Project>
 EOF

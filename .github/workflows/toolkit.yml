@@ -1,0 +1,148 @@
+name: Toolkit checks
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: toolkit-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  toolkit:
+    name: ${{ matrix.revision }} / ${{ matrix.backend }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        revision: [base, head]
+        backend: [smpq, stormlib]
+    env:
+      WC3_MPQ_BACKEND: ${{ matrix.backend }}
+      WC3_LUA53: /usr/bin/lua5.3
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ matrix.revision == 'base' && github.event.pull_request.base.sha || github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Install native tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y smpq lua5.3 build-essential flex bison python3 python3-pil python3-venv libstorm-dev
+      - name: Install locked dependencies and pinned pjass
+        run: |
+          npm ci --no-audit --no-fund
+          git init vendor/pjass
+          git -C vendor/pjass remote add origin https://github.com/lep/pjass.git
+          git -C vendor/pjass fetch --depth 1 origin 378a1ca9af3848fbc3be3d17069bcdb6a940ee32
+          git -C vendor/pjass checkout --detach FETCH_HEAD
+          make -C vendor/pjass
+      - name: Require the requested MPQ backend and native Lua
+        run: |
+          node -e "const b = require('./lib/mpq').backendName(); console.log('MPQ backend:', b); if (b !== process.env.WC3_MPQ_BACKEND) process.exit(1)"
+          smpq --version
+          lua5.3 -v
+          test -x vendor/pjass/pjass
+          mkdir -p "$RUNNER_TEMP/evidence"
+          { git rev-parse HEAD; node --version; npm --version; lua5.3 -v; smpq --version; } > "$RUNNER_TEMP/evidence/environment.txt"
+      - name: Run both unit tests and preflight, preserving failures
+        shell: bash
+        run: |
+          set +e
+          npm test 2>&1 | tee "$RUNNER_TEMP/evidence/tests.log"
+          tests=${PIPESTATUS[0]}
+          npm run preflight -- --json="$RUNNER_TEMP/evidence/preflight.json" 2>&1 | tee "$RUNNER_TEMP/evidence/preflight.log"
+          preflight=${PIPESTATUS[0]}
+          printf 'Unit-test exit: %s; preflight exit: %s\n' "$tests" "$preflight" | tee "$RUNNER_TEMP/evidence/exits.txt"
+          {
+            echo '## Toolkit checks: ${{ matrix.revision }} / ${{ matrix.backend }}'
+            echo "Commit: $(git rev-parse HEAD)"
+            echo "Unit-test exit: $tests; preflight exit: $preflight"
+            echo 'This is not Warcraft client, graphics, multiplayer, or release acceptance.'
+          } >> "$GITHUB_STEP_SUMMARY"
+          test "$tests" -eq 0 && test "$preflight" -eq 0
+      - name: Retain check evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: evidence-${{ matrix.revision }}-${{ matrix.backend }}
+          path: ${{ runner.temp }}/evidence/
+          retention-days: 7
+          if-no-files-found: warn
+      - name: Build and qualify After Hours
+        if: matrix.revision == 'head'
+        run: node examples/after-hours/build.cjs "$RUNNER_TEMP/after-hours"
+      - name: Install independent parser runtime
+        if: matrix.revision == 'head' && matrix.backend == 'stormlib'
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: '8.0.x'
+      - name: Independent War3Net map-format check
+        if: matrix.revision == 'head' && matrix.backend == 'stormlib'
+        run: |
+          node tools/w3x-extract.js --require-complete "$RUNNER_TEMP/after-hours/After_Hours_Emergency_Lighting.w3x" "$RUNNER_TEMP/after-hours/extracted"
+          bash scripts/crossvalidate-war3net.sh "$RUNNER_TEMP/after-hours/extracted" | tee "$RUNNER_TEMP/after-hours/war3net.log"
+      - name: Render packed models and assert visible changing animation frames
+        if: matrix.revision == 'head' && matrix.backend == 'stormlib'
+        run: |
+          python3 -m venv --system-site-packages "$RUNNER_TEMP/asset-render-env"
+          "$RUNNER_TEMP/asset-render-env/bin/pip" install playwright==1.62.0
+          "$RUNNER_TEMP/asset-render-env/bin/python" -m playwright install --with-deps chromium
+          "$RUNNER_TEMP/asset-render-env/bin/python" examples/after-hours/render-assets.py "$RUNNER_TEMP/after-hours/extracted" "$RUNNER_TEMP/after-hours/rendered-assets"
+      - name: Confirm absent editor corpus cannot pass
+        if: matrix.revision == 'head'
+        shell: bash
+        run: |
+          set +e
+          node tools/automation.cjs corpus automation/editor-corpus.json "$RUNNER_TEMP/empty-corpus"
+          result=$?
+          test "$result" -eq 1
+      - name: Confirm missing game profile blocks qualification
+        if: matrix.revision == 'head'
+        shell: bash
+        run: |
+          set +e
+          node tools/automation.cjs qualify "$RUNNER_TEMP/after-hours/source" "$RUNNER_TEMP/after-hours/qualification"
+          result=$?
+          test "$result" -eq 1 || exit 1
+          node -e 'const r=require(process.argv[1]);if(r.status!=="BLOCKED"||!r.blockers.some(b=>b.code==="game-api")||r.clientAcceptance!=="NOT_RUN")process.exit(1)' "$RUNNER_TEMP/after-hours/qualification/qualification.json"
+      - name: Retain actual map and qualification reports
+        if: always() && matrix.revision == 'head'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: after-hours-${{ matrix.backend }}
+          path: ${{ runner.temp }}/after-hours/
+          retention-days: 7
+          if-no-files-found: warn
+
+  windows-harness-contract:
+    name: Windows harness syntax and refusal contract
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Parse actual PowerShell scripts and refuse missing client
+        shell: pwsh
+        run: |
+          foreach ($file in @('tools/client/Run-Probe.ps1','tools/client/Capture-Window.ps1')) {
+            $tokens=$null; $errors=$null
+            [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $file),[ref]$tokens,[ref]$errors) | Out-Null
+            if ($errors.Count) { throw ($errors | Out-String) }
+          }
+          $refused=$false
+          try {
+            & ./tools/client/Run-Probe.ps1 -GameExe "$env:RUNNER_TEMP/definitely-missing-warcraft.exe" -RequestFile missing -Profile missing -CommonJ missing -BlizzardJ missing -TelemetryRoot missing -OutputDirectory "$env:RUNNER_TEMP/unused-output"
+          } catch { $refused=$true; Write-Host ('Expected refusal: '+$_.Exception.Message) }
+          if (-not $refused) { throw 'Missing-client invocation did not refuse' }
+          Write-Host 'Syntax/refusal contract only. No Warcraft executable or game test was run.'
