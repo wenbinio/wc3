@@ -188,7 +188,7 @@ function AH_Tick()
     if moveX then IssuePointOrder(AH.monster,'move',moveX,moveY) end
 end
 function config()
-    SetMapName('After Hours: Emergency Lighting');SetMapDescription('Find three fuses. Restore power. Leave together.')
+    SetMapName('After Hours: Emergency Lighting R2');SetMapDescription('Find three fuses. Restore power. Leave together.')
     SetPlayers(4);SetTeams(1);SetGamePlacement(MAP_PLACEMENT_USE_MAP_SETTINGS)
     for i=0,3 do
         local p=Player(i);local s=AH_STARTS[i+1]
@@ -196,6 +196,16 @@ function config()
         SetPlayerColor(p,ConvertPlayerColor(i));SetPlayerRacePreference(p,RACE_PREF_HUMAN)
         SetPlayerRaceSelectable(p,false);SetPlayerController(p,MAP_CONTROL_USER);SetPlayerTeam(p,0)
     end
+end
+-- Scenery is not a walking Footman. Disable pathing and pin BOTH coordinates
+-- after creation so blocked wall cells cannot nudge props into the corridors.
+function AH_PlaceScenery(owner,kind,x,y)
+    local u=CreateUnit(owner,kind,x,y,0)
+    SetUnitPathing(u,false)
+    SetUnitX(u,x);SetUnitY(u,y)
+    SetUnitScale(u,1,1,1)
+    SetUnitAnimation(u,'stand')
+    return u
 end
 function main()
     InitBlizzard();CreateAllUnits()
@@ -207,16 +217,16 @@ function main()
         for c=1,15 do
             local x,y=-1792+(c-1)*256,1792-(r-1)*256
             if string.sub(row,c,c)=='#' then
-                CreateUnit(scenery,UNIT_WALL,x,y,0)
+                AH_PlaceScenery(scenery,UNIT_WALL,x,y)
             else
-                CreateUnit(scenery,UNIT_CARPET,x,y,0)
-                if (r+c)%3==0 then AH.fixtures[#AH.fixtures+1]=CreateUnit(scenery,UNIT_FIXTURE,x,y,0) end
+                AH_PlaceScenery(scenery,UNIT_CARPET,x,y)
+                if (r+c)%3==0 then AH.fixtures[#AH.fixtures+1]=AH_PlaceScenery(scenery,UNIT_FIXTURE,x,y) end
             end
         end
     end
-    for n,p in ipairs(AH_FUSES) do AH.fuseUnits[n]=CreateUnit(scenery,UNIT_FUSE,p[1],p[2],0) end
-    AH.generator=CreateUnit(scenery,UNIT_GENERATOR,AH_GENERATOR[1],AH_GENERATOR[2],0)
-    AH.exit=CreateUnit(scenery,UNIT_EXIT,AH_EXIT[1],AH_EXIT[2],0)
+    for n,p in ipairs(AH_FUSES) do AH.fuseUnits[n]=AH_PlaceScenery(scenery,UNIT_FUSE,p[1],p[2]) end
+    AH.generator=AH_PlaceScenery(scenery,UNIT_GENERATOR,AH_GENERATOR[1],AH_GENERATOR[2])
+    AH.exit=AH_PlaceScenery(scenery,UNIT_EXIT,AH_EXIT[1],AH_EXIT[2])
     AH.monster=CreateUnit(Player(PLAYER_NEUTRAL_AGGRESSIVE),UNIT_CUSTODIAN,AH_MONSTER_START[1],AH_MONSTER_START[2],270)
     AH_Label('RECEPTION',AH_START[1],AH_START[2]);AH_Label('MAINTENANCE',AH_GENERATOR[1],AH_GENERATOR[2]);AH_Label('EXIT',AH_EXIT[1],AH_EXIT[2])
     local spells=CreateTrigger();local chat=CreateTrigger()

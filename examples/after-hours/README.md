@@ -1,61 +1,61 @@
-# After Hours: Emergency Lighting
+# After Hours: Emergency Lighting R2
 
-An original 1–4 player Warcraft III escape-map prototype by **Serendipity**.
-This is a buildable game, not an engine-tested release.
+An original 1–4 player Warcraft III escape prototype by **Serendipity**.
+The first delivery failed the user's model/animation check. R2 repairs
+inspectable asset defects; a retail-client retest is still required.
 
-Collect three fuses in a looped corridor maze, restore the maintenance
-cabinet, and bring the remaining workers to the exit. A Custodian follows
-corridor paths, hears normal movement farther away than quiet movement,
-and speeds up during blackouts and the final escape. Reception is safe.
-The third capture exhausts a worker; the team loses when nobody remains or
-the ten-minute shift expires. Recovered fuses are shared and retained.
+Collect three fuses in a looped corridor maze, restore maintenance power,
+and bring the remaining workers to the exit. The Custodian follows issued
+movement orders; quiet walking reduces hearing range. Reception is safe.
+Three captures exhaust a worker; the shift ends after ten minutes.
 
-Right-click to move. **E** interacts; **Q** toggles quiet walking;
-**R** spends 50 stamina for a four-second sprint with a ten-second cooldown.
-Chat equivalents are `-use`, `-quiet`, `-sprint`; `-help`, `-status`, and
-`-credits` are also available. Gold displays team fuses; lumber is stamina.
-Use the in-game map name **After Hours: Emergency Lighting** in the picker.
+Right-click to move. **E** interacts, **Q** toggles quiet walking, **R**
+sprints. Chat fallbacks: `-use`, `-quiet`, `-sprint`, `-help`, `-status`.
+Gold shows team fuses; lumber shows stamina. Choose **After Hours: Emergency
+Lighting R2** in the map picker.
 
-## Build and test
+## Reproduce
 
-From the toolkit root, with Node 24, locked dependencies and an MPQ backend:
+From the toolkit root, with Node 24 and locked dependencies:
 
 ```sh
-node examples/after-hours/build.cjs _build/after-hours-new
+npm run build:after-hours -- _build/after-hours-r2-new
 ```
 
-The destination must be new. The command generates source and original
-assets, builds a `.w3x`, validates the actual archive, runs sixteen rule and
-path-grid tests, and runs preflight. It retains JSON reports and test logs.
-The generated `source/` directory is ordinary editable toolkit map source.
-For a source bundle outside the checkout, set `WC3_TOOLKIT_ROOT` before
-running `source/tests/after-hours.test.js`.
+The output directory must be new. The command generates original assets,
+source and a real `.w3x`, checks the packed model bytes, runs archive validation,
+sixteen mechanics/static-path-grid tests, and preflight. Reports remain with
+the artifact. Gameplay tests use mocked natives, not observed engine traversal.
 
-The maze seed is fixed for reproducibility. Terrain, scenery and the WPM
-walkability raster come from the same layout; a test checks objective
-connectivity after adding a conservative 32-unit wall clearance. The
-Custodian receives real movement orders, not frame-by-frame teleports.
-Capture-to-reception is an intentional game rule, not a pathing workaround.
+## Asset repair and checks
 
-## Evidence limits
+See `ASSET-REPAIR.md`. All seven models have explicit static-colour flags,
+BLP1 textures and checked bounds. The Custodian now has a seven-part jointed
+rig with Stand, Walk, Walk Fast, Attack, Death and Portrait sequences. It is
+still simple geometric prototype art, not a polished character.
 
-Passing rule tests means those rules executed under the toolkit's mocked
-natives. Position fixtures in those tests are not real-client traversal.
-Static WPM connectivity does not establish the engine's collision, pathing,
-or movement behavior. `GetLocalPlayer` is confined to camera/selection;
-that does not constitute a multiplayer desynchronization test.
+`asset-checks.cjs` checks actual packed files: texture closure and decoding,
+visibility, finite poses, bounds, and changing arm/leg matrices. Eight
+regressions include deliberately broken variants. A sequence name alone is
+not accepted as animation.
 
-The 3.0 Windows client and editor were unavailable for this build. Actual
-map loading, visual appearance, sound, Channel button behavior, player
-movement, multiplayer and human difficulty remain **NOT TESTED**. The
-map uses existing supported formats, not newly certified 3.0 features.
-The custom figure is deliberately a simple unrigged geometric prototype.
+CI additionally invokes `render-assets.py` with Playwright 1.62.0 and the
+independent mdx-m3-viewer-th WebGL renderer. It requires visible pixels for all
+seven models and changing locomotion frames from a fixed camera, retaining
+actual PNGs, GIFs and asset hashes. No missing-texture image substitution is
+allowed. These are asset previews, NOT Warcraft screenshots or client acceptance.
 
-## Assets and credits
+## Remaining uncertainty
 
-Seven original generated MDX models, original tiny UI graphics, and a
-mathematically composed electrical hum are included. Model generation uses
-the toolkit's Northreach MDL helper. No Blizzard model, texture, sound,
-API file, or third-party map is redistributed. Worker art is referenced by
-its stock in-game path. All supplied generated assets may be reused under
-the MIT licence with attribution to Serendipity / wc3-map-toolkit.
+The authorized Warcraft computer was offline. R2 stock-worker animation,
+retail rendering, audio, Channel buttons, engine pathfinding and multiplayer
+remain unverified. The earlier user-reported failure must not be marked
+resolved just because automated structural or independent-renderer tests pass.
+
+## Asset provenance
+
+Geometry starts with the Northreach helper; an independent MDLX writer emits
+final R2 bytes with explicit tint flags and animation tracks. Textures, icons
+and composed electrical hum are original generated work, MIT with attribution
+to Serendipity / wc3-map-toolkit. No game API files or Blizzard assets are
+redistributed. The worker references the stock Peasant already in the game.

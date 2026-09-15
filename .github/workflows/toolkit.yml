@@ -36,7 +36,7 @@ jobs:
       - name: Install native tools
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y smpq lua5.3 build-essential flex bison python3 python3-pil libstorm-dev
+          sudo apt-get install -y smpq lua5.3 build-essential flex bison python3 python3-pil python3-venv libstorm-dev
       - name: Install locked dependencies and pinned pjass
         run: |
           npm ci --no-audit --no-fund
@@ -90,6 +90,13 @@ jobs:
         run: |
           node tools/w3x-extract.js --require-complete "$RUNNER_TEMP/after-hours/After_Hours_Emergency_Lighting.w3x" "$RUNNER_TEMP/after-hours/extracted"
           bash scripts/crossvalidate-war3net.sh "$RUNNER_TEMP/after-hours/extracted" | tee "$RUNNER_TEMP/after-hours/war3net.log"
+      - name: Render packed models and assert visible changing animation frames
+        if: matrix.revision == 'head' && matrix.backend == 'stormlib'
+        run: |
+          python3 -m venv --system-site-packages "$RUNNER_TEMP/asset-render-env"
+          "$RUNNER_TEMP/asset-render-env/bin/pip" install playwright==1.62.0
+          "$RUNNER_TEMP/asset-render-env/bin/python" -m playwright install --with-deps chromium
+          "$RUNNER_TEMP/asset-render-env/bin/python" examples/after-hours/render-assets.py "$RUNNER_TEMP/after-hours/extracted" "$RUNNER_TEMP/after-hours/rendered-assets"
       - name: Confirm absent editor corpus cannot pass
         if: matrix.revision == 'head'
         shell: bash

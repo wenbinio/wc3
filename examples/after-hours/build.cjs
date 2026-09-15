@@ -7,6 +7,8 @@ async function main(out){
  process.env.WC3_TOOLKIT_ROOT=ROOT;
  const source=path.join(out,'source');await (await import('./generate.mjs')).generate(source);
  const artifact=path.join(out,'After_Hours_Emergency_Lighting.w3x');require('../../tools/build-map').buildMap(source,artifact,{});
+ const assetChecks=require('./asset-checks.cjs').inspectArchive(artifact);
+ fs.writeFileSync(path.join(out,'asset-checks.json'),JSON.stringify(assetChecks,null,2)+'\n');
  const validation=require('../../tools/validate-map').validate(artifact);
  fs.writeFileSync(path.join(out,'validation.json'),JSON.stringify(validation,null,2)+'\n');
  const tests=spawnSync(process.execPath,['--test','--test-reporter=tap',path.join(source,'tests/after-hours.test.js')],{cwd:ROOT,env:{...process.env,WC3_TOOLKIT_ROOT:ROOT},encoding:'utf8',timeout:120000,maxBuffer:8*1024**2});
