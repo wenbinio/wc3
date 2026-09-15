@@ -1,0 +1,70 @@
+name: Toolkit checks
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: toolkit-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  toolkit:
+    name: ${{ matrix.revision }} / ${{ matrix.backend }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        revision: [base, head]
+        backend: [smpq, stormlib]
+    env:
+      WC3_MPQ_BACKEND: ${{ matrix.backend }}
+      WC3_LUA53: /usr/bin/lua5.3
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ matrix.revision == 'base' && github.event.pull_request.base.sha || github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install native tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y smpq lua5.3 build-essential flex bison python3 python3-pil libstorm-dev
+      - name: Install locked dependencies and pinned pjass
+        run: |
+          npm ci --no-audit --no-fund
+          git init vendor/pjass
+          git -C vendor/pjass remote add origin https://github.com/lep/pjass.git
+          git -C vendor/pjass fetch --depth 1 origin 378a1ca9af3848fbc3be3d17069bcdb6a940ee32
+          git -C vendor/pjass checkout --detach FETCH_HEAD
+          make -C vendor/pjass
+      - name: Require the requested MPQ backend and native Lua
+        run: |
+          node -e "const b = require('./lib/mpq').backendName(); console.log('MPQ backend:', b); if (b !== process.env.WC3_MPQ_BACKEND) process.exit(1)"
+          smpq --version
+          lua5.3 -v
+          test -x vendor/pjass/pjass
+          git rev-parse HEAD
+      - name: Run both unit tests and preflight, preserving failures
+        shell: bash
+        run: |
+          set +e
+          npm test
+          tests=$?
+          npm run preflight -- --json="$RUNNER_TEMP/preflight-${{ matrix.revision }}-${{ matrix.backend }}.json"
+          preflight=$?
+          printf 'Unit-test exit: %s; preflight exit: %s\n' "$tests" "$preflight"
+          {
+            echo '## Toolkit checks: ${{ matrix.revision }} / ${{ matrix.backend }}'
+            echo "Commit: $(git rev-parse HEAD)"
+            echo "Unit-test exit: $tests; preflight exit: $preflight"
+            echo 'This is not Warcraft client, graphics, multiplayer, or release acceptance.'
+          } >> "$GITHUB_STEP_SUMMARY"
+          test "$tests" -eq 0 && test "$preflight" -eq 0
