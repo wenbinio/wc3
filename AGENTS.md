@@ -25,3 +25,10 @@ rules apply to every agent, not just one provider. Then read the relevant
 - Do not edit the Rome experiment's endpoints or tune its AI as part of a
   toolkit patch. Require reproducible real telemetry before gameplay claims;
   do not round-trip its compiled scripts through World Editor.
+
+For the implemented automation commands and current stack decisions, read
+`automation/README.md` and `automation/STACK-DECISIONS.md`. The reproducible
+example is `npm run build:after-hours -- _build/after-hours-new`. Its rule
+and path-grid tests are not client playtests. The Windows probe is a separate
+diagnostic copy with threats suppressed, not a measurement of human balance.
+An empty editor corpus and a missing pinned API profile must remain blocked.

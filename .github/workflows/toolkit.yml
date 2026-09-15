@@ -77,3 +77,65 @@ jobs:
           path: ${{ runner.temp }}/evidence/
           retention-days: 7
           if-no-files-found: warn
+      - name: Build and qualify After Hours
+        if: matrix.revision == 'head'
+        run: node examples/after-hours/build.cjs "$RUNNER_TEMP/after-hours"
+      - name: Install independent parser runtime
+        if: matrix.revision == 'head' && matrix.backend == 'stormlib'
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: '8.0.x'
+      - name: Independent War3Net map-format check
+        if: matrix.revision == 'head' && matrix.backend == 'stormlib'
+        run: |
+          node tools/w3x-extract.js --require-complete "$RUNNER_TEMP/after-hours/After_Hours_Emergency_Lighting.w3x" "$RUNNER_TEMP/after-hours/extracted"
+          bash scripts/crossvalidate-war3net.sh "$RUNNER_TEMP/after-hours/extracted" | tee "$RUNNER_TEMP/after-hours/war3net.log"
+      - name: Confirm absent editor corpus cannot pass
+        if: matrix.revision == 'head'
+        shell: bash
+        run: |
+          set +e
+          node tools/automation.cjs corpus automation/editor-corpus.json "$RUNNER_TEMP/empty-corpus"
+          result=$?
+          test "$result" -eq 1
+      - name: Confirm missing game profile blocks qualification
+        if: matrix.revision == 'head'
+        shell: bash
+        run: |
+          set +e
+          node tools/automation.cjs qualify "$RUNNER_TEMP/after-hours/source" "$RUNNER_TEMP/after-hours/qualification"
+          result=$?
+          test "$result" -eq 1 || exit 1
+          node -e 'const r=require(process.argv[1]);if(r.status!=="BLOCKED"||!r.blockers.some(b=>b.code==="game-api")||r.clientAcceptance!=="NOT_RUN")process.exit(1)' "$RUNNER_TEMP/after-hours/qualification/qualification.json"
+      - name: Retain actual map and qualification reports
+        if: always() && matrix.revision == 'head'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: after-hours-${{ matrix.backend }}
+          path: ${{ runner.temp }}/after-hours/
+          retention-days: 7
+          if-no-files-found: warn
+
+  windows-harness-contract:
+    name: Windows harness syntax and refusal contract
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Parse actual PowerShell scripts and refuse missing client
+        shell: pwsh
+        run: |
+          foreach ($file in @('tools/client/Run-Probe.ps1','tools/client/Capture-Window.ps1')) {
+            $tokens=$null; $errors=$null
+            [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $file),[ref]$tokens,[ref]$errors) | Out-Null
+            if ($errors.Count) { throw ($errors | Out-String) }
+          }
+          $refused=$false
+          try {
+            & ./tools/client/Run-Probe.ps1 -GameExe "$env:RUNNER_TEMP/definitely-missing-warcraft.exe" -RequestFile missing -Profile missing -CommonJ missing -BlizzardJ missing -TelemetryRoot missing -OutputDirectory "$env:RUNNER_TEMP/unused-output"
+          } catch { $refused=$true; Write-Host ('Expected refusal: '+$_.Exception.Message) }
+          if (-not $refused) { throw 'Missing-client invocation did not refuse' }
+          Write-Host 'Syntax/refusal contract only. No Warcraft executable or game test was run.'

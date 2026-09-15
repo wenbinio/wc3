@@ -6,11 +6,13 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "test": "node --test",
-    "test:smpq": "WC3_MPQ_BACKEND=smpq node --test",
+    "test": "node scripts/test-suite.cjs",
+    "test:smpq": "node scripts/test-suite.cjs --smpq",
     "setup": "bash scripts/setup.sh",
     "test:logic": "node tools/test-map-logic.js",
-    "preflight": "node tools/preflight.js"
+    "preflight": "node tools/preflight.js",
+    "build:after-hours": "node examples/after-hours/build.cjs",
+    "automation": "node tools/automation.cjs"
   },
   "dependencies": {
     "fengari": "^0.1.5",
